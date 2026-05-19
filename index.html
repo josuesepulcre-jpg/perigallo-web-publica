@@ -71,6 +71,12 @@ nav.scrolled .nav-logo-img{width:46px;height:46px}
 .hero-subtitle{font-size:.85rem;line-height:1.85;color:var(--muted);margin-bottom:48px;opacity:1;animation:heroSettle 1s ease .3s both;display:block;max-width:560px;margin-left:auto;margin-right:auto;font-weight:300}
 .hero-divider{width:50px;height:1px;background:var(--gold);margin:0 auto 48px;opacity:1;animation:heroSettle 1s ease .36s both}
 .hero-actions{display:flex;gap:18px;justify-content:center;opacity:1;animation:heroSettle 1s ease .42s both;flex-wrap:wrap}
+.hero-paths{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;max-width:780px;margin:34px auto 0;border:1px solid rgba(205,177,151,.22);background:rgba(205,177,151,.16);opacity:1;animation:heroSettle 1s ease .5s both}
+.hero-path{display:flex;flex-direction:column;gap:7px;padding:18px 18px 20px;background:rgba(26,44,49,.42);color:var(--cream);text-decoration:none;transition:background .35s,color .35s}
+.hero-path strong{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:400;color:var(--gold-l)}
+.hero-path span{font-size:.56rem;line-height:1.55;letter-spacing:.12em;text-transform:uppercase;color:rgba(245,241,229,.62)}
+.hero-path:hover{background:rgba(205,177,151,.12);color:var(--gold-l)}
+.hero-path:focus-visible{outline:1px solid var(--gold);outline-offset:4px}
 .btn-primary{font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:var(--bg2);background:var(--gold);text-decoration:none;padding:15px 36px;transition:all .35s;display:inline-block;border:none;cursor:none;font-family:inherit;font-weight:500}
 .btn-primary:hover{background:var(--gold-l)}
 .btn-primary:disabled{opacity:.55;cursor:not-allowed;filter:saturate(.8)}
@@ -369,6 +375,11 @@ body.booking-modal-open{overflow:hidden}
   .nav-logo-img{width:48px;height:48px}
   .hero{padding:60px 0 80px}
   .hero-title{font-size:3rem}
+  .hero-content{padding:0 22px}
+  .hero-subtitle{margin-bottom:34px}
+  .hero-actions .btn-primary,.hero-actions .btn-ghost{width:100%;max-width:320px;text-align:center}
+  .hero-paths{grid-template-columns:1fr;margin-top:26px;max-width:320px}
+  .hero-path{padding:15px 16px}
   .services-grid{grid-template-columns:1fr;padding:0 20px}
   .service-card{padding:48px 36px;min-height:auto}
   .popup-inner,.celebrate-inner,.finca-inner{grid-template-columns:1fr}
@@ -449,7 +460,7 @@ body.booking-modal-open{overflow:hidden}
 <nav id="navbar">
   <ul class="nav-links-left">
     <li><a href="#popup">Pop-ups</a></li>
-    <li><a href="#fechas">Fechas</a></li>
+    <li><a href="#services">Experiencias</a></li>
     <li><a href="#celebrate">Celebraciones</a></li>
   </ul>
   <a href="#hero" class="nav-logo">
@@ -497,14 +508,19 @@ body.booking-modal-open{overflow:hidden}
   </div>
   <div class="hero-overlay"></div>
   <div class="hero-content">
-    <span class="hero-eyebrow">Marca gastronómica · España</span>
+    <span class="hero-eyebrow">Experiencias gastronómicas · Alicante</span>
     <h1 class="hero-title">Perigallo</h1>
-    <span class="hero-tagline">Gastronomía, pop-ups y celebraciones diseñadas con intención</span>
-    <span class="hero-subtitle">Creamos experiencias gastronómicas para quienes buscan algo más que un menú. Encuentros efímeros, celebraciones privadas y propuestas a medida en espacios singulares.</span>
+    <span class="hero-tagline">Restaurante pop-up, celebraciones privadas y cocina a medida</span>
+    <span class="hero-subtitle">Un lugar, dos formas de vivirlo: reservar una mesa en una experiencia efímera o diseñar una celebración gastronómica con Perigallo en Finca La Llaguna y otros espacios singulares.</span>
     <div class="hero-divider"></div>
     <div class="hero-actions">
-      <a href="#popup" class="btn-primary">Ver pop-ups</a>
-      <a href="#celebrate" class="btn-ghost">Celebrar con Perigallo</a>
+      <a href="#reservas" class="btn-primary">Reservar pop-up</a>
+      <a href="/solicitud-evento/" class="btn-ghost" data-event-form-open>Solicitar evento</a>
+    </div>
+    <div class="hero-paths" aria-label="Caminos principales de Perigallo">
+      <a class="hero-path" href="#reservas"><strong>Pop-up</strong><span>Reserva mesa en experiencias con plazas limitadas</span></a>
+      <a class="hero-path" href="#celebrate"><strong>Celebraciones</strong><span>Bodas, eventos privados y propuestas a medida</span></a>
+      <a class="hero-path" href="#finca"><strong>Finca La Llaguna</strong><span>Un escenario mediterráneo para vivir Perigallo</span></a>
     </div>
   </div>
   <div class="hero-dots">
@@ -530,33 +546,33 @@ body.booking-modal-open{overflow:hidden}
 <!-- QUÉ HACEMOS — 4 SERVICIOS -->
 <section class="services" id="services">
   <div class="services-header">
-    <span class="section-eyebrow reveal">Qué hacemos</span>
-    <h2 class="section-title reveal reveal-delay-1">Cuatro formas<br>de vivir <em>Perigallo</em></h2>
+    <span class="section-eyebrow reveal">Elige tu experiencia</span>
+    <h2 class="section-title reveal reveal-delay-1">Dos entradas claras,<br>varias formas de vivir <em>Perigallo</em></h2>
   </div>
   <div class="services-grid">
     <div class="service-card reveal">
       <span class="service-num">— 01</span>
       <h3 class="service-name">Restaurante <em>pop-up</em></h3>
       <p class="service-desc">Fechas concretas, menús especiales y experiencias gastronómicas abiertas al público. Una forma distinta de vivir la cocina de Perigallo.</p>
-      <a href="#popup" class="service-link">Ver próximas fechas</a>
+      <a href="#reservas" class="service-link">Reservar pop-up</a>
     </div>
     <div class="service-card reveal reveal-delay-1">
       <span class="service-num">— 02</span>
       <h3 class="service-name">Celebraciones <em>privadas</em></h3>
       <p class="service-desc">Bodas, comuniones, bautizos y eventos familiares con una propuesta gastronómica personalizada y un servicio cuidado.</p>
-      <a href="#celebrate" class="service-link">Solicitar información</a>
+      <a href="/solicitud-evento/" class="service-link" data-event-form-open>Solicitar propuesta</a>
     </div>
     <div class="service-card reveal reveal-delay-2">
       <span class="service-num">— 03</span>
       <h3 class="service-name">Eventos de <em>empresa</em></h3>
       <p class="service-desc">Presentaciones, comidas de equipo, encuentros corporativos y eventos con una puesta en escena cuidada y una gastronomía con carácter.</p>
-      <a href="#contact" class="service-link">Hablar con el equipo</a>
+      <a href="/solicitud-evento/" class="service-link" data-event-form-open>Hablar con el equipo</a>
     </div>
     <div class="service-card reveal reveal-delay-3">
       <span class="service-num">— 04</span>
       <h3 class="service-name">Catering <em>a medida</em></h3>
       <p class="service-desc">Diseñamos propuestas gastronómicas dentro y fuera de nuestros espacios habituales: cenas itinerantes, showcookings y producciones especiales.</p>
-      <a href="#catering" class="service-link">Consultar disponibilidad</a>
+      <a href="/solicitud-evento/" class="service-link" data-event-form-open>Consultar disponibilidad</a>
     </div>
   </div>
 </section>
