@@ -1,0 +1,2316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Perigallo · Cuéntanos vuestra historia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@200;300;400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --teal:#243F47; --teal-l:#2d5060; --gold:#CDB197; --gold-l:#ddc9af;
+  --ivory:#F5EFE6; --black:#0D1A1E; --dim:#6B8A92;
+  --card-bg:rgba(255,255,255,0.04); --card-border:rgba(205,177,151,0.25);
+  --card-active:rgba(205,177,151,0.13); --tr:0.55s cubic-bezier(0.65,0,0.35,1);
+}
+html,body { height:100%;width:100%;background:var(--black);color:var(--ivory);
+  font-family:'Jost',sans-serif;font-weight:300;overflow:hidden; }
+body::before { content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity:0.6; }
+body::after { content:'';position:fixed;top:-30%;left:-10%;width:60%;height:70%;
+  background:radial-gradient(ellipse,rgba(36,63,71,0.7) 0%,transparent 70%);
+  z-index:0;pointer-events:none; }
+
+#progress-bar { position:fixed;top:0;left:0;height:2px;z-index:100;
+  background:linear-gradient(90deg,var(--gold),var(--gold-l));
+  transition:width 0.5s ease;box-shadow:0 0 12px rgba(205,177,151,0.6); }
+
+#topbar { position:fixed;top:0;left:0;right:0;z-index:50;padding:22px 40px 0;
+  display:flex;justify-content:space-between;align-items:center; }
+#topbar .brand { font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:400;
+  letter-spacing:0.3em;color:var(--gold);opacity:0.8;text-transform:uppercase;
+  max-width:72vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+#step-counter { font-size:12px;font-weight:300;letter-spacing:0.2em;color:var(--dim); }
+
+#form-wrapper { position:relative;z-index:10;width:100%;height:100%;
+  display:flex;align-items:center;justify-content:center; }
+
+.screen { position:absolute;width:100%;height:100%;display:flex;
+  align-items:flex-start;justify-content:center;padding:104px 40px 128px;
+  opacity:0;visibility:hidden;pointer-events:none;transform:translateY(30px);
+  overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+  transition:opacity var(--tr),transform var(--tr),visibility 0s linear 0.55s; }
+.screen.active { opacity:1;visibility:visible;pointer-events:all;transform:translateY(0);
+  transition:opacity var(--tr),transform var(--tr),visibility 0s; }
+.screen.exit-up { opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-30px); }
+
+.content { width:100%;max-width:760px;display:flex;flex-direction:column;gap:28px;
+  margin-block:auto; }
+
+.block-label { font-size:11px;font-weight:300;letter-spacing:0.35em;
+  text-transform:uppercase;color:var(--gold);opacity:0.7; }
+.block-label.new { color:#a8d4a8;opacity:0.8; }
+
+.q-title { font-family:'Cormorant Garamond',serif;
+  font-size:clamp(26px,4.5vw,46px);font-weight:300;line-height:1.2;color:var(--ivory); }
+.q-title em { font-style:italic;color:var(--gold); }
+.q-sub { font-size:14px;font-weight:300;color:var(--dim);line-height:1.6;margin-top:-12px; }
+
+/* inputs */
+.input-row { display:flex;gap:16px;flex-wrap:wrap; }
+.input-group { display:flex;flex-direction:column;gap:8px;flex:1;min-width:180px; }
+.input-group label { font-size:11px;letter-spacing:0.25em;text-transform:uppercase;color:var(--dim); }
+input[type=text],input[type=email],input[type=tel],input[type=date],input[type=number],textarea {
+  background:transparent;border:none;border-bottom:1px solid rgba(205,177,151,0.3);
+  color:var(--ivory);font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;
+  padding:10px 0 12px;outline:none;width:100%;transition:border-color 0.3s;caret-color:var(--gold); }
+input:focus,textarea:focus { border-bottom-color:var(--gold); }
+input::placeholder,textarea::placeholder { color:rgba(245,239,230,0.2);font-style:italic; }
+textarea { resize:none;min-height:80px;line-height:1.5; }
+input[type=date] { color-scheme:dark; }
+input[type=number] { -moz-appearance:textfield; }
+input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; }
+
+/* cards */
+.cards-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px; }
+.cards-grid.two { grid-template-columns:repeat(2,1fr); }
+.cards-grid.three { grid-template-columns:repeat(3,1fr); }
+.card { background:var(--card-bg);border:1px solid var(--card-border);border-radius:4px;
+  padding:16px 14px;cursor:pointer;transition:all 0.25s;
+  display:flex;flex-direction:column;gap:7px;user-select:none;min-width:0; }
+.card:hover { border-color:rgba(205,177,151,0.5);background:rgba(255,255,255,0.07); }
+.card.selected { border-color:var(--gold);background:var(--card-active);
+  box-shadow:inset 0 0 0 1px var(--gold),0 0 18px rgba(205,177,151,0.08); }
+.card .ci { font-size:20px;line-height:1; }
+.card .ct { font-size:13px;font-weight:300;color:var(--ivory);line-height:1.45;
+  overflow-wrap:anywhere; }
+.card.selected .ct { color:var(--gold-l); }
+.card .ck { width:15px;height:15px;border-radius:50%;border:1px solid var(--card-border);
+  margin-left:auto;flex-shrink:0;transition:all 0.2s; }
+.card.selected .ck { background:var(--gold);border-color:var(--gold); }
+
+/* scale */
+.scale-row { display:flex;gap:10px;align-items:center;flex-wrap:wrap; }
+.scale-labels { display:flex;justify-content:space-between;font-size:11px;
+  color:var(--dim);letter-spacing:0.1em;margin-top:-14px; }
+.scale-btn { width:54px;height:54px;border-radius:50%;background:var(--card-bg);
+  border:1px solid var(--card-border);color:var(--ivory);font-family:'Cormorant Garamond',serif;
+  font-size:20px;cursor:pointer;transition:all 0.2s;
+  display:flex;align-items:center;justify-content:center; }
+.scale-btn:hover { border-color:var(--gold); }
+.scale-btn.selected { background:var(--gold);border-color:var(--gold);color:var(--black);font-weight:600; }
+
+/* yn */
+.yn-row { display:flex;gap:12px; }
+.yn-btn { flex:1;padding:18px;border-radius:4px;background:var(--card-bg);
+  border:1px solid var(--card-border);color:var(--ivory);font-family:'Cormorant Garamond',serif;
+  font-size:19px;cursor:pointer;transition:all 0.25s;text-align:center; }
+.yn-btn:hover { border-color:rgba(205,177,151,0.5); }
+.yn-btn.selected { border-color:var(--gold);background:var(--card-active);color:var(--gold-l); }
+
+/* tags */
+.tag-row { display:flex;gap:8px;flex-wrap:wrap;margin-top:4px; }
+.tag { padding:8px 15px;border-radius:20px;border:1px solid var(--card-border);
+  font-size:12px;line-height:1.35;color:var(--ivory);cursor:pointer;transition:all 0.2s;
+  background:var(--card-bg);white-space:normal;overflow-wrap:anywhere; }
+.tag:hover { border-color:rgba(205,177,151,0.5); }
+.tag.selected { border-color:var(--gold);background:var(--card-active);color:var(--gold-l); }
+
+/* rank */
+.rank-list { display:flex;flex-direction:column;gap:7px; }
+.rank-item { display:flex;align-items:center;gap:12px;background:var(--card-bg);
+  border:1px solid var(--card-border);border-radius:4px;padding:13px 15px;
+  cursor:pointer;transition:all 0.2s;user-select:none; }
+.rank-item.selected { border-color:var(--gold);background:var(--card-active); }
+.rank-num { font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--gold);
+  min-width:22px;text-align:center; }
+.rank-text { font-size:13px;color:var(--ivory); }
+.rank-item.selected .rank-text { color:var(--gold-l); }
+
+/* conditional */
+.cond-extra { overflow:hidden;max-height:0;opacity:0;visibility:hidden;
+  transition:max-height 0.4s ease,opacity 0.3s ease,visibility 0s linear 0.35s; }
+.cond-extra.open { max-height:none;overflow:visible;opacity:1;visibility:visible;
+  transition:opacity 0.25s ease,visibility 0s; }
+
+/* scrollable */
+.scr { max-height:none;overflow:visible;padding-right:0; }
+.scr::-webkit-scrollbar { width:3px; }
+.scr::-webkit-scrollbar-thumb { background:rgba(205,177,151,0.3);border-radius:2px; }
+
+/* nav */
+#nav { position:fixed;bottom:0;left:0;right:0;z-index:60;
+  padding:18px 40px 26px;display:flex;justify-content:space-between;align-items:center;
+  background:linear-gradient(180deg,rgba(13,26,30,0),rgba(13,26,30,0.92) 38%,rgba(13,26,30,0.98));
+  border-top:1px solid rgba(205,177,151,0.08);backdrop-filter:blur(10px); }
+.nav-hint { font-size:11px;letter-spacing:0.2em;color:var(--dim); }
+.nav-btns { display:flex;gap:12px;align-items:center; }
+.btn-back { background:transparent;border:1px solid rgba(205,177,151,0.2);color:var(--dim);
+  padding:11px 22px;border-radius:2px;font-family:'Jost',sans-serif;font-size:12px;
+  font-weight:300;letter-spacing:0.2em;text-transform:uppercase;cursor:pointer;transition:all 0.2s; }
+.btn-back:hover { border-color:var(--gold);color:var(--gold); }
+.btn-next { background:transparent;border:1px solid var(--gold);color:var(--gold);
+  padding:11px 30px;border-radius:2px;font-family:'Jost',sans-serif;font-size:12px;
+  font-weight:300;letter-spacing:0.25em;text-transform:uppercase;cursor:pointer;
+  transition:all 0.25s;position:relative;overflow:hidden; }
+.btn-next::before { content:'';position:absolute;inset:0;background:var(--gold);
+  transform:scaleX(0);transform-origin:left;transition:transform 0.3s ease;z-index:-1; }
+.btn-next:hover { color:var(--black); }
+.btn-next:hover::before { transform:scaleX(1); }
+.btn-next:disabled,.btn-back:disabled { opacity:0.45;cursor:not-allowed; }
+.btn-next:disabled::before { transform:scaleX(0); }
+#form-message { position:fixed;left:50%;bottom:82px;z-index:61;transform:translateX(-50%);
+  max-width:min(640px,calc(100vw - 40px));padding:10px 14px;border:1px solid rgba(205,177,151,0.25);
+  border-radius:4px;background:rgba(13,26,30,0.94);color:var(--gold-l);
+  font-size:12px;line-height:1.45;text-align:center;opacity:0;pointer-events:none;
+  transition:opacity 0.25s ease; }
+#form-message.show { opacity:1; }
+#form-message.error { color:#f0c3b7;border-color:rgba(240,195,183,0.35); }
+
+
+/* logo imagen portada */
+.wlogo-img {
+  height: 100px;
+  width: auto;
+  object-fit: contain;
+  opacity: 0.88;
+}
+.wlema {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 17px;
+  font-weight: 300;
+  font-style: italic;
+  letter-spacing: 0.03em;
+  color: var(--ivory);
+  opacity: 0.70;
+  margin-top: -12px;
+  text-align: center;
+  line-height: 1.5;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* welcome */
+.wc { text-align:center;max-width:580px;display:flex;flex-direction:column;gap:24px;align-items:center; }
+.wlogo { font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:400;
+  letter-spacing:0.5em;text-transform:uppercase;color:var(--gold); }
+.wdiv { width:50px;height:1px;background:var(--gold);opacity:0.4; }
+.wtitle { font-family:'Cormorant Garamond',serif;font-size:clamp(34px,5.5vw,60px);
+  font-weight:300;line-height:1.1;color:var(--ivory); }
+.wtitle em { font-style:italic;color:var(--gold); }
+.wbody { font-size:15px;font-weight:300;line-height:1.8;color:rgba(245,239,230,0.6);max-width:460px; }
+.privacy-note { max-width:460px;margin-top:-8px;font-size:12px;line-height:1.75;color:rgba(245,239,230,0.52); }
+.privacy-note a { color:var(--gold-l);text-decoration:none;border-bottom:1px solid rgba(221,201,175,0.42); }
+.privacy-note a:focus-visible { outline:1px solid var(--gold);outline-offset:3px; }
+.wstats { display:flex;gap:20px;flex-wrap:wrap;justify-content:center; }
+.wstat { text-align:center; }
+.wstat .n { font-family:'Cormorant Garamond',serif;font-size:30px;color:var(--gold);display:block; }
+.wstat .l { font-size:10px;letter-spacing:0.25em;text-transform:uppercase;color:var(--dim); }
+.btn-start { background:transparent;border:1px solid var(--gold);color:var(--gold);
+  padding:15px 46px;border-radius:2px;font-family:'Jost',sans-serif;font-size:12px;
+  font-weight:300;letter-spacing:0.35em;text-transform:uppercase;cursor:pointer;
+  transition:all 0.3s;position:relative;overflow:hidden; }
+.btn-start::before { content:'';position:absolute;inset:0;background:var(--gold);
+  transform:scaleX(0);transform-origin:left;transition:transform 0.3s ease;z-index:-1; }
+.btn-start:hover { color:var(--black); }
+.btn-start:hover::before { transform:scaleX(1); }
+
+/* final */
+.fc { text-align:center;max-width:540px;display:flex;flex-direction:column;gap:22px;align-items:center; }
+.ficon { font-size:44px; }
+.ftitle { font-family:'Cormorant Garamond',serif;font-size:clamp(30px,4.5vw,50px);
+  font-weight:300;line-height:1.2;color:var(--ivory); }
+.fbody { font-size:15px;color:var(--dim);line-height:1.8; }
+.fbrand { font-family:'Cormorant Garamond',serif;font-size:12px;letter-spacing:0.4em;
+  text-transform:uppercase;color:var(--gold);opacity:0.6; }
+.btn-reset { background:transparent;border:1px solid rgba(205,177,151,0.25);
+  color:var(--dim);padding:10px 24px;border-radius:2px;font-family:'Jost',sans-serif;
+  font-size:11px;font-weight:300;letter-spacing:0.25em;text-transform:uppercase;
+  cursor:pointer;transition:all 0.25s;margin-top:8px; }
+.btn-reset:hover { border-color:var(--gold);color:var(--gold); }
+
+/* section divider */
+.section-divider { display:flex;align-items:center;gap:16px;padding:8px 0; }
+.section-divider::before,.section-divider::after { content:'';flex:1;height:1px;background:rgba(205,177,151,0.2); }
+.section-divider span { font-size:10px;letter-spacing:0.3em;text-transform:uppercase;color:var(--gold);opacity:0.6; }
+
+/* dual-scale personality */
+.dual-scale { display:flex;flex-direction:column;gap:24px; }
+.ds-row { display:flex;flex-direction:column;gap:10px; }
+.ds-labels { display:flex;justify-content:space-between; }
+.ds-label { font-size:12px;font-weight:300;color:var(--dim);letter-spacing:0.05em;max-width:120px; }
+.ds-label.right { text-align:right; }
+.ds-track { display:flex;gap:8px;align-items:center; }
+.ds-dot { width:40px;height:40px;border-radius:50%;background:var(--card-bg);
+  border:1px solid var(--card-border);cursor:pointer;transition:all 0.2s;flex-shrink:0; }
+.ds-dot:hover { border-color:rgba(205,177,151,0.5); }
+.ds-dot.sel { border-color:var(--gold); }
+.ds-dot.sel-1 { background:rgba(205,177,151,0.5);transform:scale(1.15); }
+.ds-dot.sel-2 { background:rgba(205,177,151,0.4);transform:scale(1.1); }
+.ds-dot.sel-3 { background:rgba(205,177,151,0.3);transform:scale(1.07); }
+.ds-dot.sel-4 { background:rgba(205,177,151,0.2);transform:scale(1.05); }
+.ds-dot.sel-5 { background:rgba(205,177,151,0.1);transform:scale(1.02); }
+.ds-title { font-size:11px;letter-spacing:0.25em;text-transform:uppercase;color:var(--gold);opacity:0.6; }
+
+/* two-col textarea */
+.dual-text { display:grid;grid-template-columns:1fr 1fr;gap:20px; }
+
+/* sector pills */
+.sector-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px; }
+
+/* age row */
+.age-row { display:flex;gap:32px;align-items:flex-end;flex-wrap:wrap; }
+.age-block { display:flex;flex-direction:column;gap:6px; }
+.age-block label { font-size:11px;letter-spacing:0.25em;text-transform:uppercase;color:var(--dim); }
+.age-display { font-family:'Cormorant Garamond',serif;font-size:52px;font-weight:300;color:var(--gold);line-height:1; }
+.age-controls { display:flex;gap:10px;align-items:center;margin-top:6px; }
+
+
+/* slider-number */
+.num-big { font-family:'Cormorant Garamond',serif;font-size:64px;font-weight:300;
+  color:var(--gold);line-height:1;text-align:center; }
+.num-controls { display:flex;gap:20px;align-items:center;justify-content:center; }
+.num-btn { width:44px;height:44px;border-radius:50%;background:var(--card-bg);
+  border:1px solid var(--card-border);color:var(--gold);font-size:22px;cursor:pointer;
+  transition:all 0.2s;display:flex;align-items:center;justify-content:center; }
+.num-btn:hover { background:var(--card-active);border-color:var(--gold); }
+
+@media(max-width:600px){
+  #form-wrapper{height:100dvh;min-height:100dvh;}
+  .cards-grid,.cards-grid.two,.cards-grid.three,.sector-grid{grid-template-columns:1fr;}
+  .yn-row{flex-direction:column;}
+  #nav{padding:16px 18px 18px;gap:12px;align-items:flex-end;}
+  .nav-hint{display:none!important;}
+  .nav-btns{width:100%;justify-content:space-between;}
+  .btn-back,.btn-next{padding:12px 16px;letter-spacing:0.16em;}
+  .screen{height:100dvh;align-items:flex-start;padding:82px 18px 132px;}
+  #topbar{padding:16px 20px 0;}
+  #topbar .brand{font-size:11px;letter-spacing:0.18em;max-width:68vw;}
+  #step-counter{font-size:10px;letter-spacing:0.14em;}
+  .content{gap:22px;margin-block:0;max-width:100%;}
+  .q-title{font-size:clamp(25px,8vw,36px);line-height:1.16;}
+  .q-sub{font-size:13px;line-height:1.55;margin-top:-8px;}
+  input[type=text],input[type=email],input[type=tel],input[type=date],input[type=number],textarea{font-size:20px;}
+  .input-row{gap:18px;}
+  .input-group{min-width:0;}
+  .card{padding:14px 13px;}
+  .tag-row{gap:7px;}
+  .tag{font-size:11px;padding:8px 12px;}
+  .dual-text{grid-template-columns:1fr;}
+  .scale-btn{width:46px;height:46px;font-size:18px;}
+  .wstats{gap:14px 18px;}
+  #form-message{bottom:76px;}
+}
+</style>
+</head>
+<body>
+
+<div id="progress-bar" style="width:0%"></div>
+<div id="topbar">
+  <div class="brand">Perigallo · Finca La Llaguna</div>
+  <div id="step-counter"></div>
+</div>
+
+<div id="form-wrapper">
+
+<!-- ══════════════════════════════════════════════════════
+     WELCOME
+══════════════════════════════════════════════════════ -->
+<div class="screen active" data-id="welcome">
+  <div class="wc">
+    <img src="data:image/png;base64,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" alt="Perigallo" class="wlogo-img">
+    <p class="wlema">"Te escuchamos, te proponemos y lo hacemos realidad"</p>
+    <div class="wdiv"></div>
+    <h1 class="wtitle">Cuéntanos<br><em>vuestra historia</em></h1>
+    <p class="wbody">Antes de diseñar vuestra propuesta, queremos conoceros de verdad — como pareja, como personas. Cuanto más nos contéis, más única y emocionante será la boda que creemos juntos.</p>
+    <div class="wstats">
+      <div class="wstat"><span class="n">~25</span><span class="l">minutos</span></div>
+      <div class="wdiv" style="width:1px;height:36px;margin:auto"></div>
+      <div class="wstat"><span class="n">46</span><span class="l">preguntas</span></div>
+      <div class="wdiv" style="width:1px;height:36px;margin:auto"></div>
+      <div class="wstat"><span class="n">19</span><span class="l">bloques</span></div>
+    </div>
+    <button class="btn-start" onclick="start()">Empezamos →</button>
+    <p class="privacy-note">Al enviar el formulario trataremos vuestros datos para preparar la propuesta. Podéis consultar la <a href="/politica-privacidad/" target="_blank" rel="noopener noreferrer">política de privacidad</a>.</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     BLOQUE 01 · DATOS BÁSICOS
+══════════════════════════════════════════════════════ -->
+<div class="screen" data-id="nombres">
+  <div class="content">
+    <span class="block-label">Bloque 01 · Datos básicos</span>
+    <h2 class="q-title">¿Cómo os <em>llamáis?</em></h2>
+    <div class="input-row">
+      <div class="input-group"><label>Nombre 1</label><input type="text" id="q-n1" placeholder="Tu nombre" autocomplete="off"></div>
+      <div class="input-group"><label>Nombre 2</label><input type="text" id="q-n2" placeholder="Su nombre" autocomplete="off"></div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" data-id="contacto">
+  <div class="content">
+    <span class="block-label">Bloque 01 · Datos básicos</span>
+    <h2 class="q-title">¿Cómo <em>contactamos</em> con vosotros?</h2>
+    <div class="input-row">
+      <div class="input-group"><label>Email</label><input type="email" id="q-email" placeholder="vuestro@email.com"></div>
+      <div class="input-group"><label>Teléfono / WhatsApp</label><input type="tel" id="q-tel" placeholder="+34 600 000 000"></div>
+    </div>
+    <div class="input-group" style="max-width:280px">
+      <label>Ciudad de residencia</label>
+      <input type="text" id="q-ciudad" placeholder="¿Desde dónde nos escribís?">
+    </div>
+  </div>
+</div>
+
+<div class="screen" data-id="canal">
+  <div class="content">
+    <span class="block-label">Bloque 01 · Datos básicos</span>
+    <h2 class="q-title">¿Cómo llegasteis<br>hasta <em>nosotros?</em></h2>
+    <div class="cards-grid">
+      <div class="card" onclick="pick(this,'canal','Instagram')"><div class="ci">📸</div><div class="ct">Instagram</div><div class="ck"></div></div>
+      <div class="card" onclick="pick(this,'canal','Google')"><div class="ci">🔍</div><div class="ct">Google</div><div class="ck"></div></div>
+      <div class="card" onclick="pick(this,'canal','Nos lo recomendaron')"><div class="ci">🤍</div><div class="ct">Nos lo recomendaron</div><div class="ck"></div></div>
+      <div class="card" onclick="pick(this,'canal','Feria o evento')"><div class="ci">🏛️</div><div class="ct">Feria o evento</div><div class="ck"></div></div>
+      <div class="card" onclick="pick(this,'canal','Revista o blog')"><div class="ci">📖</div><div class="ct">Revista o blog</div><div class="ck"></div></div>
+      <div class="card" onclick="pick(this,'canal','De otra forma')"><div class="ci">✨</div><div class="ct">De otra forma</div><div class="ck"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" data-id="situacion">
+  <div class="content">
+    <span class="block-label">Bloque 01 · Datos básicos</span>
+    <h2 class="q-title">¿En qué momento<br><em>de la aventura</em> estáis?</h2>
+    <div class="cards-grid two">
+      <div class="card" onclick="pick(this,'situacion','Ya estamos prometidos')"><div class="ci">💍</div><div class="ct">Ya estamos prometidos</div><div class="ck"></div></div>
+      <div class="card" onclick="pick(this,'situacion','La pedida está en camino')"><div class="ci">🌹</div><div class="ct">La pedida está en camino</div><div class="ck"></div></div>
+      <div class="card" onclick="pick(this,'situacion','Explorando posibilidades')"><div class="ci">🗺️</div><div class="ct">Explorando posibilidades</div><div class="ck"></div></div>
+      <div class="card" onclick="pick(this,'situacion','Reconfirmando nuestra elección')"><div class="ci">⭐</div><div class="ct">Reconfirmando nuestra elección</div><div class="ck"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     BLOQUE 02 · HISTORIA Y PERSONALIDAD (EXTENDIDO)
+══════════════════════════════════════════════════════ -->
+<div class="screen" data-id="palabras">
+  <div class="content">
+    <span class="block-label new">Bloque 12 · Personalización</span>
+    <h2 class="q-title">¿Cómo definiríais<br>vuestra relación en<br><em>tres palabras?</em></h2>
+    <div class="input-row">
+      <div class="input-group"><input type="text" id="q-p1" placeholder="Primera" maxlength="20"></div>
+      <div class="input-group"><input type="text" id="q-p2" placeholder="Segunda" maxlength="20"></div>
+      <div class="input-group"><input type="text" id="q-p3" placeholder="Tercera" maxlength="20"></div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" data-id="anos-donde">
+  <div class="content">
+    <span class="block-label new">Bloque 12 · Personalización</span>
+    <h2 class="q-title">¿Cuánto tiempo lleváis<br>juntos y <em>dónde os conocisteis?</em></h2>
+    <div style="display:flex;flex-direction:column;gap:28px">
+      <div>
+        <p style="font-size:13px;color:var(--dim);margin-bottom:16px">Años de relación</p>
+        <div class="num-controls">
+          <button class="num-btn" onclick="changeNum('anos',-1)">−</button>
+          <span class="num-big" id="display-anos">2</span>
+          <button class="num-btn" onclick="changeNum('anos',1)">+</button>
+        </div>
+        <p id="anos-label" style="text-align:center;font-size:12px;color:var(--dim);margin-top:8px;letter-spacing:0.15em">años juntos</p>
+      </div>
+      <div class="input-group">
+        <label>¿Dónde os conocisteis? Contadlo en una frase</label>
+        <input type="text" id="q-donde-conocisteis" placeholder="En una boda de un amigo común, en un bar de Valencia...">
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" data-id="hijos">
+  <div class="content">
+    <span class="block-label new">Bloque 12 · Personalización</span>
+    <h2 class="q-title">¿Tenéis <em>hijos</em><br>en común?</h2>
+    <div class="yn-row">
+      <button class="yn-btn" onclick="selectYN(this,'hijos','Sí')">Sí</button>
+      <button class="yn-btn" onclick="selectYN(this,'hijos','No')">No</button>
+      <button class="yn-btn" onclick="selectYN(this,'hijos','En camino')">En camino 🤍</button>
+    </div>
+    <div class="cond-extra" id="extra-hijos">
+      <div class="input-row" style="margin-top:20px">
+        <div class="input-group">
+          <label>¿Cuántos hijos?</label>
+          <input type="text" id="q-hijos-num" placeholder="Número y edades">
+        </div>
+        <div class="input-group">
+          <label>¿Estarán en la boda?</label>
+          <input type="text" id="q-hijos-boda" placeholder="Sí / Solo parte del día / No">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     PERFIL INDIVIDUAL · NOVIOS
+══════════════════════════════════════════════════════ -->
+<div class="screen" data-id="perfil-n1">
+  <div class="content">
+    <span class="block-label new">Bloque 12 · Perfil de la pareja</span>
+    <h2 class="q-title">Cuéntanos un poco<br>más sobre <em id="label-n1">la primera persona</em></h2>
+    <div style="display:flex;flex-direction:column;gap:24px">
+      <div>
+        <p style="font-size:13px;color:var(--dim);margin-bottom:14px">Edad</p>
+        <div class="age-row">
+          <div class="age-block">
+            <div class="age-display" id="display-edad1">28</div>
+            <div class="age-controls">
+              <button class="num-btn" onclick="changeAge(1,-1)">−</button>
+              <span style="font-size:12px;color:var(--dim);letter-spacing:0.1em">años</span>
+              <button class="num-btn" onclick="changeAge(1,1)">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>¿En qué trabaja o a qué se dedica?</label>
+        <input type="text" id="q-trabajo1" placeholder="Diseñadora gráfica / Chef / Médico / Empresario...">
+      </div>
+      <div>
+        <p style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--dim);margin-bottom:10px">Sector profesional</p>
+        <div class="sector-grid">
+          <div class="card" onclick="pick(this,'sector1','Gastronomía / Hostelería')"><div class="ct">🍽️ Gastronomía</div><div class="ck"></div></div>
+          <div class="card" onclick="pick(this,'sector1','Tecnología / Digital')"><div class="ct">💻 Tecnología</div><div class="ck"></div></div>
+          <div class="card" onclick="pick(this,'sector1','Salud / Medicina')"><div class="ct">🏥 Salud</div><div class="ck"></div></div>
+          <div class="card" onclick="pick(this,'sector1','Educación')"><div class="ct">📚 Educación</div><div class="ck"></div></div>
+          <div class="card" onclick="pick(this,'sector1','Arte / Diseño / Moda')"><div class="ct">🎨 Arte / Diseño</div><div class="ck"></div></div>
+          <div class="card" onclick="pick(this,'sector1','Empresa / Finanzas')"><div class="ct">💼 Empresa / Finanzas</div><div class="ck"></div></div>
+          <div class="card" onclick="pick(this,'sector1','Derecho')"><div class="ct">⚖️ Derecho</div><div class="ck"></div></div>
+          <div class="card" onclick="pick(this,'sector1','Ingeniería / Arquitectura')"><div class="ct">🏗️ Ingeniería / Arq.</div><div class="ck"></div></div>
+          <div class="card" onclick="pick(this,'sector1','Comunicación / Marketing')"><div class="ct">📣 Comunicación</div><div class="ck"></div></div>
+          <div class="card" onclick="pick(this,'sector1','Emprendimiento')"><div class="ct">🚀 Emprendimiento</div><div class="ck"></div></div>
+          <div class="card" onclick="pick(this,'sector1','Función pública')"><div class="ct">🏛️ Función pública</div><div class="ck"></div></div>
+          <div class="card" onclick="pick(this,'sector1','Otro sector')"><div class="ct">✦ Otro</div><div class="ck"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" data-id="perfil-n2">
+  <div class="content">
+    <span class="block-label new">Bloque 12 · Perfil de la pareja</span>
+    <h2 class="q-title">Y ahora cuéntanos<br>sobre <em id="label-n2">la segunda persona</em></h2>
+    <div style="display:flex;flex-direction:column;gap:24px">
+      <div>
+        <p style="font-size:13px;color:var(--dim);margin-bottom:14px">Edad</p>
+        <div class="age-row">
+          <div class="age-block">
+            <div class="age-display" id="display-edad2">28</div>
+            <div class="age-controls">
+              <button class="num-btn" onclick="changeAge(2,-1)">−</button>
+              <span style="font-size:12px;color:var(--dim);letter-spacing:0.1em">años</span>
+              <button class="num-btn" onclick="changeAge(2,1)">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>¿En qué trabaja o a qué se dedica?</label>
+        <input type="text" id="q-trabajo2" placeholder="Diseñadora gráfica / Chef / Médico / Empresario...">
+      </div>
+      <div>
+        <p style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--dim);margin-bottom:10px">Sector profesional</p>
+        <div class="sector-grid">
+          <div class="card" onclick="pick(this,'sector2','Gastronomía / Hostelería')"><div class="ct">🍽️ Gastronomía</div><div class="ck"></div></div>
+          <div class="card" onclick="pick(this,'sector2','Tecnología / Digital')"><div class="ct">💻 Tecnología</div><div class="ck"></div></div>
+          <div class="card" onclick="pick(this,'sector2','Salud / Medicina')"><div class="ct">🏥 Salud</div><div class="ck"></div></div>
+          <div class="card" onclick="pick(this,'sector2','Educación')"><div class="ct">📚 Educación</div><div class="ck"></div></div>
+          <div class="card" onclick="pick(this,'sector2','Arte / Diseño / Moda')"><div class="ct">🎨 Arte / Diseño</div><div class="ck"></div></div>
+          <div class="card" onclick="pick(this,'sector2','Empresa / Finanzas')"><div class="ct">💼 Empresa / Finanzas</div><div class="ck"></div></div>
+          <div class="card" onclick="pick(this,'sector2','Derecho')"><div class="ct">⚖️ Derecho</div><div class="ck"></div></div>
+          <div class="card" onclick="pick(this,'sector2','Ingeniería / Arquitectura')"><div class="ct">🏗️ Ingeniería / Arq.</div><div class="ck"></div></div>
+          <div class="card" onclick="pick(this,'sector2','Comunicación / Marketing')"><div class="ct">📣 Comunicación</div><div class="ck"></div></div>
+          <div class="card" onclick="pick(this,'sector2','Emprendimiento')"><div class="ct">🚀 Emprendimiento</div><div class="ck"></div></div>
+          <div class="card" onclick="pick(this,'sector2','Función pública')"><div class="ct">🏛️ Función pública</div><div class="ck"></div></div>
+          <div class="card" onclick="pick(this,'sector2','Otro sector')"><div class="ct">✦ Otro</div><div class="ck"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     GUSTOS CULTURALES
+══════════════════════════════════════════════════════ -->
+<div class="screen" data-id="gustos-cultura">
+  <div class="content">
+    <span class="block-label new">Bloque 12 · Inspiración y gustos</span>
+    <h2 class="q-title">Un poco más<br>sobre vuestros <em>gustos</em></h2>
+    <div style="display:flex;flex-direction:column;gap:22px">
+      <div class="input-group">
+        <label>Película o serie que os haya marcado</label>
+        <input type="text" id="q-pelicula" placeholder="Esa que siempre recomendáis a todo el mundo...">
+      </div>
+      <div class="input-group">
+        <label>Un libro que diríais que os define</label>
+        <input type="text" id="q-libro" placeholder="El libro que siempre está en vuestra mesita...">
+      </div>
+      <div class="input-group">
+        <label>El destino que aún no habéis visitado pero es vuestro sueño</label>
+        <input type="text" id="q-destino-sueno" placeholder="Japón en flor de cerezo / Patagonia / Marruecos...">
+      </div>
+      <div class="input-group">
+        <label>Si fuerais un plato, ¿cuál seríais?</label>
+        <input type="text" id="q-plato-sois" placeholder="Un arroz negro con tinta de calamar y alioli casero... / Un taco de maíz azul con guacamole...">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     PERFIL PSICOLÓGICO · ESPECTROS DE PERSONALIDAD
+══════════════════════════════════════════════════════ -->
+<div class="screen" data-id="personalidad">
+  <div class="content scr">
+    <span class="block-label new">Bloque 12 · Personalidad y decisiones</span>
+    <h2 class="q-title">¿Dónde os situáis<br>en estos <em>espectros?</em></h2>
+    <p class="q-sub">Marcad vuestro punto en cada línea. Sin respuestas correctas — solo la verdad.</p>
+    <div class="dual-scale">
+
+      <div class="ds-row">
+        <div class="ds-labels"><span class="ds-label">🔥 Innovadores<br><span style="opacity:0.5;font-size:11px">Nos gusta probar cosas que nadie ha hecho</span></span><span class="ds-label right">🏛️ Tradicionales<br><span style="opacity:0.5;font-size:11px">Preferimos lo que sabemos que funciona</span></span></div>
+        <div class="ds-track">
+          <div class="ds-dot" onclick="dsClick(this,'innov-trad',1)"></div>
+          <div class="ds-dot" onclick="dsClick(this,'innov-trad',2)"></div>
+          <div class="ds-dot" onclick="dsClick(this,'innov-trad',3)"></div>
+          <div class="ds-dot" onclick="dsClick(this,'innov-trad',4)"></div>
+          <div class="ds-dot" onclick="dsClick(this,'innov-trad',5)"></div>
+        </div>
+      </div>
+
+      <div class="ds-row">
+        <div class="ds-labels"><span class="ds-label">🌙 Soñadores<br><span style="opacity:0.5;font-size:11px">La emoción y el concepto lo son todo</span></span><span class="ds-label right">📋 Prácticos<br><span style="opacity:0.5;font-size:11px">Preferimos resultados concretos y bien hechos</span></span></div>
+        <div class="ds-track">
+          <div class="ds-dot" onclick="dsClick(this,'sonador-pract',1)"></div>
+          <div class="ds-dot" onclick="dsClick(this,'sonador-pract',2)"></div>
+          <div class="ds-dot" onclick="dsClick(this,'sonador-pract',3)"></div>
+          <div class="ds-dot" onclick="dsClick(this,'sonador-pract',4)"></div>
+          <div class="ds-dot" onclick="dsClick(this,'sonador-pract',5)"></div>
+        </div>
+      </div>
+
+      <div class="ds-row">
+        <div class="ds-labels"><span class="ds-label">⚡ Espontáneos<br><span style="opacity:0.5;font-size:11px">Nos gusta improvisar y dejarnos llevar</span></span><span class="ds-label right">🗓️ Planificadores<br><span style="opacity:0.5;font-size:11px">Necesitamos tenerlo todo controlado y previsto</span></span></div>
+        <div class="ds-track">
+          <div class="ds-dot" onclick="dsClick(this,'espon-plan',1)"></div>
+          <div class="ds-dot" onclick="dsClick(this,'espon-plan',2)"></div>
+          <div class="ds-dot" onclick="dsClick(this,'espon-plan',3)"></div>
+          <div class="ds-dot" onclick="dsClick(this,'espon-plan',4)"></div>
+          <div class="ds-dot" onclick="dsClick(this,'espon-plan',5)"></div>
+        </div>
+      </div>
+
+      <div class="ds-row">
+        <div class="ds-labels"><span class="ds-label">🎭 Extrovertidos<br><span style="opacity:0.5;font-size:11px">Cuanta más gente y ambiente, mejor</span></span><span class="ds-label right">🌿 Introvertidos<br><span style="opacity:0.5;font-size:11px">Preferimos lo íntimo y los momentos tranquilos</span></span></div>
+        <div class="ds-track">
+          <div class="ds-dot" onclick="dsClick(this,'extro-intro',1)"></div>
+          <div class="ds-dot" onclick="dsClick(this,'extro-intro',2)"></div>
+          <div class="ds-dot" onclick="dsClick(this,'extro-intro',3)"></div>
+          <div class="ds-dot" onclick="dsClick(this,'extro-intro',4)"></div>
+          <div class="ds-dot" onclick="dsClick(this,'extro-intro',5)"></div>
+        </div>
+      </div>
+
+      <div class="ds-row">
+        <div class="ds-labels"><span class="ds-label">🔬 Perfeccionistas<br><span style="opacity:0.5;font-size:11px">El detalle importa enormemente</span></span><span class="ds-label right">🌊 Fluidos<br><span style="opacity:0.5;font-size:11px">Lo importante es el ambiente, no el detalle</span></span></div>
+        <div class="ds-track">
+          <div class="ds-dot" onclick="dsClick(this,'perfec-fluido',1)"></div>
+          <div class="ds-dot" onclick="dsClick(this,'perfec-fluido',2)"></div>
+          <div class="ds-dot" onclick="dsClick(this,'perfec-fluido',3)"></div>
+          <div class="ds-dot" onclick="dsClick(this,'perfec-fluido',4)"></div>
+          <div class="ds-dot" onclick="dsClick(this,'perfec-fluido',5)"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     APERTURA A PROPUESTAS
+══════════════════════════════════════════════════════ -->
+<div class="screen" data-id="apertura">
+  <div class="content">
+    <span class="block-label new">Bloque 12 · Personalidad y decisiones</span>
+    <h2 class="q-title">¿Hasta dónde estáis<br>dispuestos a <em>sorprender</em><br>a vuestros invitados?</h2>
+    <p class="q-sub">Si os propusiéramos algo que nunca habéis visto en una boda, ¿lo consideraríais?</p>
+    <div class="cards-grid two" style="margin-bottom:20px">
+      <div class="card" onclick="pickStay(this,'apertura','Sí, cuanto más original mejor — queremos que sea irrepetible')"><div class="ci">🚀</div><div class="ct">Cuanto más original, mejor. Queremos que sea irrepetible.</div><div class="ck"></div></div>
+      <div class="card" onclick="pickStay(this,'apertura','Abiertos si tiene sentido con nosotros — pero con fundamento')"><div class="ci">🌱</div><div class="ct">Abiertos si tiene sentido con nosotros — con fundamento.</div><div class="ck"></div></div>
+      <div class="card" onclick="pickStay(this,'apertura','Queremos cosas diferentes pero dentro de lo reconocible')"><div class="ci">✨</div><div class="ct">Cosas diferentes, pero dentro de lo reconocible.</div><div class="ck"></div></div>
+      <div class="card" onclick="pickStay(this,'apertura','Preferimos lo clásico bien ejecutado — sin experimentos')"><div class="ci">🏛️</div><div class="ct">Preferimos lo clásico bien ejecutado. Sin experimentos.</div><div class="ck"></div></div>
+    </div>
+    <div class="input-group">
+      <label>¿Qué tendría que cumplirse para que una idea atrevida os pareciera un sí?</label>
+      <input type="text" id="q-apertura-condicion" placeholder="Que tenga sentido con nosotros, que no incomode a la familia, que sea elegante...">
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     CÓMO SON COMO ANFITRIONES
+══════════════════════════════════════════════════════ -->
+<div class="screen" data-id="anfitriones">
+  <div class="content">
+    <span class="block-label new">Bloque 12 · Personalidad y decisiones</span>
+    <h2 class="q-title">¿Cómo sois<br>como <em>anfitriones?</em></h2>
+    <p class="q-sub">Cuando tenéis gente en casa o preparáis una cena, ¿qué es lo que más os importa?</p>
+    <div class="cards-grid two" style="margin-bottom:20px">
+      <div class="card" onclick="multi3(this,'anfitriones','Que nadie se quede con hambre ni sed')"><div class="ci">🥂</div><div class="ct">Que nadie se quede con hambre ni sed</div><div class="ck"></div></div>
+      <div class="card" onclick="multi3(this,'anfitriones','Que el ambiente sea especial y la estética cuide')"><div class="ci">🕯️</div><div class="ct">Que el ambiente sea especial y cuide</div><div class="ck"></div></div>
+      <div class="card" onclick="multi3(this,'anfitriones','Que la gente se ría y disfrute sin parar')"><div class="ci">😂</div><div class="ct">Que la gente se ría y disfrute</div><div class="ck"></div></div>
+      <div class="card" onclick="multi3(this,'anfitriones','Que cada invitado se sienta especial y visto')"><div class="ci">🤍</div><div class="ct">Que cada invitado se sienta especial</div><div class="ck"></div></div>
+      <div class="card" onclick="multi3(this,'anfitriones','Que la comida sea el protagonista y sorprenda')"><div class="ci">🍽️</div><div class="ct">Que la comida sorprenda y sea el centro</div><div class="ck"></div></div>
+      <div class="card" onclick="multi3(this,'anfitriones','Que la conversación fluya y se creen conexiones')"><div class="ci">💬</div><div class="ct">Que la conversación fluya y se conecte</div><div class="ck"></div></div>
+    </div>
+    <div class="input-group">
+      <label>¿Cuál es el cumplido que más os gusta recibir de vuestros invitados?</label>
+      <input type="text" id="q-cumplido" placeholder="Cuando alguien nos dice que en nuestra casa / en nuestra boda...">
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     TOMA DE DECISIONES
+══════════════════════════════════════════════════════ -->
+<div class="screen" data-id="decisiones">
+  <div class="content">
+    <span class="block-label new">Bloque 12 · Personalidad y decisiones</span>
+    <h2 class="q-title">¿Cómo tomáis<br><em>decisiones</em> importantes<br>juntos?</h2>
+    <div style="display:flex;flex-direction:column;gap:24px">
+      <div>
+        <p style="font-size:13px;color:var(--dim);margin-bottom:12px">¿Quién suele proponer las ideas y llevar la iniciativa?</p>
+        <div class="yn-row">
+          <button class="yn-btn" onclick="selectYN(this,'quien-idea','Uno de nosotros sobre todo')">Uno/a suele liderar</button>
+          <button class="yn-btn" onclick="selectYN(this,'quien-idea','Los dos por igual')">Los dos igual</button>
+          <button class="yn-btn" onclick="selectYN(this,'quien-idea','Depende del tema')">Depende del tema</button>
+        </div>
+      </div>
+      <div>
+        <p style="font-size:13px;color:var(--dim);margin-bottom:12px">Ante una decisión importante que no os convence del todo, ¿qué hacéis?</p>
+        <div class="cards-grid two">
+          <div class="card" onclick="pickStay(this,'decision-estilo','Pedimos más información y comparamos opciones')"><div class="ci">🔍</div><div class="ct">Pedimos más info y comparamos opciones</div><div class="ck"></div></div>
+          <div class="card" onclick="pickStay(this,'decision-estilo','Consultamos con alguien de confianza')"><div class="ci">👥</div><div class="ct">Consultamos con alguien de confianza</div><div class="ck"></div></div>
+          <div class="card" onclick="pickStay(this,'decision-estilo','Nos dejamos llevar por lo que nos emociona')"><div class="ci">❤️</div><div class="ct">Nos dejamos llevar por lo que nos emociona</div><div class="ck"></div></div>
+          <div class="card" onclick="pickStay(this,'decision-estilo','Lo dejamos reposar y volvemos con perspectiva')"><div class="ci">🌙</div><div class="ct">Lo dejamos reposar y volvemos con perspectiva</div><div class="ck"></div></div>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>¿Hay alguien más (familia, amigos) cuya opinión tenga peso en cómo planificáis la boda?</label>
+        <input type="text" id="q-influencia" placeholder="La familia de... / Nadie más, decidimos nosotros solos / ...">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GUSTOS GASTRONÓMICOS -->
+<div class="screen" data-id="comida-favorita">
+  <div class="content">
+    <span class="block-label new">Bloque 06 · Menú en mesa</span>
+    <h2 class="q-title">¿Cuál es vuestra<br><em>comida favorita?</em></h2>
+    <p class="q-sub">Platos, cocinas, restaurantes que os encantan. Cuanto más específicos, mejor.</p>
+    <div class="input-group">
+      <label>Lo que más os gusta comer</label>
+      <textarea id="q-comida-fav" placeholder="El arroz con bogavante de mi abuela / Los tacos de carne en México / La pasta alla carbonara / Un buen steak tartar..." rows="3"></textarea>
+    </div>
+  </div>
+</div>
+
+<div class="screen" data-id="ingredientes-aman">
+  <div class="content">
+    <span class="block-label new">Bloque 06 · Menú en mesa</span>
+    <h2 class="q-title">Ingredientes y productos<br>que <em>adoráis</em></h2>
+    <p class="q-sub">Elegid los que os hagan brillar los ojos. Podéis marcar todos los que queráis.</p>
+    <div class="tag-row">
+      <div class="tag" onclick="tog(this,'ing-aman','Trufa')">🍄 Trufa</div>
+      <div class="tag" onclick="tog(this,'ing-aman','Foie')">🦆 Foie</div>
+      <div class="tag" onclick="tog(this,'ing-aman','Marisco')">🦞 Marisco</div>
+      <div class="tag" onclick="tog(this,'ing-aman','Ostras')">🦪 Ostras</div>
+      <div class="tag" onclick="tog(this,'ing-aman','Caviar')">🫧 Caviar</div>
+      <div class="tag" onclick="tog(this,'ing-aman','Queso curado')">🧀 Queso curado</div>
+      <div class="tag" onclick="tog(this,'ing-aman','Jamón ibérico')">🐷 Jamón ibérico</div>
+      <div class="tag" onclick="tog(this,'ing-aman','Arroz / Paella')">🍚 Arroz / Paella</div>
+      <div class="tag" onclick="tog(this,'ing-aman','Carne roja')">🥩 Carne roja</div>
+      <div class="tag" onclick="tog(this,'ing-aman','Pescado azul')">🐟 Pescado azul</div>
+      <div class="tag" onclick="tog(this,'ing-aman','Verduras de temporada')">🥦 Verduras</div>
+      <div class="tag" onclick="tog(this,'ing-aman','Picante')">🌶️ Picante</div>
+      <div class="tag" onclick="tog(this,'ing-aman','Setas / Hongos')">🍄 Setas</div>
+      <div class="tag" onclick="tog(this,'ing-aman','Cítricos')">🍋 Cítricos</div>
+      <div class="tag" onclick="tog(this,'ing-aman','Hierbas aromáticas')">🌿 Hierbas aromáticas</div>
+      <div class="tag" onclick="tog(this,'ing-aman','Chocolate')">🍫 Chocolate</div>
+      <div class="tag" onclick="tog(this,'ing-aman','Frutas exóticas')">🥭 Frutas exóticas</div>
+      <div class="tag" onclick="tog(this,'ing-aman','Frutos del mar / Algas')">🌊 Algas / Mar</div>
+    </div>
+    <div class="input-group" style="margin-top:8px">
+      <label>Algún otro que no aparezca</label>
+      <input type="text" id="q-ing-aman-extra" placeholder="...">
+    </div>
+  </div>
+</div>
+
+<div class="screen" data-id="ingredientes-odian">
+  <div class="content">
+    <span class="block-label new">Bloque 06 · Menú en mesa</span>
+    <h2 class="q-title">¿Y qué es lo que<br><em>jamás querríais</em><br>en vuestro menú?</h2>
+    <p class="q-sub">Alimentos, texturas, preparaciones que os resultan desagradables o directamente imposibles.</p>
+    <div class="input-group">
+      <textarea id="q-odian" placeholder="El cilantro, cualquier cosa demasiado picante, las vísceras, la remolacha..." rows="3"></textarea>
+    </div>
+    <div class="tag-row" style="margin-top:4px">
+      <div class="tag" onclick="tog(this,'ing-odian','Vísceras')">🫀 Vísceras</div>
+      <div class="tag" onclick="tog(this,'ing-odian','Muy picante')">🌶️ Muy picante</div>
+      <div class="tag" onclick="tog(this,'ing-odian','Cilantro')">🌿 Cilantro</div>
+      <div class="tag" onclick="tog(this,'ing-odian','Remolacha')">🟣 Remolacha</div>
+      <div class="tag" onclick="tog(this,'ing-odian','Queso muy fuerte')">🧀 Queso intenso</div>
+      <div class="tag" onclick="tog(this,'ing-odian','Pescado crudo')">🐟 Crudo de pescado</div>
+      <div class="tag" onclick="tog(this,'ing-odian','Texturas gelatinosas')">🫧 Texturas gelatin.</div>
+      <div class="tag" onclick="tog(this,'ing-odian','Comida muy ácida')">🍋 Muy ácido</div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" data-id="bebidas-fav">
+  <div class="content scr">
+    <span class="block-label">Bloque 05 · Bebidas del cóctel</span>
+    <h2 class="q-title">Durante el cóctel,<br>¿qué bebidas os importan?</h2>
+    <p class="q-sub">Marcamos prioridades para diseñar una bienvenida equilibrada, con o sin alcohol, y ajustada al estilo de vuestra boda.</p>
+    <div style="display:flex;flex-direction:column;gap:24px">
+      <div>
+        <p style="font-size:13px;color:var(--dim);margin-bottom:12px">¿Hay algún tipo de bebida especialmente importante para vosotros?</p>
+        <div class="tag-row">
+          <div class="tag" onclick="tog(this,'bebidas-coctel','Cerveza')">Cerveza</div>
+          <div class="tag" onclick="tog(this,'bebidas-coctel','Vino blanco')">Vino blanco</div>
+          <div class="tag" onclick="tog(this,'bebidas-coctel','Vino tinto')">Vino tinto</div>
+          <div class="tag" onclick="tog(this,'bebidas-coctel','Vermut')">Vermut</div>
+          <div class="tag" onclick="tog(this,'bebidas-coctel','Aperitivos')">Aperitivos</div>
+          <div class="tag" onclick="tog(this,'bebidas-coctel','Cócteles')">Cócteles</div>
+          <div class="tag" onclick="tog(this,'bebidas-coctel','Cócteles sin alcohol')">Cócteles sin alcohol</div>
+          <div class="tag" onclick="tog(this,'bebidas-coctel','Refrescos y bebidas sin alcohol')">Refrescos y sin alcohol</div>
+          <div class="tag" onclick="tog(this,'bebidas-coctel','Espumosos')">Espumosos</div>
+          <div class="tag" onclick="tog(this,'bebidas-coctel','No tenemos ninguna prioridad concreta')">Sin prioridad concreta</div>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Marca, estilo o tipo de servicio a tener en cuenta</label>
+        <textarea id="q-bebidas-coctel-marcas" placeholder="Vermut concreto, cerveza favorita, cóctel de bienvenida, servicio con bandeja, estación de aguas saborizadas..." rows="2"></textarea>
+      </div>
+      <div>
+        <p style="font-size:13px;color:var(--dim);margin-bottom:12px">¿Qué importancia le dais a la bebida durante el cóctel?</p>
+        <div class="cards-grid">
+          <div class="card" onclick="pickStay(this,'bebidas-coctel-imp','Muy alta')"><div class="ct">Muy alta</div><div class="ck"></div></div>
+          <div class="card" onclick="pickStay(this,'bebidas-coctel-imp','Alta')"><div class="ct">Alta</div><div class="ck"></div></div>
+          <div class="card" onclick="pickStay(this,'bebidas-coctel-imp','Media')"><div class="ct">Media</div><div class="ck"></div></div>
+          <div class="card" onclick="pickStay(this,'bebidas-coctel-imp','Baja')"><div class="ct">Baja</div><div class="ck"></div></div>
+          <div class="card" onclick="pickStay(this,'bebidas-coctel-imp','Nos dejamos asesorar')"><div class="ct">Nos dejamos asesorar</div><div class="ck"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" data-id="restaurante-marcado">
+  <div class="content">
+    <span class="block-label new">Bloque 12 · Inspiración gastronómica</span>
+    <h2 class="q-title">¿Hay algún restaurante<br>o comida que os haya<br><em>marcado para siempre?</em></h2>
+    <p class="q-sub">Ese lugar al que siempre volvéis, esa cena que no podéis olvidar. Nombre, ciudad, qué comisteis.</p>
+    <div class="input-group">
+      <textarea id="q-resto" placeholder="La cena de aniversario en el restaurante X... / Aquella paella en Valencia cuando nos pedimos... / El menú de 18 platos en..." rows="3"></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- HOBBIES Y ESTILO DE VIDA -->
+<div class="screen" data-id="hobbies">
+  <div class="content scr">
+    <span class="block-label new">Bloque 12 · Estilo de vida</span>
+    <h2 class="q-title">¿Cuáles son vuestras<br><em>aficiones y pasiones?</em></h2>
+    <p class="q-sub">Todo lo que llena vuestro tiempo libre. Sin límite de selección.</p>
+    <div class="cards-grid">
+      <div class="card" onclick="multi(this,'hobbies','Cocinar en casa')"><div class="ci">👨‍🍳</div><div class="ct">Cocinar en casa</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'hobbies','Ir a restaurantes')"><div class="ci">🍽️</div><div class="ct">Ir a restaurantes</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'hobbies','Viajar')"><div class="ci">✈️</div><div class="ct">Viajar</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'hobbies','Naturaleza / Senderismo')"><div class="ci">🏔️</div><div class="ct">Naturaleza / Senderismo</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'hobbies','Playa / Mar')"><div class="ci">🌊</div><div class="ct">Playa / Mar</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'hobbies','Música en directo')"><div class="ci">🎸</div><div class="ct">Música en directo</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'hobbies','Fotografía')"><div class="ci">📷</div><div class="ct">Fotografía</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'hobbies','Arte / Museos')"><div class="ci">🖼️</div><div class="ct">Arte / Museos</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'hobbies','Cine / Series')"><div class="ci">🎬</div><div class="ct">Cine / Series</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'hobbies','Lectura')"><div class="ci">📚</div><div class="ct">Lectura</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'hobbies','Moda / Diseño')"><div class="ci">👗</div><div class="ct">Moda / Diseño</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'hobbies','Wellness / Yoga / Meditación')"><div class="ci">🧘</div><div class="ct">Wellness / Yoga</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'hobbies','Fiesta / Salir de noche')"><div class="ci">🥳</div><div class="ct">Fiesta / Salir de noche</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'hobbies','Videojuegos / Tecnología')"><div class="ci">🎮</div><div class="ct">Videojuegos / Tecnología</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'hobbies','Jardinería / Plantas')"><div class="ci">🌿</div><div class="ct">Jardinería / Plantas</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'hobbies','Manualidades / DIY')"><div class="ci">🎨</div><div class="ct">Manualidades / DIY</div><div class="ck"></div></div>
+    </div>
+    <div class="input-group" style="margin-top:4px">
+      <label>Alguna otra que no aparezca</label>
+      <input type="text" id="q-hobby-extra" placeholder="Lo que os defina como pareja...">
+    </div>
+  </div>
+</div>
+
+<div class="screen" data-id="deporte">
+  <div class="content">
+    <span class="block-label new">Bloque 12 · Estilo de vida</span>
+    <h2 class="q-title">¿Practicáis<br>algún <em>deporte?</em></h2>
+    <div class="cards-grid">
+      <div class="card" onclick="multi(this,'deporte','Running')"><div class="ci">🏃</div><div class="ct">Running</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'deporte','Ciclismo')"><div class="ci">🚴</div><div class="ct">Ciclismo</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'deporte','Natación')"><div class="ci">🏊</div><div class="ct">Natación</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'deporte','Fútbol / Pádel')"><div class="ci">⚽</div><div class="ct">Fútbol / Pádel</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'deporte','Tennis / Squash')"><div class="ci">🎾</div><div class="ct">Tenis / Squash</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'deporte','Montaña / Escalada')"><div class="ci">🧗</div><div class="ct">Montaña / Escalada</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'deporte','Surf / Kite')"><div class="ci">🏄</div><div class="ct">Surf / Kite</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'deporte','Gym / Crossfit')"><div class="ci">🏋️</div><div class="ct">Gym / Crossfit</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'deporte','Golf')"><div class="ci">⛳</div><div class="ct">Golf</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'deporte','Ninguno')"><div class="ci">😌</div><div class="ct">No practicamos deporte</div><div class="ck"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" data-id="viajes">
+  <div class="content">
+    <span class="block-label new">Bloque 12 · Estilo de vida</span>
+    <h2 class="q-title">¿Qué tipo de <em>viajeros</em><br>sois?</h2>
+    <div class="cards-grid two" style="margin-bottom:20px">
+      <div class="card" onclick="multi(this,'tipo-viaje','Destinos gastronómicos')"><div class="ci">🍽️</div><div class="ct">Destinos gastronómicos</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'tipo-viaje','Ciudades culturales')"><div class="ci">🏛️</div><div class="ct">Ciudades culturales</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'tipo-viaje','Naturaleza y aventura')"><div class="ci">🏔️</div><div class="ct">Naturaleza y aventura</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'tipo-viaje','Playa y relax')"><div class="ci">🏖️</div><div class="ct">Playa y relax</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'tipo-viaje','Hoteles de lujo')"><div class="ci">🏨</div><div class="ct">Hoteles de lujo</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'tipo-viaje','Viajes off-track / únicos')"><div class="ci">🗺️</div><div class="ct">Viajes únicos, off-track</div><div class="ck"></div></div>
+    </div>
+    <div class="input-group">
+      <label>¿Cuál ha sido vuestro viaje favorito juntos?</label>
+      <input type="text" id="q-viaje-fav" placeholder="Japón en otoño / Una semana en Sicilia / El road trip por la Costa Amalfitana...">
+    </div>
+  </div>
+</div>
+
+<div class="screen" data-id="musica-diaria">
+  <div class="content">
+    <span class="block-label new">Bloque 12 · Estilo de vida</span>
+    <h2 class="q-title">¿Qué música escucháis<br>en vuestro <em>día a día?</em></h2>
+    <p class="q-sub">La que suena cuando cocinéis, cuando vais en coche, cuando estáis en casa.</p>
+    <div class="cards-grid">
+      <div class="card" onclick="multi(this,'musica-diaria','Pop / Indie')"><div class="ci">🎵</div><div class="ct">Pop / Indie</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'musica-diaria','Jazz / Soul')"><div class="ci">🎷</div><div class="ct">Jazz / Soul</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'musica-diaria','Electrónica / House')"><div class="ci">🎧</div><div class="ct">Electrónica / House</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'musica-diaria','R&B / Funk')"><div class="ci">🎤</div><div class="ct">R&B / Funk</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'musica-diaria','Rock / Alternativo')"><div class="ci">🎸</div><div class="ct">Rock / Alternativo</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'musica-diaria','Flamenco / Fusión española')"><div class="ci">💃</div><div class="ct">Flamenco / Fusión</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'musica-diaria','Latino / Reggaetón')"><div class="ci">🥁</div><div class="ct">Latino / Reggaetón</div><div class="ck"></div></div>
+      <div class="card" onclick="multi(this,'musica-diaria','Clásica / Bandas sonoras')"><div class="ci">🎻</div><div class="ct">Clásica / B.S.O.</div><div class="ck"></div></div>
+    </div>
+    <div class="input-group" style="margin-top:8px">
+      <label>Artista o canción que os define como pareja</label>
+      <input type="text" id="q-cancion-pareja" placeholder="La que siempre que suena os miráis...">
+    </div>
+  </div>
+</div>
+
+<div class="screen" data-id="planes-fav">
+  <div class="content">
+    <span class="block-label new">Bloque 12 · Estilo de vida</span>
+    <h2 class="q-title">El plan de fin de semana<br><em>perfecto</em> para vosotros</h2>
+    <p class="q-sub">El sábado es vuestro. ¿Qué hacéis? Elegid hasta 3.</p>
+    <div class="cards-grid">
+      <div class="card" onclick="multi3(this,'plan-fds','Cena en un restaurante especial')"><div class="ci">🍾</div><div class="ct">Cena en restaurante especial</div><div class="ck"></div></div>
+      <div class="card" onclick="multi3(this,'plan-fds','Ruta gastronómica por la ciudad')"><div class="ci">🗺️</div><div class="ct">Ruta gastronómica</div><div class="ck"></div></div>
+      <div class="card" onclick="multi3(this,'plan-fds','Escapada rural o de naturaleza')"><div class="ci">🌿</div><div class="ct">Escapada rural / naturaleza</div><div class="ck"></div></div>
+      <div class="card" onclick="multi3(this,'plan-fds','Una tarde en casa con buena película')"><div class="ci">🛋️</div><div class="ct">Tarde en casa, buena peli</div><div class="ck"></div></div>
+      <div class="card" onclick="multi3(this,'plan-fds','Mercado, cocinar y mesa larga')"><div class="ci">🫕</div><div class="ct">Mercado, cocinar, sobremesa</div><div class="ck"></div></div>
+      <div class="card" onclick="multi3(this,'plan-fds','Concierto o evento cultural')"><div class="ci">🎭</div><div class="ct">Concierto / evento cultural</div><div class="ck"></div></div>
+      <div class="card" onclick="multi3(this,'plan-fds','Deporte y terraceo después')"><div class="ci">🏃</div><div class="ct">Deporte y terraza después</div><div class="ck"></div></div>
+      <div class="card" onclick="multi3(this,'plan-fds','Noche de fiesta')"><div class="ci">🥳</div><div class="ct">Noche de fiesta</div><div class="ck"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" data-id="algo-secreto">
+  <div class="content">
+    <span class="block-label new">Bloque 12 · Personalización</span>
+    <h2 class="q-title">¿Hay algo que<br>casi nadie sabe de<br>vosotros <em>como pareja?</em></h2>
+    <p class="q-sub">Un ritual, una rareza compartida, algo que os hace únicos. Es opcional, pero los detalles más íntimos inspiran los mejores momentos de una boda.</p>
+    <div class="input-group">
+      <textarea id="q-secreto" placeholder="Tenemos una canción que solo bailamos nosotros dos... / Siempre empezamos los viajes con... / Nuestro plato de reconciliación es siempre..." rows="4"></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     BLOQUE 03 · VISIÓN GENERAL
+══════════════════════════════════════════════════════ -->
+<div class="screen" data-id="boda-frase">
+  <div class="content">
+    <span class="block-label">Bloque 01 · Datos generales de la boda</span>
+    <h2 class="q-title">Describid vuestra boda<br>ideal en <em>una sola frase</em></h2>
+    <div class="input-group">
+      <textarea id="q-boda-frase" placeholder="Una noche mediterránea que parezca un sueño del que no queremos despertar..." rows="3"></textarea>
+    </div>
+  </div>
+</div>
+
+<div class="screen" data-id="tipo-boda">
+  <div class="content scr">
+    <span class="block-label">Bloque 01 · Datos generales de la boda</span>
+    <h2 class="q-title">¿Qué tipo de boda<br>os <em>imagináis?</em></h2>
+    <p class="q-sub">Hasta 3 opciones.</p>
+    <div class="cards-grid">
+      <div class="card" onclick="multi3(this,'tipo-boda','Íntima y emotiva')"><div class="ci">🕯️</div><div class="ct">Íntima y emotiva</div><div class="ck"></div></div>
+      <div class="card" onclick="multi3(this,'tipo-boda','Grande y festiva')"><div class="ci">🎉</div><div class="ct">Grande y festiva</div><div class="ck"></div></div>
+      <div class="card" onclick="multi3(this,'tipo-boda','Elegante y formal')"><div class="ci">🥂</div><div class="ct">Elegante y formal</div><div class="ck"></div></div>
+      <div class="card" onclick="multi3(this,'tipo-boda','Gastronómica y experiencial')"><div class="ci">🍽️</div><div class="ct">Gastronómica y experiencial</div><div class="ck"></div></div>
+      <div class="card" onclick="multi3(this,'tipo-boda','Natural y bohemia')"><div class="ci">🌿</div><div class="ct">Natural y bohemia</div><div class="ck"></div></div>
+      <div class="card" onclick="multi3(this,'tipo-boda','Sofisticada y editorial')"><div class="ci">🖤</div><div class="ct">Sofisticada y editorial</div><div class="ck"></div></div>
+      <div class="card" onclick="multi3(this,'tipo-boda','Informal y desenfadada')"><div class="ci">☀️</div><div class="ct">Informal y desenfadada</div><div class="ck"></div></div>
+      <div class="card" onclick="multi3(this,'tipo-boda','Boda destino')"><div class="ci">✈️</div><div class="ct">Boda destino</div><div class="ck"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" data-id="digan">
+  <div class="content">
+    <span class="block-label">Bloque 01 · Datos generales de la boda</span>
+    <h2 class="q-title">Al terminar la noche,<br>¿qué queréis que digan<br>vuestros invitados?</h2>
+    <div class="input-group">
+      <textarea id="q-digan" placeholder="Queremos que sientan que han vivido algo que no olvidarán jamás..." rows="3"></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- BLOQUE 04 · FECHA -->
+<div class="screen" data-id="fecha">
+  <div class="content">
+    <span class="block-label">Bloque 01 · Datos generales de la boda</span>
+    <h2 class="q-title">¿Tenéis una <em>fecha</em><br>en mente?</h2>
+    <div class="input-row">
+      <div class="input-group"><label>Fecha ideal</label><input type="date" id="q-fecha"></div>
+      <div class="input-group"><label>Fecha alternativa</label><input type="date" id="q-fecha-alt"></div>
+    </div>
+    <p class="q-sub">Si aún no tenéis fecha, indicad la época del año.</p>
+    <div class="cards-grid three" style="margin-top:4px">
+      <div class="card" onclick="multi(this,'epoca','Primavera')"><div class="ct">🌸 Primavera</div></div>
+      <div class="card" onclick="multi(this,'epoca','Verano')"><div class="ct">☀️ Verano</div></div>
+      <div class="card" onclick="multi(this,'epoca','Otoño')"><div class="ct">🍂 Otoño</div></div>
+      <div class="card" onclick="multi(this,'epoca','Invierno')"><div class="ct">❄️ Invierno</div></div>
+      <div class="card" onclick="multi(this,'epoca','Sin preferencia')"><div class="ct">🌀 Sin preferencia</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- BLOQUE 05 · INVITADOS -->
+<div class="screen" data-id="invitados">
+  <div class="content">
+    <span class="block-label">Bloque 01 · Datos generales de la boda</span>
+    <h2 class="q-title">¿Cuántos invitados<br>os <em>acompañarán?</em></h2>
+    <div class="cards-grid two">
+      <div class="card" onclick="pickStay(this,'invitados','Menos de 50')"><div class="ci">🌿</div><div class="ct">Menos de 50 · Muy íntima</div><div class="ck"></div></div>
+      <div class="card" onclick="pickStay(this,'invitados','50–80')"><div class="ci">✨</div><div class="ct">50–80 · Íntima</div><div class="ck"></div></div>
+      <div class="card" onclick="pickStay(this,'invitados','80–120')"><div class="ci">🌸</div><div class="ct">80–120 · Media</div><div class="ck"></div></div>
+      <div class="card" onclick="pickStay(this,'invitados','120–180')"><div class="ci">🎊</div><div class="ct">120–180 · Grande</div><div class="ck"></div></div>
+      <div class="card" onclick="pickStay(this,'invitados','Más de 180')"><div class="ci">🎉</div><div class="ct">Más de 180</div><div class="ck"></div></div>
+      <div class="card" onclick="pickStay(this,'invitados','Aún no lo sabemos')"><div class="ci">🤔</div><div class="ct">Aún no lo sabemos</div><div class="ck"></div></div>
+    </div>
+    <div class="input-group" style="margin-top:18px;max-width:320px">
+      <label>Número estimado si lo tenéis</label>
+      <input type="text" id="q-invitados-estimado" placeholder="Ej. 135 adultos + 12 niños">
+    </div>
+  </div>
+</div>
+
+<div class="screen" data-id="invitados-detalle">
+  <div class="content">
+    <span class="block-label">Bloque 01 · Invitados, niños y bebés</span>
+    <h2 class="q-title">Detalles sobre<br>vuestros <em>invitados</em></h2>
+    <div style="display:flex;flex-direction:column;gap:24px">
+      <div>
+        <p style="font-size:13px;color:var(--dim);margin-bottom:10px">¿Habrá niños o bebés entre los invitados?</p>
+        <div class="yn-row">
+          <button class="yn-btn" onclick="selectYN(this,'inv-ninos','Sí')">Sí</button>
+          <button class="yn-btn" onclick="selectYN(this,'inv-ninos','No')">No</button>
+          <button class="yn-btn" onclick="selectYN(this,'inv-ninos','Quizás alguno')">Quizás</button>
+        </div>
+        <div class="cond-extra" id="extra-inv-ninos">
+          <div class="input-group" style="margin-top:14px"><label>¿Aprox. cuántos niños o bebés?</label><input type="text" id="q-inv-ninos-n" placeholder="Número estimado y edades"></div>
+        </div>
+      </div>
+      <div>
+        <p style="font-size:13px;color:var(--dim);margin-bottom:10px">¿Invitados desde el extranjero?</p>
+        <div class="yn-row">
+          <button class="yn-btn" onclick="selectYN(this,'inv-inter','Sí')">Sí</button>
+          <button class="yn-btn" onclick="selectYN(this,'inv-inter','No')">No</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BLOQUE 02 · CEREMONIA -->
+<div class="screen" data-id="ceremonia">
+  <div class="content scr">
+    <span class="block-label">Bloque 02 · Ceremonia en la finca</span>
+    <h2 class="q-title">¿Queréis celebrar la<br><em>ceremonia</em> en la finca?</h2>
+    <p class="q-sub">Esta respuesta nos ayuda a preparar una propuesta realista: espacios, decoración, tiempos, música y necesidades técnicas.</p>
+    <div class="cards-grid">
+      <div class="card" onclick="pickStay(this,'ceremonia-finca','Sí, queremos hacer la ceremonia en la finca')"><div class="ci">💍</div><div class="ct">Sí, queremos hacer la ceremonia en la finca.</div><div class="ck"></div></div>
+      <div class="card" onclick="pickStay(this,'ceremonia-finca','No, vendremos ya casados / la ceremonia será en otro lugar')"><div class="ci">🏛️</div><div class="ct">No, vendremos ya casados o será en otro lugar.</div><div class="ck"></div></div>
+      <div class="card" onclick="pickStay(this,'ceremonia-finca','Todavía no lo tenemos claro')"><div class="ci">🌀</div><div class="ct">Todavía no lo tenemos claro.</div><div class="ck"></div></div>
+    </div>
+
+    <div class="cond-extra" id="extra-ceremonia-detalle">
+      <div style="display:flex;flex-direction:column;gap:24px;margin-top:24px">
+        <div>
+          <p style="font-size:13px;color:var(--dim);margin-bottom:12px">¿Qué tipo de ceremonia tenéis en mente?</p>
+          <div class="cards-grid">
+            <div class="card" onclick="pickStay(this,'ceremonia-tipo','Civil')"><div class="ci">⚖️</div><div class="ct">Civil</div><div class="ck"></div></div>
+            <div class="card" onclick="pickStay(this,'ceremonia-tipo','Simbólica')"><div class="ci">🕊️</div><div class="ct">Simbólica</div><div class="ck"></div></div>
+            <div class="card" onclick="pickStay(this,'ceremonia-tipo','Religiosa')"><div class="ci">🙏</div><div class="ct">Religiosa</div><div class="ck"></div></div>
+            <div class="card" onclick="pickStay(this,'ceremonia-tipo','Ceremonia personalizada')"><div class="ci">✨</div><div class="ct">Personalizada</div><div class="ck"></div></div>
+            <div class="card" onclick="pickStay(this,'ceremonia-tipo','Todavía no lo sabemos')"><div class="ci">🌀</div><div class="ct">Todavía no lo sabemos</div><div class="ck"></div></div>
+          </div>
+        </div>
+
+        <div>
+          <p style="font-size:13px;color:var(--dim);margin-bottom:12px">¿Tenéis ya una persona prevista para oficiar la ceremonia?</p>
+          <div class="cards-grid three">
+            <div class="card" onclick="pickStay(this,'ceremonia-maestro','Sí, tenemos maestro/a de ceremonias')"><div class="ct">Sí, tenemos maestro/a.</div><div class="ck"></div></div>
+            <div class="card" onclick="pickStay(this,'ceremonia-maestro','No, nos gustaría que nos ayudaseis a buscar uno')"><div class="ct">Nos gustaría que nos ayudaseis.</div><div class="ck"></div></div>
+            <div class="card" onclick="pickStay(this,'ceremonia-maestro','No lo sabemos todavía')"><div class="ct">No lo sabemos todavía.</div><div class="ck"></div></div>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Comentarios sobre el estilo de ceremonia que os gustaría</label>
+          <textarea id="q-ceremonia-estilo-comentarios" placeholder="Más íntima, muy participativa, con lecturas familiares, espiritual, sencilla, solemne..." rows="2"></textarea>
+        </div>
+
+        <div>
+          <p style="font-size:13px;color:var(--dim);margin-bottom:12px">¿Queréis que nos encarguemos nosotros de la decoración floral de la ceremonia?</p>
+          <div class="cards-grid two">
+            <div class="card" onclick="pickStay(this,'ceremonia-floral','Sí, queremos que Perigallo / La Llaguna nos proponga la decoración floral')"><div class="ct">Sí, queremos vuestra propuesta floral.</div><div class="ck"></div></div>
+            <div class="card" onclick="pickStay(this,'ceremonia-floral','No, preferimos encargarnos nosotros')"><div class="ct">No, preferimos encargarnos nosotros.</div><div class="ck"></div></div>
+            <div class="card" onclick="pickStay(this,'ceremonia-floral','Tenemos florista externa')"><div class="ct">Tenemos florista externa.</div><div class="ck"></div></div>
+            <div class="card" onclick="pickStay(this,'ceremonia-floral','Nos gustaría valorar opciones')"><div class="ct">Nos gustaría valorar opciones.</div><div class="ck"></div></div>
+          </div>
+          <div class="cond-extra" id="extra-ceremonia-floral">
+            <div style="margin-top:18px">
+              <p style="font-size:13px;color:var(--dim);margin-bottom:12px">¿Tenéis alguna idea de estilo floral?</p>
+              <div class="tag-row">
+                <div class="tag" onclick="tog(this,'ceremonia-floral-estilo','Romántico')">Romántico</div>
+                <div class="tag" onclick="tog(this,'ceremonia-floral-estilo','Silvestre')">Silvestre</div>
+                <div class="tag" onclick="tog(this,'ceremonia-floral-estilo','Mediterráneo')">Mediterráneo</div>
+                <div class="tag" onclick="tog(this,'ceremonia-floral-estilo','Minimalista')">Minimalista</div>
+                <div class="tag" onclick="tog(this,'ceremonia-floral-estilo','Elegante / clásico')">Elegante / clásico</div>
+                <div class="tag" onclick="tog(this,'ceremonia-floral-estilo','Muy natural')">Muy natural</div>
+                <div class="tag" onclick="tog(this,'ceremonia-floral-estilo','No tenemos una idea definida')">Sin idea definida</div>
+              </div>
+              <div class="input-group" style="margin-top:14px">
+                <label>Referencias, colores, flores o ideas concretas</label>
+                <textarea id="q-ceremonia-floral-ideas" placeholder="Colores, flores, referencias de Pinterest, inspiración mediterránea, arco floral, pasillo..." rows="2"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <p style="font-size:13px;color:var(--dim);margin-bottom:12px">¿Qué presupuesto aproximado os gustaría destinar a la ceremonia y su decoración?</p>
+          <div class="cards-grid">
+            <div class="card" onclick="pickStay(this,'ceremonia-presupuesto','Menos de 600 €')"><div class="ct">Menos de 600 €</div><div class="ck"></div></div>
+            <div class="card" onclick="pickStay(this,'ceremonia-presupuesto','Entre 600 € y 1.000 €')"><div class="ct">600 € - 1.000 €</div><div class="ck"></div></div>
+            <div class="card" onclick="pickStay(this,'ceremonia-presupuesto','Entre 1.000 € y 1.500 €')"><div class="ct">1.000 € - 1.500 €</div><div class="ck"></div></div>
+            <div class="card" onclick="pickStay(this,'ceremonia-presupuesto','Más de 1.500 €')"><div class="ct">Más de 1.500 €</div><div class="ck"></div></div>
+            <div class="card" onclick="pickStay(this,'ceremonia-presupuesto','No lo sabemos todavía')"><div class="ct">No lo sabemos todavía</div><div class="ck"></div></div>
+          </div>
+        </div>
+
+        <div>
+          <p style="font-size:13px;color:var(--dim);margin-bottom:12px">¿Os gustaría incluir música durante la ceremonia?</p>
+          <div class="tag-row">
+            <div class="tag" onclick="tog(this,'ceremonia-musica','Música ambiente')">Música ambiente</div>
+            <div class="tag" onclick="tog(this,'ceremonia-musica','Música en directo')">Música en directo</div>
+            <div class="tag" onclick="tog(this,'ceremonia-musica','Violín, chelo, piano o similar')">Violín, chelo, piano o similar</div>
+            <div class="tag" onclick="tog(this,'ceremonia-musica','Cantante o grupo en directo')">Cantante o grupo en directo</div>
+            <div class="tag" onclick="tog(this,'ceremonia-musica','No')">No</div>
+            <div class="tag" onclick="tog(this,'ceremonia-musica','No lo sabemos todavía')">No lo sabemos todavía</div>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Canciones, momentos musicales o ideas especiales para la ceremonia</label>
+          <textarea id="q-ceremonia-musica-ideas" placeholder="Entrada, lecturas, salida, una canción importante para vosotros..." rows="2"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BLOQUE 07 · ESTILO -->
+<div class="screen" data-id="estilo">
+  <div class="content scr">
+    <span class="block-label">Bloque 12 · Estilo y personalización</span>
+    <h2 class="q-title">¿Cuál es el <em>universo visual</em><br>de vuestra boda?</h2>
+    <p class="q-sub">Hasta 3 opciones.</p>
+    <div class="cards-grid">
+      <div class="card" onclick="multi3(this,'estilo','Mediterráneo')"><div class="ci">🌊</div><div class="ct">Mediterráneo</div><div class="ck"></div></div>
+      <div class="card" onclick="multi3(this,'estilo','Rústico elegante')"><div class="ci">🫒</div><div class="ct">Rústico elegante</div><div class="ck"></div></div>
+      <div class="card" onclick="multi3(this,'estilo','Minimalista')"><div class="ci">◻️</div><div class="ct">Minimalista</div><div class="ck"></div></div>
+      <div class="card" onclick="multi3(this,'estilo','Romántico')"><div class="ci">🌹</div><div class="ct">Romántico</div><div class="ck"></div></div>
+      <div class="card" onclick="multi3(this,'estilo','Clásico')"><div class="ci">🏛️</div><div class="ct">Clásico</div><div class="ck"></div></div>
+      <div class="card" onclick="multi3(this,'estilo','Bohemio')"><div class="ci">🌙</div><div class="ct">Bohemio</div><div class="ck"></div></div>
+      <div class="card" onclick="multi3(this,'estilo','Contemporáneo')"><div class="ci">🖤</div><div class="ct">Contemporáneo</div><div class="ck"></div></div>
+      <div class="card" onclick="multi3(this,'estilo','Editorial')"><div class="ci">📷</div><div class="ct">Editorial</div><div class="ck"></div></div>
+    </div>
+    <div class="input-group" style="margin-top:8px">
+      <label>Paleta de colores o referencias visuales</label>
+      <input type="text" id="q-colores" placeholder="Verdes, terracota y dorado / Blanco, sage y crema / Link Pinterest...">
+    </div>
+  </div>
+</div>
+
+<!-- BLOQUE 03 · ESPACIOS -->
+<div class="screen" data-id="espacios">
+  <div class="content scr">
+    <span class="block-label">Bloque 03 · Espacios y plan B</span>
+    <h2 class="q-title">¿Cómo os imagináis<br>la <em>celebración?</em></h2>
+    <p class="q-sub">La finca cuenta con un salón interior con capacidad aproximada de hasta 150 personas. En exterior podemos valorar sombraje, carpa, distribución del espacio y plan B en caso de meteorología adversa.</p>
+    <div class="cards-grid two">
+      <div class="card" onclick="pickStay(this,'espacio-boda','Principalmente en exterior')"><div class="ci">🌿</div><div class="ct">Principalmente en exterior.</div><div class="ck"></div></div>
+      <div class="card" onclick="pickStay(this,'espacio-boda','Principalmente en interior')"><div class="ci">🏛️</div><div class="ct">Principalmente en interior.</div><div class="ck"></div></div>
+      <div class="card" onclick="pickStay(this,'espacio-boda','Mixta: parte exterior y parte interior')"><div class="ci">✨</div><div class="ct">Mixta: parte exterior y parte interior.</div><div class="ck"></div></div>
+      <div class="card" onclick="pickStay(this,'espacio-boda','Nos gustaría que nos aconsejaseis')"><div class="ci">🌀</div><div class="ct">Nos gustaría que nos aconsejaseis.</div><div class="ck"></div></div>
+    </div>
+    <div class="cond-extra" id="extra-espacios-exterior">
+      <div style="display:flex;flex-direction:column;gap:20px;margin-top:22px">
+        <div>
+          <p style="font-size:13px;color:var(--dim);margin-bottom:12px">¿Os gustaría valorar algún tipo de sombraje o carpa?</p>
+          <div class="cards-grid">
+            <div class="card" onclick="pickStay(this,'sombraje-carpa','Sí, sombraje sencillo')"><div class="ct">Sombraje sencillo</div><div class="ck"></div></div>
+            <div class="card" onclick="pickStay(this,'sombraje-carpa','Sí, carpa completa')"><div class="ct">Carpa completa</div><div class="ck"></div></div>
+            <div class="card" onclick="pickStay(this,'sombraje-carpa','Solo si fuera necesario')"><div class="ct">Solo si fuera necesario</div><div class="ck"></div></div>
+            <div class="card" onclick="pickStay(this,'sombraje-carpa','No')"><div class="ct">No</div><div class="ck"></div></div>
+            <div class="card" onclick="pickStay(this,'sombraje-carpa','No lo sabemos todavía')"><div class="ct">No lo sabemos todavía</div><div class="ck"></div></div>
+          </div>
+        </div>
+        <div>
+          <p style="font-size:13px;color:var(--dim);margin-bottom:12px">¿Queréis que planteemos un plan B interior por meteorología?</p>
+          <div class="cards-grid three">
+            <div class="card" onclick="pickStay(this,'plan-b-meteo','Sí, queremos un plan B definido desde el inicio')"><div class="ct">Sí, definido desde el inicio.</div><div class="ck"></div></div>
+            <div class="card" onclick="pickStay(this,'plan-b-meteo','Solo si la previsión lo aconseja')"><div class="ct">Solo si la previsión lo aconseja.</div><div class="ck"></div></div>
+            <div class="card" onclick="pickStay(this,'plan-b-meteo','Nos dejamos asesorar')"><div class="ct">Nos dejamos asesorar.</div><div class="ck"></div></div>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Contadnos cómo os imagináis el espacio exterior</label>
+          <textarea id="q-espacio-exterior" placeholder="Cóctel al aire libre, cena bajo luces, ceremonia en jardín, zona chill out, entrada especial..." rows="3"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BLOQUE 04 · CÓCTEL -->
+<div class="screen" data-id="coctel-estaciones">
+  <div class="content scr">
+    <span class="block-label">Bloque 04 · Cóctel y estaciones gastronómicas</span>
+    <h2 class="q-title">¿Qué papel queréis dar<br>al <em>cóctel?</em></h2>
+    <div style="display:flex;flex-direction:column;gap:24px">
+      <div>
+        <p style="font-size:13px;color:var(--dim);margin-bottom:12px">¿Hay alguna estación gastronómica o show cooking que os haga especial ilusión incluir?</p>
+        <div class="tag-row">
+          <div class="tag" onclick="tog(this,'coctel-estaciones','Corte de jamón')">Corte de jamón</div>
+          <div class="tag" onclick="tog(this,'coctel-estaciones','Arroces')">Arroces</div>
+          <div class="tag" onclick="tog(this,'coctel-estaciones','Estación de marisco')">Estación de marisco</div>
+          <div class="tag" onclick="tog(this,'coctel-estaciones','Pulpo / estación gallega')">Pulpo / estación gallega</div>
+          <div class="tag" onclick="tog(this,'coctel-estaciones','Parrilla o brasas')">Parrilla o brasas</div>
+          <div class="tag" onclick="tog(this,'coctel-estaciones','Quesos')">Quesos</div>
+          <div class="tag" onclick="tog(this,'coctel-estaciones','Sushi / cocina fusión')">Sushi / cocina fusión</div>
+          <div class="tag" onclick="tog(this,'coctel-estaciones','Estación dulce')">Estación dulce</div>
+          <div class="tag" onclick="tog(this,'coctel-estaciones','Otra')">Otra</div>
+          <div class="tag" onclick="tog(this,'coctel-estaciones','No tenemos ninguna preferencia concreta')">Sin preferencia concreta</div>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Estación, plato o experiencia gastronómica imprescindible</label>
+        <textarea id="q-coctel-imprescindible" placeholder="Si hay algo que os haría especial ilusión o que queréis sí o sí, indicadlo aquí." rows="2"></textarea>
+      </div>
+      <div>
+        <p style="font-size:13px;color:var(--dim);margin-bottom:12px">¿Qué importancia tiene para vosotros el cóctel dentro de la boda?</p>
+        <div class="cards-grid two">
+          <div class="card" onclick="pickStay(this,'coctel-importancia','Muy importante, queremos que sea uno de los momentos protagonistas')"><div class="ct">Muy importante, uno de los momentos protagonistas.</div><div class="ck"></div></div>
+          <div class="card" onclick="pickStay(this,'coctel-importancia','Importante, pero equilibrado con el resto del menú')"><div class="ct">Importante, equilibrado con el resto del menú.</div><div class="ck"></div></div>
+          <div class="card" onclick="pickStay(this,'coctel-importancia','Preferimos algo más sencillo y centrarnos en la comida/cena')"><div class="ct">Algo más sencillo; preferimos centrarnos en comida/cena.</div><div class="ck"></div></div>
+          <div class="card" onclick="pickStay(this,'coctel-importancia','Nos gustaría dejarnos asesorar')"><div class="ct">Nos gustaría dejarnos asesorar.</div><div class="ck"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BLOQUE 06 · GASTRONOMÍA -->
+<div class="screen" data-id="gastro-imp">
+  <div class="content">
+    <span class="block-label">Bloque 06 · Menú en mesa</span>
+    <h2 class="q-title">¿Qué papel ocupa<br>la <em>gastronomía</em><br>en vuestra boda?</h2>
+    <div class="scale-row">
+      <button class="scale-btn" onclick="scale(this,'gastro-imp',1)">1</button>
+      <button class="scale-btn" onclick="scale(this,'gastro-imp',2)">2</button>
+      <button class="scale-btn" onclick="scale(this,'gastro-imp',3)">3</button>
+      <button class="scale-btn" onclick="scale(this,'gastro-imp',4)">4</button>
+      <button class="scale-btn" onclick="scale(this,'gastro-imp',5)">5</button>
+    </div>
+    <div class="scale-labels" style="max-width:330px">
+      <span>Un elemento más</span><span style="text-align:right">Nuestra prioridad absoluta</span>
+    </div>
+  </div>
+</div>
+
+<div class="screen" data-id="formato-banquete">
+  <div class="content">
+    <span class="block-label">Bloque 06 · Menú en mesa</span>
+    <h2 class="q-title">¿Qué <em>formato de banquete</em><br>os imagináis?</h2>
+    <div class="cards-grid two">
+      <div class="card" onclick="pick(this,'banquete','Menú de degustación por pases')"><div class="ci">🍽️</div><div class="ct">Degustación por pases</div><div class="ck"></div></div>
+      <div class="card" onclick="pick(this,'banquete','Menú tradicional')"><div class="ci">🥘</div><div class="ct">Menú tradicional</div><div class="ck"></div></div>
+      <div class="card" onclick="pick(this,'banquete','Banquete familiar / fuentes')"><div class="ci">🫕</div><div class="ct">Banquete familiar</div><div class="ck"></div></div>
+      <div class="card" onclick="pick(this,'banquete','Estaciones en mesa')"><div class="ci">✨</div><div class="ct">Estaciones en mesa</div><div class="ck"></div></div>
+      <div class="card" onclick="pick(this,'banquete','No lo hemos decidido')"><div class="ci">🌀</div><div class="ct">No lo hemos decidido</div><div class="ck"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" data-id="restricciones">
+  <div class="content">
+    <span class="block-label">Bloque 06 · Menú en mesa</span>
+    <h2 class="q-title">¿Habrá <em>restricciones</em><br>alimentarias?</h2>
+    <div class="tag-row">
+      <div class="tag" onclick="tog(this,'rest','Vegetariano')">🥗 Vegetariano</div>
+      <div class="tag" onclick="tog(this,'rest','Vegano')">🌱 Vegano</div>
+      <div class="tag" onclick="tog(this,'rest','Sin gluten')">🌾 Sin gluten</div>
+      <div class="tag" onclick="tog(this,'rest','Frutos secos')">🥜 Alergia frutos secos</div>
+      <div class="tag" onclick="tog(this,'rest','Sin lactosa')">🥛 Sin lactosa</div>
+      <div class="tag" onclick="tog(this,'rest','Marisco / Pescado')">🦐 Marisco</div>
+      <div class="tag" onclick="tog(this,'rest','Kosher')">✡️ Kosher</div>
+      <div class="tag" onclick="tog(this,'rest','Halal')">☪️ Halal</div>
+      <div class="tag" onclick="tog(this,'rest','Ninguna')">✅ Ninguna</div>
+    </div>
+  </div>
+</div>
+
+<!-- BLOQUE 07 · VINOS EN MESA -->
+<div class="screen" data-id="vinos-mesa">
+  <div class="content scr">
+    <span class="block-label">Bloque 07 · Vinos en mesa</span>
+    <h2 class="q-title">En la comida o cena,<br>¿queréis cuidar el <em>vino?</em></h2>
+    <div style="display:flex;flex-direction:column;gap:24px">
+      <div>
+        <p style="font-size:13px;color:var(--dim);margin-bottom:12px">¿Queréis dar especial importancia al vino?</p>
+        <div class="cards-grid">
+          <div class="card" onclick="pickStay(this,'vino-mesa-imp','Sí, el vino es muy importante para nosotros')"><div class="ct">Sí, es muy importante para nosotros.</div><div class="ck"></div></div>
+          <div class="card" onclick="pickStay(this,'vino-mesa-imp','Sí, pero sin que sea el protagonista')"><div class="ct">Sí, pero sin que sea el protagonista.</div><div class="ck"></div></div>
+          <div class="card" onclick="pickStay(this,'vino-mesa-imp','Queremos una selección correcta y equilibrada')"><div class="ct">Una selección correcta y equilibrada.</div><div class="ck"></div></div>
+          <div class="card" onclick="pickStay(this,'vino-mesa-imp','No le damos demasiada importancia')"><div class="ct">No le damos demasiada importancia.</div><div class="ck"></div></div>
+          <div class="card" onclick="pickStay(this,'vino-mesa-imp','Nos gustaría dejarnos asesorar')"><div class="ct">Nos gustaría dejarnos asesorar.</div><div class="ck"></div></div>
+        </div>
+      </div>
+      <div class="cond-extra" id="extra-vinos-mesa">
+        <div style="display:flex;flex-direction:column;gap:18px;margin-top:2px">
+          <div>
+            <p style="font-size:13px;color:var(--dim);margin-bottom:12px">¿Qué estilo de vino os gusta más?</p>
+            <div class="tag-row">
+              <div class="tag" onclick="tog(this,'vino-estilos','Blancos frescos y ligeros')">Blancos frescos y ligeros</div>
+              <div class="tag" onclick="tog(this,'vino-estilos','Blancos con más cuerpo')">Blancos con más cuerpo</div>
+              <div class="tag" onclick="tog(this,'vino-estilos','Tintos jóvenes')">Tintos jóvenes</div>
+              <div class="tag" onclick="tog(this,'vino-estilos','Tintos con crianza')">Tintos con crianza</div>
+              <div class="tag" onclick="tog(this,'vino-estilos','Vinos mediterráneos')">Vinos mediterráneos</div>
+              <div class="tag" onclick="tog(this,'vino-estilos','Vinos nacionales reconocibles')">Vinos nacionales reconocibles</div>
+              <div class="tag" onclick="tog(this,'vino-estilos','Vinos más especiales o de autor')">Vinos especiales o de autor</div>
+              <div class="tag" onclick="tog(this,'vino-estilos','No tenemos preferencia')">Sin preferencia</div>
+              <div class="tag" onclick="tog(this,'vino-estilos','Nos gustaría asesoramiento')">Nos gustaría asesoramiento</div>
+            </div>
+          </div>
+          <div class="input-group">
+            <label>Bodega, denominación de origen, vino concreto o estilo favorito</label>
+            <textarea id="q-vino-preferencias" placeholder="Bodega, D.O., vino especial, preferencias de blancos/tintos o cualquier pista para afinar la selección." rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BLOQUE 08 · BRINDIS -->
+<div class="screen" data-id="brindis">
+  <div class="content scr">
+    <span class="block-label">Bloque 08 · Brindis y espumosos</span>
+    <h2 class="q-title">¿Queréis dar protagonismo<br>al momento del <em>brindis?</em></h2>
+    <div style="display:flex;flex-direction:column;gap:24px">
+      <div class="cards-grid two">
+        <div class="card" onclick="pickStay(this,'brindis-protagonismo','Sí, queremos que sea un momento especial')"><div class="ct">Sí, queremos que sea un momento especial.</div><div class="ck"></div></div>
+        <div class="card" onclick="pickStay(this,'brindis-protagonismo','Sí, pero de forma sencilla')"><div class="ct">Sí, pero de forma sencilla.</div><div class="ck"></div></div>
+        <div class="card" onclick="pickStay(this,'brindis-protagonismo','No especialmente')"><div class="ct">No especialmente.</div><div class="ck"></div></div>
+        <div class="card" onclick="pickStay(this,'brindis-protagonismo','No lo sabemos todavía')"><div class="ct">No lo sabemos todavía.</div><div class="ck"></div></div>
+      </div>
+      <div>
+        <p style="font-size:13px;color:var(--dim);margin-bottom:12px">¿Os gustaría brindar con algún espumoso, champagne o bebida especial?</p>
+        <div class="tag-row">
+          <div class="tag" onclick="tog(this,'brindis-bebida','Cava')">Cava</div>
+          <div class="tag" onclick="tog(this,'brindis-bebida','Champagne')">Champagne</div>
+          <div class="tag" onclick="tog(this,'brindis-bebida','Espumoso nacional')">Espumoso nacional</div>
+          <div class="tag" onclick="tog(this,'brindis-bebida','Espumoso especial')">Espumoso especial</div>
+          <div class="tag" onclick="tog(this,'brindis-bebida','Cóctel de brindis')">Cóctel de brindis</div>
+          <div class="tag" onclick="tog(this,'brindis-bebida','Bebida sin alcohol especial')">Bebida sin alcohol especial</div>
+          <div class="tag" onclick="tog(this,'brindis-bebida','No tenemos preferencia')">Sin preferencia</div>
+          <div class="tag" onclick="tog(this,'brindis-bebida','Nos dejamos asesorar')">Nos dejamos asesorar</div>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Marca, estilo o idea concreta para el brindis</label>
+        <textarea id="q-brindis-idea" placeholder="Una marca concreta, una copa especial, un brindis familiar, una bebida sin alcohol cuidada..." rows="2"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BLOQUE 09 · TARTA -->
+<div class="screen" data-id="tarta">
+  <div class="content scr">
+    <span class="block-label">Bloque 09 · Corte de tarta nupcial</span>
+    <h2 class="q-title">¿Tenéis intención de hacer<br><em>corte de tarta?</em></h2>
+    <div class="cards-grid two">
+      <div class="card" onclick="pickStay(this,'tarta-corte','Sí, queremos hacer corte de tarta')"><div class="ct">Sí, queremos hacer corte de tarta.</div><div class="ck"></div></div>
+      <div class="card" onclick="pickStay(this,'tarta-corte','No')"><div class="ct">No.</div><div class="ck"></div></div>
+      <div class="card" onclick="pickStay(this,'tarta-corte','No lo sabemos todavía')"><div class="ct">No lo sabemos todavía.</div><div class="ck"></div></div>
+      <div class="card" onclick="pickStay(this,'tarta-corte','Nos gusta la idea, pero queremos valorar cómo integrarlo')"><div class="ct">Nos gusta la idea, queremos valorar cómo integrarlo.</div><div class="ck"></div></div>
+    </div>
+    <div class="cond-extra" id="extra-tarta">
+      <div style="display:flex;flex-direction:column;gap:20px;margin-top:22px">
+        <div>
+          <p style="font-size:13px;color:var(--dim);margin-bottom:12px">¿Queréis traer vosotros la tarta o preferís que la propongamos nosotros?</p>
+          <div class="cards-grid three">
+            <div class="card" onclick="pickStay(this,'tarta-origen','La traeremos nosotros')"><div class="ct">La traeremos nosotros.</div><div class="ck"></div></div>
+            <div class="card" onclick="pickStay(this,'tarta-origen','Queremos que la proponga Perigallo / La Llaguna')"><div class="ct">Queremos vuestra propuesta.</div><div class="ck"></div></div>
+            <div class="card" onclick="pickStay(this,'tarta-origen','No lo sabemos todavía')"><div class="ct">No lo sabemos todavía.</div><div class="ck"></div></div>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>¿Cómo imagináis ese momento?</label>
+          <textarea id="q-tarta-momento" placeholder="Clásico, simbólico, divertido, íntimo, con música, con bengalas, con familia cerca..." rows="2"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" data-id="recena">
+  <div class="content">
+    <span class="block-label">Bloque 11 · Recena y experiencias</span>
+    <h2 class="q-title">¿Os apetece una <em>recena</em><br>de madrugada?</h2>
+    <div class="yn-row">
+      <button class="yn-btn" onclick="selectYN(this,'recena','Sí')">Sí, claro</button>
+      <button class="yn-btn" onclick="selectYN(this,'recena','Quizás')">Quizás</button>
+      <button class="yn-btn" onclick="selectYN(this,'recena','No')">No</button>
+    </div>
+    <div class="cond-extra" id="extra-recena">
+      <p style="font-size:13px;color:var(--dim);margin-top:18px;margin-bottom:10px">¿Qué tipo de recena?</p>
+      <div class="tag-row">
+        <div class="tag" onclick="tog(this,'recena-tipo','Bocadillos')">🥖 Bocadillos</div>
+        <div class="tag" onclick="tog(this,'recena-tipo','Pizza')">🍕 Pizza</div>
+        <div class="tag" onclick="tog(this,'recena-tipo','Mini hamburguesas')">🍔 Hamburguesas</div>
+        <div class="tag" onclick="tog(this,'recena-tipo','Arroces / sopa')">🍲 Arroces</div>
+        <div class="tag" onclick="tog(this,'recena-tipo','Embutidos')">🧀 Embutidos</div>
+        <div class="tag" onclick="tog(this,'recena-tipo','Lo que recomendéis')">✨ Lo que recomendéis</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BLOQUE 10 · MÚSICA -->
+<div class="screen" data-id="fiesta-imp">
+  <div class="content scr">
+    <span class="block-label">Bloque 10 · Fiesta y barra libre</span>
+    <h2 class="q-title">¿Cómo os gustaría que fuera<br>la <em>barra libre?</em></h2>
+    <div style="display:flex;flex-direction:column;gap:24px">
+      <div class="cards-grid two">
+        <div class="card" onclick="pickStay(this,'barra-libre','Barra libre estándar con combinados')"><div class="ct">Estándar con combinados.</div><div class="ck"></div></div>
+        <div class="card" onclick="pickStay(this,'barra-libre','Barra libre premium')"><div class="ct">Premium.</div><div class="ck"></div></div>
+        <div class="card" onclick="pickStay(this,'barra-libre','Barra libre con coctelería')"><div class="ct">Con coctelería.</div><div class="ck"></div></div>
+        <div class="card" onclick="pickStay(this,'barra-libre','Barra libre con coctelería sin alcohol')"><div class="ct">Con coctelería sin alcohol.</div><div class="ck"></div></div>
+        <div class="card" onclick="pickStay(this,'barra-libre','Barra libre con espumosos o champagne especial')"><div class="ct">Con espumosos o champagne especial.</div><div class="ck"></div></div>
+        <div class="card" onclick="pickStay(this,'barra-libre','Algo sencillo')"><div class="ct">Algo sencillo.</div><div class="ck"></div></div>
+        <div class="card" onclick="pickStay(this,'barra-libre','No lo tenemos claro')"><div class="ct">No lo tenemos claro.</div><div class="ck"></div></div>
+      </div>
+      <div class="cond-extra" id="extra-barra-libre">
+        <div class="input-group" style="margin-top:2px">
+          <label>Bebidas, marcas o estilo de servicio que os gustaría valorar</label>
+          <textarea id="q-barra-libre-detalle" placeholder="Marcas premium, tipo de ginebras, coctelería de autor, cócteles sin alcohol, champagne, servicio en barra o bandeja..." rows="2"></textarea>
+        </div>
+      </div>
+      <div>
+        <p style="font-size:13px;color:var(--dim);margin-bottom:12px">¿Qué importancia tiene para vosotros la barra libre dentro de la boda?</p>
+        <div class="cards-grid">
+          <div class="card" onclick="pickStay(this,'barra-libre-imp','Muy alta, queremos que sea uno de los momentos fuertes')"><div class="ct">Muy alta, uno de los momentos fuertes.</div><div class="ck"></div></div>
+          <div class="card" onclick="pickStay(this,'barra-libre-imp','Alta')"><div class="ct">Alta</div><div class="ck"></div></div>
+          <div class="card" onclick="pickStay(this,'barra-libre-imp','Media')"><div class="ct">Media</div><div class="ck"></div></div>
+          <div class="card" onclick="pickStay(this,'barra-libre-imp','Baja')"><div class="ct">Baja</div><div class="ck"></div></div>
+          <div class="card" onclick="pickStay(this,'barra-libre-imp','Nos dejamos asesorar')"><div class="ct">Nos dejamos asesorar</div><div class="ck"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" data-id="formato-musica">
+  <div class="content scr">
+    <span class="block-label">Bloque 11 · Animación y experiencias</span>
+    <h2 class="q-title">¿Os gustaría incluir<br>alguna <em>animación</em>?</h2>
+    <p class="q-sub">Pensamos en la fiesta como experiencia completa: música, energía, sorpresas y recena si tiene sentido.</p>
+    <div class="tag-row">
+      <div class="tag" onclick="tog(this,'animacion-fiesta','DJ')">DJ</div>
+      <div class="tag" onclick="tog(this,'animacion-fiesta','Música en directo')">Música en directo</div>
+      <div class="tag" onclick="tog(this,'animacion-fiesta','Saxo / percusión / violinista durante la fiesta')">Saxo / percusión / violinista</div>
+      <div class="tag" onclick="tog(this,'animacion-fiesta','Photocall')">Photocall</div>
+      <div class="tag" onclick="tog(this,'animacion-fiesta','Glitter bar')">Glitter bar</div>
+      <div class="tag" onclick="tog(this,'animacion-fiesta','Animación para adultos')">Animación para adultos</div>
+      <div class="tag" onclick="tog(this,'animacion-fiesta','Animación infantil')">Animación infantil</div>
+      <div class="tag" onclick="tog(this,'animacion-fiesta','Hora loca')">Hora loca</div>
+      <div class="tag" onclick="tog(this,'animacion-fiesta','Recena especial')">Recena especial</div>
+      <div class="tag" onclick="tog(this,'animacion-fiesta','Otro')">Otro</div>
+      <div class="tag" onclick="tog(this,'animacion-fiesta','No lo sabemos todavía')">No lo sabemos todavía</div>
+    </div>
+    <div class="input-group" style="margin-top:18px">
+      <label>Contadnos cómo imagináis la fiesta</label>
+      <textarea id="q-fiesta-imaginada" placeholder="Ambiente, música, duración, estilo, momentos especiales, canciones, sorpresas, entrada de novios..." rows="3"></textarea>
+    </div>
+  </div>
+</div>
+
+<div class="screen" data-id="hora-fin">
+  <div class="content">
+    <span class="block-label">Bloque 10 · Fiesta y duración</span>
+    <h2 class="q-title">¿Hasta qué hora<br>queréis la <em>fiesta?</em></h2>
+    <div class="cards-grid three">
+      <div class="card" onclick="pick(this,'hora-fin','Hasta las 2h')"><div class="ci">🌙</div><div class="ct">Hasta las 2h</div><div class="ck"></div></div>
+      <div class="card" onclick="pick(this,'hora-fin','Hasta las 3h')"><div class="ci">🌒</div><div class="ct">Hasta las 3h</div><div class="ck"></div></div>
+      <div class="card" onclick="pick(this,'hora-fin','Hasta las 4h')"><div class="ci">⭐</div><div class="ct">Hasta las 4h</div><div class="ck"></div></div>
+      <div class="card" onclick="pick(this,'hora-fin','Hasta las 5h o más')"><div class="ci">🌅</div><div class="ct">5h o más</div><div class="ck"></div></div>
+      <div class="card" onclick="pick(this,'hora-fin','Lo que la noche pida')"><div class="ci">🔥</div><div class="ct">Lo que la noche pida</div><div class="ck"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- BLOQUE 13 · PRESUPUESTO -->
+<div class="screen" data-id="presupuesto">
+  <div class="content">
+    <span class="block-label">Bloque 12 · Presupuesto orientativo</span>
+    <h2 class="q-title">¿Cuál es vuestro<br><em>presupuesto</em> orientativo?</h2>
+    <p class="q-sub">Esta información nos ayuda a diseñar una propuesta que encaje realmente con vosotros.</p>
+    <div class="cards-grid two">
+      <div class="card" onclick="pick(this,'presupuesto','Menos de 20.000€')"><div class="ct">Menos de 20.000€</div><div class="ck"></div></div>
+      <div class="card" onclick="pick(this,'presupuesto','20.000 – 30.000€')"><div class="ct">20.000 – 30.000€</div><div class="ck"></div></div>
+      <div class="card" onclick="pick(this,'presupuesto','30.000 – 45.000€')"><div class="ct">30.000 – 45.000€</div><div class="ck"></div></div>
+      <div class="card" onclick="pick(this,'presupuesto','45.000 – 65.000€')"><div class="ct">45.000 – 65.000€</div><div class="ck"></div></div>
+      <div class="card" onclick="pick(this,'presupuesto','65.000 – 90.000€')"><div class="ct">65.000 – 90.000€</div><div class="ck"></div></div>
+      <div class="card" onclick="pick(this,'presupuesto','Más de 90.000€')"><div class="ct">Más de 90.000€</div><div class="ck"></div></div>
+      <div class="card" onclick="pick(this,'presupuesto','Prefiero no decirlo todavía')"><div class="ct">Prefiero no decirlo todavía</div><div class="ck"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" data-id="prioridades">
+  <div class="content scr">
+    <span class="block-label">Bloque 12 · Prioridades finales</span>
+    <h2 class="q-title">¿Qué partes son más<br><em>importantes</em> para vosotros?</h2>
+    <p class="q-sub">Elegid hasta 3. El orden nos ayuda a construir una propuesta comercial con foco real.</p>
+    <div class="rank-list" id="rank-list">
+      <div class="rank-item" onclick="rank(this,'prio','Ceremonia')"><span class="rank-num">·</span><span class="rank-text">💍 Ceremonia</span></div>
+      <div class="rank-item" onclick="rank(this,'prio','Decoración')"><span class="rank-num">·</span><span class="rank-text">🌸 Decoración</span></div>
+      <div class="rank-item" onclick="rank(this,'prio','Cóctel')"><span class="rank-num">·</span><span class="rank-text">🥂 Cóctel</span></div>
+      <div class="rank-item" onclick="rank(this,'prio','Estaciones gastronómicas')"><span class="rank-num">·</span><span class="rank-text">🍤 Estaciones gastronómicas</span></div>
+      <div class="rank-item" onclick="rank(this,'prio','Menú en mesa')"><span class="rank-num">·</span><span class="rank-text">🍽️ Menú en mesa</span></div>
+      <div class="rank-item" onclick="rank(this,'prio','Vinos')"><span class="rank-num">·</span><span class="rank-text">🍷 Vinos</span></div>
+      <div class="rank-item" onclick="rank(this,'prio','Brindis')"><span class="rank-num">·</span><span class="rank-text">🫧 Brindis</span></div>
+      <div class="rank-item" onclick="rank(this,'prio','Tarta nupcial')"><span class="rank-num">·</span><span class="rank-text">🍰 Tarta nupcial</span></div>
+      <div class="rank-item" onclick="rank(this,'prio','Fiesta')"><span class="rank-num">·</span><span class="rank-text">🎶 Fiesta</span></div>
+      <div class="rank-item" onclick="rank(this,'prio','Barra libre')"><span class="rank-num">·</span><span class="rank-text">🍸 Barra libre</span></div>
+      <div class="rank-item" onclick="rank(this,'prio','Música')"><span class="rank-num">·</span><span class="rank-text">🎧 Música</span></div>
+      <div class="rank-item" onclick="rank(this,'prio','Fotografía / vídeo')"><span class="rank-num">·</span><span class="rank-text">📷 Fotografía / vídeo</span></div>
+      <div class="rank-item" onclick="rank(this,'prio','Experiencia general de los invitados')"><span class="rank-num">·</span><span class="rank-text">🤍 Experiencia general de los invitados</span></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:20px;margin-top:22px">
+      <div class="input-group">
+        <label>Si tuvierais que elegir tres cosas imprescindibles, ¿cuáles serían?</label>
+        <textarea id="q-imprescindibles" placeholder="Lo que tiene que estar sí o sí para que sintáis que la boda es vuestra." rows="2"></textarea>
+      </div>
+      <div class="input-group">
+        <label>¿Hay algo que no queráis bajo ningún concepto?</label>
+        <textarea id="q-nunca" placeholder="Algo que preferís evitar: estilos, protocolos, platos, música, dinámicas o cualquier línea roja." rows="2"></textarea>
+      </div>
+      <div class="input-group">
+        <label>¿Hay alguna boda, restaurante, viaje, película, lugar o experiencia que os inspire?</label>
+        <textarea id="q-inspiracion-final" placeholder="Referencias reales o emocionales que nos ayuden a entender vuestro universo." rows="2"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BLOQUE 17 · MIEDOS -->
+<div class="screen" data-id="miedos">
+  <div class="content">
+    <span class="block-label">Bloque 12 · Prioridades finales</span>
+    <h2 class="q-title">¿Qué es lo que más<br>os <em>preocupa?</em></h2>
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="input-group">
+        <label>Del proceso de organización</label>
+        <textarea id="q-miedo-proc" placeholder="Lo que más nos preocupa de organizar la boda es..." rows="2"></textarea>
+      </div>
+      <div class="input-group">
+        <label>Del día de la boda en sí</label>
+        <textarea id="q-miedo-dia" placeholder="Que algo salga mal en... / Que el tiempo no acompañe..." rows="2"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BLOQUE 18 · MOMENTOS -->
+<div class="screen" data-id="momentos">
+  <div class="content">
+    <span class="block-label">Bloque 12 · Momentos importantes</span>
+    <h2 class="q-title">¿Qué os hace<br>más <em>ilusión</em> y qué haría<br>que todo fuese <em>perfecto?</em></h2>
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="input-group">
+        <label>El momento que más os hace ilusión</label>
+        <textarea id="q-ilusion" placeholder="El primer baile / Ver la finca llena / La ceremonia / La cara de nuestros invitados..." rows="2"></textarea>
+      </div>
+      <div class="input-group">
+        <label>El gesto o detalle que haría la noche perfecta</label>
+        <textarea id="q-perfecto" placeholder="Que cada invitado se fuera diciendo que ha sido la mejor boda que han visto..." rows="2"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BLOQUE 19 · CIERRE -->
+<div class="screen" data-id="enamoro">
+  <div class="content">
+    <span class="block-label">Bloque 12 · Para terminar</span>
+    <h2 class="q-title">¿Qué fue lo que<br>más os <em>enamoró</em> de<br>Finca La Llaguna?</h2>
+    <div class="input-group">
+      <textarea id="q-enamoro" placeholder="Lo que nos conquistó fue..." rows="3"></textarea>
+    </div>
+  </div>
+</div>
+
+<div class="screen" data-id="cierre">
+  <div class="content">
+    <span class="block-label">Bloque 12 · Para terminar</span>
+    <h2 class="q-title">¿Cuándo esperáis<br>nuestra <em>propuesta?</em></h2>
+    <div class="cards-grid three" style="margin-bottom:24px">
+      <div class="card" onclick="pickStay(this,'propuesta','Esta semana')"><div class="ct">Esta semana</div><div class="ck"></div></div>
+      <div class="card" onclick="pickStay(this,'propuesta','En 15 días')"><div class="ct">En los próximos 15 días</div><div class="ck"></div></div>
+      <div class="card" onclick="pickStay(this,'propuesta','Sin prisa')"><div class="ct">Sin prisa</div><div class="ck"></div></div>
+    </div>
+    <div class="input-group">
+      <label>¿Algo más que quieras contarnos? (opcional)</label>
+      <textarea id="q-extra" placeholder="Todo lo que no os hayamos preguntado y queráis que sepamos..." rows="3"></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- FINAL -->
+<div class="screen" data-id="final">
+  <div class="fc">
+    <div class="ficon">🤍</div>
+    <h2 class="ftitle">Gracias por<br><em style="color:var(--gold)">confiar en nosotros</em></h2>
+    <p class="fbody">Hemos recibido vuestra historia. Vamos a leer cada respuesta con mucho cuidado y os prepararemos una propuesta que refleje todo lo que nos habéis contado.<br><br>Nos ponemos en contacto con vosotros muy pronto.</p>
+    <div class="wdiv"></div>
+    <p class="fbrand">Perigallo · Finca La Llaguna · Crevillent, Alicante</p>
+    <button class="btn-reset" onclick="resetForm()">↺ Reiniciar formulario</button>
+  </div>
+</div>
+
+</div><!-- /form-wrapper -->
+
+<div id="form-message" role="status" aria-live="polite"></div>
+
+<div id="nav">
+  <div class="nav-hint" id="nav-hint">Pulsa <strong>Enter ↵</strong> para continuar</div>
+  <div class="nav-btns">
+    <button class="btn-back" id="btn-back" onclick="prev()" style="display:none">← Anterior</button>
+    <button class="btn-next" id="btn-next" onclick="next()">Siguiente →</button>
+  </div>
+</div>
+
+<script>
+emailjs.init('yC6BltQvHz1XufzGy');
+
+// ── STEP MANAGEMENT ──────────────────────────────────────────────────────────
+const FLOW = [
+  'welcome','nombres','contacto','canal','situacion',
+  // 01 — Datos generales de la boda
+  'fecha','invitados','invitados-detalle',
+  'boda-frase','tipo-boda','digan',
+  // 02-03 — Ceremonia y espacios
+  'ceremonia','espacios',
+  // 04-05 — Cóctel y bebidas del cóctel
+  'coctel-estaciones','bebidas-fav',
+  // 06-09 — Menú, vinos, brindis y tarta
+  'comida-favorita','ingredientes-aman','ingredientes-odian',
+  'gastro-imp','formato-banquete','restricciones',
+  'vinos-mesa','brindis','tarta',
+  // 10-11 — Fiesta, barra libre, animación y recena
+  'fiesta-imp','hora-fin','formato-musica','recena',
+  // 12 — Personalización y prioridades finales
+  'estilo','palabras','anos-donde','hijos',
+  'perfil-n1','perfil-n2',
+  'gustos-cultura','personalidad','apertura','anfitriones','decisiones',
+  'restaurante-marcado','hobbies','deporte',
+  'viajes','musica-diaria','planes-fav','algo-secreto',
+  'miedos','momentos',
+  'presupuesto','prioridades',
+  'enamoro','cierre',
+  'final'
+];
+const TOTAL = FLOW.length - 2;
+let idx = 0;
+const A = {}, M = {}, R = {};
+let anosVal = 2, edad1 = 28, edad2 = 28;
+let isSubmitting = false;
+
+// ── LOCAL STORAGE ─────────────────────────────────────────────────────────────
+const LS_KEY = 'perigallo_form_v2';
+
+function saveState() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify({ A, M, R, anosVal, edad1, edad2 })); } catch(e) {}
+}
+
+function restoreUI() {
+  // Text inputs & textareas
+  Object.keys(A).forEach(k => {
+    const el = document.getElementById(k);
+    if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) el.value = A[k];
+  });
+  // Numeric displays
+  document.getElementById('display-anos').textContent = anosVal;
+  const anosLbl = document.getElementById('anos-label');
+  if (anosLbl) anosLbl.textContent = anosVal === 0 ? 'menos de un año' : anosVal === 1 ? 'año juntos' : 'años juntos';
+  document.getElementById('display-edad1').textContent = edad1;
+  document.getElementById('display-edad2').textContent = edad2;
+  // Single-pick cards
+  document.querySelectorAll('.card[onclick*="pick("],.card[onclick*="pickStay("]').forEach(card => {
+    const m = card.getAttribute('onclick').match(/pick(?:Stay)?\(this,'([^']+)','([^']+)'\)/);
+    if (m && A[m[1]] === m[2]) {
+      card.classList.add('selected');
+      syncConditional(m[1], m[2]);
+    }
+  });
+  // Scale buttons
+  document.querySelectorAll('.scale-btn[onclick]').forEach(btn => {
+    const m = btn.getAttribute('onclick').match(/scale\(this,'([^']+)',(\d+)\)/);
+    if (m && String(A[m[1]]) === m[2]) btn.classList.add('selected');
+  });
+  // YN buttons
+  document.querySelectorAll('.yn-btn[onclick]').forEach(btn => {
+    const m = btn.getAttribute('onclick').match(/selectYN\(this,'([^']+)','([^']+)'\)/);
+    if (m && A[m[1]] === m[2]) {
+      btn.classList.add('selected');
+      syncConditional(m[1], m[2]);
+    }
+  });
+  // Multi / multi3 cards
+  document.querySelectorAll('.card[onclick*="multi"]').forEach(card => {
+    const m = card.getAttribute('onclick').match(/multi\d?\(this,'([^']+)','([^']+)'\)/);
+    if (m && M[m[1]] && M[m[1]].includes(m[2])) card.classList.add('selected');
+  });
+  // Tags
+  document.querySelectorAll('.tag[onclick]').forEach(tag => {
+    const m = tag.getAttribute('onclick').match(/tog\(this,'([^']+)','([^']+)'\)/);
+    if (m && M[m[1]] && M[m[1]].includes(m[2])) tag.classList.add('selected');
+  });
+  // Rank items
+  if (R['prio'] && R['prio'].length) {
+    document.querySelectorAll('#rank-list .rank-item').forEach(item => {
+      const m = item.getAttribute('onclick').match(/rank\(this,'prio','([^']+)'\)/);
+      if (m && R['prio'].includes(m[1])) {
+        item.classList.add('selected');
+        item.querySelector('.rank-num').textContent = R['prio'].indexOf(m[1]) + 1;
+      }
+    });
+  }
+  // Dual-scale dots
+  document.querySelectorAll('.ds-dot[onclick]').forEach(dot => {
+    const m = dot.getAttribute('onclick').match(/dsClick\(this,'([^']+)',(\d+)\)/);
+    if (m && A[m[1]] != null) {
+      const clickedIdx = parseInt(A[m[1]]) - 1;
+      const dotIdx = parseInt(m[2]) - 1;
+      const dist = Math.abs(dotIdx - clickedIdx);
+      dot.classList.remove('sel','sel-1','sel-2','sel-3','sel-4','sel-5');
+      if (dist === 0) dot.classList.add('sel','sel-1');
+      else if (dist === 1) dot.classList.add('sel-2');
+      else if (dist === 2) dot.classList.add('sel-3');
+    }
+  });
+  // Screen visibility is never touched here — welcome always shows on load
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    Object.assign(A, s.A || {});
+    Object.assign(M, s.M || {});
+    Object.assign(R, s.R || {});
+    if (s.anosVal != null) anosVal = s.anosVal;
+    if (s.edad1  != null) edad1   = s.edad1;
+    if (s.edad2  != null) edad2   = s.edad2;
+    // idx is intentionally NOT restored — always start from welcome screen
+    restoreUI();
+  } catch(e) {
+    try { localStorage.removeItem(LS_KEY); } catch(e2) {}
+  }
+}
+
+function screen(id) { return document.querySelector(`[data-id="${id}"]`); }
+
+function goTo(newIdx) {
+  if (isSubmitting) return;
+  const curr = screen(FLOW[idx]);
+  const next = screen(FLOW[newIdx]);
+  if (!next) return;
+  showFormMessage('');
+  curr.classList.remove('active'); curr.classList.add('exit-up');
+  setTimeout(() => curr.classList.remove('exit-up'), 600);
+  next.classList.add('active');
+  next.scrollTop = 0;
+  idx = newIdx;
+  // Personalise labels with names
+  const n1 = document.getElementById('q-n1')?.value || 'la primera persona';
+  const n2 = document.getElementById('q-n2')?.value || 'la segunda persona';
+  const l1 = document.getElementById('label-n1'); if (l1) l1.textContent = n1;
+  const l2 = document.getElementById('label-n2'); if (l2) l2.textContent = n2;
+  ui();
+  saveState();
+  setTimeout(() => { const inp = next.querySelector('input,textarea'); if (inp && window.innerWidth > 768) inp.focus(); }, 200);
+}
+
+function start() { goTo(1); }
+function next()  { if (idx < FLOW.length - 1) goTo(idx + 1); }
+function prev()  { if (idx > 1) goTo(idx - 1); }
+
+function ui() {
+  const id = FLOW[idx];
+  syncScreenVisibility();
+  const pct = idx <= 1 ? 0 : Math.round(((idx - 1) / TOTAL) * 100);
+  document.getElementById('progress-bar').style.width = pct + '%';
+  const ctr = document.getElementById('step-counter');
+  ctr.textContent = (idx === 0 || id === 'final') ? '' : `${idx - 1} / ${TOTAL - 1}`;
+  document.getElementById('btn-back').style.display = idx > 1 && id !== 'final' ? 'block' : 'none';
+  const nb = document.getElementById('btn-next');
+  if (id === 'welcome' || id === 'final') { nb.style.display = 'none'; }
+  else if (FLOW[idx + 1] === 'final' || id === 'cierre') { nb.textContent = 'Enviar formulario →'; nb.style.display = 'block'; }
+  else { nb.textContent = 'Siguiente →'; nb.style.display = 'block'; }
+  document.getElementById('nav-hint').style.display = (id === 'welcome' || id === 'final') ? 'none' : 'block';
+  setSubmitting(isSubmitting, false);
+}
+
+function syncScreenVisibility() {
+  document.querySelectorAll('.screen').forEach(s => {
+    const active = s.classList.contains('active');
+    s.toggleAttribute('inert', !active);
+    s.setAttribute('aria-hidden', active ? 'false' : 'true');
+  });
+  document.querySelectorAll('.cond-extra').forEach(el => {
+    const open = el.classList.contains('open');
+    const activeParent = el.closest('.screen')?.classList.contains('active');
+    const available = open && activeParent;
+    el.toggleAttribute('inert', !available);
+    el.setAttribute('aria-hidden', available ? 'false' : 'true');
+  });
+}
+
+function showFormMessage(text, type) {
+  const el = document.getElementById('form-message');
+  if (!el) return;
+  el.textContent = text || '';
+  el.classList.toggle('show', !!text);
+  el.classList.toggle('error', type === 'error');
+}
+
+function setSubmitting(active, refreshUI = true) {
+  isSubmitting = active;
+  const nextBtn = document.getElementById('btn-next');
+  const backBtn = document.getElementById('btn-back');
+  if (nextBtn) {
+    nextBtn.disabled = active;
+    if (active) nextBtn.textContent = 'Enviando...';
+  }
+  if (backBtn) backBtn.disabled = active;
+  if (!active && refreshUI) ui();
+}
+
+function setConditional(id, open) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle('open', !!open);
+  el.toggleAttribute('inert', !open);
+  el.setAttribute('aria-hidden', open ? 'false' : 'true');
+}
+
+function syncConditional(key, val) {
+  const text = String(val || '');
+  if (key === 'hijos') setConditional('extra-hijos', text === 'Sí' || text === 'En camino');
+  if (key === 'inv-ninos') setConditional('extra-inv-ninos', text === 'Sí' || text === 'Quizás alguno');
+  if (key === 'recena') setConditional('extra-recena', text === 'Sí' || text === 'Quizás');
+  if (key === 'ceremonia-finca') setConditional('extra-ceremonia-detalle', text.startsWith('Sí') || text.startsWith('Todavía'));
+  if (key === 'ceremonia-floral') setConditional('extra-ceremonia-floral', text.startsWith('Sí') || text.includes('valorar'));
+  if (key === 'espacio-boda') setConditional('extra-espacios-exterior', text.includes('exterior') || text.includes('Mixta'));
+  if (key === 'vino-mesa-imp') setConditional('extra-vinos-mesa', !text.includes('No le damos demasiada importancia') && text !== '');
+  if (key === 'tarta-corte') setConditional('extra-tarta', text.startsWith('Sí') || text.includes('valorar'));
+  if (key === 'barra-libre') setConditional('extra-barra-libre', text.includes('premium') || text.includes('coctelería') || text.includes('espumosos') || text.includes('champagne'));
+}
+
+// ── INTERACTIONS ──────────────────────────────────────────────────────────────
+function pick(el, key, val) {
+  el.closest('.cards-grid,.yn-row')?.querySelectorAll('.card,.yn-btn').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected'); A[key] = val;
+  syncConditional(key, val);
+  saveState();
+  setTimeout(next, 280);
+}
+function pickStay(el, key, val) {
+  el.closest('.cards-grid,.yn-row')?.querySelectorAll('.card,.yn-btn').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected'); A[key] = val;
+  syncConditional(key, val);
+  saveState();
+}
+function multi(el, key, val) {
+  if (!M[key]) M[key] = [];
+  el.classList.toggle('selected');
+  if (el.classList.contains('selected')) { if (!M[key].includes(val)) M[key].push(val); }
+  else M[key] = M[key].filter(v => v !== val);
+  saveState();
+}
+function multi3(el, key, val) {
+  if (!M[key]) M[key] = [];
+  if (el.classList.contains('selected')) {
+    el.classList.remove('selected'); M[key] = M[key].filter(v => v !== val);
+  } else {
+    if (M[key].length >= 3) {
+      const first = el.closest('.cards-grid')?.querySelector('.card.selected');
+      if (first) { first.classList.remove('selected'); const t = first.querySelector('.ct')?.textContent.trim().replace(/^[^\w]+/, ''); M[key] = M[key].filter(v => !t || !v.includes(t.slice(0,8))); }
+    }
+    el.classList.add('selected'); if (!M[key].includes(val)) M[key].push(val);
+  }
+  saveState();
+}
+function tog(el, key, val) {
+  if (!M[key]) M[key] = [];
+  el.classList.toggle('selected');
+  if (el.classList.contains('selected')) { if (!M[key].includes(val)) M[key].push(val); }
+  else M[key] = M[key].filter(v => v !== val);
+  saveState();
+}
+function scale(el, key, val) {
+  el.closest('.scale-row')?.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected'); A[key] = val;
+  saveState();
+  setTimeout(next, 350);
+}
+function selectYN(el, key, val) {
+  el.closest('.yn-row')?.querySelectorAll('.yn-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected'); A[key] = val;
+  syncConditional(key, val);
+  if (key === 'recena' && val === 'No') setTimeout(next, 280);
+  saveState();
+}
+function rank(el, key, val) {
+  if (!R[key]) R[key] = [];
+  if (el.classList.contains('selected')) {
+    el.classList.remove('selected'); el.querySelector('.rank-num').textContent = '·';
+    R[key] = R[key].filter(v => v !== val);
+    document.querySelectorAll('#rank-list .rank-item.selected').forEach((it, i) => it.querySelector('.rank-num').textContent = i + 1);
+  } else {
+    if (R[key].length >= 3) return;
+    el.classList.add('selected'); R[key].push(val); el.querySelector('.rank-num').textContent = R[key].length;
+  }
+  saveState();
+}
+
+// ── STEPPER NUMBER ──────────────────────────────────────────────────────────
+function changeNum(k, d) {
+  if (k === 'anos') {
+    anosVal = Math.max(0, Math.min(30, anosVal + d));
+    document.getElementById('display-anos').textContent = anosVal;
+    A['anos'] = anosVal;
+    const lbl = document.getElementById('anos-label');
+    if (lbl) lbl.textContent = anosVal === 0 ? 'menos de un año' : anosVal === 1 ? 'año juntos' : 'años juntos';
+    saveState();
+  }
+}
+function changeAge(n, d) {
+  if (n === 1) {
+    edad1 = Math.max(18, Math.min(80, edad1 + d));
+    document.getElementById('display-edad1').textContent = edad1;
+    A['edad1'] = edad1;
+  } else {
+    edad2 = Math.max(18, Math.min(80, edad2 + d));
+    document.getElementById('display-edad2').textContent = edad2;
+    A['edad2'] = edad2;
+  }
+  saveState();
+}
+function dsClick(el, key, val) {
+  const row = el.closest('.ds-track');
+  const dots = row.querySelectorAll('.ds-dot');
+  dots.forEach((d, i) => {
+    d.classList.remove('sel','sel-1','sel-2','sel-3','sel-4','sel-5');
+    const dist = Math.abs(i - (val - 1));
+    if (dist === 0) d.classList.add('sel','sel-1');
+    else if (dist === 1) d.classList.add('sel-2');
+    else if (dist === 2) d.classList.add('sel-3');
+  });
+  A[key] = val;
+  saveState();
+}
+
+// ── AUTOSAVE TEXT INPUTS ──────────────────────────────────────────────────────
+document.getElementById('form-wrapper').addEventListener('input', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+    A[e.target.id] = e.target.value;
+    saveState();
+  }
+});
+
+// ── KEYBOARD ──────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  const id = FLOW[idx];
+  if (id === 'welcome' || id === 'final') return;
+  if (e.key === 'Enter') { const a = document.activeElement; if (a.tagName === 'TEXTAREA') return; next(); }
+  if (e.key === 'ArrowRight') next();
+  if (e.key === 'ArrowLeft' && idx > 1) prev();
+});
+
+// ── SUBMIT ────────────────────────────────────────────────────────────────────
+function validateBeforeSubmit() {
+  const email = document.getElementById('q-email');
+  const tel = document.getElementById('q-tel');
+  const hasEmail = !!(email && email.value.trim());
+  const hasTel = !!(tel && tel.value.trim());
+
+  if (!hasEmail && !hasTel) {
+    goTo(FLOW.indexOf('contacto'));
+    showFormMessage('Necesitamos al menos un email o un teléfono para poder responderos con la propuesta.', 'error');
+    setTimeout(() => (email || tel)?.focus(), 250);
+    return false;
+  }
+
+  if (email && hasEmail && !email.checkValidity()) {
+    goTo(FLOW.indexOf('contacto'));
+    showFormMessage('Revisad el email antes de enviar el formulario.', 'error');
+    setTimeout(() => { email.focus(); email.reportValidity(); }, 250);
+    return false;
+  }
+
+  return true;
+}
+
+function submitForm() {
+  // Collect text fields
+	  ['q-n1','q-n2','q-email','q-tel','q-ciudad','q-p1','q-p2','q-p3',
+	   'q-donde-conocisteis','q-hijos-num','q-hijos-boda',
+	   'q-trabajo1','q-trabajo2',
+	   'q-pelicula','q-libro','q-destino-sueno','q-plato-sois',
+	   'q-apertura-condicion','q-nunca','q-cumplido','q-influencia',
+	   'q-comida-fav','q-odian','q-ing-aman-extra','q-hobby-extra',
+	   'q-viaje-fav','q-cancion-pareja','q-resto','q-secreto',
+	   'q-boda-frase','q-digan','q-colores','q-fecha','q-fecha-alt',
+	   'q-invitados-estimado','q-inv-ninos-n','q-ceremonia-estilo-comentarios','q-ceremonia-floral-ideas',
+	   'q-ceremonia-musica-ideas','q-espacio-exterior','q-coctel-imprescindible',
+	   'q-bebidas-coctel-marcas','q-vino-preferencias','q-brindis-idea',
+	   'q-tarta-momento','q-barra-libre-detalle','q-fiesta-imaginada',
+	   'q-imprescindibles','q-inspiracion-final','q-miedo-proc','q-miedo-dia',
+	   'q-ilusion','q-perfecto','q-enamoro','q-extra'].forEach(id => {
+    const el = document.getElementById(id); if (el) A[id] = el.value;
+	  });
+	  A['anos'] = anosVal;
+
+  if (!validateBeforeSubmit()) return Promise.reject(new Error('validation'));
+
+	  const fmt = (arr) => arr && arr.length ? arr.join(', ') : '—';
+  const val = (key) => A[key] || '—';
+
+	  const notifParams = {
+    // Contacto
+    n1:               val('q-n1'),
+    n2:               val('q-n2'),
+    from_email:       val('q-email'),
+    tel:              val('q-tel'),
+    ciudad:           val('q-ciudad'),
+    canal:            val('canal'),
+    situacion:        val('situacion'),
+    // Historia
+    p1:               val('q-p1'),
+    p2:               val('q-p2'),
+    p3:               val('q-p3'),
+    anos:             A['anos'] != null ? A['anos'] : '—',
+    donde_conocisteis:val('q-donde-conocisteis'),
+    hijos:            val('hijos'),
+    hijos_num:        val('q-hijos-num'),
+    hijos_boda:       val('q-hijos-boda'),
+    // Perfiles
+    edad1:            val('edad1'),
+    trabajo1:         val('q-trabajo1'),
+    sector1:          val('sector1'),
+    edad2:            val('edad2'),
+    trabajo2:         val('q-trabajo2'),
+    sector2:          val('sector2'),
+    // Personalidad
+    innov_trad:       val('innov-trad'),
+    sonador_pract:    val('sonador-pract'),
+    espon_plan:       val('espon-plan'),
+    extro_intro:      val('extro-intro'),
+	    perfec_fluido:    val('perfec-fluido'),
+	    apertura:         val('apertura'),
+	    apertura_condicion: val('q-apertura-condicion'),
+	    decision_estilo:  val('decision-estilo'),
+	    anfitriones:      fmt(M['anfitriones']),
+    // Gustos
+    pelicula:         val('q-pelicula'),
+    libro:            val('q-libro'),
+    destino_sueno:    val('q-destino-sueno'),
+    plato_sois:       val('q-plato-sois'),
+    nunca:            val('q-nunca'),
+    cumplido:         val('q-cumplido'),
+    influencia:       val('q-influencia'),
+    // Gastronomía
+    comida_fav:       val('q-comida-fav'),
+    ing_aman:         fmt(M['ing-aman']),
+    ing_aman_extra:   val('q-ing-aman-extra'),
+    ing_odian:        fmt(M['ing-odian']),
+    odian_extra:      val('q-odian'),
+	    beb_fav:          fmt(M['bebidas-coctel']),
+	    bebidas_coctel:   fmt(M['bebidas-coctel']),
+	    bebidas_coctel_marcas: val('q-bebidas-coctel-marcas'),
+	    bebidas_coctel_imp: val('bebidas-coctel-imp'),
+	    resto:            val('q-resto'),
+	    rest:             fmt(M['rest']),
+    // Estilo de vida
+    hobbies:          fmt(M['hobbies']),
+    hobby_extra:      val('q-hobby-extra'),
+    deporte:          fmt(M['deporte']),
+    tipo_viaje:       fmt(M['tipo-viaje']),
+    viaje_fav:        val('q-viaje-fav'),
+    musica_diaria:    fmt(M['musica-diaria']),
+    cancion_pareja:   val('q-cancion-pareja'),
+    plan_fds:         fmt(M['plan-fds']),
+    secreto:          val('q-secreto'),
+    // La boda
+    boda_frase:       val('q-boda-frase'),
+    tipo_boda:        fmt(M['tipo-boda']),
+    digan:            val('q-digan'),
+    colores:          val('q-colores'),
+    fecha:            val('q-fecha'),
+    fecha_alt:        val('q-fecha-alt'),
+	    epoca:            fmt(M['epoca']),
+	    invitados:        val('invitados'),
+	    invitados_estimado: val('q-invitados-estimado'),
+	    inv_ninos:        val('inv-ninos'),
+	    inv_ninos_n:      val('q-inv-ninos-n'),
+	    ceremonia_finca:  val('ceremonia-finca'),
+	    ceremonia:        val('ceremonia-tipo'),
+	    ceremonia_maestro: val('ceremonia-maestro'),
+	    ceremonia_estilo_comentarios: val('q-ceremonia-estilo-comentarios'),
+	    ceremonia_floral: val('ceremonia-floral'),
+	    ceremonia_floral_estilo: fmt(M['ceremonia-floral-estilo']),
+	    ceremonia_floral_ideas: val('q-ceremonia-floral-ideas'),
+	    ceremonia_presupuesto: val('ceremonia-presupuesto'),
+	    ceremonia_musica: fmt(M['ceremonia-musica']),
+	    ceremonia_musica_ideas: val('q-ceremonia-musica-ideas'),
+	    estilo:           fmt(M['estilo']),
+	    espacio_boda:     val('espacio-boda'),
+	    sombraje_carpa:   val('sombraje-carpa'),
+	    plan_b_meteo:     val('plan-b-meteo'),
+	    espacio_exterior: val('q-espacio-exterior'),
+	    // Experiencia
+	    coctel_estaciones: fmt(M['coctel-estaciones']),
+	    coctel_imprescindible: val('q-coctel-imprescindible'),
+	    coctel_importancia: val('coctel-importancia'),
+	    gastro_imp:       val('gastro-imp'),
+	    banquete:         val('banquete'),
+	    vino_mesa_imp:    val('vino-mesa-imp'),
+	    vino_estilos:     fmt(M['vino-estilos']),
+	    vino_preferencias: val('q-vino-preferencias'),
+	    brindis_protagonismo: val('brindis-protagonismo'),
+	    brindis_bebida:   fmt(M['brindis-bebida']),
+	    brindis_idea:     val('q-brindis-idea'),
+	    tarta_corte:      val('tarta-corte'),
+	    tarta_origen:     val('tarta-origen'),
+	    tarta_momento:    val('q-tarta-momento'),
+	    recena:           val('recena'),
+	    recena_tipo:      fmt(M['recena-tipo']),
+	    barra_libre:      val('barra-libre'),
+	    barra_libre_detalle: val('q-barra-libre-detalle'),
+	    barra_libre_imp:  val('barra-libre-imp'),
+	    fiesta_imp:       val('barra-libre-imp'),
+	    animacion_fiesta: fmt(M['animacion-fiesta']),
+	    formato_musica:   fmt(M['animacion-fiesta']),
+	    fiesta_imaginada: val('q-fiesta-imaginada'),
+	    hora_fin:         val('hora-fin'),
+	    // Presupuesto y prioridades
+	    presupuesto:      val('presupuesto'),
+	    prioridades:      fmt(R['prio']),
+	    imprescindibles:  val('q-imprescindibles'),
+	    inspiracion_final: val('q-inspiracion-final'),
+    // Emociones
+    miedo_proc:       val('q-miedo-proc'),
+	    miedo_dia:        val('q-miedo-dia'),
+	    ilusion:          val('q-ilusion'),
+	    perfecto:         val('q-perfecto'),
+	    enamoro:          val('q-enamoro'),
+	    propuesta:        val('propuesta'),
+	    extra:            val('q-extra'),
+	  };
+
+  const resumenIA = [
+    'RESUMEN OPERATIVO PARA PROPUESTA IA',
+    `Pareja: ${notifParams.n1} y ${notifParams.n2}`,
+    `Fecha / época: ${notifParams.fecha} · ${notifParams.fecha_alt} · ${notifParams.epoca}`,
+    `Invitados: ${notifParams.invitados}. Estimación: ${notifParams.invitados_estimado}. Niños/bebés: ${notifParams.inv_ninos} (${notifParams.inv_ninos_n})`,
+    `Tipo de boda: ${notifParams.tipo_boda}. Frase: ${notifParams.boda_frase}`,
+    `Ceremonia en finca: ${notifParams.ceremonia_finca}. Tipo: ${notifParams.ceremonia}. Maestro/a: ${notifParams.ceremonia_maestro}`,
+    `Flores ceremonia: ${notifParams.ceremonia_floral}. Estilo: ${notifParams.ceremonia_floral_estilo}. Presupuesto: ${notifParams.ceremonia_presupuesto}`,
+    `Música ceremonia: ${notifParams.ceremonia_musica}. Ideas: ${notifParams.ceremonia_musica_ideas}`,
+    `Espacios: ${notifParams.espacio_boda}. Sombraje/carpa: ${notifParams.sombraje_carpa}. Plan B: ${notifParams.plan_b_meteo}. Exterior: ${notifParams.espacio_exterior}`,
+    `Cóctel: ${notifParams.coctel_importancia}. Estaciones: ${notifParams.coctel_estaciones}. Imprescindible: ${notifParams.coctel_imprescindible}`,
+    `Bebidas cóctel: ${notifParams.bebidas_coctel}. Importancia: ${notifParams.bebidas_coctel_imp}. Detalle: ${notifParams.bebidas_coctel_marcas}`,
+    `Menú: ${notifParams.banquete}. Gastronomía: ${notifParams.gastro_imp}. Restricciones: ${notifParams.rest}`,
+    `Vinos: ${notifParams.vino_mesa_imp}. Estilos: ${notifParams.vino_estilos}. Preferencias: ${notifParams.vino_preferencias}`,
+    `Brindis: ${notifParams.brindis_protagonismo}. Bebida: ${notifParams.brindis_bebida}. Idea: ${notifParams.brindis_idea}`,
+    `Tarta: ${notifParams.tarta_corte}. Origen: ${notifParams.tarta_origen}. Momento: ${notifParams.tarta_momento}`,
+    `Barra libre: ${notifParams.barra_libre}. Importancia: ${notifParams.barra_libre_imp}. Detalle: ${notifParams.barra_libre_detalle}`,
+    `Animación: ${notifParams.animacion_fiesta}. Fiesta imaginada: ${notifParams.fiesta_imaginada}. Hora fin: ${notifParams.hora_fin}. Recena: ${notifParams.recena} (${notifParams.recena_tipo})`,
+    `Personalización: estilo ${notifParams.estilo}. Anfitriones: ${notifParams.anfitriones}. Apertura: ${notifParams.apertura}. Decisiones: ${notifParams.decision_estilo}`,
+    `Gustos e inspiración: comida ${notifParams.comida_fav}. Restaurante marcado: ${notifParams.resto}. Viaje: ${notifParams.viaje_fav}. Música diaria: ${notifParams.musica_diaria}`,
+    `Prioridades: ${notifParams.prioridades}. Imprescindibles: ${notifParams.imprescindibles}. No quieren: ${notifParams.nunca}`,
+    `Inspiración: ${notifParams.inspiracion_final}. Enamoró de la finca: ${notifParams.enamoro}. Plazo propuesta: ${notifParams.propuesta}`,
+  ].join('\n');
+  notifParams.resumen_ia = resumenIA;
+  notifParams.extra = A['q-extra'] ? `${A['q-extra']}\n\n${resumenIA}` : resumenIA;
+
+	  const confirmParams = {
+    to_email: A['q-email'],
+    n1:       A['q-n1'] || 'vosotros',
+    n2:       A['q-n2'] || '',
+  };
+
+  if (!window.emailjs || typeof emailjs.send !== 'function') {
+    return Promise.reject(new Error('emailjs-unavailable'));
+  }
+
+  setSubmitting(true);
+  showFormMessage('Estamos enviando vuestras respuestas...', '');
+
+  return emailjs.send('service_w431rjr', 'template_yug3c1p', notifParams)
+    .then(() => {
+      if (A['q-email']) {
+        return emailjs.send('service_w431rjr', 'template_ynhi3gk', confirmParams)
+          .catch(err => console.warn('EmailJS confirmation error:', err));
+      }
+    })
+    .then(() => {
+      try { localStorage.removeItem(LS_KEY); } catch(e) {}
+      showFormMessage('');
+      return notifParams;
+    })
+    .catch(err => {
+      console.error('EmailJS error:', err);
+      showFormMessage('No hemos podido enviar el formulario. Revisad la conexión e intentadlo de nuevo en unos segundos.', 'error');
+      throw err;
+    });
+}
+
+// ── RESET ─────────────────────────────────────────────────────────────────────
+function resetForm() {
+  // Borrar localStorage
+  try { localStorage.removeItem(LS_KEY); } catch(e) {}
+
+  // Limpiar objetos de respuestas
+  Object.keys(A).forEach(k => delete A[k]);
+  Object.keys(M).forEach(k => delete M[k]);
+  Object.keys(R).forEach(k => delete R[k]);
+
+  // Resetear variables numéricas
+  anosVal = 2; edad1 = 28; edad2 = 28;
+
+  // Limpiar todos los inputs y textareas
+  document.querySelectorAll('input[type=text],input[type=email],input[type=tel],input[type=date],input[type=number],textarea')
+    .forEach(el => { el.value = ''; });
+
+  // Quitar todas las selecciones visuales
+  document.querySelectorAll('.card.selected,.yn-btn.selected,.scale-btn.selected,.tag.selected,.rank-item.selected')
+    .forEach(el => el.classList.remove('selected'));
+  document.querySelectorAll('.ds-dot').forEach(el =>
+    el.classList.remove('sel','sel-1','sel-2','sel-3','sel-4','sel-5'));
+  document.querySelectorAll('.rank-num').forEach(el => { el.textContent = '·'; });
+
+  // Cerrar extras condicionales
+  document.querySelectorAll('.cond-extra.open').forEach(el => el.classList.remove('open'));
+
+  // Resetear steppers visuales
+  const da = document.getElementById('display-anos'); if (da) da.textContent = '2';
+  const d1 = document.getElementById('display-edad1'); if (d1) d1.textContent = '28';
+  const d2 = document.getElementById('display-edad2'); if (d2) d2.textContent = '28';
+  const al = document.getElementById('anos-label'); if (al) al.textContent = 'años juntos';
+
+  // Volver al inicio
+  idx = 0;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active','exit-up'));
+  document.querySelector('[data-id="welcome"]').classList.add('active');
+  ui();
+}
+
+// override next for final step
+const _orig_next = next;
+window.next = function() {
+  if (isSubmitting) return;
+  if (FLOW[idx] === 'cierre') {
+    submitForm()
+      .then(() => {
+        setSubmitting(false, false);
+        goTo(FLOW.indexOf('final'));
+      })
+      .catch(err => {
+        if (err && err.message === 'emailjs-unavailable') {
+          showFormMessage('El servicio de envío no está disponible todavía. Comprobad la conexión y volved a intentarlo.', 'error');
+        }
+        setSubmitting(false);
+      });
+    return;
+  }
+  _orig_next();
+};
+
+loadState();
+ui();
+</script>
+</body>
+</html>

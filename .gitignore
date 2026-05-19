@@ -1,0 +1,63 @@
+# System files
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+*.local
+*.sql
+*.sqlite
+*.sqlite3
+*.db
+*.pem
+*.key
+*.crt
+*.p12
+id_rsa*
+id_dsa*
+
+# Future dependencies/build output
+node_modules/
+dist/
+build/
+.cache/
+.parcel-cache/
+.vite/
+coverage/
+
+# Editor and local history
+.vscode/
+.idea/
+.history/
+
+# Work archives and backups
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.bak
+*.backup
+*.old
+*.orig
+index.original-*.html
+index.*restore*.html
+*-before-restore-*.html
+
+# Internal references and local tool config
+_reference-web-periallo/
+_archive/
+.claude/
+
+# Deployment should be built/copied from an approved clean file list
+deploy/
+public-build/
