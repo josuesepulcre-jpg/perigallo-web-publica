@@ -249,18 +249,6 @@ section{position:relative}
 .proposal-meta li{display:flex;align-items:center;justify-content:space-between;gap:18px;padding-bottom:12px;border-bottom:1px solid rgba(205,177,151,.16);font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
 .proposal-meta strong{font-family:'Cormorant Garamond',serif;font-size:1.18rem;font-weight:300;letter-spacing:0;text-transform:none;color:var(--cream);white-space:nowrap}
 .proposal-actions{display:flex;gap:14px;flex-wrap:wrap}
-.event-form-modal{position:fixed;inset:0;z-index:10000;display:none}
-.event-form-modal.open{display:block}
-.event-form-backdrop{position:absolute;inset:0;background:rgba(3,9,11,.78);backdrop-filter:blur(16px)}
-.event-form-dialog{position:absolute;inset:28px;display:flex;flex-direction:column;background:#0d1a1e;border:1px solid rgba(205,177,151,.26);box-shadow:0 34px 110px rgba(0,0,0,.58);overflow:hidden}
-.event-form-bar{height:58px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 18px 0 24px;border-bottom:1px solid rgba(205,177,151,.18);background:rgba(13,26,30,.94);color:var(--cream)}
-.event-form-label{font-size:.58rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold)}
-.event-form-tools{display:flex;align-items:center;gap:12px}
-.event-form-external,.event-form-close{font-family:'Jost',sans-serif;font-size:.56rem;letter-spacing:.22em;text-transform:uppercase;color:var(--cream);text-decoration:none;background:transparent;border:1px solid rgba(245,241,229,.22);padding:10px 14px;cursor:none}
-.event-form-external:hover,.event-form-close:hover{border-color:var(--gold);color:var(--gold)}
-.event-form-frame{width:100%;height:100%;border:0;background:#0d1a1e}
-body.event-form-open{overflow:hidden}
-
 /* FOOTER */
 footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--border)}
 .footer-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:60px;max-width:1200px;margin:0 auto 40px}
@@ -403,10 +391,6 @@ body.booking-modal-open{overflow:hidden}
   .proposal-entry{grid-template-columns:1fr;padding:28px 22px;gap:28px}
   .proposal-meta li{align-items:flex-start;flex-direction:column;gap:4px}
   .proposal-actions .btn-primary,.proposal-actions .btn-ghost{width:100%;text-align:center}
-  .event-form-dialog{inset:10px}
-  .event-form-bar{height:auto;min-height:58px;align-items:flex-start;flex-direction:column;padding:16px}
-  .event-form-tools{width:100%;justify-content:space-between}
-  .event-form-external,.event-form-close{padding:10px 12px}
   .form{grid-template-columns:1fr;gap:24px}
   .form-row-full,.form-submit,.form-disclaimer{grid-column:span 1}
   .manifest{padding:90px 24px}
@@ -515,7 +499,7 @@ body.booking-modal-open{overflow:hidden}
     <div class="hero-divider"></div>
     <div class="hero-actions">
       <a href="#reservas" class="btn-primary">Reservar pop-up</a>
-      <a href="/solicitud-evento/" class="btn-ghost" data-event-form-open>Solicitar evento</a>
+      <a href="/solicitud-evento/" class="btn-ghost">Solicitar evento</a>
     </div>
     <div class="hero-paths" aria-label="Caminos principales de Perigallo">
       <a class="hero-path" href="#reservas"><strong>Pop-up</strong><span>Reserva mesa en experiencias con plazas limitadas</span></a>
@@ -560,19 +544,19 @@ body.booking-modal-open{overflow:hidden}
       <span class="service-num">— 02</span>
       <h3 class="service-name">Celebraciones <em>privadas</em></h3>
       <p class="service-desc">Bodas, comuniones, bautizos y eventos familiares con una propuesta gastronómica personalizada y un servicio cuidado.</p>
-      <a href="/solicitud-evento/" class="service-link" data-event-form-open>Solicitar propuesta</a>
+      <a href="/solicitud-evento/" class="service-link">Solicitar propuesta</a>
     </div>
     <div class="service-card reveal reveal-delay-2">
       <span class="service-num">— 03</span>
       <h3 class="service-name">Eventos de <em>empresa</em></h3>
       <p class="service-desc">Presentaciones, comidas de equipo, encuentros corporativos y eventos con una puesta en escena cuidada y una gastronomía con carácter.</p>
-      <a href="/solicitud-evento/" class="service-link" data-event-form-open>Hablar con el equipo</a>
+      <a href="/solicitud-evento/" class="service-link">Hablar con el equipo</a>
     </div>
     <div class="service-card reveal reveal-delay-3">
       <span class="service-num">— 04</span>
       <h3 class="service-name">Catering <em>a medida</em></h3>
       <p class="service-desc">Diseñamos propuestas gastronómicas dentro y fuera de nuestros espacios habituales: cenas itinerantes, showcookings y producciones especiales.</p>
-      <a href="/solicitud-evento/" class="service-link" data-event-form-open>Consultar disponibilidad</a>
+      <a href="/solicitud-evento/" class="service-link">Consultar disponibilidad</a>
     </div>
   </div>
 </section>
@@ -810,7 +794,7 @@ body.booking-modal-open{overflow:hidden}
         <span class="celebrate-tag">Eventos familiares</span>
         <span class="celebrate-tag">Cenas privadas</span>
       </div>
-      <a href="/solicitud-evento/" class="btn-primary reveal reveal-delay-4" data-event-form-open>Solicitar propuesta</a>
+      <a href="/solicitud-evento/" class="btn-primary reveal reveal-delay-4">Solicitar propuesta</a>
     </div>
   </div>
 </section>
@@ -839,7 +823,7 @@ body.booking-modal-open{overflow:hidden}
         <div class="catering-item-desc">Diseñados contigo</div>
       </div>
     </div>
-    <a href="/solicitud-evento/" class="btn-ghost reveal reveal-delay-4" data-event-form-open>Solicitar propuesta</a>
+    <a href="/solicitud-evento/" class="btn-ghost reveal reveal-delay-4">Solicitar propuesta</a>
   </div>
 </section>
 
@@ -853,7 +837,7 @@ body.booking-modal-open{overflow:hidden}
       <p class="section-body reveal reveal-delay-3">Una finca mediterránea donde el entorno, la luz y el silencio se vuelven parte del menú. Allí celebramos bodas, eventos privados y abrimos el restaurante pop-up a quien quiera vivir la gastronomía de Perigallo en un escenario poco habitual.</p>
       <div style="display:flex;gap:18px;margin-top:36px;flex-wrap:wrap" class="reveal reveal-delay-4">
         <a href="#popup" class="btn-primary">Ver pop-ups en la finca</a>
-        <a href="/solicitud-evento/" class="btn-ghost" data-event-form-open>Solicitar celebración</a>
+        <a href="/solicitud-evento/" class="btn-ghost">Solicitar celebración</a>
         <a href="https://fincalallaguna.com/" class="btn-ghost" target="_blank" rel="noopener noreferrer">Ver web de la finca</a>
       </div>
     </div>
@@ -877,16 +861,16 @@ body.booking-modal-open{overflow:hidden}
       <div class="proposal-copy">
         <span class="proposal-kicker">Solicitud inicial</span>
         <h3 class="proposal-title">Abrir el briefing de <em>celebración</em></h3>
-        <p class="proposal-text">Usamos el formulario inicial de Perigallo para entender vuestra historia, el tipo de evento, la fecha, los invitados y la propuesta gastronómica que tiene sentido para vosotros.</p>
+        <p class="proposal-text">Usamos la solicitud inicial maestra de Perigallo Suite para entender vuestra historia, el tipo de evento, la fecha, los invitados y la propuesta gastronómica que tiene sentido para vosotros.</p>
       </div>
       <div class="proposal-side">
         <ul class="proposal-meta" aria-label="Detalles del formulario">
           <li><span>Duración estimada</span><strong>~25 min</strong></li>
           <li><span>Formato</span><strong>Por pasos</strong></li>
-          <li><span>Destino</span><strong>Equipo Perigallo</strong></li>
+          <li><span>Destino</span><strong>Perigallo Suite</strong></li>
         </ul>
         <div class="proposal-actions">
-          <a href="/solicitud-evento/" class="btn-primary" data-event-form-open>Abrir formulario</a>
+          <a href="/solicitud-evento/" class="btn-primary">Abrir solicitud</a>
           <a href="mailto:hola@perigallo.es" class="btn-ghost">Escribir email</a>
         </div>
       </div>
@@ -899,20 +883,6 @@ body.booking-modal-open{overflow:hidden}
     </div>
   </div>
 </section>
-
-<div class="event-form-modal" id="eventFormModal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Formulario inicial para celebraciones Perigallo">
-  <div class="event-form-backdrop" data-event-form-close></div>
-  <div class="event-form-dialog">
-    <div class="event-form-bar">
-      <span class="event-form-label">Formulario inicial · Perigallo</span>
-      <div class="event-form-tools">
-        <a class="event-form-external" href="/solicitud-evento/" target="_blank" rel="noopener noreferrer">Abrir aparte</a>
-        <button class="event-form-close" type="button" data-event-form-close>Cerrar</button>
-      </div>
-    </div>
-    <iframe class="event-form-frame" title="Formulario inicial de solicitud de celebración Perigallo" data-src="/solicitud-evento/?embed=1" loading="lazy"></iframe>
-  </div>
-</div>
 
 <!-- FOOTER -->
 <footer>
@@ -955,44 +925,6 @@ body.booking-modal-open{overflow:hidden}
 </footer>
 
 <script>
-var eventFormModal = document.getElementById("eventFormModal");
-var eventFormFrame = eventFormModal ? eventFormModal.querySelector(".event-form-frame") : null;
-var lastEventFormTrigger = null;
-
-function openEventForm(trigger) {
-  if (!eventFormModal || !eventFormFrame) return;
-  lastEventFormTrigger = trigger || document.activeElement;
-  if (!eventFormFrame.getAttribute("src")) {
-    eventFormFrame.setAttribute("src", eventFormFrame.dataset.src || "/solicitud-evento/");
-  }
-  eventFormModal.classList.add("open");
-  eventFormModal.setAttribute("aria-hidden", "false");
-  document.body.classList.add("event-form-open");
-  var closeButton = eventFormModal.querySelector(".event-form-close");
-  if (closeButton) closeButton.focus();
-}
-
-function closeEventForm() {
-  if (!eventFormModal) return;
-  eventFormModal.classList.remove("open");
-  eventFormModal.setAttribute("aria-hidden", "true");
-  document.body.classList.remove("event-form-open");
-  if (lastEventFormTrigger && typeof lastEventFormTrigger.focus === "function") {
-    lastEventFormTrigger.focus();
-  }
-}
-
-document.querySelectorAll("[data-event-form-open]").forEach(function(trigger) {
-  trigger.addEventListener("click", function(e) {
-    e.preventDefault();
-    openEventForm(trigger);
-  });
-});
-
-document.querySelectorAll("[data-event-form-close]").forEach(function(trigger) {
-  trigger.addEventListener("click", closeEventForm);
-});
-
 var bookingModal = document.getElementById("bookingModal");
 var bookingModalFrame = bookingModal ? bookingModal.querySelector(".booking-modal-frame") : null;
 var lastBookingTrigger = null;
@@ -1048,9 +980,6 @@ document.querySelectorAll(".booking-frame, .booking-modal-frame").forEach(functi
 });
 
 document.addEventListener("keydown", function(e) {
-  if (e.key === "Escape" && eventFormModal && eventFormModal.classList.contains("open")) {
-    closeEventForm();
-  }
   if (e.key === "Escape" && bookingModal && bookingModal.classList.contains("open")) {
     closeBookingModal();
   }
