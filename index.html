@@ -218,8 +218,6 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 .booking-shell-title{font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,3.5vw,3.25rem);font-weight:300;line-height:1.02;color:var(--cream);max-width:680px}
 .booking-shell-title em{font-style:italic;color:var(--gold-l)}
 .booking-shell-copy{font-size:.78rem;line-height:1.85;color:rgba(245,241,229,.68);max-width:560px;margin-top:16px}
-.booking-direct{white-space:nowrap;color:var(--cream);border-color:rgba(245,241,229,.25)}
-.booking-direct:hover{border-color:var(--gold);color:var(--gold)}
 .booking-layout{display:grid;grid-template-columns:minmax(290px,.8fr) minmax(0,1.36fr);min-height:680px;position:relative;z-index:1}
 .booking-aside{background:linear-gradient(180deg,rgba(40,59,66,.92),rgba(18,36,41,.96));color:var(--cream);padding:42px 38px;display:flex;flex-direction:column;justify-content:space-between;gap:44px;border-right:1px solid rgba(205,177,151,.16)}
 .booking-aside-label{font-size:.55rem;letter-spacing:.34em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:20px}
@@ -248,41 +246,18 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 .booking-frame-wrap{border:1px solid rgba(142,118,83,.22);background:#F8F3EA;box-shadow:0 22px 65px rgba(31,36,34,.18),inset 0 1px 0 rgba(255,255,255,.42);overflow:hidden;border-radius:22px;position:relative;z-index:1}
 .booking-frame-wrap.is-loading::before{content:'';position:absolute;inset:0;z-index:2;background:linear-gradient(110deg,rgba(248,243,234,.92) 8%,rgba(237,231,218,.74) 18%,rgba(248,243,234,.92) 33%);background-size:200% 100%;animation:bookingSkeleton 1.4s linear infinite}
 .booking-frame-wrap.is-loading::after{content:'Cargando disponibilidad real...';position:absolute;z-index:3;left:28px;top:28px;font-size:.58rem;letter-spacing:.24em;text-transform:uppercase;color:#8E7653}
-.booking-frame{display:block;width:100%;height:610px;border:0;background:#F8F3EA}
-.booking-frame-placeholder,.booking-modal-frame-placeholder{min-height:610px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:54px 36px;background:radial-gradient(circle at 50% 0%,rgba(205,177,151,.18),transparent 34%),#F8F3EA;color:#17272B}
-.booking-modal-frame-placeholder{height:100%;min-height:720px}
-.booking-frame-placeholder h4,.booking-modal-frame-placeholder h4{font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,4vw,3.2rem);font-weight:300;line-height:1.04;color:#17272B;margin:18px 0 16px}
-.booking-frame-placeholder p,.booking-modal-frame-placeholder p{max-width:460px;font-size:.78rem;line-height:1.85;color:#56676A}
+.booking-official-widget{min-height:760px;background:radial-gradient(circle at 50% 0%,rgba(205,177,151,.16),transparent 34%),#F8F3EA}
+.booking-official-widget iframe{display:block;width:100%;min-height:760px;border:0;background:#F8F3EA}
+.booking-widget-fallback{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 22px;border-top:1px solid rgba(142,118,83,.18);background:rgba(255,255,255,.28);color:#56676A}
+.booking-widget-fallback p{font-size:.68rem;line-height:1.7;max-width:520px}
+.booking-fallback-link{font-size:.56rem;letter-spacing:.2em;text-transform:uppercase;color:#8E7653;text-decoration:none;white-space:nowrap}
+.booking-fallback-link:hover{color:#17272B}
 .booking-frame-eyebrow{font-size:.58rem;letter-spacing:.32em;text-transform:uppercase;color:#8E7653}
-.booking-frame-actions{display:flex;gap:14px;margin-top:30px;flex-wrap:wrap;justify-content:center}
-.booking-frame-placeholder .btn-ghost,.booking-modal-frame-placeholder .btn-ghost{color:#17272B;border-color:rgba(23,39,43,.22)}
-.booking-frame-placeholder .btn-ghost:hover,.booking-modal-frame-placeholder .btn-ghost:hover{color:#8E7653;border-color:#8E7653}
 .booking-frame-note{margin-top:20px;font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:#8E7653}
 .booking-fallback{padding:20px 34px;border-top:1px solid rgba(205,177,151,.16);display:flex;justify-content:space-between;gap:18px;align-items:center;background:rgba(13,26,30,.5);color:rgba(245,241,229,.66);font-size:.68rem;line-height:1.7;position:relative;z-index:1}
-.booking-fallback button,.booking-fallback a{font-family:'Montserrat',sans-serif;font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);text-decoration:none;font-weight:500;background:transparent;border:0;padding:0;cursor:none}
-.booking-fallback button:hover,.booking-fallback a:hover{color:var(--gold-l)}
-.booking-fallback button:focus-visible,.booking-fallback a:focus-visible,.booking-modal-link:focus-visible,.booking-modal-close:focus-visible,[data-booking-modal-open]:focus-visible{outline:1px solid var(--gold);outline-offset:4px}
-.booking-modal{position:fixed;inset:0;z-index:10020;display:none}
-.booking-modal.open{display:block}
-.booking-modal-backdrop{position:absolute;inset:0;background:rgba(3,9,11,.84);backdrop-filter:blur(18px)}
-.booking-modal-dialog{position:absolute;inset:22px;display:flex;flex-direction:column;background:linear-gradient(145deg,#102126,#172D33);border:1px solid rgba(205,177,151,.28);box-shadow:0 36px 120px rgba(0,0,0,.62);overflow:hidden}
-.booking-modal-bar{min-height:64px;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:14px 20px 14px 24px;border-bottom:1px solid rgba(205,177,151,.18);background:rgba(13,26,30,.82)}
-.booking-modal-brand{display:flex;align-items:center;gap:16px;color:var(--cream)}
-.booking-modal-mark{width:38px;height:38px;border:1px solid rgba(205,177,151,.35);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;color:var(--gold);font-style:italic}
-.booking-modal-title{font-size:.58rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);display:block}
-.booking-modal-subtitle{font-family:'Cormorant Garamond',serif;font-size:1.05rem;color:rgba(245,241,229,.76);font-style:italic}
-.booking-modal-tools{display:flex;align-items:center;gap:12px}
-.booking-modal-link,.booking-modal-close{font-family:'Montserrat',sans-serif;font-size:.56rem;letter-spacing:.22em;text-transform:uppercase;color:var(--cream);text-decoration:none;background:transparent;border:1px solid rgba(245,241,229,.22);padding:11px 14px;cursor:none}
-.booking-modal-link:hover,.booking-modal-close:hover{border-color:var(--gold);color:var(--gold)}
-.booking-modal-content{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:0;flex:1;background:#F8F3EA}
-.booking-modal-side{background:#102126;color:var(--cream);padding:34px 28px;border-right:1px solid rgba(205,177,151,.18)}
-.booking-modal-side h3{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:300;line-height:1.05;margin:12px 0 18px}
-.booking-modal-side p{font-size:.74rem;line-height:1.85;color:rgba(245,241,229,.65)}
-.booking-modal-frame-wrap{min-height:0;position:relative;background:#F8F3EA}
-.booking-modal-frame-wrap.is-loading::before{content:'';position:absolute;inset:0;z-index:2;background:linear-gradient(110deg,rgba(248,243,234,.92) 8%,rgba(237,231,218,.74) 18%,rgba(248,243,234,.92) 33%);background-size:200% 100%;animation:bookingSkeleton 1.4s linear infinite}
-.booking-modal-frame-wrap.is-loading::after{content:'Preparando tu mesa...';position:absolute;z-index:3;left:32px;top:32px;font-size:.58rem;letter-spacing:.24em;text-transform:uppercase;color:#8E7653}
-.booking-modal-frame{width:100%;height:100%;min-height:720px;border:0;background:#F8F3EA;display:block}
-body.booking-modal-open{overflow:hidden}
+.booking-fallback a{font-family:'Montserrat',sans-serif;font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);text-decoration:none;font-weight:500;background:transparent;border:0;padding:0;cursor:none}
+.booking-fallback a:hover{color:var(--gold-l)}
+.booking-fallback a:focus-visible,.booking-fallback-link:focus-visible{outline:1px solid var(--gold);outline-offset:4px}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
 @keyframes heroSettle{from{transform:translateY(12px)}to{transform:translateY(0)}}
@@ -341,22 +316,11 @@ body.booking-modal-open{overflow:hidden}
   .booking-widget-head{display:block;margin-bottom:16px}
   .booking-widget-title{font-size:1.45rem}
   .booking-status-pill{margin-top:14px}
-  .booking-direct{white-space:normal}
-  .booking-frame-wrap,.booking-frame{border-radius:18px}
-  .booking-frame{height:660px}
-  .booking-frame-placeholder,.booking-modal-frame-placeholder{min-height:560px;padding:42px 22px}
-  .booking-frame-actions{width:100%}
-  .booking-frame-actions .btn-primary,.booking-frame-actions .btn-ghost{width:100%;text-align:center}
+  .booking-frame-wrap{border-radius:18px}
+  .booking-official-widget,.booking-official-widget iframe{min-height:660px}
+  .booking-widget-fallback{align-items:flex-start;flex-direction:column}
   .booking-fallback{align-items:flex-start;flex-direction:column;padding:18px 22px}
-  .booking-fallback button,.booking-fallback a{width:100%;text-align:left}
-  .booking-modal-dialog{inset:0;border:0}
-  .booking-modal-bar{align-items:flex-start;flex-direction:column;padding:14px 16px}
-  .booking-modal-tools{width:100%;justify-content:space-between}
-  .booking-modal-link,.booking-modal-close{padding:10px 12px}
-  .booking-modal-content{display:block;overflow:auto;background:#F8F3EA}
-  .booking-modal-side{display:none}
-  .booking-modal-frame-wrap{height:calc(100dvh - 126px);min-height:640px}
-  .booking-modal-frame{min-height:640px}
+  .booking-fallback a{width:100%;text-align:left}
   footer{padding:50px 22px 24px}
   .footer-grid{grid-template-columns:1fr;gap:36px}
   .footer-bottom{flex-direction:column;text-align:center}
@@ -473,13 +437,12 @@ body.booking-modal-open{overflow:hidden}
   <div class="dates-header">
     <div>
       <span class="section-eyebrow reveal">Motor de reservas</span>
-      <h2 class="section-title reveal reveal-delay-1">Reserva tu<br><em>mesa</em></h2>
+      <h2 class="section-title reveal reveal-delay-1">Reserva tu<br><em>experiencia</em></h2>
     </div>
     <div class="reveal reveal-delay-2">
-      <p class="coctel-intro">Elige fecha. Elige momento. Nosotros nos encargamos del resto. Consulta la disponibilidad real y confirma tu mesa en pocos pasos.</p>
+      <p class="coctel-intro">Elige fecha. Elige momento. Nosotros nos encargamos del resto. Consulta la disponibilidad real y confirma tu experiencia en pocos pasos.</p>
       <div class="booking-header-actions">
-        <button type="button" class="btn-primary" data-booking-modal-open>Reservar mesa</button>
-        <a class="btn-ghost booking-direct" href="https://reservas.perigallo.com/reservar?source=web" target="_blank" rel="noopener noreferrer">Abrir aparte</a>
+        <a class="btn-primary" href="#motor-reservas">Ver disponibilidad</a>
       </div>
     </div>
   </div>
@@ -488,16 +451,16 @@ body.booking-modal-open{overflow:hidden}
       <div class="booking-shell-head">
         <div>
           <span class="booking-kicker">Disponibilidad real</span>
-          <h3 class="booking-shell-title">Elige tu noche, <em>asegura tu mesa</em></h3>
-          <p class="booking-shell-copy">Una mesa limitada para una experiencia efímera. La reserva se confirma directamente en Perigallo Reservas.</p>
+          <h3 class="booking-shell-title">Elige tu momento, <em>asegura tu experiencia</em></h3>
+          <p class="booking-shell-copy">Plazas limitadas para experiencias efímeras. La reserva se gestiona directamente desde el motor oficial de Perigallo.</p>
         </div>
-        <button type="button" class="btn-primary" data-booking-modal-open>Reservar mesa</button>
+        <a class="btn-primary" href="#motor-reservas">Reservar experiencia</a>
       </div>
       <div class="booking-layout">
         <aside class="booking-aside">
           <div>
-            <span class="booking-aside-label">Mesa limitada</span>
-            <h3 class="booking-aside-title">Tu mesa en<br><em>tres pasos</em></h3>
+            <span class="booking-aside-label">Experiencia limitada</span>
+            <h3 class="booking-aside-title">Tu reserva en<br><em>tres pasos</em></h3>
             <ol class="booking-step-list">
               <li class="booking-step is-active">
                 <span class="booking-step-number">01</span>
@@ -510,14 +473,14 @@ body.booking-modal-open{overflow:hidden}
                 <span class="booking-step-number">02</span>
                 <div>
                   <strong>Selecciona turno y hora</strong>
-                  <span>Escoge el momento que mejor encaja con tu experiencia.</span>
+                  <span>Escoge el momento que mejor encaja contigo.</span>
                 </div>
               </li>
               <li class="booking-step">
                 <span class="booking-step-number">03</span>
                 <div>
                   <strong>Confirma tus datos</strong>
-                  <span>La reserva entra directamente en Perigallo Reservas.</span>
+                  <span>La experiencia queda registrada en Perigallo Reservas.</span>
                 </div>
               </li>
             </ol>
@@ -537,71 +500,23 @@ body.booking-modal-open{overflow:hidden}
             </div>
             <span class="booking-status-pill">Motor oficial</span>
           </div>
-          <div class="booking-frame-wrap">
-            <div class="booking-frame-placeholder" role="group" aria-label="Reserva oficial Perigallo">
-              <span class="booking-frame-eyebrow">Reserva oficial</span>
-              <h4>Abre Perigallo Reservas</h4>
-              <p>El motor oficial se abre en una pestaña segura para que la mesa quede registrada directamente en el calendario y backoffice de Perigallo.</p>
-              <div class="booking-frame-actions">
-                <a class="btn-primary" href="https://reservas.perigallo.com/reservar?source=web" target="_blank" rel="noopener noreferrer">Abrir reservas</a>
-                <button type="button" class="btn-ghost" data-booking-modal-open>Ver detalles</button>
-              </div>
-              <span class="booking-frame-note">Sin formularios duplicados</span>
+          <div class="booking-frame-wrap" id="motor-reservas" data-booking-widget-shell>
+            <div id="perigallo-booking-widget" class="booking-official-widget" data-perigallo-booking-widget="true" aria-label="Motor oficial de reservas Perigallo"></div>
+            <div class="booking-widget-fallback">
+              <span class="booking-frame-eyebrow">Motor oficial integrado</span>
+              <p>La disponibilidad se carga desde Perigallo Reservas para mantener fechas, plazas y confirmaciones sincronizadas.</p>
+              <a class="booking-fallback-link" href="https://reservas.perigallo.com/reservar?source=web" target="_blank" rel="noopener noreferrer">Abrir solo si no carga</a>
             </div>
           </div>
         </div>
       </div>
       <div class="booking-fallback">
-        <span>Si el motor tarda en cargar o prefieres reservar sin distracciones, usa la vista completa.</span>
-        <button type="button" data-booking-modal-open>Reservar en pantalla completa</button>
-        <a href="https://reservas.perigallo.com/reservar?source=web" target="_blank" rel="noopener noreferrer">Reservar en Perigallo Reservas</a>
+        <span>El bloque de arriba usa el widget oficial de Perigallo Reservas. Si la disponibilidad no aparece, usa la vista segura del motor oficial.</span>
+        <a href="https://reservas.perigallo.com/reservar?source=web" target="_blank" rel="noopener noreferrer">Abrir vista segura</a>
       </div>
     </div>
   </div>
 </section>
-
-<div class="booking-modal" id="bookingModal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Reserva de mesa Perigallo">
-  <div class="booking-modal-backdrop" data-booking-modal-close></div>
-  <div class="booking-modal-dialog">
-    <div class="booking-modal-bar">
-      <div class="booking-modal-brand">
-        <span class="booking-modal-mark">P</span>
-        <div>
-          <span class="booking-modal-title">Reserva Perigallo</span>
-          <span class="booking-modal-subtitle">Elige tu noche y asegura tu mesa</span>
-        </div>
-      </div>
-      <div class="booking-modal-tools">
-        <a class="booking-modal-link" href="https://reservas.perigallo.com/reservar?source=web" target="_blank" rel="noopener noreferrer">Abrir aparte</a>
-        <button class="booking-modal-close" type="button" data-booking-modal-close>Cerrar</button>
-      </div>
-    </div>
-    <div class="booking-modal-content">
-      <aside class="booking-modal-side">
-        <span class="booking-aside-label">Mesa limitada</span>
-        <h3>Reserva directa<br><em>en Perigallo</em></h3>
-        <p>La disponibilidad y la confirmación se gestionan desde el motor oficial. Sin formularios duplicados.</p>
-        <div class="booking-trust" aria-label="Garantías de la reserva">
-          <span>Calendario real</span>
-          <span>Confirmación directa</span>
-          <span>Backoffice Perigallo</span>
-        </div>
-      </aside>
-      <div class="booking-modal-frame-wrap">
-        <div class="booking-modal-frame-placeholder" role="group" aria-label="Abrir Perigallo Reservas">
-          <span class="booking-frame-eyebrow">Motor oficial externo</span>
-          <h4>Reserva directa en Perigallo</h4>
-          <p>El motor de reservas oficial no permite embeberse como iframe desde esta web en este momento. Para evitar errores y duplicidades, abre la reserva en una pestaña segura de Perigallo Reservas.</p>
-          <div class="booking-frame-actions">
-            <a class="btn-primary" href="https://reservas.perigallo.com/reservar?source=web" target="_blank" rel="noopener noreferrer">Abrir Perigallo Reservas</a>
-            <button type="button" class="btn-ghost" data-booking-modal-close>Volver a la web</button>
-          </div>
-          <span class="booking-frame-note">Disponibilidad y confirmación en el sistema oficial</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- CELEBRACIONES -->
 <section class="celebrate" id="celebrate">
@@ -753,66 +668,15 @@ body.booking-modal-open{overflow:hidden}
   </div>
 </footer>
 
-<script>
-var bookingModal = document.getElementById("bookingModal");
-var bookingModalFrame = bookingModal ? bookingModal.querySelector(".booking-modal-frame") : null;
-var lastBookingTrigger = null;
-
-function openBookingModal(trigger) {
-  if (!bookingModal) return;
-  lastBookingTrigger = trigger || document.activeElement;
-  if (bookingModalFrame && !bookingModalFrame.getAttribute("src")) {
-    if (bookingModalFrame.parentElement) bookingModalFrame.parentElement.classList.add("is-loading");
-    bookingModalFrame.setAttribute("src", bookingModalFrame.dataset.src || "https://reservas.perigallo.com/reservar?embed=1&source=external_web&service=popup&theme=premium-dark");
-    window.setTimeout(function() {
-      if (bookingModalFrame.parentElement) bookingModalFrame.parentElement.classList.remove("is-loading");
-    }, 10000);
-  }
-  bookingModal.classList.add("open");
-  bookingModal.setAttribute("aria-hidden", "false");
-  document.body.classList.add("booking-modal-open");
-  var closeButton = bookingModal.querySelector(".booking-modal-close");
-  if (closeButton) closeButton.focus();
-}
-
-function closeBookingModal() {
-  if (!bookingModal) return;
-  bookingModal.classList.remove("open");
-  bookingModal.setAttribute("aria-hidden", "true");
-  document.body.classList.remove("booking-modal-open");
-  if (lastBookingTrigger && typeof lastBookingTrigger.focus === "function") {
-    lastBookingTrigger.focus();
-  }
-}
-
-document.querySelectorAll("[data-booking-modal-open]").forEach(function(trigger) {
-  trigger.addEventListener("click", function(e) {
-    e.preventDefault();
-    openBookingModal(trigger);
-  });
-});
-
-document.querySelectorAll("[data-booking-modal-close]").forEach(function(trigger) {
-  trigger.addEventListener("click", closeBookingModal);
-});
-
-document.querySelectorAll(".booking-frame, .booking-modal-frame").forEach(function(frame) {
-  var frameWrap = frame.parentElement;
-  frame.addEventListener("load", function() {
-    if (frameWrap) frameWrap.classList.remove("is-loading");
-  });
-  if (frameWrap) {
-    window.setTimeout(function() {
-      frameWrap.classList.remove("is-loading");
-    }, 10000);
-  }
-});
-
-document.addEventListener("keydown", function(e) {
-  if (e.key === "Escape" && bookingModal && bookingModal.classList.contains("open")) {
-    closeBookingModal();
-  }
-});
+<script
+  src="https://reservas.perigallo.com/widgets/booking.js"
+  data-target="perigallo-booking-widget"
+  data-source="external_web"
+  data-service="popup"
+  data-theme="premium-dark"
+  data-height="820"
+  data-radius="0"
+  data-title="Motor de reservas Perigallo">
 </script>
 
 <script>
