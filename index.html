@@ -191,13 +191,9 @@ section{position:relative}
 .proposal-meta li{display:flex;align-items:center;justify-content:space-between;gap:18px;padding-bottom:12px;border-bottom:1px solid rgba(205,177,151,.16);font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
 .proposal-meta strong{font-family:'Cormorant Garamond',serif;font-size:1.18rem;font-weight:300;letter-spacing:0;text-transform:none;color:var(--cream);white-space:nowrap}
 .proposal-actions{display:flex;gap:14px;flex-wrap:wrap}
-.proposal-entry.is-embedded{max-width:980px;display:block;padding:32px}
-.proposal-entry.is-embedded .proposal-copy{max-width:620px;margin:0 auto 26px;text-align:center}
-.proposal-frame-wrap{position:relative;z-index:1;border:1px solid rgba(205,177,151,.22);background:#f7f3ec;box-shadow:0 24px 70px rgba(0,0,0,.28);overflow:hidden}
-.proposal-frame{display:block;width:100%;min-height:1120px;border:0;background:#f7f3ec}
-.proposal-inline-fallback{position:relative;z-index:1;margin-top:18px;display:flex;justify-content:center;gap:18px;flex-wrap:wrap;color:var(--muted);font-size:.68rem;line-height:1.6}
-.proposal-inline-fallback a{color:var(--gold);text-decoration:none;text-transform:uppercase;letter-spacing:.18em;font-size:.56rem}
-.proposal-inline-fallback a:hover{color:var(--gold-l)}
+.proposal-note{position:relative;z-index:1;margin-top:18px;color:var(--muted);font-size:.68rem;line-height:1.7}
+.proposal-note a{color:var(--gold);text-decoration:none}
+.proposal-note a:hover{color:var(--gold-l)}
 /* FOOTER */
 footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--border)}
 .footer-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:60px;max-width:1200px;margin:0 auto 40px}
@@ -321,9 +317,6 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
   .contact{padding:90px 22px}
   .contact-info{flex-direction:column;gap:28px}
   .proposal-entry{grid-template-columns:1fr;padding:28px 22px;gap:28px}
-  .proposal-entry.is-embedded{padding:18px 12px}
-  .proposal-entry.is-embedded .proposal-copy{text-align:left;margin-bottom:18px;padding:0 8px}
-  .proposal-frame{min-height:1180px}
   .proposal-meta li{align-items:flex-start;flex-direction:column;gap:4px}
   .proposal-actions .btn-primary,.proposal-actions .btn-ghost{width:100%;text-align:center}
   .form{grid-template-columns:1fr;gap:24px}
@@ -645,23 +638,23 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
     <h2 class="contact-title reveal reveal-delay-1">Cuéntanos tu<br><em>celebración</em></h2>
     <p class="contact-subtitle reveal reveal-delay-2">Comparte los primeros datos de tu celebración y el equipo de Perigallo revisará tu solicitud para empezar el proceso.</p>
 
-    <div class="proposal-entry is-embedded reveal reveal-delay-3" id="form">
+    <div class="proposal-entry reveal reveal-delay-3" id="form">
       <div class="proposal-copy">
         <span class="proposal-kicker">Solicitud inicial</span>
-        <h3 class="proposal-title">Completa la <em>solicitud inicial</em></h3>
-        <p class="proposal-text">Rellena aquí los primeros datos de tu celebración. La solicitud entra directamente en Perigallo Suite y queda registrada en el flujo comercial del equipo.</p>
+        <h3 class="proposal-title">Abrir la <em>solicitud inicial</em></h3>
+        <p class="proposal-text">La solicitud se completa en Perigallo Suite para que entre directamente en el flujo comercial del equipo, sin formularios duplicados.</p>
       </div>
-      <div class="proposal-frame-wrap">
-        <iframe
-          class="proposal-frame"
-          src="https://suite.perigallo.com/solicitud?origen=web-perigallo&embed=1"
-          title="Solicitud inicial Perigallo"
-          loading="lazy"
-          referrerpolicy="strict-origin-when-cross-origin"></iframe>
-      </div>
-      <div class="proposal-inline-fallback">
-        <span>Si el formulario no carga correctamente, puedes escribirnos directamente.</span>
-        <a href="mailto:hola@perigallo.es">Escribir email</a>
+      <div class="proposal-side">
+        <ul class="proposal-meta">
+          <li><span>Tipo</span><strong>Solicitud inicial</strong></li>
+          <li><span>Uso</span><strong>Primer contacto</strong></li>
+          <li><span>Destino</span><strong>Perigallo Suite</strong></li>
+        </ul>
+        <div class="proposal-actions">
+          <a class="btn-primary" href="https://suite.perigallo.com/solicitud?origen=web-perigallo" target="_blank" rel="noopener noreferrer">Abrir solicitud</a>
+          <a class="btn-ghost" href="mailto:hola@perigallo.es">Escribir email</a>
+        </div>
+        <p class="proposal-note">Se abrirá en una pestaña nueva para que puedas completar la solicitud con más comodidad.</p>
       </div>
     </div>
 
