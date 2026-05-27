@@ -253,7 +253,6 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 .booking-frame-wrap.is-loading::before{content:'';position:absolute;inset:0;z-index:2;background:linear-gradient(110deg,rgba(248,243,234,.92) 8%,rgba(237,231,218,.74) 18%,rgba(248,243,234,.92) 33%);background-size:200% 100%;animation:bookingSkeleton 1.4s linear infinite}
 .booking-frame-wrap.is-loading::after{content:'Cargando disponibilidad real...';position:absolute;z-index:3;left:28px;top:28px;font-size:.58rem;letter-spacing:.24em;text-transform:uppercase;color:#8E7653}
 .booking-official-widget{min-height:760px;background:radial-gradient(circle at 50% 0%,rgba(205,177,151,.16),transparent 34%),#F8F3EA}
-.booking-official-widget iframe{display:block;width:100%;min-height:760px;border:0;background:#F8F3EA}
 .booking-widget-fallback{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 22px;border-top:1px solid rgba(142,118,83,.18);background:rgba(255,255,255,.28);color:#56676A}
 .booking-widget-fallback p{font-size:.68rem;line-height:1.7;max-width:520px}
 .booking-fallback-link{font-size:.56rem;letter-spacing:.2em;text-transform:uppercase;color:#8E7653;text-decoration:none;white-space:nowrap}
@@ -278,10 +277,17 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 .booking-live-widget-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding:10px 8px 22px;color:#17272B}
 .booking-live-widget-head h3{font-family:'Cormorant Garamond',serif;font-size:1.85rem;font-weight:300;line-height:1.08;color:#17272B}
 .booking-live-widget-head p{margin-top:7px;font-size:.72rem;line-height:1.65;color:#56676A;max-width:460px}
-.booking-live-frame{border:1px solid rgba(142,118,83,.22);background:#F8F3EA;box-shadow:0 22px 65px rgba(31,36,34,.16),inset 0 1px 0 rgba(255,255,255,.45);overflow:hidden;border-radius:18px;min-height:850px}
-.booking-live-frame .booking-official-widget{min-height:850px;background:#F8F3EA}
-.booking-live-frame .booking-official-widget iframe{display:block;width:100%;min-height:850px;border:0;background:#F8F3EA}
 .booking-live-fallback{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:16px 8px 0;color:#56676A;font-size:.66rem;line-height:1.6}
+.booking-external-card{border:1px solid rgba(142,118,83,.2);background:linear-gradient(145deg,rgba(255,255,255,.42),rgba(248,243,234,.62));box-shadow:0 22px 65px rgba(31,36,34,.14);padding:44px 38px;min-height:390px;display:flex;flex-direction:column;justify-content:space-between;gap:36px;position:relative;overflow:hidden}
+.booking-external-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 88% 8%,rgba(192,168,128,.22),transparent 34%);pointer-events:none}
+.booking-external-card > *{position:relative;z-index:1}
+.booking-external-title{font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,3.2vw,3.4rem);font-weight:300;line-height:1.02;color:#17272B;margin-bottom:18px}
+.booking-external-title em{font-style:italic;color:#8E7653}
+.booking-external-text{font-size:.78rem;line-height:1.85;color:#56676A;max-width:520px}
+.booking-external-meta{list-style:none;display:grid;gap:12px;margin:0;padding:0}
+.booking-external-meta li{display:flex;align-items:center;justify-content:space-between;gap:18px;padding-bottom:12px;border-bottom:1px solid rgba(142,118,83,.18);font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;color:#8E7653}
+.booking-external-meta strong{font-family:'Cormorant Garamond',serif;font-size:1.18rem;font-weight:300;letter-spacing:0;text-transform:none;color:#17272B;white-space:nowrap}
+.booking-external-actions{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
 @keyframes heroSettle{from{transform:translateY(12px)}to{transform:translateY(0)}}
@@ -354,8 +360,10 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
   .booking-live-widget{padding:16px 12px}
   .booking-live-widget-head{display:block;padding:6px 4px 16px}
   .booking-live-widget-head h3{font-size:1.45rem}
-  .booking-live-frame,.booking-live-frame .booking-official-widget,.booking-live-frame .booking-official-widget iframe{min-height:720px}
   .booking-live-fallback{align-items:flex-start;flex-direction:column;padding:14px 4px 0}
+  .booking-external-card{padding:30px 22px;min-height:0}
+  .booking-external-meta li{align-items:flex-start;flex-direction:column;gap:4px}
+  .booking-external-actions .btn-primary,.booking-external-actions .btn-ghost{width:100%;text-align:center}
   footer{padding:50px 22px 24px}
   .footer-grid{grid-template-columns:1fr;gap:36px}
   .footer-bottom{flex-direction:column;text-align:center}
@@ -449,7 +457,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
     <h1 class="hero-title">Perigallo</h1>
     <div class="hero-divider"></div>
     <div class="hero-actions">
-      <a href="#reservas" class="btn-primary">Reservar pop-up</a>
+      <a href="https://reservas.perigallo.com/reservar?source=web" class="btn-primary" target="_blank" rel="noopener noreferrer">Reservar pop-up</a>
       <a href="#form" class="btn-ghost">Solicitar evento</a>
     </div>
   </div>
@@ -503,7 +511,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
       <h2 class="section-title reveal reveal-delay-1">Fechas puntuales,<br><em>experiencias limitadas</em></h2>
       <p class="section-body reveal reveal-delay-2">El pop-up de Perigallo abre en momentos concretos: cenas especiales, encuentros gastronómicos y propuestas efímeras con plazas limitadas. Cada fecha tiene su propio ritmo, su menú y una forma distinta de vivir la cocina de Perigallo.</p>
       <div class="popup-detail-actions reveal reveal-delay-3">
-        <a href="#reservas" class="btn-primary">Ver fechas abiertas</a>
+        <a href="https://reservas.perigallo.com/reservar?source=web" class="btn-primary" target="_blank" rel="noopener noreferrer">Ver fechas abiertas</a>
         <a href="#celebrate" class="btn-ghost">Ver celebraciones</a>
       </div>
     </div>
@@ -568,9 +576,9 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
       <h2 class="section-title reveal reveal-delay-1">Reserva tu<br><em>experiencia</em></h2>
     </div>
     <div class="reveal reveal-delay-2">
-      <p class="coctel-intro">Elige fecha. Elige momento. Nosotros nos encargamos del resto. Consulta la disponibilidad real y confirma tu experiencia en pocos pasos.</p>
+      <p class="coctel-intro">Elige fecha. Elige momento. Nosotros nos encargamos del resto. La reserva se completa en el motor oficial para que la experiencia se vea limpia y funcione con todas las garantías.</p>
       <div class="booking-header-actions">
-        <a class="btn-primary" href="#motor-reservas">Ver disponibilidad</a>
+        <a class="btn-primary" href="https://reservas.perigallo.com/reservar?source=web" target="_blank" rel="noopener noreferrer">Abrir reservas</a>
       </div>
     </div>
   </div>
@@ -579,8 +587,8 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
       <aside class="booking-live-copy">
         <div>
           <span class="booking-live-kicker">Reserva directa</span>
-          <h3 class="booking-live-title">Elige tu momento, <em>sin salir de Perigallo</em></h3>
-          <p class="booking-live-text">Consulta fechas abiertas, selecciona turno y confirma tu experiencia desde el motor oficial de reservas. Todo queda sincronizado con Perigallo Reservas.</p>
+          <h3 class="booking-live-title">Elige tu momento, <em>en el motor oficial</em></h3>
+          <p class="booking-live-text">Te llevamos directamente a Perigallo Reservas para consultar fechas abiertas, seleccionar turno y confirmar tu experiencia con la interfaz completa.</p>
         </div>
         <ul class="booking-live-points" aria-label="Ventajas de la reserva">
           <li>Fechas reales del pop-up</li>
@@ -588,20 +596,27 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
           <li>Confirmación desde el sistema oficial</li>
         </ul>
       </aside>
-      <div class="booking-live-widget">
+      <div class="booking-live-widget" id="motor-reservas">
         <div class="booking-live-widget-head">
           <div>
-            <h3>Disponibilidad del pop-up</h3>
-            <p>Elige fecha, turno y número de comensales directamente en el calendario oficial.</p>
+            <h3>Reserva del pop-up</h3>
+            <p>Abre la vista oficial para reservar con calendario, turnos y plazas actualizadas.</p>
           </div>
           <span class="booking-status-pill">Motor oficial</span>
         </div>
-        <div class="booking-live-frame" id="motor-reservas" data-booking-widget-shell>
-          <div id="perigallo-booking-widget" class="booking-official-widget" data-perigallo-booking-widget="true" aria-label="Motor oficial de reservas Perigallo"></div>
-        </div>
-        <div class="booking-live-fallback">
-          <span>Si el motor no carga por una incidencia puntual, puedes abrir la vista oficial segura.</span>
-          <a class="booking-fallback-link" href="https://reservas.perigallo.com/reservar?source=web" target="_blank" rel="noopener noreferrer">Abrir vista segura</a>
+        <div class="booking-external-card">
+          <div>
+            <h3 class="booking-external-title">Abrir <em>Perigallo Reservas</em></h3>
+            <p class="booking-external-text">La reserva se realiza en una pestaña nueva para que el calendario oficial se vea completo y el proceso sea más cómodo.</p>
+          </div>
+          <ul class="booking-external-meta">
+            <li><span>Tipo</span><strong>Pop-up</strong></li>
+            <li><span>Disponibilidad</span><strong>En tiempo real</strong></li>
+            <li><span>Destino</span><strong>Perigallo Reservas</strong></li>
+          </ul>
+          <div class="booking-external-actions">
+            <a class="btn-primary" href="https://reservas.perigallo.com/reservar?source=web" target="_blank" rel="noopener noreferrer">Reservar experiencia</a>
+          </div>
         </div>
       </div>
     </div>
@@ -617,7 +632,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
       <blockquote class="finca-quote reveal reveal-delay-2">Finca La Llaguna no se plantea como un salón convencional: es un escenario mediterráneo, íntimo y cuidado donde Perigallo despliega pop-ups, bodas y celebraciones privadas con una mirada gastronómica propia.</blockquote>
       <p class="section-body reveal reveal-delay-3">Allí el entorno forma parte de la experiencia. Bodas, comuniones, bautizos, eventos privados y celebraciones familiares se diseñan a medida, conectando cocina, ritmo de servicio y relato para que cada encuentro tenga identidad propia.</p>
       <div style="display:flex;gap:18px;margin-top:36px;flex-wrap:wrap" class="reveal reveal-delay-4">
-        <a href="#reservas" class="btn-primary">Ver fechas pop-up</a>
+        <a href="https://reservas.perigallo.com/reservar?source=web" class="btn-primary" target="_blank" rel="noopener noreferrer">Ver fechas pop-up</a>
         <a href="#form" class="btn-ghost">Solicitar propuesta</a>
         <a href="https://fincalallaguna.com/" class="btn-ghost" target="_blank" rel="noopener noreferrer">Ver web de la finca</a>
       </div>
@@ -704,17 +719,6 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
     <span class="footer-copy">© 2026 Perigallo</span>
   </div>
 </footer>
-
-<script
-  src="https://reservas.perigallo.com/widgets/booking.js"
-  data-target="perigallo-booking-widget"
-  data-source="external_web"
-  data-service="popup"
-  data-theme="premium-dark"
-  data-height="820"
-  data-radius="0"
-  data-title="Motor de reservas Perigallo">
-</script>
 
 <script>
 var cursor = document.getElementById('cursor');
