@@ -3,18 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Perigallo — Gastronomía, pop-ups y celebraciones</title>
-<meta name="description" content="Perigallo diseña experiencias gastronómicas singulares: restaurante pop-up, celebraciones privadas y bodas con una mirada mediterránea y contemporánea.">
-<link rel="canonical" href="https://perigallo.es/">
+<title>Perigallo — Gastronomía pop-up y celebraciones premium en Alicante</title>
+<meta name="description" content="Perigallo diseña experiencias gastronómicas pop-up, bodas en finca, celebraciones personalizadas y eventos privados en Alicante con cocina de autor y puesta en escena cuidada.">
+<link rel="canonical" href="https://perigallo.com/">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Perigallo — Gastronomía, pop-ups y celebraciones">
-<meta property="og:description" content="Experiencias gastronómicas singulares: pop-ups, bodas y celebraciones privadas con una mirada mediterránea, editorial y contemporánea.">
-<meta property="og:image" content="https://perigallo.es/assets/images/finca-la-llaguna-principal.jpg">
-<meta property="og:url" content="https://perigallo.es/">
+<meta property="og:title" content="Perigallo — Gastronomía pop-up y celebraciones premium en Alicante">
+<meta property="og:description" content="Experiencias gastronómicas, pop-ups, bodas en finca y celebraciones personalizadas en Alicante con cocina, relato y puesta en escena.">
+<meta property="og:image" content="https://perigallo.com/assets/images/finca-la-llaguna-principal.jpg">
+<meta property="og:url" content="https://perigallo.com/">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Perigallo — Gastronomía, pop-ups y celebraciones">
-<meta name="twitter:description" content="Experiencias gastronómicas singulares: pop-ups, bodas y celebraciones privadas con una mirada mediterránea.">
-<meta name="twitter:image" content="https://perigallo.es/assets/images/finca-la-llaguna-principal.jpg">
+<meta name="twitter:title" content="Perigallo — Gastronomía pop-up y celebraciones premium en Alicante">
+<meta name="twitter:description" content="Experiencias gastronómicas, pop-ups, bodas en finca y celebraciones personalizadas en Alicante.">
+<meta name="twitter:image" content="https://perigallo.com/assets/images/finca-la-llaguna-principal.jpg">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Montserrat:wght@200;300;400;500&family=Dancing+Script:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -64,11 +64,15 @@ nav.scrolled .nav-logo-img{width:46px;height:46px}
 .hero-slide{position:absolute;inset:0;opacity:0;transition:opacity 2s ease,transform 9s ease;background-size:cover;background-position:center;transform:scale(1.07)}
 .hero-slide.active{opacity:1;transform:scale(1)}
 .hero-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(39,66,73,.55) 0%,rgba(39,66,73,.25) 35%,rgba(39,66,73,.65) 75%,rgba(30,51,56,.95) 100%)}
-.hero-content{position:relative;z-index:2;text-align:center;max-width:920px;padding:0 40px}
-.hero-title{font-family:'Cormorant Garamond',serif;font-size:clamp(4rem,11vw,9rem);font-weight:300;line-height:.9;letter-spacing:-.025em;margin-bottom:30px;opacity:1;animation:heroSettle 1s ease .18s both}
+.hero-content{position:relative;z-index:2;text-align:left;max-width:1060px;width:100%;padding:0 56px}
+.hero-eyebrow{display:block;font-size:.58rem;letter-spacing:.34em;text-transform:uppercase;color:var(--gold);margin-bottom:22px;opacity:.95;animation:heroSettle 1s ease .1s both}
+.hero-title{font-family:'Cormorant Garamond',serif;font-size:clamp(3.8rem,8.2vw,8.5rem);font-weight:300;line-height:.88;letter-spacing:-.025em;margin-bottom:26px;max-width:840px;opacity:1;animation:heroSettle 1s ease .18s both}
 .hero-title em{font-style:italic;color:var(--gold-l)}
-.hero-divider{width:50px;height:1px;background:var(--gold);margin:0 auto 54px;opacity:1;animation:heroSettle 1s ease .3s both}
-.hero-actions{display:flex;gap:18px;justify-content:center;opacity:1;animation:heroSettle 1s ease .42s both;flex-wrap:wrap}
+.hero-subtitle{font-size:clamp(.9rem,1.45vw,1.08rem);line-height:1.9;color:rgba(245,241,229,.82);max-width:650px;margin-bottom:36px;animation:heroSettle 1s ease .3s both}
+.hero-divider{width:72px;height:1px;background:var(--gold);margin:0 0 34px;opacity:1;animation:heroSettle 1s ease .34s both}
+.hero-actions{display:flex;gap:18px;justify-content:flex-start;opacity:1;animation:heroSettle 1s ease .42s both;flex-wrap:wrap}
+.hero-meta{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:34px;font-size:.55rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(245,241,229,.62);animation:heroSettle 1s ease .5s both}
+.hero-meta span{padding:8px 12px;border:1px solid rgba(205,177,151,.2);background:rgba(30,51,56,.38);backdrop-filter:blur(10px)}
 .btn-primary{font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:var(--bg2);background:var(--gold);text-decoration:none;padding:15px 36px;transition:all .35s;display:inline-block;border:none;cursor:none;font-family:inherit;font-weight:500}
 .btn-primary:hover{background:var(--gold-l)}
 .btn-primary:disabled{opacity:.55;cursor:not-allowed;filter:saturate(.8)}
@@ -102,7 +106,7 @@ section{position:relative}
 .manifest-text em{font-style:italic;color:var(--gold-l)}
 .manifest-meta{font-size:.62rem;letter-spacing:.32em;text-transform:uppercase;color:var(--gold);display:block}
 
-/* QUÉ HACEMOS — 4 servicios */
+/* QUÉ HACEMOS */
 .services{padding:120px 0;background:var(--bg2)}
 .services-header{text-align:center;max-width:680px;margin:0 auto 80px;padding:0 40px}
 .services-grid{display:grid;grid-template-columns:repeat(2,1fr);max-width:1200px;margin:0 auto;padding:0 60px;gap:1px}
@@ -118,6 +122,28 @@ section{position:relative}
 .service-link:hover{gap:16px}
 .service-link::after{content:'→'}
 
+/* CÓMO FUNCIONA */
+.process{padding:130px 0;background:linear-gradient(180deg,var(--bg2),var(--bg4));position:relative;overflow:hidden}
+.process::before{content:'';position:absolute;inset:0;opacity:.03;background-image:linear-gradient(var(--gold) 1px,transparent 1px),linear-gradient(90deg,var(--gold) 1px,transparent 1px);background-size:72px 72px;pointer-events:none}
+.process-inner{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:0 60px}
+.process-header{max-width:720px;margin-bottom:60px}
+.process-header .section-body{margin-top:22px}
+.process-grid{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid rgba(205,177,151,.18)}
+.process-step{min-height:230px;padding:34px 28px;border-right:1px solid rgba(205,177,151,.16);background:rgba(245,241,229,.035);display:flex;flex-direction:column;justify-content:space-between;gap:28px}
+.process-step:last-child{border-right:0}
+.process-number{font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gold-l);letter-spacing:.2em}
+.process-step h3{font-family:'Cormorant Garamond',serif;font-size:1.35rem;font-weight:300;color:var(--cream)}
+.process-step p{font-size:.72rem;line-height:1.75;color:rgba(245,241,229,.68)}
+.process-actions{margin-top:38px;display:flex;gap:16px;flex-wrap:wrap}
+
+/* CONFIANZA */
+.trust{padding:110px 0;background:var(--bg);border-top:1px solid rgba(205,177,151,.12);border-bottom:1px solid rgba(205,177,151,.12)}
+.trust-inner{max-width:1200px;margin:0 auto;padding:0 60px;display:grid;grid-template-columns:.9fr 1.1fr;gap:70px;align-items:start}
+.trust-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:rgba(205,177,151,.16);border:1px solid rgba(205,177,151,.16)}
+.trust-item{background:var(--bg);padding:32px 28px;min-height:160px}
+.trust-item strong{display:block;font-family:'Cormorant Garamond',serif;font-size:1.35rem;font-weight:300;color:var(--cream);margin-bottom:12px}
+.trust-item span{display:block;font-size:.72rem;line-height:1.8;color:rgba(245,241,229,.66)}
+
 /* CELEBRACIONES */
 .celebrate{padding:140px 0;background:var(--bg)}
 .celebrate-inner{max-width:1200px;margin:0 auto;padding:0 60px;display:grid;grid-template-columns:1fr 1fr;gap:90px;align-items:center}
@@ -128,6 +154,10 @@ section{position:relative}
 .celebrate-tags{display:flex;flex-wrap:wrap;gap:8px;margin:32px 0 36px}
 .celebrate-tag{font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;padding:7px 14px;border:1px solid var(--border);color:var(--muted-2);transition:all .3s}
 .celebrate-tag:hover{border-color:var(--gold);color:var(--gold)}
+.celebration-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;margin:34px 0 36px;border:1px solid rgba(205,177,151,.16);background:rgba(205,177,151,.16)}
+.celebration-card{padding:22px 20px;background:rgba(245,241,229,.035)}
+.celebration-card h3{font-family:'Cormorant Garamond',serif;font-size:1.22rem;font-weight:300;color:var(--cream);margin-bottom:8px}
+.celebration-card p{font-size:.7rem;line-height:1.7;color:rgba(245,241,229,.66)}
 .celebrate-quote{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-style:italic;color:var(--gold-l);line-height:1.65;margin:30px 0 38px;padding-left:22px;border-left:2px solid var(--gold)}
 
 /* POP-UP DETAIL */
@@ -206,6 +236,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 .footer-bottom{max-width:1200px;margin:0 auto;padding-top:30px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:18px}
 .footer-disclaimer{font-size:.62rem;letter-spacing:.05em;color:var(--muted);max-width:680px;line-height:1.75;font-style:italic}
 .footer-copy{font-size:.58rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.mobile-cta-bar{display:none}
 
 /* ===== OFFICIAL BOOKING ENGINE ===== */
 .dates-section{padding:140px 0;background:radial-gradient(circle at 18% 8%,rgba(205,177,151,.12),transparent 28%),linear-gradient(180deg,#122429 0%,#1E3338 44%,#13252A 100%);position:relative;overflow:hidden}
@@ -306,15 +337,28 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
   .mobile-quick-nav a:first-child{background:var(--gold);color:var(--bg2);border-color:var(--gold);font-weight:500}
   nav.scrolled + .mobile-quick-nav{top:62px}
   .nav-logo-img{width:48px;height:48px}
+  body{padding-bottom:72px}
   .hero{padding:60px 0 80px}
-  .hero-title{font-size:3rem}
-  .hero-content{padding:0 22px}
+  .hero-title{font-size:3.25rem}
+  .hero-content{padding:0 22px;text-align:left}
+  .hero-subtitle{font-size:.88rem}
   .hero-actions .btn-primary,.hero-actions .btn-ghost{width:100%;max-width:320px;text-align:center}
+  .hero-meta{gap:7px}
+  .hero-meta span{font-size:.48rem;padding:7px 9px}
   .services-grid{grid-template-columns:1fr;padding:0 20px}
   .service-card{padding:48px 36px;min-height:auto}
+  .process{padding:90px 0}
+  .process-inner{padding:0 24px}
+  .process-grid{grid-template-columns:1fr;border:0;gap:1px;background:rgba(205,177,151,.16)}
+  .process-step{min-height:auto;border-right:0;background:var(--bg);padding:28px 24px}
+  .process-actions .btn-primary,.process-actions .btn-ghost{width:100%;text-align:center}
+  .trust{padding:82px 0}
+  .trust-inner{grid-template-columns:1fr;padding:0 24px;gap:38px}
+  .trust-grid{grid-template-columns:1fr}
   .celebrate-inner,.finca-inner{grid-template-columns:1fr}
   .celebrate-inner,.finca-inner{padding:0 24px;gap:48px}
   .celebrate-visual{height:380px;order:-1}
+  .celebration-cards{grid-template-columns:1fr}
   .finca-visual{height:340px;order:-1}
   .popup-detail{padding:90px 0}
   .popup-detail-inner{grid-template-columns:1fr;padding:0 24px;gap:44px}
@@ -367,6 +411,10 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
   footer{padding:50px 22px 24px}
   .footer-grid{grid-template-columns:1fr;gap:36px}
   .footer-bottom{flex-direction:column;text-align:center}
+  .mobile-cta-bar{position:fixed;left:10px;right:10px;bottom:10px;z-index:120;display:grid;grid-template-columns:1fr .82fr 1fr;gap:1px;border:1px solid rgba(205,177,151,.22);background:rgba(18,36,41,.92);backdrop-filter:blur(18px);box-shadow:0 18px 50px rgba(0,0,0,.34)}
+  .mobile-cta-bar a{min-height:48px;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 8px;color:var(--cream);text-decoration:none;font-size:.49rem;letter-spacing:.16em;text-transform:uppercase;background:rgba(245,241,229,.04)}
+  .mobile-cta-bar a:first-child{background:var(--gold);color:var(--bg2);font-weight:500}
+  .mobile-cta-bar a:focus-visible{outline:1px solid var(--gold);outline-offset:3px}
 }
 </style>
 </head>
@@ -454,11 +502,21 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
   </div>
   <div class="hero-overlay"></div>
   <div class="hero-content">
-    <h1 class="hero-title">Perigallo</h1>
+    <span class="hero-eyebrow">Perigallo · Alicante / Crevillent</span>
+    <h1 class="hero-title">Gastronomía pop-up para celebrar <em>lo irrepetible</em></h1>
+    <p class="hero-subtitle">Experiencias gastronómicas, pop-ups y celebraciones personalizadas en Alicante, diseñadas con cocina, relato y puesta en escena.</p>
     <div class="hero-divider"></div>
     <div class="hero-actions">
       <a href="https://reservas.perigallo.com/reservar?source=web" class="btn-primary" target="_blank" rel="noopener noreferrer">Reservar pop-up</a>
-      <a href="#form" class="btn-ghost">Solicitar evento</a>
+      <a href="#form" class="btn-ghost">Solicitar propuesta</a>
+      <a href="#celebrate" class="btn-ghost">Descubrir celebraciones</a>
+    </div>
+    <div class="hero-meta" aria-label="Servicios destacados">
+      <span>Pop-ups</span>
+      <span>Bodas</span>
+      <span>Comuniones</span>
+      <span>Bautizos</span>
+      <span>Eventos privados</span>
     </div>
   </div>
   <div class="hero-dots">
@@ -503,6 +561,28 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
   </div>
 </section>
 
+<!-- CÓMO FUNCIONA -->
+<section class="process" id="como-funciona">
+  <div class="process-inner">
+    <div class="process-header">
+      <span class="section-eyebrow reveal">Cómo funciona</span>
+      <h2 class="section-title reveal reveal-delay-1">De la idea a una experiencia <em>con sentido</em></h2>
+      <p class="section-body reveal reveal-delay-2">La solicitud inicial nos ayuda a entender qué queréis celebrar, dónde, cuándo y con qué tipo de propuesta gastronómica. Desde ahí trabajamos una respuesta clara y personalizada.</p>
+    </div>
+    <div class="process-grid" aria-label="Proceso de trabajo de Perigallo">
+      <article class="process-step reveal"><span class="process-number">01</span><div><h3>Nos cuentas tu idea</h3><p>Recibimos los primeros datos de la celebración o experiencia.</p></div></article>
+      <article class="process-step reveal reveal-delay-1"><span class="process-number">02</span><div><h3>Revisamos disponibilidad</h3><p>Vemos fecha, tipo de evento, espacio y necesidades principales.</p></div></article>
+      <article class="process-step reveal reveal-delay-2"><span class="process-number">03</span><div><h3>Diseñamos propuesta</h3><p>Planteamos una experiencia gastronómica ajustada al contexto.</p></div></article>
+      <article class="process-step reveal reveal-delay-3"><span class="process-number">04</span><div><h3>Confirmamos detalles</h3><p>Cerramos menú, ritmo, servicio, invitados y producción.</p></div></article>
+      <article class="process-step reveal reveal-delay-4"><span class="process-number">05</span><div><h3>Producimos la experiencia</h3><p>El equipo ejecuta la celebración con cocina y puesta en escena.</p></div></article>
+    </div>
+    <div class="process-actions reveal reveal-delay-4">
+      <a class="btn-primary" href="#form">Iniciar solicitud</a>
+      <a class="btn-ghost" href="#celebrate">Ver celebraciones</a>
+    </div>
+  </div>
+</section>
+
 <!-- RESTAURANTE POP-UP -->
 <section class="popup-detail" id="popup">
   <div class="popup-detail-inner">
@@ -534,7 +614,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
         <span class="popup-detail-number">03</span>
         <div>
           <h3>Reserva directa</h3>
-          <p>Cuando haya fechas abiertas, podrás elegir el momento y confirmar tu experiencia sin salir de la web.</p>
+          <p>Cuando haya fechas abiertas, podrás elegir el momento y confirmar tu experiencia desde el motor oficial de Perigallo Reservas.</p>
         </div>
       </li>
     </ul>
@@ -554,15 +634,31 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
       <h2 class="section-title reveal reveal-delay-1">Celebraciones<br><em>diseñadas</em><br>por Perigallo</h2>
       <blockquote class="celebrate-quote reveal reveal-delay-2">"Una propuesta gastronómica personalizada, cuidada desde el relato hasta el último pase."</blockquote>
       <p class="section-body reveal reveal-delay-3">Bodas, comuniones, bautizos, eventos familiares y celebraciones privadas. Diseñamos cada encuentro como una experiencia gastronómica única, ajustando el relato, los pases y el servicio a la historia que queréis contar.</p>
-      <div class="celebrate-tags reveal reveal-delay-3">
-        <span class="celebrate-tag">Bodas</span>
-        <span class="celebrate-tag">Comuniones</span>
-        <span class="celebrate-tag">Bautizos</span>
-        <span class="celebrate-tag">Aniversarios</span>
-        <span class="celebrate-tag">Eventos familiares</span>
-        <span class="celebrate-tag">Cenas privadas</span>
+      <div class="celebration-cards reveal reveal-delay-3" aria-label="Tipos de celebraciones">
+        <article class="celebration-card"><h3>Bodas</h3><p>Una propuesta gastronómica con relato, ritmo de servicio y puesta en escena para celebrar sin formato impuesto.</p></article>
+        <article class="celebration-card"><h3>Comuniones</h3><p>Celebraciones familiares cuidadas, cómodas y con una cocina pensada para adultos y pequeños.</p></article>
+        <article class="celebration-card"><h3>Bautizos</h3><p>Encuentros íntimos y elegantes donde el servicio acompaña sin invadir el momento.</p></article>
+        <article class="celebration-card"><h3>Eventos privados</h3><p>Aniversarios, cenas privadas y reuniones especiales diseñadas con una propuesta propia.</p></article>
+        <article class="celebration-card"><h3>Cenas privadas / empresas</h3><p>Experiencias para equipos, marcas o grupos reducidos con cocina de autor para eventos.</p></article>
       </div>
       <a href="#form" class="btn-primary reveal reveal-delay-4">Solicitar propuesta</a>
+    </div>
+  </div>
+</section>
+
+<!-- CONFIANZA -->
+<section class="trust" id="confianza">
+  <div class="trust-inner">
+    <div>
+      <span class="section-eyebrow reveal">Confianza</span>
+      <h2 class="section-title reveal reveal-delay-1">Una marca gastronómica con base en <em>Alicante</em></h2>
+      <p class="section-body reveal reveal-delay-2">Perigallo trabaja desde Crevillent para crear pop-ups, catering premium y celebraciones personalizadas con una operación clara: cocina, relato, producción y seguimiento comercial desde un mismo equipo.</p>
+    </div>
+    <div class="trust-grid reveal reveal-delay-3">
+      <div class="trust-item"><strong>Crevillent / Alicante</strong><span>Base local para bodas en finca, eventos privados y experiencias gastronómicas en la provincia.</span></div>
+      <div class="trust-item"><strong>Finca La Llaguna</strong><span>Uno de los espacios principales donde Perigallo desarrolla pop-ups y celebraciones a medida.</span></div>
+      <div class="trust-item"><strong>Perigallo Suite</strong><span>Las solicitudes entran directamente en el flujo comercial para evitar formularios duplicados.</span></div>
+      <div class="trust-item"><strong>Cocina con relato</strong><span>Menús y propuestas pensados para cada fecha, cada celebración y cada tipo de invitado.</span></div>
     </div>
   </div>
 </section>
@@ -630,10 +726,9 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
       <span class="section-eyebrow reveal">Finca La Llaguna by Perigallo Pop-Up</span>
       <h2 class="section-title reveal reveal-delay-1">Un lugar<br><em>para celebrar</em></h2>
       <blockquote class="finca-quote reveal reveal-delay-2">Finca La Llaguna no se plantea como un salón convencional: es un escenario mediterráneo, íntimo y cuidado donde Perigallo despliega pop-ups, bodas y celebraciones privadas con una mirada gastronómica propia.</blockquote>
-      <p class="section-body reveal reveal-delay-3">Allí el entorno forma parte de la experiencia. Bodas, comuniones, bautizos, eventos privados y celebraciones familiares se diseñan a medida, conectando cocina, ritmo de servicio y relato para que cada encuentro tenga identidad propia.</p>
+      <p class="section-body reveal reveal-delay-3">Perigallo es la marca gastronómica que diseña y produce la experiencia. Finca La Llaguna es uno de los espacios principales donde esa experiencia toma forma: entorno, cocina, ritmo de servicio y relato unidos para bodas, comuniones, bautizos, eventos privados y pop-ups.</p>
       <div style="display:flex;gap:18px;margin-top:36px;flex-wrap:wrap" class="reveal reveal-delay-4">
-        <a href="https://reservas.perigallo.com/reservar?source=web" class="btn-primary" target="_blank" rel="noopener noreferrer">Ver fechas pop-up</a>
-        <a href="#form" class="btn-ghost">Solicitar propuesta</a>
+        <a href="#form" class="btn-primary">Solicitar propuesta</a>
         <a href="https://fincalallaguna.com/" class="btn-ghost" target="_blank" rel="noopener noreferrer">Ver web de la finca</a>
       </div>
     </div>
@@ -678,6 +773,12 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
     </div>
   </div>
 </section>
+
+<div class="mobile-cta-bar" aria-label="Acciones principales">
+  <a href="#form">Propuesta</a>
+  <a href="https://wa.me/34691499985" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+  <a href="https://reservas.perigallo.com/reservar?source=web" target="_blank" rel="noopener noreferrer">Reservar</a>
+</div>
 
 <!-- FOOTER -->
 <footer>
