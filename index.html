@@ -158,6 +158,8 @@ section{position:relative}
 .celebration-card{padding:22px 20px;background:rgba(245,241,229,.035)}
 .celebration-card h3{font-family:'Cormorant Garamond',serif;font-size:1.22rem;font-weight:300;color:var(--cream);margin-bottom:8px}
 .celebration-card p{font-size:.7rem;line-height:1.7;color:rgba(245,241,229,.66)}
+.celebration-card a{display:inline-flex;margin-top:14px;font-size:.54rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);text-decoration:none}
+.celebration-card a:hover{color:var(--gold-l)}
 .celebrate-quote{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-style:italic;color:var(--gold-l);line-height:1.65;margin:30px 0 38px;padding-left:22px;border-left:2px solid var(--gold)}
 
 /* POP-UP DETAIL */
@@ -171,6 +173,7 @@ section{position:relative}
 .popup-detail-number{font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gold-l);letter-spacing:.18em}
 .popup-detail-item h3{font-family:'Cormorant Garamond',serif;font-size:1.35rem;font-weight:300;color:var(--cream);margin-bottom:8px}
 .popup-detail-item p{font-size:.78rem;line-height:1.8;color:rgba(234,233,227,.74)}
+.popup-reserve-note{margin-top:30px;padding:22px 24px;border:1px solid rgba(205,177,151,.18);background:rgba(245,241,229,.04);color:rgba(245,241,229,.72);font-size:.76rem;line-height:1.8;max-width:520px}
 
 /* PERIGALLO EN FINCA LA LAGUNA */
 .finca{padding:140px 0;background:var(--bg2);position:relative;overflow:hidden}
@@ -239,7 +242,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 .mobile-cta-bar{display:none}
 
 /* ===== OFFICIAL BOOKING ENGINE ===== */
-.dates-section{padding:140px 0;background:radial-gradient(circle at 18% 8%,rgba(205,177,151,.12),transparent 28%),linear-gradient(180deg,#122429 0%,#1E3338 44%,#13252A 100%);position:relative;overflow:hidden}
+.dates-section{padding:120px 0;background:radial-gradient(circle at 18% 8%,rgba(205,177,151,.12),transparent 28%),linear-gradient(180deg,#122429 0%,#1E3338 44%,#13252A 100%);position:relative;overflow:hidden}
 .dates-section::before{content:'';position:absolute;inset:0;opacity:.035;background-image:linear-gradient(var(--gold) 1px,transparent 1px),linear-gradient(90deg,var(--gold) 1px,transparent 1px);background-size:76px 76px;pointer-events:none}
 .dates-section::after{content:'';position:absolute;left:60px;right:60px;top:54px;height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);opacity:.8}
 .dates-header{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,470px);gap:64px;align-items:end;max-width:1220px;margin:0 auto 58px;padding:0 60px;text-align:left;position:relative;z-index:1}
@@ -561,28 +564,6 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
   </div>
 </section>
 
-<!-- CÓMO FUNCIONA -->
-<section class="process" id="como-funciona">
-  <div class="process-inner">
-    <div class="process-header">
-      <span class="section-eyebrow reveal">Cómo funciona</span>
-      <h2 class="section-title reveal reveal-delay-1">De la idea a una experiencia <em>con sentido</em></h2>
-      <p class="section-body reveal reveal-delay-2">La solicitud inicial nos ayuda a entender qué queréis celebrar, dónde, cuándo y con qué tipo de propuesta gastronómica. Desde ahí trabajamos una respuesta clara y personalizada.</p>
-    </div>
-    <div class="process-grid" aria-label="Proceso de trabajo de Perigallo">
-      <article class="process-step reveal"><span class="process-number">01</span><div><h3>Nos cuentas tu idea</h3><p>Recibimos los primeros datos de la celebración o experiencia.</p></div></article>
-      <article class="process-step reveal reveal-delay-1"><span class="process-number">02</span><div><h3>Revisamos disponibilidad</h3><p>Vemos fecha, tipo de evento, espacio y necesidades principales.</p></div></article>
-      <article class="process-step reveal reveal-delay-2"><span class="process-number">03</span><div><h3>Diseñamos propuesta</h3><p>Planteamos una experiencia gastronómica ajustada al contexto.</p></div></article>
-      <article class="process-step reveal reveal-delay-3"><span class="process-number">04</span><div><h3>Confirmamos detalles</h3><p>Cerramos menú, ritmo, servicio, invitados y producción.</p></div></article>
-      <article class="process-step reveal reveal-delay-4"><span class="process-number">05</span><div><h3>Producimos la experiencia</h3><p>El equipo ejecuta la celebración con cocina y puesta en escena.</p></div></article>
-    </div>
-    <div class="process-actions reveal reveal-delay-4">
-      <a class="btn-primary" href="#form">Iniciar solicitud</a>
-      <a class="btn-ghost" href="#celebrate">Ver celebraciones</a>
-    </div>
-  </div>
-</section>
-
 <!-- RESTAURANTE POP-UP -->
 <section class="popup-detail" id="popup">
   <div class="popup-detail-inner">
@@ -590,8 +571,9 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
       <span class="section-eyebrow reveal">Restaurante pop-up</span>
       <h2 class="section-title reveal reveal-delay-1">Fechas puntuales,<br><em>experiencias limitadas</em></h2>
       <p class="section-body reveal reveal-delay-2">El pop-up de Perigallo abre en momentos concretos: cenas especiales, encuentros gastronómicos y propuestas efímeras con plazas limitadas. Cada fecha tiene su propio ritmo, su menú y una forma distinta de vivir la cocina de Perigallo.</p>
+      <p class="popup-reserve-note reveal reveal-delay-2">No es un restaurante permanente. Cuando abrimos calendario, cada experiencia se reserva desde Perigallo Reservas con fecha, turno y plazas disponibles.</p>
       <div class="popup-detail-actions reveal reveal-delay-3">
-        <a href="https://reservas.perigallo.com/reservar?source=web" class="btn-primary" target="_blank" rel="noopener noreferrer">Ver fechas abiertas</a>
+        <a href="https://reservas.perigallo.com/reservar?source=web" class="btn-primary" target="_blank" rel="noopener noreferrer">Reservar pop-up</a>
         <a href="#celebrate" class="btn-ghost">Ver celebraciones</a>
       </div>
     </div>
@@ -606,18 +588,40 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
       <li class="popup-detail-item">
         <span class="popup-detail-number">02</span>
         <div>
-          <h3>Plazas limitadas</h3>
-          <p>Cada experiencia se reserva desde el motor oficial, con disponibilidad, turnos y plazas actualizadas.</p>
+          <h3>Menús efímeros</h3>
+          <p>Menús diseñados para ese día, con producto, relato y ritmo propios. Cuando termina la fecha, termina la experiencia.</p>
         </div>
       </li>
       <li class="popup-detail-item">
         <span class="popup-detail-number">03</span>
         <div>
-          <h3>Reserva directa</h3>
-          <p>Cuando haya fechas abiertas, podrás elegir el momento y confirmar tu experiencia desde el motor oficial de Perigallo Reservas.</p>
+          <h3>Plazas limitadas</h3>
+          <p>La reserva se realiza en el motor público de Perigallo, con turnos y plazas disponibles para cada experiencia.</p>
         </div>
       </li>
     </ul>
+  </div>
+</section>
+
+<!-- CÓMO FUNCIONA -->
+<section class="process" id="como-funciona">
+  <div class="process-inner">
+    <div class="process-header">
+      <span class="section-eyebrow reveal">Cómo funciona</span>
+      <h2 class="section-title reveal reveal-delay-1">De la idea a una experiencia <em>con sentido</em></h2>
+      <p class="section-body reveal reveal-delay-2">La solicitud inicial nos ayuda a entender qué queréis celebrar, dónde, cuándo y con qué tipo de propuesta gastronómica. Desde ahí trabajamos una respuesta clara y personalizada.</p>
+    </div>
+    <div class="process-grid" aria-label="Proceso de trabajo de Perigallo">
+      <article class="process-step reveal"><span class="process-number">01</span><div><h3>Nos cuentas vuestra idea</h3><p>Recibimos los primeros datos de la celebración o experiencia.</p></div></article>
+      <article class="process-step reveal reveal-delay-1"><span class="process-number">02</span><div><h3>Revisamos disponibilidad</h3><p>Vemos fecha, formato, espacio y necesidades principales.</p></div></article>
+      <article class="process-step reveal reveal-delay-2"><span class="process-number">03</span><div><h3>Diseñamos propuesta</h3><p>Planteamos una experiencia gastronómica personalizada.</p></div></article>
+      <article class="process-step reveal reveal-delay-3"><span class="process-number">04</span><div><h3>Cerramos detalles</h3><p>Definimos menú, invitados, ritmo de servicio y producción.</p></div></article>
+      <article class="process-step reveal reveal-delay-4"><span class="process-number">05</span><div><h3>Producimos la experiencia</h3><p>El equipo ejecuta la celebración con cocina y puesta en escena.</p></div></article>
+    </div>
+    <div class="process-actions reveal reveal-delay-4">
+      <a class="btn-primary" href="https://suite.perigallo.com/solicitud?origen=web-perigallo" target="_blank" rel="noopener noreferrer">Iniciar solicitud</a>
+      <a class="btn-ghost" href="#celebrate">Ver celebraciones</a>
+    </div>
   </div>
 </section>
 
@@ -631,90 +635,17 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
     </div>
     <div class="celebrate-text">
       <span class="section-eyebrow reveal">Celebraciones</span>
-      <h2 class="section-title reveal reveal-delay-1">Celebraciones<br><em>diseñadas</em><br>por Perigallo</h2>
+      <h2 class="section-title reveal reveal-delay-1">Tipos de<br><em>celebración</em></h2>
       <blockquote class="celebrate-quote reveal reveal-delay-2">"Una propuesta gastronómica personalizada, cuidada desde el relato hasta el último pase."</blockquote>
       <p class="section-body reveal reveal-delay-3">Bodas, comuniones, bautizos, eventos familiares y celebraciones privadas. Diseñamos cada encuentro como una experiencia gastronómica única, ajustando el relato, los pases y el servicio a la historia que queréis contar.</p>
       <div class="celebration-cards reveal reveal-delay-3" aria-label="Tipos de celebraciones">
-        <article class="celebration-card"><h3>Bodas</h3><p>Una propuesta gastronómica con relato, ritmo de servicio y puesta en escena para celebrar sin formato impuesto.</p></article>
-        <article class="celebration-card"><h3>Comuniones</h3><p>Celebraciones familiares cuidadas, cómodas y con una cocina pensada para adultos y pequeños.</p></article>
-        <article class="celebration-card"><h3>Bautizos</h3><p>Encuentros íntimos y elegantes donde el servicio acompaña sin invadir el momento.</p></article>
-        <article class="celebration-card"><h3>Eventos privados</h3><p>Aniversarios, cenas privadas y reuniones especiales diseñadas con una propuesta propia.</p></article>
-        <article class="celebration-card"><h3>Cenas privadas / empresas</h3><p>Experiencias para equipos, marcas o grupos reducidos con cocina de autor para eventos.</p></article>
+        <article class="celebration-card"><h3>Bodas</h3><p>Una propuesta gastronómica con relato, ritmo de servicio y puesta en escena para celebrar sin formato impuesto.</p><a href="https://suite.perigallo.com/solicitud?origen=web-perigallo" target="_blank" rel="noopener noreferrer">Solicitar</a></article>
+        <article class="celebration-card"><h3>Comuniones</h3><p>Celebraciones familiares cuidadas, cómodas y con una cocina pensada para adultos y pequeños.</p><a href="https://suite.perigallo.com/solicitud?origen=web-perigallo" target="_blank" rel="noopener noreferrer">Solicitar</a></article>
+        <article class="celebration-card"><h3>Bautizos</h3><p>Encuentros íntimos y elegantes donde el servicio acompaña sin invadir el momento.</p><a href="https://suite.perigallo.com/solicitud?origen=web-perigallo" target="_blank" rel="noopener noreferrer">Solicitar</a></article>
+        <article class="celebration-card"><h3>Eventos privados</h3><p>Aniversarios, encuentros familiares y reuniones especiales diseñadas con una propuesta propia.</p><a href="https://suite.perigallo.com/solicitud?origen=web-perigallo" target="_blank" rel="noopener noreferrer">Solicitar</a></article>
+        <article class="celebration-card"><h3>Empresas / cenas privadas</h3><p>Experiencias para equipos, marcas o grupos reducidos con cocina de autor para eventos.</p><a href="https://suite.perigallo.com/solicitud?origen=web-perigallo" target="_blank" rel="noopener noreferrer">Solicitar</a></article>
       </div>
       <a href="#form" class="btn-primary reveal reveal-delay-4">Solicitar propuesta</a>
-    </div>
-  </div>
-</section>
-
-<!-- CONFIANZA -->
-<section class="trust" id="confianza">
-  <div class="trust-inner">
-    <div>
-      <span class="section-eyebrow reveal">Confianza</span>
-      <h2 class="section-title reveal reveal-delay-1">Una marca gastronómica con base en <em>Alicante</em></h2>
-      <p class="section-body reveal reveal-delay-2">Perigallo trabaja desde Crevillent para crear pop-ups, catering premium y celebraciones personalizadas con una operación clara: cocina, relato, producción y seguimiento comercial desde un mismo equipo.</p>
-    </div>
-    <div class="trust-grid reveal reveal-delay-3">
-      <div class="trust-item"><strong>Crevillent / Alicante</strong><span>Base local para bodas en finca, eventos privados y experiencias gastronómicas en la provincia.</span></div>
-      <div class="trust-item"><strong>Finca La Llaguna</strong><span>Uno de los espacios principales donde Perigallo desarrolla pop-ups y celebraciones a medida.</span></div>
-      <div class="trust-item"><strong>Perigallo Suite</strong><span>Las solicitudes entran directamente en el flujo comercial para evitar formularios duplicados.</span></div>
-      <div class="trust-item"><strong>Cocina con relato</strong><span>Menús y propuestas pensados para cada fecha, cada celebración y cada tipo de invitado.</span></div>
-    </div>
-  </div>
-</section>
-
-<!-- RESERVAS OFICIALES -->
-<section class="dates-section" id="fechas">
-  <div id="reservas" class="booking-anchor"></div>
-  <div class="dates-header">
-    <div>
-      <span class="section-eyebrow reveal">Motor de reservas</span>
-      <h2 class="section-title reveal reveal-delay-1">Reserva tu<br><em>experiencia</em></h2>
-    </div>
-    <div class="reveal reveal-delay-2">
-      <p class="coctel-intro">Elige fecha. Elige momento. Nosotros nos encargamos del resto. La reserva se completa en el motor oficial para que la experiencia se vea limpia y funcione con todas las garantías.</p>
-      <div class="booking-header-actions">
-        <a class="btn-primary" href="https://reservas.perigallo.com/reservar?source=web" target="_blank" rel="noopener noreferrer">Abrir reservas</a>
-      </div>
-    </div>
-  </div>
-  <div class="booking-engine reveal reveal-delay-3">
-    <div class="booking-live-panel">
-      <aside class="booking-live-copy">
-        <div>
-          <span class="booking-live-kicker">Reserva directa</span>
-          <h3 class="booking-live-title">Elige tu momento, <em>en el motor oficial</em></h3>
-          <p class="booking-live-text">Te llevamos directamente a Perigallo Reservas para consultar fechas abiertas, seleccionar turno y confirmar tu experiencia con la interfaz completa.</p>
-        </div>
-        <ul class="booking-live-points" aria-label="Ventajas de la reserva">
-          <li>Fechas reales del pop-up</li>
-          <li>Turnos y plazas actualizados</li>
-          <li>Confirmación desde el sistema oficial</li>
-        </ul>
-      </aside>
-      <div class="booking-live-widget" id="motor-reservas">
-        <div class="booking-live-widget-head">
-          <div>
-            <h3>Reserva del pop-up</h3>
-            <p>Abre la vista oficial para reservar con calendario, turnos y plazas actualizadas.</p>
-          </div>
-          <span class="booking-status-pill">Motor oficial</span>
-        </div>
-        <div class="booking-external-card">
-          <div>
-            <h3 class="booking-external-title">Abrir <em>Perigallo Reservas</em></h3>
-            <p class="booking-external-text">La reserva se realiza en una pestaña nueva para que el calendario oficial se vea completo y el proceso sea más cómodo.</p>
-          </div>
-          <ul class="booking-external-meta">
-            <li><span>Tipo</span><strong>Pop-up</strong></li>
-            <li><span>Disponibilidad</span><strong>En tiempo real</strong></li>
-            <li><span>Destino</span><strong>Perigallo Reservas</strong></li>
-          </ul>
-          <div class="booking-external-actions">
-            <a class="btn-primary" href="https://reservas.perigallo.com/reservar?source=web" target="_blank" rel="noopener noreferrer">Reservar experiencia</a>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </section>
@@ -736,6 +667,23 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
       <div class="finca-visual-img" role="img" aria-label="Vista principal de Finca La Llaguna" style="background-image:url('assets/images/finca-la-llaguna-principal.jpg');background-size:cover;background-position:center"></div>
       <div class="finca-overlay"></div>
       <span class="finca-badge">— Finca mediterránea</span>
+    </div>
+  </div>
+</section>
+
+<!-- CONFIANZA -->
+<section class="trust" id="confianza">
+  <div class="trust-inner">
+    <div>
+      <span class="section-eyebrow reveal">Confianza</span>
+      <h2 class="section-title reveal reveal-delay-1">Una marca gastronómica con base en <em>Alicante</em></h2>
+      <p class="section-body reveal reveal-delay-2">Perigallo trabaja desde Crevillent para crear pop-ups, catering premium y celebraciones personalizadas con una operación clara: cocina, relato, producción y seguimiento comercial desde un mismo equipo.</p>
+    </div>
+    <div class="trust-grid reveal reveal-delay-3">
+      <div class="trust-item"><strong>Crevillent / Alicante</strong><span>Base local para bodas en finca, eventos privados y experiencias gastronómicas en la provincia.</span></div>
+      <div class="trust-item"><strong>Finca La Llaguna</strong><span>Uno de los espacios principales donde Perigallo desarrolla pop-ups y celebraciones a medida.</span></div>
+      <div class="trust-item"><strong>Gestión conectada</strong><span>Las solicitudes entran en Perigallo Suite y las reservas pop-up se completan en Perigallo Reservas.</span></div>
+      <div class="trust-item"><strong>Cocina con relato</strong><span>Menús y propuestas pensados para cada fecha, cada celebración y cada tipo de invitado.</span></div>
     </div>
   </div>
 </section>
@@ -801,7 +749,10 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
         <li><a href="#about">Quiénes somos</a></li>
         <li><a href="#services">Qué hacemos</a></li>
         <li><a href="#contact">Contacto</a></li>
+        <li><a href="/aviso-legal/">Aviso legal</a></li>
         <li><a href="/politica-privacidad/">Política de privacidad</a></li>
+        <li><a href="/cookies/">Cookies</a></li>
+        <li><a href="/condiciones/">Condiciones</a></li>
       </ul>
     </div>
     <div>
