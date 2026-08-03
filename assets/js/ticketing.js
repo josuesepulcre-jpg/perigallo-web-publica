@@ -89,27 +89,43 @@
       var onSale = types.filter(function (type) { return (type.effective_status || type.status) === "on_sale"; });
       var gallery = (event.gallery || []).filter(Boolean).map(function (url) { return '<img loading="lazy" src="' + escapeAttr(previewAssetUrl(url, preview)) + '" alt="Detalle de ' + escapeHtml(event.title) + '">'; }).join("");
       var logo = event.logo_url ? '<img class="event-logo" src="' + escapeAttr(previewAssetUrl(event.logo_url, preview)) + '" alt="Logotipo de ' + escapeHtml(event.title) + '">' : '';
-      var video = event.video_url ? '<section class="event-video"><video controls preload="metadata" src="' + escapeAttr(previewAssetUrl(event.video_url, preview)) + '">Tu navegador no puede reproducir este vídeo.</video></section>' : '';
+      var imageUrl = previewAssetUrl(event.image_url || "/assets/images/finca-la-llaguna-principal.jpg", preview);
+      var video = event.video_url ? '<div class="event-story-media"><section class="event-video"><video controls playsinline preload="metadata" poster="' + escapeAttr(imageUrl) + '" src="' + escapeAttr(previewAssetUrl(event.video_url, preview)) + '">Tu navegador no puede reproducir este vídeo.</video></section></div>' : '';
       var action = preview ? '<button class="ticket-btn primary" type="button" disabled>Vista previa: compra desactivada</button>' : (onSale.length ? '<a class="ticket-btn primary" href="/entradas/checkout/?event=' + encodeURIComponent(event.slug) + '">Comprar entradas</a>' : '<span class="ticket-status">' + (types.length ? 'Las entradas no están disponibles en este momento.' : 'Próximamente anunciaremos las entradas.') + '</span>');
+      var storyClass = video ? "event-story event-story-layout event-story-has-media" : "event-story event-story-layout";
       return [
-        '<div class="ticket-detail">',
-        '<div class="ticket-detail-media" style="background-image:url(' + escapeAttr(previewAssetUrl(event.image_url || "/assets/images/finca-la-llaguna-principal.jpg", preview)) + ')"></div>',
-        '<div>',
+        '<div class="event-detail-layout">',
+        '<section class="ticket-detail event-hero">',
+        '<figure class="ticket-detail-media event-hero-media"><img src="' + escapeAttr(imageUrl) + '" alt="Cartel de ' + escapeHtml(event.title) + '"></figure>',
+        '<div class="event-hero-copy">',
         logo,
-        '<span class="ticket-eyebrow">' + escapeHtml(event.location) + '</span>',
+        '<span class="ticket-eyebrow">' + escapeHtml(event.location || "Perigallo") + '</span>',
         '<h1 class="ticket-title">' + escapeHtml(event.title) + '</h1>',
         event.subtitle ? '<p class="event-subtitle">' + escapeHtml(event.subtitle) + '</p>' : '',
-        '<p class="ticket-copy">' + escapeHtml(event.short_description || event.description) + '</p>',
-        '<div class="event-meta"><span>' + escapeHtml(fmtDate(event.starts_at)) + '</span><span>' + escapeHtml(event.doors_open_at ? 'Puertas: ' + fmtDate(event.doors_open_at) : '') + '</span><span>' + escapeHtml(event.address || "") + '</span><span>Promotor: ' + escapeHtml(event.promoter || "JYD Events, S.L.") + '</span></div>',
+        '<p class="ticket-copy event-intro">' + escapeHtml(event.short_description || event.description) + '</p>',
+        '<div class="event-meta event-metadata">' + eventMetadata(event) + '</div>',
         '<div class="ticket-types">' + types.map(ticketTypeRow).join("") + '</div>',
-        action,
+        '<div class="event-purchase-action">' + action + '</div>',
         '</div>',
-        '</div>',
-        '<section class="event-story"><div><span class="ticket-eyebrow">La experiencia</span><h2>' + escapeHtml(event.title) + '</h2><p class="ticket-copy">' + escapeHtml(event.description || "") + '</p></div></section>',
-        video,
+        '</section>',
+        '<section class="' + storyClass + '"><div class="event-story-copy"><span class="ticket-eyebrow">La experiencia</span><h2>' + escapeHtml(event.title) + '</h2><div class="ticket-copy event-story-text">' + textParagraphs(event.description || "") + '</div></div>' + video + '</section>',
         gallery ? '<section class="event-gallery">' + gallery + '</section>' : '',
-        experienceAccordions(event) ? '<section class="event-public-information event-public-information-accordions"><div class="experience-accordions">' + experienceAccordions(event) + '</div></section>' : ''
+        experienceAccordions(event) ? '<section class="event-public-information event-public-information-accordions"><div class="experience-accordions">' + experienceAccordions(event) + '</div></section>' : '',
+        '</div>'
       ].join("");
+  }
+
+  function metadataItem(icon, label, value) {
+    if (!value) return "";
+    return '<span class="event-meta-item"><span class="event-meta-icon" aria-hidden="true">' + icon + '</span><span><small>' + escapeHtml(label) + '</small><strong>' + escapeHtml(value) + '</strong></span></span>';
+  }
+
+  function eventMetadata(event) {
+    var calendar = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="16" rx="1"></rect><path d="M7 3v4M17 3v4M3 10h18"></path></svg>';
+    var doors = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7v5l3 2"></path></svg>';
+    var place = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>';
+    var host = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 21c.8-4 3.1-6 7-6s6.2 2 7 6"></path></svg>';
+    return metadataItem(calendar, "Fecha", fmtDate(event.starts_at)) + metadataItem(doors, "Puertas", event.doors_open_at ? fmtDate(event.doors_open_at) : "") + metadataItem(place, "Lugar", event.address || event.location) + metadataItem(host, "Promotor", event.promoter || "");
   }
 
   function textParagraphs(value) {
@@ -176,6 +192,14 @@
       if (!trigger || !root.contains(trigger)) return;
       var accordion = trigger.closest("[data-experience-accordion]");
       var wasOpen = accordion.classList.contains("is-open");
+      root.querySelectorAll("[data-experience-accordion]").forEach(function (item) {
+        if (item === accordion) return;
+        item.classList.remove("is-open");
+        var itemTrigger = item.querySelector("[data-experience-accordion-trigger]");
+        var itemPanel = item.querySelector(".experience-accordion-panel");
+        if (itemTrigger) itemTrigger.setAttribute("aria-expanded", "false");
+        if (itemPanel) itemPanel.setAttribute("aria-hidden", "true");
+      });
       accordion.classList.toggle("is-open", !wasOpen);
       trigger.setAttribute("aria-expanded", String(!wasOpen));
       accordion.querySelector(".experience-accordion-panel").setAttribute("aria-hidden", String(wasOpen));
@@ -187,8 +211,9 @@
     var availability = state === "on_sale" ? (Number(type.available || 0) + " disponibles") : ({ upcoming: "Próximamente", sold_out: "Agotada", paused: "Venta pausada", closed: "Venta cerrada", code_required: "Acceso mediante código" }[state] || state);
     return [
       '<article class="ticket-type">',
-      '<div><h3>' + escapeHtml(type.name) + '</h3><p>' + escapeHtml(type.description || "") + '</p><p>' + escapeHtml(availability) + (type.requires_promo ? ' · Código necesario' : '') + '</p></div>',
-      '<strong class="ticket-type-price">' + cents(type.final_price_cents != null ? type.final_price_cents : type.price_cents) + '</strong>',
+      '<span class="ticket-type-mark" aria-hidden="true">01</span>',
+      '<div class="ticket-type-copy"><h3>' + escapeHtml(type.name) + '</h3><p>' + escapeHtml(type.description || "") + '</p><small>' + escapeHtml(availability) + (type.requires_promo ? ' · Código necesario' : '') + '</small></div>',
+      '<div class="ticket-type-price"><strong>' + cents(type.final_price_cents != null ? type.final_price_cents : type.price_cents) + '</strong><span>por persona</span></div>',
       '</article>'
     ].join("");
   }
