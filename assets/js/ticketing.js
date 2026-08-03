@@ -415,9 +415,15 @@
         if (subtotal) subtotal.innerHTML = quantity ? "Subtotal: <strong>" + cents(quantity * Number(input.dataset.ticketPrice || 0)) + "</strong>" : "";
       });
       renderCheckoutSummary(summary, selected, form.dataset.eventTitle || "La experiencia");
+      var total = selected.reduce(function (sum, input) { return sum + Number(input.value || 0) * Number(input.dataset.ticketPrice || 0); }, 0);
       var validation = checkoutValidation(form, selected);
       status.textContent = isSubmitting ? "Preparando el pago seguro..." : validation.message;
       submit.disabled = isSubmitting || !validation.valid;
+      submit.innerHTML = isSubmitting
+        ? 'Conectando con el TPV <span aria-hidden="true">→</span>'
+        : selected.length
+          ? 'Pagar ' + cents(total) + ' <span aria-hidden="true">→</span>'
+          : 'Continuar al pago <span aria-hidden="true">→</span>';
     }
 
     form.addEventListener("submit", function (event) {
@@ -457,24 +463,29 @@
           window.location.assign(data.payment.url);
           return;
         }
-        var redsysForm = document.createElement("form");
-        redsysForm.method = "POST";
-        redsysForm.action = data.payment.url;
-        Object.keys(data.payment.fields).forEach(function (key) {
-          var input = document.createElement("input");
-          input.type = "hidden";
-          input.name = key;
-          input.value = data.payment.fields[key];
-          redsysForm.appendChild(input);
-        });
-        document.body.appendChild(redsysForm);
-        redsysForm.submit();
+        submitPaymentForm(data.payment);
       }).catch(function (error) {
         status.textContent = error.message;
         isSubmitting = false;
         refreshCheckout();
       });
     });
+  }
+
+  function submitPaymentForm(payment) {
+    if (!payment || !payment.url || !payment.fields) throw new Error("No se pudo preparar la conexión segura con el TPV.");
+    var redsysForm = document.createElement("form");
+    redsysForm.method = "POST";
+    redsysForm.action = payment.url;
+    Object.keys(payment.fields).forEach(function (key) {
+      var input = document.createElement("input");
+      input.type = "hidden";
+      input.name = key;
+      input.value = payment.fields[key];
+      redsysForm.appendChild(input);
+    });
+    document.body.appendChild(redsysForm);
+    redsysForm.submit();
   }
 
   function checkoutTicketMarkup(type) {
@@ -543,16 +554,16 @@
     confirmation.innerHTML = [
       '<span class="ticket-eyebrow">Modo de pruebas</span>',
       '<h2>Así vería <em>tu pedido</em> la persona asistente</h2>',
-      '<p class="ticket-copy">Completarás el recorrido de <strong>' + escapeHtml(eventTitle) + '</strong> con un pedido aislado y el entorno sandbox. No se realizará ningún cargo real.</p>',
+      '<p class="ticket-copy">Vas a continuar al TPV seguro de <strong>Redsys TEST</strong> para completar esta operación aislada. No se realizará ningún cargo real.</p>',
       '<div class="ticket-preview-summary"><div><span>Contacto</span><strong>' + escapeHtml((payload.first_name + " " + payload.last_name).trim() || "Nombre de ejemplo") + '</strong><small>' + escapeHtml(payload.email || "correo@ejemplo.com") + '</small></div><div><span>Importe total</span><strong>' + cents(total) + '</strong><small>Las entradas y los envíos se marcarán como prueba.</small></div></div>',
       '<ul class="ticket-preview-items">' + itemRows + '</ul>',
-      '<div class="checkout-preview-actions"><button class="ticket-btn primary" type="button" data-start-test-payment>Continuar al pago de prueba</button><button class="ticket-btn" type="button" data-restart-checkout-preview>Volver a editar la compra</button><a class="checkout-preview-editor-link" href="/admin/entradas/">Volver al editor</a></div>'
+      '<div class="checkout-preview-actions"><button class="ticket-btn primary" type="button" data-start-test-payment>Pagar ' + cents(total) + ' <span aria-hidden="true">→</span></button><button class="ticket-btn" type="button" data-restart-checkout-preview>Volver a editar la compra</button><a class="checkout-preview-editor-link" href="/admin/entradas/">Volver al editor</a></div><p class="checkout-security">Pago seguro en entorno de pruebas · No se realizará ningún cargo real.</p>'
     ].join("");
     confirmation.querySelector("[data-restart-checkout-preview]").addEventListener("click", function () { layout.hidden = false; confirmation.hidden = true; form.querySelector("[data-quantity-action]").focus(); });
     confirmation.querySelector("[data-start-test-payment]").addEventListener("click", function (event) {
       var button = event.currentTarget;
       button.disabled = true;
-      button.textContent = "Creando pedido de prueba…";
+      button.textContent = "Conectando con Redsys TEST…";
       var testSessionKey = "perigallo-test-checkout-" + String(form.dataset.previewEventId || "event");
       var testSessionId = sessionStorage.getItem(testSessionKey);
       if (!testSessionId) {
@@ -565,10 +576,14 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       }).then(function (data) {
-        window.location.assign(data.payment.url);
+        if (data.payment && data.payment.free) {
+          window.location.assign(data.payment.url);
+          return;
+        }
+        submitPaymentForm(data.payment);
       }).catch(function (error) {
         button.disabled = false;
-        button.textContent = "Continuar al pago de prueba";
+        button.innerHTML = "Pagar " + cents(total) + ' <span aria-hidden="true">→</span>';
         var notice = document.createElement("p");
         notice.className = "ticket-status";
         notice.textContent = error.message;
@@ -583,52 +598,6 @@
       if (!session.authenticated || !session.csrf) throw new Error("La sesión del editor ha caducado. Vuelve a iniciar sesión para ejecutar la prueba.");
       options.headers = Object.assign({}, options.headers || {}, { "X-CSRF-Token": session.csrf });
       return request(url, options);
-    });
-  }
-
-  function initTestPayment() {
-    var root = document.querySelector("[data-test-payment]");
-    if (!root) return;
-    var token = qs("token");
-    if (!token) {
-      root.innerHTML = '<p class="ticket-status">Falta el identificador del pedido de prueba.</p>';
-      return;
-    }
-    request(api + "/orders/" + encodeURIComponent(token)).then(function (data) {
-      var order = data.order;
-      if (!order.is_test) throw new Error("Este pago no pertenece al entorno de pruebas.");
-      renderTestPayment(root, order);
-    }).catch(function (error) {
-      root.innerHTML = '<p class="ticket-status">' + escapeHtml(error.message) + '</p>';
-    });
-  }
-
-  function renderTestPayment(root, order, message) {
-    var items = (order.items || []).map(function (item) { return '<li><span>' + Number(item.quantity) + ' × ' + escapeHtml(item.ticket_type_name) + '</span><strong>' + cents(item.total_cents) + '</strong></li>'; }).join("");
-    root.innerHTML = [
-      '<div class="ticket-panel">',
-      '<span class="ticket-eyebrow">TPV · entorno sandbox</span>',
-      '<h1 class="ticket-title">Pago de <em>prueba</em></h1>',
-      '<p class="ticket-copy">Pedido ' + escapeHtml(order.reference) + ' · No se realizará ningún cargo real. Esta pantalla permite comprobar los resultados del flujo completo.</p>',
-      '<div class="ticket-preview-summary"><div><span>Comprador</span><strong>' + escapeHtml(order.name) + '</strong><small>' + escapeHtml(order.email) + '</small></div><div><span>Importe de prueba</span><strong>' + cents(order.total_cents) + '</strong><small>Entorno aislado de producción</small></div></div>',
-      '<ul class="ticket-preview-items">' + items + '</ul>',
-      message ? '<p class="ticket-status">' + escapeHtml(message) + '</p>' : '',
-      '<div class="checkout-preview-actions"><button class="ticket-btn primary" type="button" data-test-outcome="accepted">Simular pago aceptado</button><button class="ticket-btn" type="button" data-test-outcome="denied">Simular pago rechazado</button><button class="checkout-preview-editor-link" type="button" data-test-outcome="cancelled">Cancelar prueba</button></div>',
-      '</div>'
-    ].join("");
-    root.querySelectorAll("[data-test-outcome]").forEach(function (button) {
-      button.addEventListener("click", function () {
-        root.querySelectorAll("[data-test-outcome]").forEach(function (item) { item.disabled = true; });
-        adminRequest(api + "/admin/test-orders/" + encodeURIComponent(order.token) + "/complete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ outcome: button.dataset.testOutcome }) }).then(function (data) {
-          if (data.outcome === "accepted") {
-            window.location.assign("/entradas/pedido/?token=" + encodeURIComponent(order.token));
-            return;
-          }
-          renderTestPayment(root, data.order, data.outcome === "cancelled" ? "El pago de prueba se ha cancelado. Puedes volver a intentarlo sin crear un segundo pedido." : "El pago de prueba ha sido rechazado. Puedes volver a intentarlo sin duplicar las entradas.");
-        }).catch(function (error) {
-          renderTestPayment(root, order, error.message);
-        });
-      });
     });
   }
 
@@ -657,6 +626,59 @@
     });
   }
 
+  function initPaymentResult() {
+    var root = document.querySelector("[data-payment-result]");
+    if (!root) return;
+    var token = qs("token");
+    var isFailureReturn = root.dataset.paymentResult === "error";
+    if (!token) {
+      root.innerHTML = '<p class="ticket-status">No hemos podido identificar el pedido. Vuelve a eventos o habla con Perigallo.</p>';
+      return;
+    }
+    var attempts = 0;
+    var maxAttempts = 12;
+    function render(order) {
+      var paid = order.payment_status === "paid" || order.status === "paid";
+      var failed = order.payment_status === "failed" || order.payment_status === "cancelled" || order.status === "denied" || order.status === "cancelled";
+      if (paid) {
+        root.innerHTML = [
+          '<span class="ticket-eyebrow">Pago validado por Redsys</span>',
+          '<h1 class="ticket-title">Tu experiencia está <em>confirmada</em></h1>',
+          '<p class="ticket-copy">El pago ha sido validado y tus entradas ya están preparadas. Referencia: <strong>' + escapeHtml(order.reference || order.status) + '</strong>.</p>',
+          order.is_test ? '<p class="ticket-status">Operación de prueba: no se ha realizado ningún cargo real.</p>' : '',
+          '<div class="ticket-actions"><a class="ticket-btn primary" href="/entradas/pedido/?token=' + encodeURIComponent(token) + '">Ver mis entradas</a><a class="ticket-btn" href="/eventos/">Volver a eventos</a></div>'
+        ].join("");
+        return true;
+      }
+      if (failed) {
+        root.innerHTML = [
+          '<span class="ticket-eyebrow">Pago no confirmado</span>',
+          '<h1 class="ticket-title">No se ha confirmado <em>el pago</em></h1>',
+          '<p class="ticket-copy">No se han generado entradas. Puedes volver a la experiencia e intentarlo de nuevo o hablar con Perigallo.</p>',
+          '<div class="ticket-actions"><a class="ticket-btn primary" href="/eventos/">Volver a eventos</a><a class="ticket-btn" href="https://wa.me/34691499985" target="_blank" rel="noopener noreferrer">WhatsApp</a></div>'
+        ].join("");
+        return true;
+      }
+      root.innerHTML = [
+        '<span class="ticket-eyebrow">' + (isFailureReturn ? 'Pago pendiente de confirmación' : 'Validando pago') + '</span>',
+        '<h1 class="ticket-title">Estamos confirmando <em>tu pago</em></h1>',
+        '<p class="ticket-copy">Esperamos la notificación oficial de Redsys antes de emitir las entradas. Esta página se actualizará automáticamente.</p>',
+        '<p class="ticket-status">Conexión segura con Redsys en curso.</p>'
+      ].join("");
+      return false;
+    }
+    function check() {
+      request(api + "/orders/" + encodeURIComponent(token)).then(function (data) {
+        if (render(data.order) || attempts >= maxAttempts) return;
+        attempts += 1;
+        window.setTimeout(check, 2500);
+      }).catch(function (error) {
+        root.innerHTML = '<p class="ticket-status">' + escapeHtml(error.message) + '</p>';
+      });
+    }
+    check();
+  }
+
   function ticketPass(ticket, isTest) {
     return '<article class="ticket-pass"><div>' + (isTest ? '<span class="ticket-eyebrow">Entrada de prueba · sin validez de acceso real</span>' : '') + '<h3>' + escapeHtml(ticket.event_title) + '</h3><p>' + escapeHtml(fmtDate(ticket.starts_at)) + ' · ' + escapeHtml(ticket.location || "") + '</p><p>' + escapeHtml(ticket.ticket_type_name || "") + '</p><p class="ticket-code">' + escapeHtml(ticket.public_code) + '</p></div><div class="ticket-qr">' + (isTest ? 'Código de prueba' : 'Código acceso') + '<br>' + escapeHtml(ticket.public_code) + '</div></article>';
   }
@@ -675,5 +697,5 @@
   initEventDetail();
   initCheckout();
   initOrderStatus();
-  initTestPayment();
+  initPaymentResult();
 })();

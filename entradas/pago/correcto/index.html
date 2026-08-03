@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Validando pago | Perigallo</title>
+  <title>Confirmando pago | Perigallo</title>
   <meta name="robots" content="noindex,nofollow">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
@@ -13,14 +13,14 @@
   <main class="ticketing-main">
     <section class="ticket-hero">
       <div class="ticket-hero-inner">
-        <div>
-          <span class="ticket-eyebrow">Pago recibido por Redsys</span>
-          <h1 class="ticket-title">Estamos validando <em>tu pago</em></h1>
-          <p class="ticket-copy">No mostraremos la compra como confirmada hasta que el servidor de Perigallo reciba y valide la notificación oficial de Redsys.</p>
-          <div class="ticket-actions"><a class="ticket-btn primary" href="/eventos/">Volver a eventos</a></div>
+        <div data-payment-result="success" aria-live="polite">
+          <span class="ticket-eyebrow">Validando pago</span>
+          <h1 class="ticket-title">Estamos confirmando <em>tu pago</em></h1>
+          <p class="ticket-copy">No mostraremos la compra como confirmada hasta validar la notificación oficial de Redsys.</p>
         </div>
       </div>
     </section>
   </main>
+  <script src="/assets/js/ticketing.js" defer></script>
 </body>
 </html>

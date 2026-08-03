@@ -81,12 +81,20 @@ MAIL_FROM_NAME=Perigallo
 5. Redsys llama a `/api/redsys/notification`.
 6. El backend valida firma, importe, comercio, moneda, terminal y respuesta.
 7. Si la respuesta es correcta, el pedido pasa a pagado, se generan tickets y se prepara email de confirmacion.
-8. El usuario puede ver el pedido en `/entradas/pedido/?token=...`.
+8. Redsys devuelve al navegador a una página de estado con el token público del pedido; esa página consulta el pedido hasta que llegue la notificación válida.
+9. El usuario puede ver el pedido en `/entradas/pedido/?token=...`.
+
+La vista previa privada del editor usa exactamente el mismo recorrido contra
+Redsys TEST. El pedido queda marcado como prueba y no afecta al aforo ni a la
+facturación de producción, pero el navegador sale de Perigallo para introducir
+la tarjeta de pruebas en la pasarela real. No existen botones internos para
+simular una aceptación o un rechazo.
 
 ## Seguridad
 
 - La clave secreta de Redsys solo vive en servidor.
 - No se aceptan pagos confirmados desde `UrlOK`.
+- Las URLs de retorno solo contienen un token público del pedido para consultar su estado; el webhook firmado es la única fuente de confirmación.
 - Cada notificacion Redsys se guarda en `payment_attempts`.
 - El stock se calcula con pedidos pagados y reservas temporales no expiradas.
 - La creacion de pedidos bloquea los tipos de entrada con `FOR UPDATE` para reducir riesgo de sobreventa.

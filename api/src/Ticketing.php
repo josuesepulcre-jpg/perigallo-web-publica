@@ -159,6 +159,7 @@ final class Ticketing
                 ];
             }
 
+            $this->redsys->assertConfigured();
             $this->pdo->prepare(
                 'INSERT INTO payment_attempts
                  (order_id, redsys_order, environment, amount_cents, currency, signature_version, status, created_at, updated_at)
@@ -179,7 +180,7 @@ final class Ticketing
 
             return [
                 'order' => $this->getOrderByToken($publicToken),
-                'payment' => $this->redsysForm($redsysOrder, $subtotal, $event),
+                'payment' => $this->redsysForm($redsysOrder, $subtotal, $event, $publicToken),
             ];
         } catch (\Throwable $e) {
             if ($this->pdo->inTransaction()) {
@@ -239,27 +240,31 @@ final class Ticketing
     /** Creates an admin-only sandbox order. It never reserves production capacity. */
     public function createTestOrder(int $eventId, array $data): array
     {
-        if (env_value('PAYMENT_ENVIRONMENT', 'sandbox') !== 'sandbox') {
-            throw new RuntimeException('El modo de pruebas está desactivado en este entorno.');
-        }
+        $this->redsys->assertSandboxConfigured();
         require_fields($data, ['first_name', 'last_name', 'email', 'phone', 'items']);
         if (empty($data['privacy_accepted']) || empty($data['terms_accepted']) || !is_array($data['items'])) {
             throw new RuntimeException('Completa los datos y acepta las condiciones para continuar.');
         }
+        $event = $this->requireAdminEvent($eventId);
         $testSession = substr(preg_replace('/[^A-Za-z0-9_-]/', '', (string) ($data['test_session_id'] ?? '')) ?: public_token(18), 0, 96);
-        $existing = $this->pdo->prepare('SELECT public_token FROM ticket_orders WHERE test_session_id = ? AND is_test = 1 LIMIT 1');
+        $existing = $this->pdo->prepare('SELECT public_token, redsys_order, total_cents, status FROM ticket_orders WHERE test_session_id = ? AND is_test = 1 ORDER BY id DESC LIMIT 1');
         $existing->execute([$testSession]);
-        $existingToken = (string) ($existing->fetchColumn() ?: '');
-        if ($existingToken !== '') {
+        $existingOrder = $existing->fetch();
+        if ($existingOrder) {
+            if ((string) $existingOrder['status'] === 'paid') {
+                return [
+                    'order' => $this->getOrderByToken((string) $existingOrder['public_token']),
+                    'payment' => ['free' => true, 'url' => app_base_url() . '/entradas/pedido/?token=' . rawurlencode((string) $existingOrder['public_token'])],
+                ];
+            }
             return [
-                'order' => $this->getOrderByToken($existingToken),
-                'payment' => ['sandbox' => true, 'url' => app_base_url() . '/entradas/pago/prueba/?token=' . rawurlencode($existingToken)],
+                'order' => $this->getOrderByToken((string) $existingOrder['public_token']),
+                'payment' => ['sandbox' => true] + $this->redsysForm((string) $existingOrder['redsys_order'], (int) $existingOrder['total_cents'], $event, (string) $existingOrder['public_token']),
             ];
         }
 
         $this->pdo->beginTransaction();
         try {
-            $event = $this->requireAdminEvent($eventId);
             $publicToken = public_token();
             $redsysOrder = $this->nextRedsysOrder();
             $firstName = clean_string((string) $data['first_name'], 120);
@@ -308,61 +313,14 @@ final class Ticketing
             $this->pdo->prepare('UPDATE ticket_orders SET subtotal_cents = ?, total_cents = ?, updated_at = NOW() WHERE id = ?')->execute([$total, $total, $orderId]);
             $this->pdo->prepare(
                 'INSERT INTO payment_attempts (order_id, redsys_order, environment, amount_cents, currency, signature_version, status, created_at, updated_at)
-                 VALUES (?, ?, "test", ?, ?, "sandbox-simulator", "created", NOW(), NOW())'
-            )->execute([$orderId, $redsysOrder, $total, env_value('REDSYS_CURRENCY', '978')]);
+                 VALUES (?, ?, "test", ?, ?, ?, "created", NOW(), NOW())'
+            )->execute([$orderId, $redsysOrder, $total, env_value('REDSYS_CURRENCY', '978'), env_value('REDSYS_SIGNATURE_VERSION', 'HMAC_SHA256_V1')]);
             $this->pdo->commit();
 
             return [
                 'order' => $this->getOrderByToken($publicToken),
-                'payment' => ['sandbox' => true, 'url' => app_base_url() . '/entradas/pago/prueba/?token=' . rawurlencode($publicToken)],
+                'payment' => ['sandbox' => true] + $this->redsysForm($redsysOrder, $total, $event, $publicToken),
             ];
-        } catch (\Throwable $e) {
-            if ($this->pdo->inTransaction()) {
-                $this->pdo->rollBack();
-            }
-            throw $e;
-        }
-    }
-
-    /** Completes a controlled sandbox attempt; only available through admin CSRF. */
-    public function completeTestPayment(string $token, string $outcome): array
-    {
-        $outcome = in_array($outcome, ['accepted', 'denied', 'cancelled', 'technical_error'], true) ? $outcome : 'technical_error';
-        $this->pdo->beginTransaction();
-        try {
-            $stmt = $this->pdo->prepare('SELECT * FROM ticket_orders WHERE public_token = ? AND is_test = 1 AND environment = "sandbox" FOR UPDATE');
-            $stmt->execute([$token]);
-            $order = $stmt->fetch();
-            if (!$order) {
-                throw new RuntimeException('Pedido de prueba no encontrado.');
-            }
-            if ($order['payment_status'] === 'paid') {
-                $this->pdo->commit();
-                return ['order' => $this->getOrderByToken($token), 'outcome' => 'accepted'];
-            }
-            $statusMap = [
-                'accepted' => ['paid', 'confirmed', 'paid'],
-                'denied' => ['denied', 'failed', 'failed'],
-                'cancelled' => ['cancelled', 'cancelled', 'cancelled'],
-                'technical_error' => ['denied', 'failed', 'failed'],
-            ];
-            [$legacyStatus, $orderStatus, $paymentStatus] = $statusMap[$outcome];
-            $this->pdo->prepare(
-                'UPDATE ticket_orders SET status = ?, order_status = ?, payment_status = ?, paid_at = IF(? = "paid", NOW(), paid_at), updated_at = NOW() WHERE id = ?'
-            )->execute([$legacyStatus, $orderStatus, $paymentStatus, $paymentStatus, $order['id']]);
-            $this->pdo->prepare(
-                'UPDATE payment_attempts SET status = ?, response_code = ?, notification_received_at = NOW(), raw_response = ?, updated_at = NOW() WHERE order_id = ?'
-            )->execute([$outcome === 'accepted' ? 'accepted' : 'denied', $outcome === 'accepted' ? '0000' : '9999', json_encode(['sandbox' => true, 'outcome' => $outcome]), $order['id']]);
-            if ($outcome === 'accepted') {
-                $this->generateTicketsOnce((int) $order['id']);
-                $this->pdo->prepare('UPDATE ticket_orders SET delivery_status = "generated" WHERE id = ?')->execute([$order['id']]);
-            }
-            $this->pdo->commit();
-
-            if ($outcome === 'accepted') {
-                $this->sendTestConfirmation((int) $order['id']);
-            }
-            return ['order' => $this->getOrderByToken($token), 'outcome' => $outcome];
         } catch (\Throwable $e) {
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
@@ -399,6 +357,13 @@ final class Ticketing
             if (!$order) {
                 throw new RuntimeException('Pedido no encontrado.');
             }
+            $isTestOrder = !empty($order['is_test']);
+            if ($isTestOrder && env_value('PAYMENT_ENVIRONMENT', 'sandbox') !== 'sandbox') {
+                throw new RuntimeException('La notificación de pruebas no está permitida en este entorno.');
+            }
+            if ((string) ($attempt['environment'] ?? '') !== (string) env_value('REDSYS_ENV', 'test')) {
+                throw new RuntimeException('El entorno Redsys de la notificación no coincide.');
+            }
 
             $amount = (int) ($params['DS_AMOUNT'] ?? -1);
             $currency = (string) ($params['DS_CURRENCY'] ?? '');
@@ -426,6 +391,9 @@ final class Ticketing
             $accepted = ctype_digit($responseCode) && (int) $responseCode >= 0 && (int) $responseCode <= 99;
             $attemptStatus = $accepted ? 'accepted' : 'denied';
             $orderStatus = $accepted ? 'paid' : 'denied';
+            $commercialStatus = $accepted ? 'confirmed' : 'pending_payment';
+            $paymentStatus = $accepted ? 'paid' : 'failed';
+            $deliveryStatus = $accepted ? 'generated' : 'pending';
 
             $this->pdo->prepare(
                 'UPDATE payment_attempts
@@ -441,8 +409,8 @@ final class Ticketing
             ]);
 
             if ($order['status'] !== 'paid') {
-                $this->pdo->prepare('UPDATE ticket_orders SET status = ?, paid_at = IF(? = "paid", NOW(), paid_at), updated_at = NOW() WHERE id = ?')
-                    ->execute([$orderStatus, $orderStatus, $order['id']]);
+                $this->pdo->prepare('UPDATE ticket_orders SET status = ?, order_status = ?, payment_status = ?, delivery_status = ?, paid_at = IF(? = "paid", NOW(), paid_at), updated_at = NOW() WHERE id = ?')
+                    ->execute([$orderStatus, $commercialStatus, $paymentStatus, $deliveryStatus, $orderStatus, $order['id']]);
                 if ($accepted) {
                     $this->generateTicketsOnce((int) $order['id']);
                 }
@@ -450,7 +418,11 @@ final class Ticketing
 
             $this->pdo->commit();
             if ($accepted && $order['status'] !== 'paid') {
-                $this->sendConfirmation((int) $order['id']);
+                if ($isTestOrder) {
+                    $this->sendTestConfirmation((int) $order['id']);
+                } else {
+                    $this->sendConfirmation((int) $order['id']);
+                }
             }
             return ['ok' => true, 'accepted' => $accepted, 'order' => $orderNumber];
         } catch (\Throwable $e) {
@@ -1544,7 +1516,7 @@ final class Ticketing
         throw new RuntimeException('No se pudo generar numero de pedido Redsys.');
     }
 
-    private function redsysForm(string $redsysOrder, int $amountCents, array $event): array
+    private function redsysForm(string $redsysOrder, int $amountCents, array $event, string $publicToken): array
     {
         $base = app_base_url();
         $params = [
@@ -1555,8 +1527,8 @@ final class Ticketing
             'DS_MERCHANT_TRANSACTIONTYPE' => env_value('REDSYS_TRANSACTION_TYPE', '0'),
             'DS_MERCHANT_TERMINAL' => env_value('REDSYS_TERMINAL', '1'),
             'DS_MERCHANT_MERCHANTURL' => $base . '/api/redsys/notification',
-            'DS_MERCHANT_URLOK' => $base . '/entradas/pago/correcto/?order=' . rawurlencode($redsysOrder),
-            'DS_MERCHANT_URLKO' => $base . '/entradas/pago/error/?order=' . rawurlencode($redsysOrder),
+            'DS_MERCHANT_URLOK' => $base . '/entradas/pago/correcto/?token=' . rawurlencode($publicToken),
+            'DS_MERCHANT_URLKO' => $base . '/entradas/pago/error/?token=' . rawurlencode($publicToken),
             'DS_MERCHANT_MERCHANTNAME' => 'Perigallo',
             'DS_MERCHANT_PRODUCTDESCRIPTION' => mb_substr('Entradas ' . preg_replace('/[^A-Za-z0-9 \\-]/', '', (string) $event['title']), 0, 120),
         ];

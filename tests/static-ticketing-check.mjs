@@ -21,7 +21,8 @@ const required = [
   "entradas/pedido/index.html",
   "entradas/pago/correcto/index.html",
   "entradas/pago/error/index.html",
-  "entradas/pago/prueba/index.html",
+  "entradas/pago/correcto/index.html",
+  "entradas/pago/error/index.html",
   "admin/entradas/index.html",
   "admin/entradas/evento/index.html",
   "admin/entradas/vista-previa/index.html",
@@ -162,16 +163,27 @@ const publicJs = readFileSync(join(root, "assets/js/ticketing.js"), "utf8");
 for (const marker of ["Información de la experiencia", "Código de vestimenta", "event.contact_info", "experienceAccordions", "initExperienceAccordions", "aria-expanded", "eventMetadata", "event-story-has-media", "poster=", "Probar recorrido de compra", "Seleccionar entradas", "ticketPurchaseAction", "ticket-access-secondary", "renderCheckoutPreview", "Modo de pruebas", "checkoutTicketMarkup", "data-quantity-action", "renderCheckoutSummary"]) {
   if (!publicJs.includes(marker)) throw new Error(`Missing public information rendering: ${marker}`);
 }
-for (const marker of ["adminRequest", "data-start-test-payment", "Continuar al pago de prueba", "initTestPayment", "data-test-payment", "MODO DE PRUEBAS"]) {
+for (const marker of ["adminRequest", "data-start-test-payment", "submitPaymentForm", "Redsys TEST", "MODO DE PRUEBAS", "initPaymentResult", "data-payment-result"]) {
   if (!publicJs.includes(marker)) throw new Error(`Missing sandbox checkout marker: ${marker}`);
 }
-if (publicJs.includes("No se ha creado ningún pedido")) throw new Error("Preview checkout must continue into the isolated test-payment flow.");
+for (const forbiddenMarker of ["Simular pago aceptado", "Simular pago rechazado", "Cancelar prueba", "initTestPayment", "data-test-payment"]) {
+  if (publicJs.includes(forbiddenMarker)) throw new Error(`Legacy simulated payment marker is still public: ${forbiddenMarker}`);
+}
+if (existsSync(join(root, "entradas/pago/prueba/index.html"))) {
+  throw new Error("Legacy simulated payment page must not be present.");
+}
+
+const paymentSuccess = readFileSync(join(root, "entradas/pago/correcto/index.html"), "utf8");
+const paymentError = readFileSync(join(root, "entradas/pago/error/index.html"), "utf8");
+for (const [file, marker] of [[paymentSuccess, 'data-payment-result="success"'], [paymentError, 'data-payment-result="error"']]) {
+  if (!file.includes(marker) || !file.includes('/assets/js/ticketing.js')) throw new Error(`Payment return page is missing ${marker}.`);
+}
 
 const testMigration = readFileSync(join(root, "database/migrations/006_test_checkout_sandbox.sql"), "utf8");
 for (const marker of ["is_test", "environment", "payment_status", "delivery_status", "test_session_id", "ticket_delivery_logs"]) {
   if (!testMigration.includes(marker)) throw new Error(`Sandbox migration is missing ${marker}.`);
 }
-for (const marker of ["createTestOrder", "completeTestPayment", "ticket_delivery_logs", "is_test = 0", "TicketDeliveryService"]) {
+for (const marker of ["createTestOrder", "assertConfigured", "assertSandboxConfigured", "redsysForm", "ticket_delivery_logs", "is_test = 0", "TicketDeliveryService"]) {
   if (!(api + ticketing).includes(marker)) throw new Error(`Missing isolated test-order contract: ${marker}`);
 }
 

@@ -13,14 +13,14 @@
   <main class="ticketing-main">
     <section class="ticket-hero">
       <div class="ticket-hero-inner">
-        <div>
+        <div data-payment-result="error" aria-live="polite">
           <span class="ticket-eyebrow">Pago no completado</span>
-          <h1 class="ticket-title">No se ha confirmado <em>el pago</em></h1>
-          <p class="ticket-copy">Puedes volver al evento, intentarlo de nuevo o hablar con Perigallo por WhatsApp.</p>
-          <div class="ticket-actions"><a class="ticket-btn primary" href="/eventos/">Volver a eventos</a><a class="ticket-btn" href="https://wa.me/34691499985" target="_blank" rel="noopener noreferrer">WhatsApp</a></div>
+          <h1 class="ticket-title">Comprobando <em>el pago</em></h1>
+          <p class="ticket-copy">Estamos consultando el estado oficial antes de cerrar este pedido.</p>
         </div>
       </div>
     </section>
   </main>
+  <script src="/assets/js/ticketing.js" defer></script>
 </body>
 </html>

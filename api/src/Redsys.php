@@ -7,6 +7,31 @@ use RuntimeException;
 
 final class Redsys
 {
+    public function assertConfigured(): void
+    {
+        $environment = env_value('REDSYS_ENV', 'test');
+        if (!in_array($environment, ['test', 'production'], true)) {
+            throw new RuntimeException('REDSYS_ENV debe ser test o production.');
+        }
+        if (!env_value('REDSYS_MERCHANT_CODE') || !env_value('REDSYS_SECRET_KEY')) {
+            throw new RuntimeException('Faltan las credenciales configuradas de Redsys para abrir la pasarela.');
+        }
+        if (!str_starts_with($this->paymentUrl(), 'https://')) {
+            throw new RuntimeException('La URL de Redsys debe utilizar HTTPS.');
+        }
+    }
+
+    public function assertSandboxConfigured(): void
+    {
+        if (env_value('REDSYS_ENV', 'test') !== 'test') {
+            throw new RuntimeException('El recorrido de pruebas requiere REDSYS_ENV=test.');
+        }
+        if (env_value('PAYMENT_ENVIRONMENT', 'sandbox') !== 'sandbox') {
+            throw new RuntimeException('El modo sandbox de pagos no está activado.');
+        }
+        $this->assertConfigured();
+    }
+
     public function paymentUrl(): string
     {
         return env_value('REDSYS_ENV', 'test') === 'production'

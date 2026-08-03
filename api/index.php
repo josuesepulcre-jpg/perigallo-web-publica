@@ -165,13 +165,6 @@ try {
         return;
     }
 
-    if ($method === 'POST' && preg_match('#^/admin/test-orders/([A-Za-z0-9_-]+)/complete$#', $path, $m)) {
-        AdminAuth::requireCsrf();
-        $data = read_json_body();
-        json_response(['ok' => true] + $ticketing->completeTestPayment($m[1], (string) ($data['outcome'] ?? 'technical_error')));
-        return;
-    }
-
     if ($method === 'GET' && $path === '/admin/events') {
         AdminAuth::require();
         json_response(['ok' => true, 'events' => $ticketing->adminListEvents()]);
