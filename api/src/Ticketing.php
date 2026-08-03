@@ -20,11 +20,12 @@ final class Ticketing
     public function listEvents(): array
     {
         $stmt = $this->pdo->query(
-            'SELECT e.*, MIN(tt.price_cents) AS price_from_cents
+            'SELECT e.*,
+                    (SELECT MIN(tt.price_cents)
+                     FROM ticket_types tt
+                     WHERE tt.event_id = e.id AND tt.active = 1) AS price_from_cents
              FROM events e
-             LEFT JOIN ticket_types tt ON tt.event_id = e.id AND tt.active = 1
              WHERE e.visible = 1 AND e.status IN ("published", "sold_out")
-             GROUP BY e.id
              ORDER BY e.starts_at ASC'
         );
         return array_map([$this, 'publicEvent'], $stmt->fetchAll());
