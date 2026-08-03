@@ -130,12 +130,12 @@ if (incompleteFaq.rows.length !== 2 || incompleteFaq.invalidLines.join(",") !== 
 }
 
 const publicJs = readFileSync(join(root, "assets/js/ticketing.js"), "utf8");
-for (const marker of ["Información de la experiencia", "Código de vestimenta", "event.contact_info"]) {
+for (const marker of ["Información de la experiencia", "Código de vestimenta", "event.contact_info", "experienceAccordions", "initExperienceAccordions", "aria-expanded"]) {
   if (!publicJs.includes(marker)) throw new Error(`Missing public information rendering: ${marker}`);
 }
 
 const css = readFileSync(join(root, "assets/css/ticketing.css"), "utf8");
-for (const marker of [".public-information-editor", "white-space:pre-wrap", ".event-public-information"]) {
+for (const marker of [".public-information-editor", "white-space:pre-wrap", ".event-public-information", ".experience-accordion", "prefers-reduced-motion"]) {
   if (!css.includes(marker)) throw new Error(`Missing long-text presentation style: ${marker}`);
 }
 

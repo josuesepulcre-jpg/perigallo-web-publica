@@ -78,6 +78,7 @@
       var event = data.event;
       if (!preview) document.title = (event.seo_title || event.title) + " | Entradas Perigallo";
       root.innerHTML = renderEventDetail(event, preview);
+      initExperienceAccordions(root);
     }).catch(function (error) {
       root.innerHTML = '<p class="ticket-status">' + escapeHtml(error.message) + '</p>';
     });
@@ -107,7 +108,8 @@
         '<section class="event-story"><div><span class="ticket-eyebrow">La experiencia</span><h2>' + escapeHtml(event.title) + '</h2><p class="ticket-copy">' + escapeHtml(event.description || "") + '</p></div></section>',
         video,
         gallery ? '<section class="event-gallery">' + gallery + '</section>' : '',
-        event.included_text || event.access_conditions || event.dress_code || event.recommendations || event.accessibility_info || event.minor_policy || event.refund_policy ? '<section class="event-public-information"><span class="ticket-eyebrow">Antes de venir</span><h2>Información de la experiencia</h2><div class="event-public-information-grid">' + publicInfo(event) + '</div></section>' : '',
+        event.included_text || event.access_conditions ? '<section class="event-public-information"><span class="ticket-eyebrow">Antes de venir</span><h2>Información de la experiencia</h2><div class="experience-accordions">' + experienceAccordions(event) + '</div></section>' : '',
+        event.dress_code || event.recommendations || event.accessibility_info || event.minor_policy || event.refund_policy ? '<section class="event-public-information event-additional-information"><div class="event-public-information-grid">' + publicInfo(event) + '</div></section>' : '',
         event.parking_info || event.access_notes || event.maps_url ? '<section class="event-arrival"><h2>Llegar y disfrutar</h2><p>' + escapeHtml(event.access_notes || event.parking_info || "") + '</p>' + (event.maps_url ? '<a class="ticket-btn" href="' + escapeAttr(event.maps_url) + '" target="_blank" rel="noopener noreferrer">Abrir mapa</a>' : '') + '</section>' : '',
         (event.faq || []).length ? '<section class="event-faqs"><h2>Preguntas frecuentes</h2>' + publicFaq(event.faq) + '</section>' : '',
         event.contact_info ? '<section class="event-arrival event-contact"><h2>Contacto</h2><p>' + escapeHtml(event.contact_info) + '</p></section>' : ''
@@ -115,8 +117,48 @@
   }
 
   function publicInfo(event) {
-    var entries = [["Qué incluye la entrada", event.included_text], ["Condiciones de acceso", event.access_conditions], ["Código de vestimenta", event.dress_code], ["Recomendaciones", event.recommendations], ["Accesibilidad", event.accessibility_info], ["Política de menores", event.minor_policy], ["Política de devolución", event.refund_policy]];
+    var entries = [["Código de vestimenta", event.dress_code], ["Recomendaciones", event.recommendations], ["Accesibilidad", event.accessibility_info], ["Política de menores", event.minor_policy], ["Política de devolución", event.refund_policy]];
     return entries.filter(function (item) { return item[1]; }).map(function (item) { return '<article class="event-info-card"><h3>' + escapeHtml(item[0]) + '</h3><p>' + escapeHtml(item[1]) + '</p></article>'; }).join("");
+  }
+
+  function textParagraphs(value) {
+    return String(value || "").trim().split(/\n\s*\n/).filter(Boolean).map(function (paragraph) { return '<p>' + escapeHtml(paragraph) + '</p>'; }).join("");
+  }
+
+  function experienceAccordions(event) {
+    var entries = [
+      { number: "01", title: "Qué incluye la entrada", summary: "Descubre todos los momentos, servicios y experiencias incluidos.", value: event.included_text },
+      { number: "02", title: "Condiciones de acceso", summary: "Consulta la información necesaria antes de asistir.", value: event.access_conditions }
+    ];
+    return entries.filter(function (item) { return item.value; }).map(function (item, index) {
+      var panelId = "experience-information-panel-" + index;
+      return '<article class="experience-accordion" data-experience-accordion>' +
+        '<button class="experience-accordion-trigger" type="button" data-experience-accordion-trigger aria-expanded="false" aria-controls="' + panelId + '">' +
+        '<span class="experience-accordion-number">' + item.number + '</span><span class="experience-accordion-copy"><span class="experience-accordion-title">' + escapeHtml(item.title) + '</span><span class="experience-accordion-summary">' + escapeHtml(item.summary) + '</span></span><span class="experience-accordion-icon" aria-hidden="true"></span></button>' +
+        '<div class="experience-accordion-panel" id="' + panelId + '" role="region" aria-label="' + escapeHtml(item.title) + '" aria-hidden="true"><div class="experience-accordion-content">' + textParagraphs(item.value) + '</div></div>' +
+        '</article>';
+    }).join("");
+  }
+
+  function initExperienceAccordions(root) {
+    root.addEventListener("click", function (event) {
+      var trigger = event.target.closest("[data-experience-accordion-trigger]");
+      if (!trigger || !root.contains(trigger)) return;
+      var accordion = trigger.closest("[data-experience-accordion]");
+      var wasOpen = accordion.classList.contains("is-open");
+      root.querySelectorAll("[data-experience-accordion]").forEach(function (item) {
+        item.classList.remove("is-open");
+        var itemTrigger = item.querySelector("[data-experience-accordion-trigger]");
+        var panel = item.querySelector(".experience-accordion-panel");
+        itemTrigger.setAttribute("aria-expanded", "false");
+        panel.setAttribute("aria-hidden", "true");
+      });
+      if (!wasOpen) {
+        accordion.classList.add("is-open");
+        trigger.setAttribute("aria-expanded", "true");
+        accordion.querySelector(".experience-accordion-panel").setAttribute("aria-hidden", "false");
+      }
+    });
   }
 
   function publicFaq(items) {
