@@ -150,7 +150,7 @@ if (incompleteFaq.rows.length !== 2 || incompleteFaq.invalidLines.join(",") !== 
 }
 
 const publicJs = readFileSync(join(root, "assets/js/ticketing.js"), "utf8");
-for (const marker of ["Información de la experiencia", "Código de vestimenta", "event.contact_info", "experienceAccordions", "initExperienceAccordions", "aria-expanded", "eventMetadata", "event-story-has-media", "poster=", "Probar recorrido de compra", "renderCheckoutPreview", "Vista previa de compra", "checkoutTicketMarkup", "data-quantity-action", "renderCheckoutSummary"]) {
+for (const marker of ["Información de la experiencia", "Código de vestimenta", "event.contact_info", "experienceAccordions", "initExperienceAccordions", "aria-expanded", "eventMetadata", "event-story-has-media", "poster=", "Probar recorrido de compra", "Seleccionar entradas", "ticketPurchaseAction", "ticket-access-secondary", "renderCheckoutPreview", "Vista previa de compra", "checkoutTicketMarkup", "data-quantity-action", "renderCheckoutSummary"]) {
   if (!publicJs.includes(marker)) throw new Error(`Missing public information rendering: ${marker}`);
 }
 if (!publicJs.includes('if (preview) {\n        renderCheckoutPreview') || !publicJs.includes('No se ha creado ningún pedido')) {
@@ -173,6 +173,11 @@ for (const marker of [".public-information-editor", "white-space:pre-wrap", ".ev
 }
 for (const marker of [".ticket-editor-drawer", ".ticket-drawer-grid", ".ticket-action-menu", ".ticket-final-price"]) {
   if (!css.includes(marker)) throw new Error(`Missing ticket drawer style: ${marker}`);
+}
+
+const publicAccessCss = readFileSync(join(root, "assets/css/event-information-accordions.css"), "utf8");
+for (const marker of [".ticket-access-heading", ".ticket-access-secondary", ".ticket-access-decision", ".ticket-access-status-dot"]) {
+  if (!publicAccessCss.includes(marker)) throw new Error(`Missing editorial ticket access style: ${marker}`);
 }
 
 console.log("Static ticketing checks passed");

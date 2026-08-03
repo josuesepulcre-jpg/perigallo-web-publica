@@ -98,12 +98,11 @@
 
   function renderEventDetail(event, preview) {
       var types = event.ticket_types || [];
-      var onSale = types.filter(function (type) { return (type.effective_status || type.status) === "on_sale"; });
       var gallery = (event.gallery || []).filter(Boolean).map(function (url) { return '<img loading="lazy" src="' + escapeAttr(previewAssetUrl(url, preview)) + '" alt="Detalle de ' + escapeHtml(event.title) + '">'; }).join("");
       var logo = event.logo_url ? '<img class="event-logo" src="' + escapeAttr(previewAssetUrl(event.logo_url, preview)) + '" alt="Logotipo de ' + escapeHtml(event.title) + '">' : '';
       var imageUrl = previewAssetUrl(event.image_url || "/assets/images/finca-la-llaguna-principal.jpg", preview);
       var video = event.video_url ? '<div class="event-story-media"><section class="event-video"><video controls playsinline preload="metadata" poster="' + escapeAttr(imageUrl) + '" src="' + escapeAttr(previewAssetUrl(event.video_url, preview)) + '">Tu navegador no puede reproducir este vídeo.</video></section></div>' : '';
-      var action = preview ? '<a class="ticket-btn primary" href="/entradas/checkout/?preview=1&amp;id=' + encodeURIComponent(event.id) + '">Probar recorrido de compra</a><p class="ticket-preview-note">Vista privada: no se crea ningún pedido ni se accede al pago.</p>' : (onSale.length ? '<a class="ticket-btn primary" href="/entradas/checkout/?event=' + encodeURIComponent(event.slug) + '">Comprar entradas</a>' : '<span class="ticket-status">' + (types.length ? 'Las entradas no están disponibles en este momento.' : 'Próximamente anunciaremos las entradas.') + '</span>');
+      var ticketCards = types.length ? types.map(function (type) { return ticketTypeRow(type, event, preview); }).join("") : '<p class="ticket-status event-access-empty">Próximamente anunciaremos las entradas.</p>';
       var storyClass = video ? "event-story event-story-layout event-story-has-media" : "event-story event-story-layout";
       return [
         '<div class="event-detail-layout">',
@@ -116,8 +115,7 @@
         event.subtitle ? '<p class="event-subtitle">' + escapeHtml(event.subtitle) + '</p>' : '',
         '<p class="ticket-copy event-intro">' + escapeHtml(event.short_description || event.description) + '</p>',
         '<section class="event-access">',
-        '<div class="ticket-types">' + types.map(function (type) { return ticketTypeRow(type, event); }).join("") + '</div>',
-        '<div class="event-purchase-action">' + action + '</div>',
+        '<div class="ticket-types">' + ticketCards + '</div>',
         '</section>',
         '</div>',
         '</section>',
@@ -264,47 +262,64 @@
     return text.slice(0, 69).replace(/\s+\S*$/, "") + "…";
   }
 
-  function accessFact(icon, label, value) {
+  function accessFact(icon, label, value, detail) {
     if (!value) return "";
-    return '<li class="ticket-access-fact"><span class="ticket-access-icon" aria-hidden="true">' + accessIcon(icon) + '</span><span><small>' + escapeHtml(label) + '</small><strong>' + escapeHtml(value) + '</strong></span></li>';
+    return '<li class="ticket-access-fact"><span class="ticket-access-icon" aria-hidden="true">' + accessIcon(icon) + '</span><span><small>' + escapeHtml(label) + '</small><strong>' + escapeHtml(value) + '</strong>' + (detail ? '<em>' + escapeHtml(detail) + '</em>' : '') + '</span></li>';
   }
 
   function accessFacts(event) {
-    var place = [event.location, [event.locality, event.province].filter(Boolean).join(", ")].filter(Boolean).join(" · ");
+    var locality = [event.locality, event.province].filter(Boolean).join(", ");
+    var place = event.location || locality;
     var schedule = event.starts_at ? (event.ends_at ? fmtTime(event.starts_at) + " – " + fmtTime(event.ends_at) : fmtTime(event.starts_at)) : "";
     return [
       accessFact("calendar", "Fecha", fmtDateOnly(event.starts_at)),
       accessFact("clock", "Horario", schedule),
       accessFact("duration", "Duración", durationText(event.starts_at, event.ends_at)),
-      accessFact("place", "Lugar", place),
-      accessFact("dress", "Vestimenta", shortDetail(event.dress_code))
+      accessFact("place", "Lugar", place, event.location ? locality : "")
     ].filter(Boolean).join("");
   }
 
   function availabilityText(type) {
     var state = type.effective_status || type.status || "on_sale";
     if (state === "on_sale") {
-      if (Number(type.available || 0) <= 0) return "Aforo completo · Entradas agotadas";
-      if (Number(type.available || 0) <= LOW_AVAILABILITY_THRESHOLD) return "Aforo limitado · Últimas entradas";
-      return "Aforo limitado · Entradas disponibles";
+      if (Number(type.available || 0) <= 0) return "Entradas agotadas";
+      if (Number(type.available || 0) <= LOW_AVAILABILITY_THRESHOLD) return "Últimas entradas";
+      return "Entradas disponibles";
     }
-    return ({ upcoming: "Venta de entradas próximamente", sold_out: "Aforo completo · Entradas agotadas", paused: "Venta temporalmente pausada", closed: "Venta finalizada", code_required: "Acceso mediante código" }[state] || "Consulta disponibilidad");
+    return ({ upcoming: "Próximamente", sold_out: "Entradas agotadas", paused: "Venta pausada", closed: "Venta finalizada", code_required: "Acceso con código" }[state] || "Consulta disponibilidad");
   }
 
-  function ticketTypeRow(type, event) {
+  function ticketPurchaseAction(type, event, preview) {
+    if (preview) {
+      return '<div class="ticket-access-action"><a class="ticket-btn primary" href="/entradas/checkout/?preview=1&amp;id=' + encodeURIComponent(event.id) + '">Probar recorrido de compra <span aria-hidden="true">→</span></a><p class="ticket-preview-note"><span aria-hidden="true">◦</span> Vista privada: puedes completar el recorrido sin crear un pedido ni acceder al pago.</p></div>';
+    }
+    if ((type.effective_status || type.status) === "on_sale") {
+      return '<div class="ticket-access-action"><a class="ticket-btn primary" href="/entradas/checkout/?event=' + encodeURIComponent(event.slug) + '">Seleccionar entradas <span aria-hidden="true">→</span></a></div>';
+    }
+    return '<p class="ticket-access-unavailable">' + escapeHtml(availabilityText(type)) + '</p>';
+  }
+
+  function ticketTypeRow(type, event, preview) {
     var availability = availabilityText(type);
     var facts = accessFacts(event);
     var includesLink = event.included_text ? '<button class="ticket-access-includes" type="button" data-open-included-information>Ver todo lo que incluye<span aria-hidden="true">→</span></button>' : "";
+    var dress = shortDetail(event.dress_code);
     return [
-      '<article class="ticket-type">',
-      '<div class="ticket-type-copy">',
+      '<article class="ticket-type ticket-access-card">',
+      '<div class="ticket-access-heading">',
+      '<div class="ticket-access-copy">',
       '<span class="ticket-access-eyebrow">Tu acceso a la experiencia</span>',
-      '<h3>' + escapeHtml(type.name) + '</h3><p>' + escapeHtml(type.description || "") + '</p>',
-      '<small class="ticket-access-status">' + escapeHtml(availability) + (type.requires_promo ? ' · Código necesario' : '') + '</small>',
+      '<h3>' + escapeHtml(type.name) + '</h3>',
+      type.description ? '<p>' + escapeHtml(type.description) + '</p>' : '',
       includesLink,
       '</div>',
+      '<div class="ticket-access-decision"><div class="ticket-type-price"><strong>' + cents(type.final_price_cents != null ? type.final_price_cents : type.price_cents) + '</strong><span>por persona</span></div>' + ticketPurchaseAction(type, event, preview) + '</div>',
+      '</div>',
       facts ? '<ul class="ticket-access-facts">' + facts + '</ul>' : '',
-      '<div class="ticket-type-price"><strong>' + cents(type.final_price_cents != null ? type.final_price_cents : type.price_cents) + '</strong><span>por persona</span></div>',
+      '<div class="ticket-access-secondary">',
+      dress ? '<p class="ticket-access-dress"><span class="ticket-access-icon" aria-hidden="true">' + accessIcon("dress") + '</span><span><small>Vestimenta</small><strong>' + escapeHtml(dress) + '</strong></span></p>' : '',
+      '<p class="ticket-access-status"><span class="ticket-access-status-dot" aria-hidden="true"></span><span>' + escapeHtml(availability) + (type.requires_promo ? ' · Código necesario' : '') + '</span></p>',
+      '</div>',
       '</article>'
     ].join("");
   }
