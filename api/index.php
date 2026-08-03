@@ -58,6 +58,73 @@ try {
         return;
     }
 
+    // API privada de Suite. Nunca se expone al navegador ni comparte la base de datos.
+    if (str_starts_with($path, '/internal/')) {
+        require_suite_service();
+        $sourceApp = 'suite';
+        $idempotencyKey = (string) ($_SERVER['HTTP_X_IDEMPOTENCY_KEY'] ?? '');
+
+        if ($method === 'GET' && $path === '/internal/experiences') {
+            $type = isset($_GET['type']) ? (string) $_GET['type'] : null;
+            json_response(['ok' => true, 'experiences' => $ticketing->integrationListExperiences($type)]);
+            return;
+        }
+
+        if ($method === 'POST' && $path === '/internal/experiences') {
+            json_response(['ok' => true, 'experience' => $ticketing->integrationCreateExperience(read_json_body(), $sourceApp, $idempotencyKey)], 201);
+            return;
+        }
+
+        if (preg_match('#^/internal/experiences/([a-f0-9-]{36})$#i', $path, $m)) {
+            if ($method === 'GET') {
+                $experience = $ticketing->integrationGetExperience($m[1]);
+                if (!$experience) {
+                    json_response(['ok' => false, 'error' => 'Experiencia no encontrada.'], 404);
+                    return;
+                }
+                json_response(['ok' => true, 'experience' => $experience]);
+                return;
+            }
+            if ($method === 'PATCH') {
+                json_response(['ok' => true, 'experience' => $ticketing->integrationUpdateExperience($m[1], read_json_body(), $sourceApp, $idempotencyKey)]);
+                return;
+            }
+        }
+
+        if ($method === 'POST' && preg_match('#^/internal/experiences/([a-f0-9-]{36})/(publish|unpublish)$#i', $path, $m)) {
+            json_response(['ok' => true, 'experience' => $ticketing->integrationSetPublication($m[1], $m[2] === 'publish', $sourceApp, $idempotencyKey)]);
+            return;
+        }
+
+        if ($method === 'GET' && preg_match('#^/internal/experiences/([a-f0-9-]{36})/sales-summary$#i', $path, $m)) {
+            json_response(['ok' => true, 'summary' => $ticketing->integrationSalesSummary($m[1])]);
+            return;
+        }
+
+        if ($method === 'GET' && preg_match('#^/internal/experiences/([a-f0-9-]{36})/orders$#i', $path, $m)) {
+            json_response(['ok' => true, 'orders' => $ticketing->integrationOrders($m[1])]);
+            return;
+        }
+
+        if ($method === 'POST' && preg_match('#^/internal/experiences/([a-f0-9-]{36})/ticket-types$#i', $path, $m)) {
+            json_response(['ok' => true, 'ticket_type' => $ticketing->integrationCreateTicketType($m[1], read_json_body(), $sourceApp, $idempotencyKey)], 201);
+            return;
+        }
+
+        if ($method === 'PATCH' && preg_match('#^/internal/experiences/([a-f0-9-]{36})/ticket-types/([0-9]+)$#i', $path, $m)) {
+            json_response(['ok' => true, 'ticket_type' => $ticketing->integrationUpdateTicketType($m[1], (int) $m[2], read_json_body(), $sourceApp, $idempotencyKey)]);
+            return;
+        }
+
+        if ($method === 'DELETE' && preg_match('#^/internal/experiences/([a-f0-9-]{36})/ticket-types/([0-9]+)$#i', $path, $m)) {
+            json_response(['ok' => true] + $ticketing->integrationArchiveTicketType($m[1], (int) $m[2], $sourceApp, $idempotencyKey));
+            return;
+        }
+
+        json_response(['ok' => false, 'error' => 'Endpoint interno no encontrado.'], 404);
+        return;
+    }
+
     if ($method === 'GET' && $path === '/admin/session') {
         json_response(['ok' => true] + AdminAuth::sessionPayload());
         return;
@@ -196,6 +263,14 @@ try {
     json_response(['ok' => false, 'error' => 'Endpoint no encontrado.'], 404);
 } catch (InvalidArgumentException $e) {
     json_response(['ok' => false, 'error' => $e->getMessage()], 422);
+} catch (RuntimeException $e) {
+    if ($e->getCode() === 409) {
+        json_response(['ok' => false, 'error' => $e->getMessage()], 409);
+        return;
+    }
+    error_log('Perigallo ticketing API error: ' . $e->getMessage());
+    $isProd = env_value('APP_ENV', 'production') === 'production';
+    json_response(['ok' => false, 'error' => $isProd ? 'No se pudo procesar la solicitud.' : $e->getMessage()], 500);
 } catch (Throwable $e) {
     error_log('Perigallo ticketing API error: ' . $e->getMessage());
     $isProd = env_value('APP_ENV', 'production') === 'production';

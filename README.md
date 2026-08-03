@@ -106,9 +106,10 @@ Aplicar:
 ```bash
 mysql -u USER -p DB_NAME < database/migrations/001_ticketing_schema.sql
 mysql -u USER -p DB_NAME < database/migrations/002_event_editor.sql
+mysql -u USER -p DB_NAME < database/migrations/003_suite_experience_integration.sql
 ```
 
-La primera migración crea las tablas aisladas para eventos, tipos de entrada, pedidos, intentos de pago, tickets, escaneos y entregas de email. La segunda amplía los eventos y entradas sin alterar los pedidos o tickets emitidos.
+La primera migración crea las tablas aisladas para eventos, tipos de entrada, pedidos, intentos de pago, tickets, escaneos y entregas de email. La segunda amplía los eventos y entradas sin alterar los pedidos o tickets emitidos. La tercera añade el identificador canónico y el registro idempotente de sincronización privada con Suite.
 
 ## Validacion minima
 

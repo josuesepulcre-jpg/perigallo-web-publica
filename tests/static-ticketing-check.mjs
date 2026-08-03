@@ -8,6 +8,7 @@ const required = [
   "api/src/Redsys.php",
   "database/migrations/001_ticketing_schema.sql",
   "database/migrations/002_event_editor.sql",
+  "database/migrations/003_suite_experience_integration.sql",
   "eventos/index.html",
   "eventos/evento.html",
   "entradas/checkout/index.html",
@@ -73,6 +74,8 @@ for (const marker of [
   "adminArchiveOrDeleteTicketType",
   "adminUploadImage",
   "publication_at <= NOW()",
+  "require_suite_service",
+  "integrationUpdateExperience",
 ]) {
   if (!(api + ticketing).includes(marker)) {
     throw new Error(`Missing event editor contract: ${marker}`);

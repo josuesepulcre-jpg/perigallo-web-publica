@@ -76,6 +76,16 @@ function read_json_body(): array
     return $data;
 }
 
+function require_suite_service(): void
+{
+    $expected = env_value('SUITE_TICKETING_API_KEY');
+    $provided = (string) ($_SERVER['HTTP_X_PERIGALLO_SERVICE_KEY'] ?? '');
+    if (!$expected || !$provided || !hash_equals($expected, $provided)) {
+        json_response(['ok' => false, 'error' => 'No autorizado.'], 401);
+        exit;
+    }
+}
+
 function require_fields(array $data, array $fields): void
 {
     foreach ($fields as $field) {

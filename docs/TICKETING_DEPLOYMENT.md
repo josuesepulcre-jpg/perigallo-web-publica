@@ -68,9 +68,10 @@ Aplicar migracion:
 ```bash
 mysql -u DB_USER -p DB_NAME < database/migrations/001_ticketing_schema.sql
 mysql -u DB_USER -p DB_NAME < database/migrations/002_event_editor.sql
+mysql -u DB_USER -p DB_NAME < database/migrations/003_suite_experience_integration.sql
 ```
 
-La segunda migración amplía eventos y entradas sin borrar pedidos, pagos, códigos ni asistentes ya existentes. Debe ejecutarse antes de desplegar la versión con editor.
+La segunda migración amplía eventos y entradas sin borrar pedidos, pagos, códigos ni asistentes ya existentes. La tercera conserva esos datos y añade el identificador común para la integración privada con Suite. Ejecutarlas antes de desplegar la versión con editor integrado.
 
 Crear y editar un evento desde `/admin/entradas/` después de configurar usuario admin. El editor queda en `/admin/entradas/evento/?id=ID` y la vista previa privada en `/admin/entradas/vista-previa/?id=ID`.
 

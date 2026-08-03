@@ -5,6 +5,7 @@ namespace Perigallo\Ticketing;
 
 use DateInterval;
 use DateTimeImmutable;
+use InvalidArgumentException;
 use PDO;
 use RuntimeException;
 
@@ -327,6 +328,9 @@ final class Ticketing
 
     public function adminCreateEvent(array $data): array
     {
+        $canonicalId = $this->canonicalId((string) ($data['canonical_id'] ?? ''));
+        $eventType = $this->experienceType((string) ($data['event_type'] ?? 'perigallo_experience'));
+        $originApp = $this->originApp((string) ($data['origin_app'] ?? 'perigallo_web'));
         $title = clean_string((string) ($data['title'] ?? 'Nuevo evento'), 190) ?: 'Nuevo evento';
         $slug = $this->uniqueSlug(clean_string((string) ($data['slug'] ?? $title), 140));
         $startsAt = $this->dateValue((string) ($data['starts_at'] ?? ''), (new DateTimeImmutable('+7 days'))->format('Y-m-d H:i:s'));
@@ -334,10 +338,13 @@ final class Ticketing
         $saleEndsAt = $this->dateValue((string) ($data['sale_ends_at'] ?? ''), $startsAt);
         $stmt = $this->pdo->prepare(
             'INSERT INTO events
-             (slug, title, subtitle, description, image_url, location, address, starts_at, ends_at, sale_starts_at, sale_ends_at, capacity, status, visible, promoter, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())'
+             (canonical_id, event_type, origin_app, source_updated_at, slug, title, subtitle, description, image_url, location, address, starts_at, ends_at, sale_starts_at, sale_ends_at, capacity, status, visible, promoter, created_at, updated_at)
+             VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())'
         );
         $stmt->execute([
+            $canonicalId,
+            $eventType,
+            $originApp,
             $slug,
             $title,
             clean_string((string) ($data['subtitle'] ?? ''), 190),
@@ -398,6 +405,142 @@ final class Ticketing
         return array_map(fn (array $event) => $this->adminEvent($event), $rows);
     }
 
+    /** Datos internos para Suite. Perigallo.com conserva la fuente de verdad y el stock transaccional. */
+    public function integrationListExperiences(?string $eventType = null): array
+    {
+        $sql = 'SELECT * FROM events';
+        $params = [];
+        if ($eventType !== null) {
+            $sql .= ' WHERE event_type = ?';
+            $params[] = $this->experienceType($eventType);
+        }
+        $sql .= ' ORDER BY starts_at DESC, id DESC LIMIT 200';
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+        return array_map(fn (array $event) => $this->adminEvent($event), $stmt->fetchAll());
+    }
+
+    public function integrationGetExperience(string $canonicalId): ?array
+    {
+        $stmt = $this->pdo->prepare('SELECT id FROM events WHERE canonical_id = ? LIMIT 1');
+        $stmt->execute([$this->canonicalId($canonicalId)]);
+        $id = $stmt->fetchColumn();
+        return $id === false ? null : $this->adminGetEvent((int) $id);
+    }
+
+    public function integrationCreateExperience(array $data, string $sourceApp, string $idempotencyKey = ''): array
+    {
+        if ($previous = $this->integrationEventFromIdempotency($idempotencyKey)) {
+            return $previous;
+        }
+        $data['origin_app'] = $this->originApp($sourceApp);
+        $data['event_type'] = $this->experienceType((string) ($data['event_type'] ?? 'perigallo_experience'));
+        $event = $this->adminCreateEvent($data);
+        $this->integrationLog((string) $event['canonical_id'], $sourceApp, 'create', $idempotencyKey, 'success', '', (int) $event['id']);
+        return $event;
+    }
+
+    public function integrationUpdateExperience(string $canonicalId, array $data, string $sourceApp, string $idempotencyKey = ''): array
+    {
+        $event = $this->integrationGetExperience($canonicalId);
+        if (!$event) {
+            throw new InvalidArgumentException('Experiencia no encontrada.');
+        }
+        $expected = trim((string) ($data['expected_updated_at'] ?? ''));
+        if ($expected !== '' && (string) ($event['updated_at'] ?? '') !== $expected) {
+            $this->integrationLog((string) $event['canonical_id'], $sourceApp, 'update', $idempotencyKey, 'failed', 'El registro fue modificado desde otra aplicación.');
+            throw new RuntimeException('La experiencia ha cambiado en Perigallo.com. Recarga antes de guardar.', 409);
+        }
+        unset($data['canonical_id'], $data['id'], $data['expected_updated_at']);
+        $data['origin_app'] = $this->originApp($sourceApp);
+        $data['event_type'] = $this->experienceType((string) ($data['event_type'] ?? $event['event_type'] ?? 'perigallo_experience'));
+        $result = $this->adminUpdateEvent((int) $event['id'], $data);
+        $this->integrationLog((string) $result['canonical_id'], $sourceApp, 'update', $idempotencyKey, 'success');
+        return $result;
+    }
+
+    public function integrationSetPublication(string $canonicalId, bool $publish, string $sourceApp, string $idempotencyKey = ''): array
+    {
+        $event = $this->integrationGetExperience($canonicalId);
+        if (!$event) {
+            throw new InvalidArgumentException('Experiencia no encontrada.');
+        }
+        $result = $this->adminSetEventPublication((int) $event['id'], $publish);
+        $this->integrationLog((string) $result['canonical_id'], $sourceApp, $publish ? 'publish' : 'unpublish', $idempotencyKey, 'success');
+        return $result;
+    }
+
+    public function integrationCreateTicketType(string $canonicalId, array $data, string $sourceApp, string $idempotencyKey = ''): array
+    {
+        if ($previous = $this->integrationTicketFromIdempotency($idempotencyKey)) {
+            return $previous;
+        }
+        $event = $this->integrationGetExperience($canonicalId);
+        if (!$event) {
+            throw new InvalidArgumentException('Experiencia no encontrada.');
+        }
+        $ticket = $this->adminCreateTicketType((int) $event['id'], $data);
+        $this->integrationLog((string) $event['canonical_id'], $sourceApp, 'ticket_type_create', $idempotencyKey, 'success', '', (int) $event['id'], (int) $ticket['id']);
+        return $ticket;
+    }
+
+    public function integrationUpdateTicketType(string $canonicalId, int $ticketTypeId, array $data, string $sourceApp, string $idempotencyKey = ''): array
+    {
+        $event = $this->integrationGetExperience($canonicalId);
+        if (!$event) {
+            throw new InvalidArgumentException('Experiencia no encontrada.');
+        }
+        $ticket = $this->adminUpdateTicketType((int) $event['id'], $ticketTypeId, $data);
+        $this->integrationLog((string) $event['canonical_id'], $sourceApp, 'ticket_type_update', $idempotencyKey, 'success');
+        return $ticket;
+    }
+
+    public function integrationArchiveTicketType(string $canonicalId, int $ticketTypeId, string $sourceApp, string $idempotencyKey = ''): array
+    {
+        $event = $this->integrationGetExperience($canonicalId);
+        if (!$event) {
+            throw new InvalidArgumentException('Experiencia no encontrada.');
+        }
+        $result = $this->adminArchiveOrDeleteTicketType((int) $event['id'], $ticketTypeId);
+        $this->integrationLog((string) $event['canonical_id'], $sourceApp, 'ticket_type_archive', $idempotencyKey, 'success');
+        return $result;
+    }
+
+    public function integrationSalesSummary(string $canonicalId): array
+    {
+        $event = $this->integrationGetExperience($canonicalId);
+        if (!$event) throw new InvalidArgumentException('Experiencia no encontrada.');
+        $stmt = $this->pdo->prepare('SELECT COUNT(DISTINCT tor.id) AS orders, COALESCE(SUM(CASE WHEN tor.status="paid" THEN 1 ELSE 0 END), 0) AS paid_orders, COALESCE(SUM(CASE WHEN t.status="used" THEN 1 ELSE 0 END), 0) AS checked_in FROM ticket_orders tor JOIN ticket_order_items toi ON toi.order_id=tor.id LEFT JOIN tickets t ON t.order_item_id=toi.id WHERE toi.event_id=?');
+        $stmt->execute([(int) $event['id']]);
+        $summary = $stmt->fetch() ?: [];
+        return [
+            'orders' => (int) ($summary['orders'] ?? 0),
+            'paid_orders' => (int) ($summary['paid_orders'] ?? 0),
+            'checked_in' => (int) ($summary['checked_in'] ?? 0),
+            'sold' => (int) $event['sold'], 'reserved' => (int) $event['reserved'],
+            'available' => (int) $event['available'], 'revenue_cents' => (int) $event['revenue_cents'],
+        ];
+    }
+
+    public function integrationOrders(string $canonicalId): array
+    {
+        $event = $this->integrationGetExperience($canonicalId);
+        if (!$event) throw new InvalidArgumentException('Experiencia no encontrada.');
+        $stmt = $this->pdo->prepare(
+            'SELECT tor.id, tor.name, tor.email, tor.phone, tor.total_cents, tor.status, tor.paid_at, tor.created_at,
+                    COALESCE(SUM(toi.quantity), 0) AS quantity, COALESCE(SUM(CASE WHEN t.status="used" THEN 1 ELSE 0 END), 0) AS checked_in,
+                    GROUP_CONCAT(CONCAT(toi.ticket_type_name, " ×", toi.quantity) ORDER BY toi.id SEPARATOR " · ") AS ticket_types
+             FROM ticket_orders tor JOIN ticket_order_items toi ON toi.order_id=tor.id LEFT JOIN tickets t ON t.order_item_id=toi.id
+             WHERE toi.event_id=? GROUP BY tor.id ORDER BY tor.created_at DESC LIMIT 200'
+        );
+        $stmt->execute([(int) $event['id']]);
+        return array_map(static fn (array $row) => [
+            'id' => (int) $row['id'], 'name' => $row['name'], 'email' => $row['email'], 'phone' => $row['phone'],
+            'total_cents' => (int) $row['total_cents'], 'status' => $row['status'], 'paid_at' => $row['paid_at'], 'created_at' => $row['created_at'],
+            'quantity' => (int) $row['quantity'], 'checked_in' => (int) $row['checked_in'], 'ticket_types' => $row['ticket_types'] ?? '',
+        ], $stmt->fetchAll());
+    }
+
     public function adminGetEvent(int $eventId): ?array
     {
         $stmt = $this->pdo->prepare('SELECT * FROM events WHERE id = ? LIMIT 1');
@@ -445,7 +588,7 @@ final class Ticketing
         }
         $stmt = $this->pdo->prepare(
             'UPDATE events SET
-              slug=?, title=?, subtitle=?, short_description=?, description=?, category=?, tags=?, locale=?,
+              slug=?, title=?, subtitle=?, short_description=?, description=?, category=?, event_type=?, origin_app=?, source_updated_at=NOW(), tags=?, locale=?,
               image_url=?, card_image_url=?, social_image_url=?, gallery_json=?, video_url=?, logo_url=?,
               location=?, address=?, postal_code=?, locality=?, province=?, country=?, maps_url=?, access_notes=?, parking_info=?, venue_type=?,
               starts_at=?, ends_at=?, doors_open_at=?, timezone=?, schedule_note=?, sale_starts_at=?, sale_ends_at=?, capacity=?,
@@ -461,6 +604,8 @@ final class Ticketing
             trim((string) ($merged['short_description'] ?? '')),
             trim((string) ($merged['description'] ?? '')),
             clean_string((string) ($merged['category'] ?? ''), 100),
+            $this->experienceType((string) ($merged['event_type'] ?? 'perigallo_experience')),
+            $this->originApp((string) ($merged['origin_app'] ?? 'perigallo_web')),
             clean_string((string) ($merged['tags'] ?? ''), 500),
             clean_string((string) ($merged['locale'] ?? 'es'), 12) ?: 'es',
             clean_string((string) ($merged['image_url'] ?? ''), 500),
@@ -535,6 +680,7 @@ final class Ticketing
         $copy['status'] = 'draft';
         $copy['visible'] = false;
         $copy['publication_at'] = null;
+        unset($copy['canonical_id']);
         $new = $this->adminCreateEvent($copy);
         $this->adminUpdateEvent((int) $new['id'], $copy);
         $types = $this->adminTicketTypesForEvent($eventId);
@@ -716,6 +862,64 @@ final class Ticketing
         $event['revenue_cents'] = $metrics['revenue_cents'];
         $event['effective_status'] = $this->eventEffectiveStatus($event);
         return $event;
+    }
+
+    private function canonicalId(string $value): string
+    {
+        $value = strtolower(trim($value));
+        if ($value !== '') {
+            if (!preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/', $value)) {
+                throw new InvalidArgumentException('El identificador canónico de la experiencia no es válido.');
+            }
+            return $value;
+        }
+        $bytes = random_bytes(16);
+        $bytes[6] = chr((ord($bytes[6]) & 0x0f) | 0x40);
+        $bytes[8] = chr((ord($bytes[8]) & 0x3f) | 0x80);
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
+    }
+
+    private function experienceType(string $value): string
+    {
+        return in_array($value, ['restaurant_popup', 'perigallo_experience'], true) ? $value : 'perigallo_experience';
+    }
+
+    private function originApp(string $value): string
+    {
+        return in_array($value, ['suite', 'perigallo_web'], true) ? $value : 'perigallo_web';
+    }
+
+    private function integrationEventFromIdempotency(string $idempotencyKey): ?array
+    {
+        if ($idempotencyKey === '') return null;
+        $stmt = $this->pdo->prepare('SELECT event_id FROM experience_sync_logs WHERE idempotency_key = ? AND status = "success" LIMIT 1');
+        $stmt->execute([$idempotencyKey]);
+        $eventId = (int) ($stmt->fetchColumn() ?: 0);
+        return $eventId > 0 ? $this->adminGetEvent($eventId) : null;
+    }
+
+    private function integrationTicketFromIdempotency(string $idempotencyKey): ?array
+    {
+        if ($idempotencyKey === '') return null;
+        $stmt = $this->pdo->prepare('SELECT ticket_type_id FROM experience_sync_logs WHERE idempotency_key = ? AND status = "success" LIMIT 1');
+        $stmt->execute([$idempotencyKey]);
+        $ticketTypeId = (int) ($stmt->fetchColumn() ?: 0);
+        return $ticketTypeId > 0 ? $this->adminTicketType($ticketTypeId) : null;
+    }
+
+    private function integrationLog(string $canonicalId, string $sourceApp, string $action, string $idempotencyKey, string $status, string $error = '', int $eventId = 0, int $ticketTypeId = 0): void
+    {
+        try {
+            $key = clean_string($idempotencyKey, 191) ?: bin2hex(random_bytes(16));
+            $stmt = $this->pdo->prepare(
+                'INSERT INTO experience_sync_logs (canonical_id, event_id, ticket_type_id, source_app, destination_app, action, status, idempotency_key, attempts, error_message, completed_at)
+                 VALUES (?, ?, ?, ?, "perigallo_web", ?, ?, ?, 1, ?, NOW())
+                 ON DUPLICATE KEY UPDATE attempts=attempts+1, status=VALUES(status), error_message=VALUES(error_message), completed_at=NOW()'
+            );
+            $stmt->execute([$canonicalId, $eventId ?: null, $ticketTypeId ?: null, clean_string($sourceApp, 32), clean_string($action, 64), $status, $key, clean_string($error, 1000)]);
+        } catch (\Throwable $e) {
+            error_log('Experience integration log error: ' . $e->getMessage());
+        }
     }
 
     private function adminTicketTypesForEvent(int $eventId): array
