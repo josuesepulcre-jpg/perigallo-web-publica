@@ -1,6 +1,7 @@
 (function () {
   var api = "/api";
   var money = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" });
+  var LOW_AVAILABILITY_THRESHOLD = 8;
 
   function qs(name) {
     return new URLSearchParams(window.location.search).get(name);
@@ -9,6 +10,16 @@
   function fmtDate(value) {
     if (!value) return "";
     return new Intl.DateTimeFormat("es-ES", { dateStyle: "full", timeStyle: "short" }).format(new Date(value.replace(" ", "T")));
+  }
+
+  function fmtDateOnly(value) {
+    if (!value) return "";
+    return new Intl.DateTimeFormat("es-ES", { dateStyle: "full" }).format(new Date(value.replace(" ", "T")));
+  }
+
+  function fmtTime(value) {
+    if (!value) return "";
+    return new Intl.DateTimeFormat("es-ES", { hour: "2-digit", minute: "2-digit" }).format(new Date(value.replace(" ", "T")));
   }
 
   function cents(value) {
@@ -79,6 +90,7 @@
       if (!preview) document.title = (event.seo_title || event.title) + " | Entradas Perigallo";
       root.innerHTML = renderEventDetail(event, preview);
       initExperienceAccordions(root);
+      initIncludedInformationLink(root);
     }).catch(function (error) {
       root.innerHTML = '<p class="ticket-status">' + escapeHtml(error.message) + '</p>';
     });
@@ -103,9 +115,10 @@
         '<h1 class="ticket-title">' + escapeHtml(event.title) + '</h1>',
         event.subtitle ? '<p class="event-subtitle">' + escapeHtml(event.subtitle) + '</p>' : '',
         '<p class="ticket-copy event-intro">' + escapeHtml(event.short_description || event.description) + '</p>',
-        '<div class="event-meta event-metadata">' + eventMetadata(event) + '</div>',
-        '<div class="ticket-types">' + types.map(ticketTypeRow).join("") + '</div>',
+        '<section class="event-access">',
+        '<div class="ticket-types">' + types.map(function (type) { return ticketTypeRow(type, event); }).join("") + '</div>',
         '<div class="event-purchase-action">' + action + '</div>',
+        '</section>',
         '</div>',
         '</section>',
         '<section class="' + storyClass + '"><div class="event-story-copy"><span class="ticket-eyebrow">La experiencia</span><h2>' + escapeHtml(event.title) + '</h2><div class="ticket-copy event-story-text">' + textParagraphs(event.description || "") + '</div></div>' + video + '</section>',
@@ -206,13 +219,91 @@
     });
   }
 
-  function ticketTypeRow(type) {
+  function initIncludedInformationLink(root) {
+    root.addEventListener("click", function (event) {
+      var link = event.target.closest("[data-open-included-information]");
+      if (!link || !root.contains(link)) return;
+      var accordion = Array.prototype.find.call(root.querySelectorAll("[data-experience-accordion]"), function (item) {
+        var title = item.querySelector(".experience-accordion-title");
+        return title && title.textContent.trim() === "Información de la experiencia";
+      });
+      if (!accordion) return;
+      var trigger = accordion.querySelector("[data-experience-accordion-trigger]");
+      if (trigger && trigger.getAttribute("aria-expanded") !== "true") trigger.click();
+      accordion.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  function accessIcon(name) {
+    var icons = {
+      calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="16" rx="1"></rect><path d="M7 3v4M17 3v4M3 10h18"></path></svg>',
+      clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7v5l3 2"></path></svg>',
+      duration: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3v9l5.5 3.2"></path><circle cx="12" cy="12" r="8.5"></circle></svg>',
+      place: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>',
+      dress: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m8 4 4 3 4-3 4 4-3 4v8H7v-8L4 8l4-4Z"></path><path d="M10 7h4"></path></svg>'
+    };
+    return icons[name] || "";
+  }
+
+  function durationText(startsAt, endsAt) {
+    if (!startsAt || !endsAt) return "";
+    var start = new Date(startsAt.replace(" ", "T")).getTime();
+    var end = new Date(endsAt.replace(" ", "T")).getTime();
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return "";
+    var minutes = Math.round((end - start) / 60000);
+    var hours = Math.floor(minutes / 60);
+    var remainder = minutes % 60;
+    if (!hours) return minutes + " min";
+    if (!remainder) return hours + (hours === 1 ? " hora" : " horas");
+    return hours + " h " + remainder + " min";
+  }
+
+  function shortDetail(value) {
+    var text = String(value || "").replace(/\s+/g, " ").trim();
+    if (text.length <= 72) return text;
+    return text.slice(0, 69).replace(/\s+\S*$/, "") + "…";
+  }
+
+  function accessFact(icon, label, value) {
+    if (!value) return "";
+    return '<li class="ticket-access-fact"><span class="ticket-access-icon" aria-hidden="true">' + accessIcon(icon) + '</span><span><small>' + escapeHtml(label) + '</small><strong>' + escapeHtml(value) + '</strong></span></li>';
+  }
+
+  function accessFacts(event) {
+    var place = [event.location, [event.locality, event.province].filter(Boolean).join(", ")].filter(Boolean).join(" · ");
+    var schedule = event.starts_at ? (event.ends_at ? fmtTime(event.starts_at) + " – " + fmtTime(event.ends_at) : fmtTime(event.starts_at)) : "";
+    return [
+      accessFact("calendar", "Fecha", fmtDateOnly(event.starts_at)),
+      accessFact("clock", "Horario", schedule),
+      accessFact("duration", "Duración", durationText(event.starts_at, event.ends_at)),
+      accessFact("place", "Lugar", place),
+      accessFact("dress", "Vestimenta", shortDetail(event.dress_code))
+    ].filter(Boolean).join("");
+  }
+
+  function availabilityText(type) {
     var state = type.effective_status || type.status || "on_sale";
-    var availability = state === "on_sale" ? (Number(type.available || 0) + " disponibles") : ({ upcoming: "Próximamente", sold_out: "Agotada", paused: "Venta pausada", closed: "Venta cerrada", code_required: "Acceso mediante código" }[state] || state);
+    if (state === "on_sale") {
+      if (Number(type.available || 0) <= 0) return "Aforo completo · Entradas agotadas";
+      if (Number(type.available || 0) <= LOW_AVAILABILITY_THRESHOLD) return "Aforo limitado · Últimas entradas";
+      return "Aforo limitado · Entradas disponibles";
+    }
+    return ({ upcoming: "Venta de entradas próximamente", sold_out: "Aforo completo · Entradas agotadas", paused: "Venta temporalmente pausada", closed: "Venta finalizada", code_required: "Acceso mediante código" }[state] || "Consulta disponibilidad");
+  }
+
+  function ticketTypeRow(type, event) {
+    var availability = availabilityText(type);
+    var facts = accessFacts(event);
+    var includesLink = event.included_text ? '<button class="ticket-access-includes" type="button" data-open-included-information>Ver todo lo que incluye<span aria-hidden="true">→</span></button>' : "";
     return [
       '<article class="ticket-type">',
-      '<span class="ticket-type-mark" aria-hidden="true">01</span>',
-      '<div class="ticket-type-copy"><h3>' + escapeHtml(type.name) + '</h3><p>' + escapeHtml(type.description || "") + '</p><small>' + escapeHtml(availability) + (type.requires_promo ? ' · Código necesario' : '') + '</small></div>',
+      '<div class="ticket-type-copy">',
+      '<span class="ticket-access-eyebrow">Tu acceso a la experiencia</span>',
+      '<h3>' + escapeHtml(type.name) + '</h3><p>' + escapeHtml(type.description || "") + '</p>',
+      '<small class="ticket-access-status">' + escapeHtml(availability) + (type.requires_promo ? ' · Código necesario' : '') + '</small>',
+      includesLink,
+      '</div>',
+      facts ? '<ul class="ticket-access-facts">' + facts + '</ul>' : '',
       '<div class="ticket-type-price"><strong>' + cents(type.final_price_cents != null ? type.final_price_cents : type.price_cents) + '</strong><span>por persona</span></div>',
       '</article>'
     ].join("");
