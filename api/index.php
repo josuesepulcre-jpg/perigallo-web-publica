@@ -114,6 +114,7 @@ try {
 } catch (InvalidArgumentException $e) {
     json_response(['ok' => false, 'error' => $e->getMessage()], 422);
 } catch (Throwable $e) {
+    error_log('Perigallo ticketing API error: ' . $e->getMessage());
     $isProd = env_value('APP_ENV', 'production') === 'production';
     json_response([
         'ok' => false,
