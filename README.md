@@ -9,7 +9,7 @@ Este repositorio corresponde solo a `perigallo.com`. No es Perigallo Suite, no e
 - Home publica y rutas comerciales de Perigallo.
 - Enlaces externos oficiales a Perigallo Suite y Perigallo Reservas.
 - Paginas publicas de eventos y checkout de entradas.
-- API PHP propia para pedidos, tickets, notificacion Redsys y panel basico de acceso.
+- API PHP propia para pedidos, tickets, notificacion Redsys y panel privado de gestión completa de eventos.
 - Documentacion de despliegue para Plesk/Cyberpac Redsys.
 
 ## Integraciones externas
@@ -32,7 +32,9 @@ Las solicitudes y reservas externas se abren fuera de la pagina principal para e
 | `/entradas/pedido/?token=...` | Resumen de pedido y entradas emitidas. |
 | `/entradas/pago/correcto/` | Retorno informativo de pago correcto. |
 | `/entradas/pago/error/` | Retorno informativo de pago fallido/cancelado. |
-| `/admin/entradas/` | Panel privado basico de eventos, pedidos y entradas. |
+| `/admin/entradas/` | Listado privado de eventos, ventas y entradas. |
+| `/admin/entradas/evento/?id=ID` | Editor completo de evento y tipos de entrada. |
+| `/admin/entradas/vista-previa/?id=ID` | Vista previa privada del evento, incluso en borrador. |
 | `/admin/entradas/acceso/` | Escaner/verificacion privada de accesos. |
 | `/solicitud-evento/` | Pasarela legacy hacia la solicitud oficial de Perigallo Suite. |
 | `/politica-privacidad/` | Politica de privacidad. |
@@ -59,8 +61,15 @@ Endpoints principales:
 - `POST /api/admin/logout`
 - `GET /api/admin/summary`
 - `GET /api/admin/orders`
+- `GET /api/admin/events`
+- `GET /api/admin/events/{id}`
 - `POST /api/admin/events`
+- `PUT /api/admin/events/{id}`
+- `POST /api/admin/events/{id}/publish`, `/unpublish` y `/duplicate`
+- `GET /api/admin/events/{id}/preview`
 - `POST /api/admin/events/{id}/ticket-types`
+- `PUT /api/admin/events/{id}/ticket-types/{ticketTypeId}`
+- `POST /api/admin/media`
 - `POST /api/admin/tickets/scan`
 
 ## Desarrollo local
@@ -96,9 +105,10 @@ Aplicar:
 
 ```bash
 mysql -u USER -p DB_NAME < database/migrations/001_ticketing_schema.sql
+mysql -u USER -p DB_NAME < database/migrations/002_event_editor.sql
 ```
 
-La migracion crea tablas aisladas para eventos, tipos de entrada, pedidos, intentos de pago, tickets, escaneos y entregas de email.
+La primera migración crea las tablas aisladas para eventos, tipos de entrada, pedidos, intentos de pago, tickets, escaneos y entregas de email. La segunda amplía los eventos y entradas sin alterar los pedidos o tickets emitidos.
 
 ## Validacion minima
 

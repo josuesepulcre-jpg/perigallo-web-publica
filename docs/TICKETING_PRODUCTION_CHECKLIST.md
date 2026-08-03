@@ -3,7 +3,7 @@
 ## Antes de activar cobros reales
 
 - [ ] Dominio `https://perigallo.com` con SSL valido.
-- [ ] Base de datos aislada creada y migrada.
+- [ ] Base de datos aislada creada y con `001_ticketing_schema.sql` y `002_event_editor.sql` aplicadas, en ese orden.
 - [ ] Variables de entorno configuradas fuera del repositorio.
 - [ ] `APP_SECRET` generado con valor largo y unico.
 - [ ] Usuario admin creado con `password_hash`.
@@ -16,6 +16,11 @@
 - [ ] Escaneo de acceso probado.
 - [ ] Email de confirmacion probado o alternativa operativa definida.
 - [ ] Stock probado con cupo bajo para evitar sobreventa.
+- [ ] Crear, guardar y reabrir un evento en borrador desde `/admin/entradas/`.
+- [ ] Crear, editar, reordenar y archivar un tipo de entrada desde el editor.
+- [ ] Vista previa privada comprobada antes de publicar.
+- [ ] Publicación, despublicación y publicación programada verificadas.
+- [ ] Directorio `assets/uploads/events/` escribible por el usuario PHP/Plesk si se usarán subidas de imágenes.
 - [ ] Politicas legales publicadas: privacidad, aviso legal, cookies, condiciones, cancelacion y reembolso.
 - [ ] Cookies revisadas segun scripts reales cargados.
 - [ ] Backups de archivos y base de datos antes del cambio.

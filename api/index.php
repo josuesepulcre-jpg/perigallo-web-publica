@@ -92,15 +92,98 @@ try {
         return;
     }
 
+    if ($method === 'GET' && $path === '/admin/events') {
+        AdminAuth::require();
+        json_response(['ok' => true, 'events' => $ticketing->adminListEvents()]);
+        return;
+    }
+
+    if ($method === 'GET' && preg_match('#^/admin/events/([0-9]+)$#', $path, $m)) {
+        AdminAuth::require();
+        $event = $ticketing->adminGetEvent((int) $m[1]);
+        if (!$event) {
+            json_response(['ok' => false, 'error' => 'Evento no encontrado.'], 404);
+            return;
+        }
+        json_response(['ok' => true, 'event' => $event]);
+        return;
+    }
+
+    if ($method === 'GET' && preg_match('#^/admin/events/([0-9]+)/preview$#', $path, $m)) {
+        AdminAuth::require();
+        $event = $ticketing->adminGetEvent((int) $m[1]);
+        if (!$event) {
+            json_response(['ok' => false, 'error' => 'Evento no encontrado.'], 404);
+            return;
+        }
+        json_response(['ok' => true, 'event' => $event]);
+        return;
+    }
+
     if ($method === 'POST' && $path === '/admin/events') {
         AdminAuth::requireCsrf();
         json_response(['ok' => true, 'event' => $ticketing->adminCreateEvent(read_json_body())], 201);
         return;
     }
 
+    if ($method === 'POST' && $path === '/admin/media') {
+        AdminAuth::requireCsrf();
+        json_response(['ok' => true, 'media' => $ticketing->adminUploadImage($_FILES['file'] ?? [])], 201);
+        return;
+    }
+
+    if ($method === 'PUT' && preg_match('#^/admin/events/([0-9]+)$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        json_response(['ok' => true, 'event' => $ticketing->adminUpdateEvent((int) $m[1], read_json_body())]);
+        return;
+    }
+
+    if ($method === 'POST' && preg_match('#^/admin/events/([0-9]+)/(publish|unpublish)$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        json_response(['ok' => true, 'event' => $ticketing->adminSetEventPublication((int) $m[1], $m[2] === 'publish')]);
+        return;
+    }
+
+    if ($method === 'POST' && preg_match('#^/admin/events/([0-9]+)/duplicate$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        json_response(['ok' => true, 'event' => $ticketing->adminDuplicateEvent((int) $m[1])], 201);
+        return;
+    }
+
+    if ($method === 'DELETE' && preg_match('#^/admin/events/([0-9]+)$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        json_response(['ok' => true] + $ticketing->adminArchiveOrDeleteEvent((int) $m[1]));
+        return;
+    }
+
     if ($method === 'POST' && preg_match('#^/admin/events/([0-9]+)/ticket-types$#', $path, $m)) {
         AdminAuth::requireCsrf();
         json_response(['ok' => true, 'ticket_type' => $ticketing->adminCreateTicketType((int) $m[1], read_json_body())], 201);
+        return;
+    }
+
+    if ($method === 'PUT' && preg_match('#^/admin/events/([0-9]+)/ticket-types/([0-9]+)$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        json_response(['ok' => true, 'ticket_type' => $ticketing->adminUpdateTicketType((int) $m[1], (int) $m[2], read_json_body())]);
+        return;
+    }
+
+    if ($method === 'POST' && preg_match('#^/admin/events/([0-9]+)/ticket-types/([0-9]+)/duplicate$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        json_response(['ok' => true, 'ticket_type' => $ticketing->adminDuplicateTicketType((int) $m[1], (int) $m[2])], 201);
+        return;
+    }
+
+    if ($method === 'POST' && preg_match('#^/admin/events/([0-9]+)/ticket-types/reorder$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        $data = read_json_body();
+        json_response(['ok' => true, 'ticket_types' => $ticketing->adminReorderTicketTypes((int) $m[1], is_array($data['ids'] ?? null) ? $data['ids'] : [])]);
+        return;
+    }
+
+    if ($method === 'DELETE' && preg_match('#^/admin/events/([0-9]+)/ticket-types/([0-9]+)$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        json_response(['ok' => true] + $ticketing->adminArchiveOrDeleteTicketType((int) $m[1], (int) $m[2]));
         return;
     }
 

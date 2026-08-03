@@ -67,9 +67,12 @@ Aplicar migracion:
 
 ```bash
 mysql -u DB_USER -p DB_NAME < database/migrations/001_ticketing_schema.sql
+mysql -u DB_USER -p DB_NAME < database/migrations/002_event_editor.sql
 ```
 
-Crear un evento desde `/admin/entradas/` despues de configurar usuario admin.
+La segunda migración amplía eventos y entradas sin borrar pedidos, pagos, códigos ni asistentes ya existentes. Debe ejecutarse antes de desplegar la versión con editor.
+
+Crear y editar un evento desde `/admin/entradas/` después de configurar usuario admin. El editor queda en `/admin/entradas/evento/?id=ID` y la vista previa privada en `/admin/entradas/vista-previa/?id=ID`.
 
 ## Password admin
 
@@ -127,24 +130,26 @@ curl -I https://perigallo.com/
 curl -I https://perigallo.com/eventos/
 curl -I https://perigallo.com/entradas/checkout/
 curl -I https://perigallo.com/admin/entradas/
+curl -I 'https://perigallo.com/admin/entradas/evento/?id=1'
 curl -I https://perigallo.com/api/events
 ```
 
 ## Prueba funcional en TEST
 
-1. Crear evento publicado en `/admin/entradas/`.
-2. Crear al menos un tipo de entrada con precio y cupo.
-3. Abrir `/eventos/` y entrar al evento.
-4. Comprar una entrada con Redsys TEST.
-5. Confirmar que Redsys llama a:
+1. Crear un evento; se abrirá como borrador en el editor.
+2. Guardar fecha, ubicación, contenido y al menos un tipo de entrada con precio y cupo.
+3. Abrir **Vista previa** antes de publicar.
+4. Publicar y comprobar la URL pública en `/eventos/SLUG/`.
+5. Comprar una entrada con Redsys TEST.
+6. Confirmar que Redsys llama a:
 
 ```text
 https://perigallo.com/api/redsys/notification
 ```
 
-6. Verificar pedido pagado en admin.
-7. Abrir `/entradas/pedido/?token=...`.
-8. Escanear/verificar codigo en `/admin/entradas/acceso/`.
+7. Verificar pedido pagado en admin.
+8. Abrir `/entradas/pedido/?token=...`.
+9. Escanear/verificar codigo en `/admin/entradas/acceso/`.
 
 ## Observaciones
 
@@ -152,3 +157,5 @@ https://perigallo.com/api/redsys/notification
 - El TPV se abre como redireccion segura.
 - La confirmacion de pago depende de la notificacion servidor a servidor.
 - Si el email del servidor no esta configurado, los envios quedaran registrados como error en `email_deliveries`; el pedido/ticket no se pierde.
+- La subida de imágenes se guarda en `assets/uploads/events/`. El proceso PHP debe tener permiso de escritura únicamente sobre esa carpeta; no se suben esos archivos al repositorio.
+- En este alojamiento, confirmar siempre el `DOCROOT` real de Plesk antes de sincronizar archivos. El archivo `.env` debe existir solamente en el directorio servido y no debe entrar en Git.

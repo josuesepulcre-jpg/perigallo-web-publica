@@ -1,0 +1,66 @@
+-- Extiende el ticketing inicial sin alterar pedidos, pagos ni entradas emitidas.
+-- Ejecutar una unica vez despues de 001_ticketing_schema.sql.
+
+ALTER TABLE events
+  MODIFY COLUMN status ENUM('draft','scheduled','published','sold_out','finished','cancelled','archived') NOT NULL DEFAULT 'draft',
+  ADD COLUMN IF NOT EXISTS short_description TEXT NULL AFTER subtitle,
+  ADD COLUMN IF NOT EXISTS category VARCHAR(100) NULL AFTER description,
+  ADD COLUMN IF NOT EXISTS tags VARCHAR(500) NULL AFTER category,
+  ADD COLUMN IF NOT EXISTS locale VARCHAR(12) NOT NULL DEFAULT 'es' AFTER tags,
+  ADD COLUMN IF NOT EXISTS card_image_url VARCHAR(500) NULL AFTER image_url,
+  ADD COLUMN IF NOT EXISTS social_image_url VARCHAR(500) NULL AFTER card_image_url,
+  ADD COLUMN IF NOT EXISTS gallery_json JSON NULL AFTER social_image_url,
+  ADD COLUMN IF NOT EXISTS video_url VARCHAR(500) NULL AFTER gallery_json,
+  ADD COLUMN IF NOT EXISTS logo_url VARCHAR(500) NULL AFTER video_url,
+  ADD COLUMN IF NOT EXISTS doors_open_at DATETIME NULL AFTER ends_at,
+  ADD COLUMN IF NOT EXISTS timezone VARCHAR(64) NOT NULL DEFAULT 'Europe/Madrid' AFTER doors_open_at,
+  ADD COLUMN IF NOT EXISTS schedule_note VARCHAR(500) NULL AFTER timezone,
+  ADD COLUMN IF NOT EXISTS postal_code VARCHAR(24) NULL AFTER address,
+  ADD COLUMN IF NOT EXISTS locality VARCHAR(120) NULL AFTER postal_code,
+  ADD COLUMN IF NOT EXISTS province VARCHAR(120) NULL AFTER locality,
+  ADD COLUMN IF NOT EXISTS country VARCHAR(120) NOT NULL DEFAULT 'España' AFTER province,
+  ADD COLUMN IF NOT EXISTS maps_url VARCHAR(500) NULL AFTER country,
+  ADD COLUMN IF NOT EXISTS access_notes TEXT NULL AFTER maps_url,
+  ADD COLUMN IF NOT EXISTS parking_info TEXT NULL AFTER access_notes,
+  ADD COLUMN IF NOT EXISTS venue_type ENUM('in_person','online','hybrid') NOT NULL DEFAULT 'in_person' AFTER parking_info,
+  ADD COLUMN IF NOT EXISTS included_text TEXT NULL AFTER venue_type,
+  ADD COLUMN IF NOT EXISTS access_conditions TEXT NULL AFTER included_text,
+  ADD COLUMN IF NOT EXISTS minor_policy TEXT NULL AFTER access_conditions,
+  ADD COLUMN IF NOT EXISTS refund_policy TEXT NULL AFTER minor_policy,
+  ADD COLUMN IF NOT EXISTS faq_json JSON NULL AFTER refund_policy,
+  ADD COLUMN IF NOT EXISTS contact_info TEXT NULL AFTER faq_json,
+  ADD COLUMN IF NOT EXISTS recommendations TEXT NULL AFTER contact_info,
+  ADD COLUMN IF NOT EXISTS dress_code VARCHAR(255) NULL AFTER recommendations,
+  ADD COLUMN IF NOT EXISTS accessibility_info TEXT NULL AFTER dress_code,
+  ADD COLUMN IF NOT EXISTS publication_at DATETIME NULL AFTER visible,
+  ADD COLUMN IF NOT EXISTS unlisted TINYINT(1) NOT NULL DEFAULT 0 AFTER publication_at,
+  ADD COLUMN IF NOT EXISTS link_only TINYINT(1) NOT NULL DEFAULT 0 AFTER unlisted,
+  ADD COLUMN IF NOT EXISTS show_sold_out TINYINT(1) NOT NULL DEFAULT 1 AFTER link_only,
+  ADD COLUMN IF NOT EXISTS show_availability TINYINT(1) NOT NULL DEFAULT 1 AFTER show_sold_out,
+  ADD COLUMN IF NOT EXISTS show_price_from TINYINT(1) NOT NULL DEFAULT 1 AFTER show_availability,
+  ADD COLUMN IF NOT EXISTS seo_title VARCHAR(190) NULL AFTER show_price_from,
+  ADD COLUMN IF NOT EXISTS seo_description VARCHAR(320) NULL AFTER seo_title,
+  ADD COLUMN IF NOT EXISTS seo_image_url VARCHAR(500) NULL AFTER seo_description,
+  ADD COLUMN IF NOT EXISTS canonical_url VARCHAR(500) NULL AFTER seo_image_url;
+
+ALTER TABLE ticket_types
+  ADD COLUMN IF NOT EXISTS tax_rate DECIMAL(5,2) NOT NULL DEFAULT 0.00 AFTER price_cents,
+  ADD COLUMN IF NOT EXISTS fee_cents INT UNSIGNED NOT NULL DEFAULT 0 AFTER tax_rate,
+  ADD COLUMN IF NOT EXISTS sale_starts_at DATETIME NULL AFTER capacity,
+  ADD COLUMN IF NOT EXISTS sale_ends_at DATETIME NULL AFTER sale_starts_at,
+  ADD COLUMN IF NOT EXISTS status ENUM('draft','upcoming','on_sale','paused','sold_out','closed','hidden','archived') NOT NULL DEFAULT 'on_sale' AFTER active,
+  ADD COLUMN IF NOT EXISTS visible TINYINT(1) NOT NULL DEFAULT 1 AFTER status,
+  ADD COLUMN IF NOT EXISTS requires_promo TINYINT(1) NOT NULL DEFAULT 0 AFTER visible,
+  ADD COLUMN IF NOT EXISTS promo_code_hash VARCHAR(255) NULL AFTER requires_promo,
+  ADD COLUMN IF NOT EXISTS waitlist_enabled TINYINT(1) NOT NULL DEFAULT 0 AFTER requires_promo,
+  ADD COLUMN IF NOT EXISTS refundable TINYINT(1) NOT NULL DEFAULT 0 AFTER waitlist_enabled,
+  ADD COLUMN IF NOT EXISTS terms_text TEXT NULL AFTER refundable,
+  ADD COLUMN IF NOT EXISTS label_color VARCHAR(24) NULL AFTER terms_text,
+  ADD COLUMN IF NOT EXISTS archived_at DATETIME NULL AFTER sort_order;
+
+UPDATE ticket_types
+SET sale_starts_at = COALESCE(sale_starts_at, created_at),
+    sale_ends_at = COALESCE(sale_ends_at, DATE_ADD(created_at, INTERVAL 10 YEAR)),
+    status = CASE WHEN active = 1 THEN 'on_sale' ELSE 'paused' END,
+    visible = CASE WHEN active = 1 THEN 1 ELSE 0 END
+WHERE sale_starts_at IS NULL OR sale_ends_at IS NULL;

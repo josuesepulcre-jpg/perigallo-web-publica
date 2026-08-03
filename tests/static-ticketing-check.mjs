@@ -7,6 +7,7 @@ const required = [
   "api/src/Ticketing.php",
   "api/src/Redsys.php",
   "database/migrations/001_ticketing_schema.sql",
+  "database/migrations/002_event_editor.sql",
   "eventos/index.html",
   "eventos/evento.html",
   "entradas/checkout/index.html",
@@ -14,6 +15,8 @@ const required = [
   "entradas/pago/correcto/index.html",
   "entradas/pago/error/index.html",
   "admin/entradas/index.html",
+  "admin/entradas/evento/index.html",
+  "admin/entradas/vista-previa/index.html",
   "admin/entradas/acceso/index.html",
   "solicitud-evento/index.html",
   "docs/CYBERPAC_REDSYS_PERIGALLO_COM.md",
@@ -35,6 +38,8 @@ const activeFiles = [
   "entradas/checkout/index.html",
   "entradas/pedido/index.html",
   "admin/entradas/index.html",
+  "admin/entradas/evento/index.html",
+  "admin/entradas/vista-previa/index.html",
   "admin/entradas/acceso/index.html",
   "solicitud-evento/index.html",
   "assets/js/ticketing.js",
@@ -55,6 +60,22 @@ for (const file of activeFiles) {
     if (pattern.test(body)) {
       throw new Error(`Forbidden pattern ${pattern} found in ${file}`);
     }
+  }
+}
+
+const api = readFileSync(join(root, "api/index.php"), "utf8");
+const ticketing = readFileSync(join(root, "api/src/Ticketing.php"), "utf8");
+for (const marker of [
+  "/admin/events/([0-9]+)/preview",
+  "adminUpdateEvent",
+  "adminDuplicateEvent",
+  "adminDuplicateTicketType",
+  "adminArchiveOrDeleteTicketType",
+  "adminUploadImage",
+  "publication_at <= NOW()",
+]) {
+  if (!(api + ticketing).includes(marker)) {
+    throw new Error(`Missing event editor contract: ${marker}`);
   }
 }
 

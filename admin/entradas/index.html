@@ -4,98 +4,31 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex,nofollow">
-<title>Admin entradas | Perigallo</title>
+<title>Eventos y entradas | Perigallo</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/ticketing.css">
 </head>
-<body class="ticketing-page">
+<body class="ticketing-page admin-page">
 <header class="ticketing-nav">
   <a href="/" aria-label="Volver a Perigallo"><img class="ticketing-logo" src="/assets/images/perigallo-logo-original.png" alt="Perigallo"></a>
-  <nav>
-    <a href="/eventos/">Eventos</a>
-    <a href="/admin/entradas/acceso/">Acceso</a>
-  </nav>
+  <nav><a href="/eventos/">Eventos públicos</a><a href="/admin/entradas/acceso/">Accesos</a><button class="nav-button" type="button" data-admin-logout>Salir</button></nav>
 </header>
 <main class="ticketing-main">
-  <section class="ticket-hero">
-    <div class="ticket-hero-inner">
-      <div>
-        <span class="ticket-eyebrow">Gestión de entradas</span>
-        <h1 class="ticket-title">Panel de <em>eventos</em></h1>
-        <p class="ticket-copy">Crea eventos, publica cupos y revisa pedidos de entradas vendidos desde perigallo.com.</p>
-      </div>
+  <section class="admin-hero">
+    <div class="ticket-section-inner admin-hero-inner">
+      <div><span class="ticket-eyebrow">Gestión Perigallo</span><h1 class="ticket-title">Eventos y <em>entradas</em></h1><p class="ticket-copy">Crea, edita y publica cada experiencia desde un único lugar. Los pedidos, pagos y accesos permanecen conectados.</p></div>
+      <button class="ticket-btn primary" type="button" data-create-event>Crear evento</button>
     </div>
   </section>
   <section class="ticket-section">
-    <div class="ticket-section-inner">
-      <div class="ticket-panel" data-admin-login-wrap hidden>
-        <h2>Acceso privado</h2>
-        <form class="ticket-form" data-admin-login>
-          <div class="ticket-form-grid">
-            <div class="ticket-field"><label for="username">Usuario</label><input id="username" name="username" autocomplete="username" required></div>
-            <div class="ticket-field"><label for="password">Contraseña</label><input id="password" name="password" type="password" autocomplete="current-password" required></div>
-          </div>
-          <button class="ticket-btn primary" type="submit">Entrar</button>
-          <p class="ticket-status" data-admin-status></p>
-        </form>
-      </div>
-      <div data-admin-dashboard hidden>
-        <p class="ticket-status" data-admin-errors></p>
-        <div class="admin-grid">
-          <aside class="ticket-panel">
-            <span class="ticket-eyebrow">Resumen</span>
-            <div class="admin-list" data-admin-order-summary></div>
-          </aside>
-          <div class="ticket-panel">
-            <span class="ticket-eyebrow">Eventos</span>
-            <div class="admin-list" data-admin-events></div>
-          </div>
-        </div>
-        <div class="ticket-section-head" style="margin-top:34px">
-          <h2>Crear evento</h2>
-        </div>
-        <form class="ticket-panel ticket-form" data-admin-event-form>
-          <div class="ticket-form-grid">
-            <div class="ticket-field"><label>Slug</label><input name="slug" required placeholder="cena-verano-2026"></div>
-            <div class="ticket-field"><label>Título</label><input name="title" required></div>
-            <div class="ticket-field"><label>Subtítulo</label><input name="subtitle"></div>
-            <div class="ticket-field"><label>Imagen URL</label><input name="image_url" placeholder="/assets/images/perigallo-hero-original-01.jpg"></div>
-            <div class="ticket-field"><label>Ubicación</label><input name="location" value="Finca La Llaguna" required></div>
-            <div class="ticket-field"><label>Dirección</label><input name="address" value="Crevillent · Alicante"></div>
-            <div class="ticket-field"><label>Fecha y hora</label><input name="starts_at" type="datetime-local" required></div>
-            <div class="ticket-field"><label>Inicio venta</label><input name="sale_starts_at" type="datetime-local" required></div>
-            <div class="ticket-field"><label>Fin venta</label><input name="sale_ends_at" type="datetime-local" required></div>
-            <div class="ticket-field"><label>Capacidad total</label><input name="capacity" type="number" min="1" required></div>
-            <div class="ticket-field"><label>Estado</label><select name="status"><option value="draft">Borrador</option><option value="published">Publicado</option><option value="sold_out">Completo</option><option value="cancelled">Cancelado</option></select></div>
-            <div class="ticket-field"><label>Promotor</label><input name="promoter" value="JYD Events, S.L."></div>
-          </div>
-          <div class="ticket-field"><label>Descripción</label><textarea name="description" rows="5" required></textarea></div>
-          <label class="ticket-check"><input name="visible" type="checkbox"> Visible en la web pública</label>
-          <button class="ticket-btn primary" type="submit">Crear evento</button>
-        </form>
-        <div class="ticket-section-head" style="margin-top:34px">
-          <h2>Crear tipo de entrada</h2>
-        </div>
-        <form class="ticket-panel ticket-form" data-admin-ticket-type-form>
-          <div class="ticket-form-grid">
-            <div class="ticket-field"><label>Evento</label><select name="event_id" data-admin-event-select required></select></div>
-            <div class="ticket-field"><label>Nombre</label><input name="name" required placeholder="Entrada general"></div>
-            <div class="ticket-field"><label>Precio EUR</label><input name="price" type="number" min="0" step="0.01" required></div>
-            <div class="ticket-field"><label>Cupo</label><input name="capacity" type="number" min="1" required></div>
-            <div class="ticket-field"><label>Mínimo</label><input name="min_quantity" type="number" min="1" value="1"></div>
-            <div class="ticket-field"><label>Máximo pedido</label><input name="max_per_order" type="number" min="1" value="10"></div>
-            <div class="ticket-field"><label>Orden</label><input name="sort_order" type="number" value="100"></div>
-          </div>
-          <div class="ticket-field"><label>Descripción</label><textarea name="description" rows="3"></textarea></div>
-          <label class="ticket-check"><input name="active" type="checkbox" checked> Tipo activo</label>
-          <button class="ticket-btn primary" type="submit">Crear entrada</button>
-        </form>
-        <div class="ticket-section-head" style="margin-top:34px">
-          <h2>Pedidos recientes</h2>
-        </div>
-        <div class="admin-list" data-admin-orders></div>
-      </div>
+    <div class="ticket-section-inner" data-admin-list hidden>
+      <div class="admin-toolbar"><div><h2>Todos los eventos</h2><p class="ticket-copy">Borradores, fechas publicadas y archivo.</p></div><label class="admin-search"><span>Buscar</span><input type="search" data-event-search placeholder="Nombre, fecha o estado"></label></div>
+      <p class="ticket-status" data-admin-status></p>
+      <div class="admin-event-grid" data-admin-event-list></div>
+    </div>
+    <div class="ticket-section-inner" data-admin-login-wrap hidden>
+      <div class="ticket-panel login-panel"><span class="ticket-eyebrow">Acceso privado</span><h2>Entrar al panel</h2><form class="ticket-form" data-admin-login><div class="ticket-form-grid"><div class="ticket-field"><label for="username">Usuario</label><input id="username" name="username" autocomplete="username" required></div><div class="ticket-field"><label for="password">Contraseña</label><input id="password" name="password" type="password" autocomplete="current-password" required></div></div><button class="ticket-btn primary" type="submit">Entrar</button><p class="ticket-status" data-admin-status></p></form></div>
     </div>
   </section>
 </main>
