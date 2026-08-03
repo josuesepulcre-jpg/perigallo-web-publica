@@ -827,32 +827,37 @@ final class Ticketing
     public function adminUploadImage(array $file, string $kind = 'image'): array
     {
         if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-            throw new RuntimeException('No se pudo recibir el archivo.');
+            $message = match ((int) ($file['error'] ?? UPLOAD_ERR_NO_FILE)) {
+                UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'El archivo supera el límite de subida del servidor. Configura upload_max_filesize y post_max_size en al menos 64M.',
+                UPLOAD_ERR_PARTIAL => 'La subida del archivo no se completó. Inténtalo de nuevo.',
+                default => 'No se pudo recibir el archivo.',
+            };
+            throw new InvalidArgumentException($message);
         }
         $allowedKinds = ['image', 'card', 'social', 'gallery', 'logo', 'video'];
         if (!in_array($kind, $allowedKinds, true)) {
-            throw new RuntimeException('Tipo de recurso no permitido.');
+            throw new InvalidArgumentException('Tipo de recurso no permitido.');
         }
         $tmp = (string) ($file['tmp_name'] ?? '');
         if ($tmp === '' || !is_uploaded_file($tmp)) {
-            throw new RuntimeException('El archivo recibido no es válido.');
+            throw new InvalidArgumentException('El archivo recibido no es válido.');
         }
         $isVideo = $kind === 'video';
         $maxSize = $isVideo ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
         if ((int) ($file['size'] ?? 0) < 1 || (int) $file['size'] > $maxSize) {
-            throw new RuntimeException($isVideo ? 'El vídeo debe pesar menos de 50 MB.' : 'La imagen debe pesar menos de 5 MB.');
+            throw new InvalidArgumentException($isVideo ? 'El vídeo debe pesar menos de 50 MB.' : 'La imagen debe pesar menos de 5 MB.');
         }
         $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($tmp);
         $extensions = $isVideo
             ? ['video/mp4' => 'mp4', 'video/webm' => 'webm', 'video/quicktime' => 'mov']
             : ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/avif' => 'avif'];
         if (!isset($extensions[$mime])) {
-            throw new RuntimeException($isVideo ? 'Formato no permitido. Usa MP4, WebM o MOV.' : 'Formato no permitido. Usa JPG, PNG, WebP o AVIF.');
+            throw new InvalidArgumentException($isVideo ? 'Formato no permitido. Usa MP4, WebM o MOV.' : 'Formato no permitido. Usa JPG, PNG, WebP o AVIF.');
         }
         $extension = strtolower(pathinfo((string) ($file['name'] ?? ''), PATHINFO_EXTENSION));
         $allowedFileExtensions = $isVideo ? ['mp4', 'webm', 'mov'] : ['jpg', 'jpeg', 'png', 'webp', 'avif'];
         if (!in_array($extension, $allowedFileExtensions, true)) {
-            throw new RuntimeException($isVideo ? 'La extensión del vídeo no es válida.' : 'La extensión de la imagen no es válida.');
+            throw new InvalidArgumentException($isVideo ? 'La extensión del vídeo no es válida.' : 'La extensión de la imagen no es válida.');
         }
         $directory = dirname(__DIR__, 2) . '/assets/uploads/events' . ($isVideo ? '/videos' : '');
         if (!is_dir($directory) && !mkdir($directory, 0755, true) && !is_dir($directory)) {

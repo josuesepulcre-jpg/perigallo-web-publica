@@ -26,6 +26,7 @@ const required = [
   "docs/TICKETING_DEPLOYMENT.md",
   "docs/TICKETING_PRODUCTION_CHECKLIST.md",
   ".env.example",
+  ".user.ini",
   ".htaccess",
 ];
 
@@ -77,6 +78,7 @@ for (const marker of [
   "adminDuplicateTicketType",
   "adminArchiveOrDeleteTicketType",
   "adminUploadImage",
+  "upload_max_filesize y post_max_size",
   "publication_at <= NOW()",
   "require_suite_service",
   "integrationUpdateExperience",

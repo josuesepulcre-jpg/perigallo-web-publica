@@ -195,6 +195,12 @@ try {
 
     if ($method === 'POST' && $path === '/admin/media') {
         AdminAuth::requireCsrf();
+        // Cuando post_max_size se supera, PHP descarta $_FILES antes de llegar
+        // a adminUploadImage. Devolvemos 413 en vez de un 500 genérico.
+        if (!isset($_FILES['file']) && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
+            json_response(['ok' => false, 'error' => 'El archivo supera el límite del servidor. Configura upload_max_filesize y post_max_size en al menos 64M en Plesk.'], 413);
+            return;
+        }
         json_response(['ok' => true, 'media' => $ticketing->adminUploadImage($_FILES['file'] ?? [], (string) ($_POST['kind'] ?? 'image'))], 201);
         return;
     }
