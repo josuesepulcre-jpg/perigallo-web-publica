@@ -639,7 +639,7 @@ final class Ticketing
             $this->jsonArray($merged['faq'] ?? $merged['faq_json'] ?? []),
             trim((string) ($merged['contact_info'] ?? '')),
             trim((string) ($merged['recommendations'] ?? '')),
-            clean_string((string) ($merged['dress_code'] ?? ''), 255),
+            trim((string) ($merged['dress_code'] ?? '')),
             trim((string) ($merged['accessibility_info'] ?? '')),
             $status,
             $visible,

@@ -99,17 +99,18 @@
         action,
         '</div>',
         '</div>',
-        '<section class="event-story"><div><span class="ticket-eyebrow">La experiencia</span><h2>' + escapeHtml(event.title) + '</h2><p class="ticket-copy">' + escapeHtml(event.description || "") + '</p>' + (event.recommendations ? '<p class="ticket-copy">' + escapeHtml(event.recommendations) + '</p>' : '') + '</div></section>',
+        '<section class="event-story"><div><span class="ticket-eyebrow">La experiencia</span><h2>' + escapeHtml(event.title) + '</h2><p class="ticket-copy">' + escapeHtml(event.description || "") + '</p></div></section>',
         video,
         gallery ? '<section class="event-gallery">' + gallery + '</section>' : '',
-        event.included_text || event.access_conditions || event.minor_policy || event.refund_policy || event.accessibility_info ? '<section class="event-info-grid">' + publicInfo(event) + '</section>' : '',
+        event.included_text || event.access_conditions || event.dress_code || event.recommendations || event.accessibility_info || event.minor_policy || event.refund_policy ? '<section class="event-public-information"><span class="ticket-eyebrow">Antes de venir</span><h2>Información de la experiencia</h2><div class="event-public-information-grid">' + publicInfo(event) + '</div></section>' : '',
         event.parking_info || event.access_notes || event.maps_url ? '<section class="event-arrival"><h2>Llegar y disfrutar</h2><p>' + escapeHtml(event.access_notes || event.parking_info || "") + '</p>' + (event.maps_url ? '<a class="ticket-btn" href="' + escapeAttr(event.maps_url) + '" target="_blank" rel="noopener noreferrer">Abrir mapa</a>' : '') + '</section>' : '',
-        (event.faq || []).length ? '<section class="event-faqs"><h2>Preguntas frecuentes</h2>' + publicFaq(event.faq) + '</section>' : ''
+        (event.faq || []).length ? '<section class="event-faqs"><h2>Preguntas frecuentes</h2>' + publicFaq(event.faq) + '</section>' : '',
+        event.contact_info ? '<section class="event-arrival event-contact"><h2>Contacto</h2><p>' + escapeHtml(event.contact_info) + '</p></section>' : ''
       ].join("");
   }
 
   function publicInfo(event) {
-    var entries = [["Qué incluye", event.included_text], ["Acceso", event.access_conditions], ["Menores", event.minor_policy], ["Cambios y devoluciones", event.refund_policy], ["Accesibilidad", event.accessibility_info]];
+    var entries = [["Qué incluye la entrada", event.included_text], ["Condiciones de acceso", event.access_conditions], ["Código de vestimenta", event.dress_code], ["Recomendaciones", event.recommendations], ["Accesibilidad", event.accessibility_info], ["Política de menores", event.minor_policy], ["Política de devolución", event.refund_policy]];
     return entries.filter(function (item) { return item[1]; }).map(function (item) { return '<article class="event-info-card"><h3>' + escapeHtml(item[0]) + '</h3><p>' + escapeHtml(item[1]) + '</p></article>'; }).join("");
   }
 

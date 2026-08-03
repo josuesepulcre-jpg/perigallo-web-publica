@@ -1,6 +1,6 @@
 (function () {
   var api = "/api";
-  var state = { csrf: "", event: null, dirty: false };
+  var state = { csrf: "", event: null, dirty: false, saving: false, publicDirty: {} };
   var mediaState = { root: null, selected: {}, uploading: {}, messages: {}, previews: {}, dragIndex: null };
   var money = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" });
 
@@ -8,8 +8,13 @@
     options = options || {};
     options.credentials = "same-origin";
     return fetch(url, options).then(function (response) {
-      return response.json().catch(function () { return { ok: false, error: "Respuesta no valida del servidor." }; }).then(function (data) {
-        if (!response.ok || !data.ok) throw new Error(data.error || "No se pudo completar la solicitud.");
+      return response.text().then(function (raw) {
+        var data;
+        try { data = raw ? JSON.parse(raw) : {}; } catch (error) { data = {}; }
+        if (!response.ok || !data.ok) {
+          var fallback = response.status === 413 ? "El servidor ha rechazado el contenido por tamaño. Aumenta post_max_size en Plesk." : "No se pudo completar la solicitud (HTTP " + response.status + ").";
+          throw new Error(data.error || fallback);
+        }
         return data;
       });
     });
@@ -142,8 +147,10 @@
 
   function setDirty(value) {
     state.dirty = value;
+    if (!value) state.publicDirty = {};
     var node = document.querySelector("[data-save-state]");
     if (node) node.textContent = value ? "Cambios sin guardar" : "Guardado";
+    refreshPublicInformation();
   }
 
   function input(form, name) { return form.querySelector('[name="' + name + '"]'); }
@@ -167,6 +174,25 @@
     document.querySelector("[data-editor-status]").className = "status-pill status-" + (eventData.effective_status || eventData.status);
     document.querySelector("[data-ticket-count]").textContent = (eventData.ticket_types || []).length;
     renderEventMediaManager();
+    refreshPublicInformation();
+  }
+
+  function parseFaq(value) {
+    var rows = [];
+    var invalidLines = [];
+    String(value || "").split(/\r?\n/).forEach(function (line, index) {
+      if (!line.trim()) return;
+      var separator = line.indexOf("|");
+      if (separator < 0) {
+        // Preserve the line instead of discarding pasted content; the editor explains
+        // that it will appear as a question without an answer until it is completed.
+        rows.push({ question: line.trim(), answer: "" });
+        invalidLines.push(index + 1);
+        return;
+      }
+      rows.push({ question: line.slice(0, separator).trim(), answer: line.slice(separator + 1).trim() });
+    });
+    return { rows: rows.filter(function (row) { return row.question || row.answer; }), invalidLines: invalidLines };
   }
 
   function formData(form) {
@@ -178,11 +204,86 @@
     try { data.gallery = JSON.parse(String(data.gallery || "[]")); } catch (error) { data.gallery = []; }
     if (!Array.isArray(data.gallery)) data.gallery = [];
     data.gallery = data.gallery.filter(function (item) { return typeof item === "string" && item.trim(); });
-    data.faq = String(data.faq || "").split(/\r?\n/).map(function (line) {
-      var parts = line.split("|");
-      return { question: (parts.shift() || "").trim(), answer: parts.join("|").trim() };
-    }).filter(function (row) { return row.question || row.answer; });
+    data.faq = parseFaq(data.faq).rows;
     return data;
+  }
+
+  function publicInput(name) { return document.querySelector('[data-public-input][name="' + name + '"]'); }
+
+  function autosizePublicInput(field) {
+    if (!field) return;
+    var maximum = field.closest(".public-field").classList.contains("is-expanded") ? Math.max(480, window.innerHeight - 180) : 560;
+    field.style.height = "auto";
+    field.style.height = Math.min(field.scrollHeight, maximum) + "px";
+    field.classList.toggle("has-internal-scroll", field.scrollHeight > maximum);
+  }
+
+  function refreshFaqPreview() {
+    var field = publicInput("faq");
+    var preview = document.querySelector("[data-faq-preview]");
+    var warning = document.querySelector("[data-faq-warning]");
+    if (!field || !preview || !warning) return;
+    var parsed = parseFaq(field.value);
+    warning.hidden = !parsed.invalidLines.length;
+    warning.textContent = parsed.invalidLines.length ? "Las líneas " + parsed.invalidLines.join(", ") + " no incluyen «|». Se conservarán como preguntas sin respuesta hasta que las completes." : "";
+    preview.innerHTML = parsed.rows.length ? '<span class="ticket-eyebrow">Vista previa de preguntas frecuentes</span>' + parsed.rows.map(function (row) { return '<details><summary>' + escapeHtml(row.question || "Pregunta sin texto") + '</summary><p>' + escapeHtml(row.answer || "Respuesta pendiente") + '</p></details>'; }).join("") : '<p>La vista previa de las preguntas frecuentes aparecerá aquí.</p>';
+  }
+
+  function refreshPublicInformation() {
+    var root = document.querySelector("[data-public-information]");
+    if (!root) return;
+    root.querySelectorAll("[data-public-input]").forEach(function (field) {
+      var hasValue = !!field.value.trim();
+      var stateNode = root.querySelector('[data-public-state="' + field.name + '"]');
+      var lengthNode = root.querySelector('[data-public-length="' + field.name + '"]');
+      if (stateNode) stateNode.textContent = !hasValue ? "Vacío" : (state.publicDirty[field.name] ? "Pendiente de guardar" : "Guardado");
+      if (lengthNode) lengthNode.textContent = hasValue ? new Intl.NumberFormat("es-ES").format(field.value.length) + " caracteres" : "Sin contenido";
+      autosizePublicInput(field);
+    });
+    refreshFaqPreview();
+  }
+
+  function initPublicInformation() {
+    var root = document.querySelector("[data-public-information]");
+    if (!root) return;
+    root.addEventListener("click", function (event) {
+      var button = event.target.closest("[data-expand-public-field]");
+      if (!button) return;
+      var field = publicInput(button.dataset.expandPublicField);
+      if (!field) return;
+      var wrapper = field.closest(".public-field");
+      var expanded = wrapper.classList.toggle("is-expanded");
+      button.textContent = expanded ? "Reducir editor" : "Ampliar editor";
+      autosizePublicInput(field);
+      field.focus();
+    });
+    root.addEventListener("input", function (event) {
+      if (!event.target.matches("[data-public-input]")) return;
+      state.publicDirty[event.target.name] = true;
+      refreshPublicInformation();
+    });
+    refreshPublicInformation();
+  }
+
+  function setEditorSaving(isSaving) {
+    state.saving = isSaving;
+    ["[data-save-event]", "[data-publish-event]", "[data-preview-event]"].forEach(function (selector) {
+      var button = document.querySelector(selector);
+      if (button) button.disabled = isSaving;
+    });
+  }
+
+  function saveEditorEvent(id, form) {
+    if (state.saving) return Promise.reject(new Error("Ya se están guardando los cambios."));
+    var payload = formData(form);
+    setEditorSaving(true);
+    return jsonRequest(api + "/admin/events/" + id, "PUT", payload).then(function (data) {
+      state.event = data.event;
+      fillEventForm(data.event);
+      renderTicketTypes(data.event.ticket_types || []);
+      setDirty(false);
+      return data;
+    }).finally(function () { setEditorSaving(false); });
   }
 
   function switchEditorSection(name) {
@@ -251,10 +352,11 @@
       document.querySelectorAll("[data-editor-tab]").forEach(function (tab) { tab.addEventListener("click", function () { switchEditorSection(tab.dataset.editorTab); }); });
       document.querySelector("[data-save-event]").addEventListener("click", function () {
         editorNotice("Guardando...");
-        jsonRequest(api + "/admin/events/" + id, "PUT", formData(form)).then(function (data) { state.event = data.event; fillEventForm(data.event); renderTicketTypes(data.event.ticket_types || []); setDirty(false); editorNotice("Cambios guardados."); }).catch(function (error) { editorNotice(error.message, true); });
+        saveEditorEvent(id, form).then(function () { editorNotice("Cambios guardados correctamente."); }).catch(function (error) { editorNotice("No se han podido guardar los cambios. El contenido permanece en el editor. " + error.message, true); });
       });
       document.querySelector("[data-publish-event]").addEventListener("click", function () {
-        jsonRequest(api + "/admin/events/" + id, "PUT", formData(form)).then(function () { return jsonRequest(api + "/admin/events/" + id + "/publish", "POST", {}); }).then(function (data) { state.event = data.event; fillEventForm(data.event); setDirty(false); editorNotice("Evento publicado."); }).catch(function (error) { editorNotice(error.message, true); });
+        editorNotice("Guardando antes de publicar...");
+        saveEditorEvent(id, form).then(function () { return jsonRequest(api + "/admin/events/" + id + "/publish", "POST", {}); }).then(function (data) { state.event = data.event; fillEventForm(data.event); setDirty(false); editorNotice("Evento publicado."); }).catch(function (error) { editorNotice("No se ha podido publicar. " + error.message, true); });
       });
       document.querySelector("[data-preview-event]").addEventListener("click", function () {
         // Open the tab while this click still has user activation. Opening it after
@@ -268,13 +370,17 @@
         var showPreview = function () { previewWindow.location.replace("/admin/entradas/vista-previa/?id=" + id); };
         if (!state.dirty) return showPreview();
         editorNotice("Guardando cambios y abriendo vista previa...");
-        jsonRequest(api + "/admin/events/" + id, "PUT", formData(form)).then(function (data) { state.event = data.event; setDirty(false); showPreview(); }).catch(function (error) { if (!previewWindow.closed) previewWindow.close(); editorNotice(error.message, true); });
+        saveEditorEvent(id, form).then(showPreview).catch(function (error) { if (!previewWindow.closed) previewWindow.close(); editorNotice("No se ha podido guardar para abrir la vista previa. El contenido permanece en el editor. " + error.message, true); });
       });
       document.querySelector("[data-archive-event]").addEventListener("click", function () {
         if (window.confirm("¿Archivar o eliminar este evento? Las ventas existentes quedarán protegidas.")) jsonRequest(api + "/admin/events/" + id, "DELETE").then(function () { window.location.href = "/admin/entradas/"; }).catch(function (error) { editorNotice(error.message, true); });
       });
       initTicketForm(id);
       initEventMediaManager();
+      initPublicInformation();
+      document.querySelector(".editor-back").addEventListener("click", function (event) {
+        if (state.dirty && !window.confirm("Tienes cambios sin guardar. Si abandonas esta página, se perderán.")) event.preventDefault();
+      });
       window.addEventListener("beforeunload", function (event) { if (state.dirty) { event.preventDefault(); event.returnValue = ""; } });
     });
   }

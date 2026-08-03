@@ -69,9 +69,10 @@ Aplicar migracion:
 mysql -u DB_USER -p DB_NAME < database/migrations/001_ticketing_schema.sql
 mysql -u DB_USER -p DB_NAME < database/migrations/002_event_editor.sql
 mysql -u DB_USER -p DB_NAME < database/migrations/003_suite_experience_integration.sql
+mysql -u DB_USER -p DB_NAME < database/migrations/004_long_public_event_information.sql
 ```
 
-La segunda migración amplía eventos y entradas sin borrar pedidos, pagos, códigos ni asistentes ya existentes. La tercera conserva esos datos y añade el identificador común para la integración privada con Suite. Ejecutarlas antes de desplegar la versión con editor integrado.
+La segunda migración amplía eventos y entradas sin borrar pedidos, pagos, códigos ni asistentes ya existentes. La tercera conserva esos datos y añade el identificador común para la integración privada con Suite. La cuarta cambia los textos públicos a `LONGTEXT`, sin eliminar contenido existente. Ejecutarlas antes de desplegar la versión con editor integrado.
 
 Crear y editar un evento desde `/admin/entradas/` después de configurar usuario admin. El editor queda en `/admin/entradas/evento/?id=ID` y la vista previa privada en `/admin/entradas/vista-previa/?id=ID`.
 
@@ -161,4 +162,5 @@ https://perigallo.com/api/redsys/notification
 - El editor sube portada, tarjeta, imagen social, logotipo y galería a `assets/uploads/events/`; los vídeos promocionales se guardan en `assets/uploads/events/videos/`. El proceso PHP debe tener permiso de escritura únicamente sobre esas carpetas; los archivos subidos no se versionan en Git.
 - Formatos de imagen admitidos: JPG, PNG, WebP y AVIF, hasta 5 MB. Formatos de vídeo admitidos: MP4, WebM y MOV, hasta 50 MB. SVG no se admite para evitar servir contenido vectorial no saneado.
 - Para vídeos de más de 16 MB, ajustar en Plesk `upload_max_filesize` y `post_max_size` a al menos `64M` antes de probar la subida.
+- Para condiciones legales o información pública muy extensa, ajustar `post_max_size` a al menos `16M`. El editor no limita caracteres; este valor debe ser mayor que el JSON completo enviado.
 - En este alojamiento, confirmar siempre el `DOCROOT` real de Plesk antes de sincronizar archivos. El archivo `.env` debe existir solamente en el directorio servido y no debe entrar en Git.

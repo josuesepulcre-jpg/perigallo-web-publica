@@ -67,11 +67,18 @@ function read_json_body(): array
 {
     $raw = file_get_contents('php://input') ?: '';
     if ($raw === '') {
+        if ((int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
+            throw new InvalidArgumentException('No se ha podido leer el contenido enviado. Reduce el tamaño del adjunto o aumenta post_max_size en el servidor.');
+        }
         return [];
     }
-    $data = json_decode($raw, true);
+    try {
+        $data = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+    } catch (JsonException $error) {
+        throw new InvalidArgumentException('JSON inválido: ' . $error->getMessage());
+    }
     if (!is_array($data)) {
-        throw new InvalidArgumentException('JSON invalido.');
+        throw new InvalidArgumentException('JSON inválido.');
     }
     return $data;
 }
