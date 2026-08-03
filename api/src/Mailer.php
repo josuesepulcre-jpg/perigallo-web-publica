@@ -21,7 +21,7 @@ final class Mailer
                 'From: ' . (env_value('MAIL_FROM_NAME', 'Perigallo') ?: 'Perigallo') . ' <' . (env_value('MAIL_FROM', 'entradas@perigallo.com') ?: 'entradas@perigallo.com') . '>',
                 'Content-Type: text/plain; charset=UTF-8',
             ];
-            $sent = mail($email, $subject, $body, implode(\"\\r\\n\", $headers));
+            $sent = mail($email, $subject, $body, implode("\r\n", $headers));
             $status = $sent ? 'sent' : 'failed';
             $error = $sent ? null : 'mail() devolvio false. Configurar SMTP transaccional en Plesk para produccion.';
         } catch (Throwable $e) {
@@ -30,7 +30,7 @@ final class Mailer
         }
 
         $update = $pdo->prepare(
-            'UPDATE email_deliveries SET status = ?, error_message = ?, sent_at = IF(? = \"sent\", NOW(), sent_at), updated_at = NOW() WHERE id = LAST_INSERT_ID()'
+            'UPDATE email_deliveries SET status = ?, error_message = ?, sent_at = IF(? = \'sent\', NOW(), sent_at), updated_at = NOW() WHERE id = LAST_INSERT_ID()'
         );
         $update->execute([$status, $error, $status]);
     }

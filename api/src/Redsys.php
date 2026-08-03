@@ -74,13 +74,13 @@ final class Redsys
             throw new RuntimeException('OpenSSL es necesario para la firma Redsys.');
         }
         $blockSize = 8;
-        $paddedOrder = str_pad($order, (int) (ceil(strlen($order) / $blockSize) * $blockSize), \"\\0\");
+        $paddedOrder = str_pad($order, (int) (ceil(strlen($order) / $blockSize) * $blockSize), "\0");
         $derived = openssl_encrypt(
             $paddedOrder,
             'DES-EDE3-CBC',
             $key,
             OPENSSL_RAW_DATA | OPENSSL_ZERO_PADDING,
-            \"\\0\\0\\0\\0\\0\\0\\0\\0\"
+            "\0\0\0\0\0\0\0\0"
         );
         if ($derived === false) {
             throw new RuntimeException('No se pudo derivar la clave Redsys.');

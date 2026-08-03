@@ -545,7 +545,7 @@ final class Ticketing
             return;
         }
         $link = app_base_url() . '/entradas/pedido/?token=' . rawurlencode((string) $order['public_token']);
-        $body = \"Hola {$order['name']},\\n\\nTu pago se ha confirmado correctamente.\\n\\nPuedes consultar y descargar tus entradas aqui:\\n{$link}\\n\\nContacto Perigallo: +34 691 499 985\\n\";
+        $body = "Hola {$order['name']},\n\nTu pago se ha confirmado correctamente.\n\nPuedes consultar y descargar tus entradas aqui:\n{$link}\n\nContacto Perigallo: +34 691 499 985\n";
         $this->mailer->queueOrderEmail($this->pdo, $orderId, (string) $order['email'], 'Tus entradas Perigallo', $body);
     }
 }
