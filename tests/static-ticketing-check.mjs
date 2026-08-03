@@ -14,6 +14,7 @@ const required = [
   "database/migrations/004_long_public_event_information.sql",
   "database/migrations/005_configure_la_perigalla_01_publication.sql",
   "database/migrations/006_test_checkout_sandbox.sql",
+  "database/migrations/007_la_perigalla_total_white_dress_code.sql",
   "eventos/index.html",
   "eventos/evento.html",
   "entradas/checkout/index.html",
@@ -129,6 +130,11 @@ for (const field of ["included_text", "access_conditions", "minor_policy", "refu
 const perigallaPublicationMigration = readFileSync(join(root, "database/migrations/005_configure_la_perigalla_01_publication.sql"), "utf8");
 for (const marker of ["WHERE id = 1", "status = 'draft'", "la-perigalla-01-ibicenca", "show_availability = 1"]) {
   if (!perigallaPublicationMigration.includes(marker)) throw new Error(`La Perigalla publication migration is missing ${marker}.`);
+}
+
+const perigallaDressCodeMigration = readFileSync(join(root, "database/migrations/007_la_perigalla_total_white_dress_code.sql"), "utf8");
+for (const marker of ["WHERE id = 1", "La Perigalla 01", "TOTAL WHITE", "Obligatorio ir de blanco para acceder"]) {
+  if (!perigallaDressCodeMigration.includes(marker)) throw new Error(`La Perigalla dress-code migration is missing ${marker}.`);
 }
 
 const adminJs = readFileSync(join(root, "assets/js/ticketing-admin.js"), "utf8");
