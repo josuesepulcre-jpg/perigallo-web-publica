@@ -1,66 +1,71 @@
-# Web publica Perigallo
+# Perigallo.com
 
-Proyecto estatico de la web publica/comercial de Perigallo.
+Web publica de Perigallo y modulo de venta de entradas para experiencias pop-up.
 
-Este proyecto corresponde solo a la web publica de marca y captacion. No es Perigallo Suite, no es `suite.perigallo.com` y no contiene el motor de reservas de `reservas.perigallo.com`.
+Este repositorio corresponde solo a `perigallo.com`. No es Perigallo Suite, no es `suite.perigallo.com`, no es `reservas.perigallo.com` y no contiene codigo de esas aplicaciones.
 
-## Ambito del proyecto
+## Alcance
 
-- Presentar Perigallo como marca gastronomica.
-- Explicar pop-ups, celebraciones, bodas, eventos privados y Finca La Llaguna.
-- Derivar reservas de pop-up al motor oficial externo.
-- Captar solicitudes de celebraciones mediante el formulario publico.
+- Home publica y rutas comerciales de Perigallo.
+- Enlaces externos oficiales a Perigallo Suite y Perigallo Reservas.
+- Paginas publicas de eventos y checkout de entradas.
+- API PHP propia para pedidos, tickets, notificacion Redsys y panel basico de acceso.
+- Documentacion de despliegue para Plesk/Cyberpac Redsys.
 
-## Relacion con Perigallo Reservas
+## Integraciones externas
 
-Las reservas deben mantenerse como enlace externo hacia:
+- Solicitud inicial: `https://suite.perigallo.com/solicitud?origen=web-perigallo`
+- Reservas pop-up externas: `https://reservas.perigallo.com/reservar?source=web`
+- Web de la finca: `https://fincalallaguna.com/`
+- WhatsApp: `https://wa.me/34691499985`
 
-```text
-https://reservas.perigallo.com/reservar?source=web
-```
+Las solicitudes y reservas externas se abren fuera de la pagina principal para evitar iframes bloqueados o experiencias integradas deficientes.
 
-No se debe integrar por iframe mientras `reservas.perigallo.com` bloquee embedding mediante CSP. La web publica actua como pasarela comercial y el sistema de reservas conserva la gestion operativa.
+## Rutas publicas
 
-## Relacion con Finca La Llaguna
+| Ruta | Funcion |
+| --- | --- |
+| `/` | Home publica principal. |
+| `/eventos/` | Listado publico de experiencias con entradas. |
+| `/eventos/{slug}/` | Detalle publico de un evento. |
+| `/entradas/checkout/?event=slug` | Checkout de entradas. |
+| `/entradas/pedido/?token=...` | Resumen de pedido y entradas emitidas. |
+| `/entradas/pago/correcto/` | Retorno informativo de pago correcto. |
+| `/entradas/pago/error/` | Retorno informativo de pago fallido/cancelado. |
+| `/admin/entradas/` | Panel privado basico de eventos, pedidos y entradas. |
+| `/admin/entradas/acceso/` | Escaner/verificacion privada de accesos. |
+| `/solicitud-evento/` | Pasarela legacy hacia la solicitud oficial de Perigallo Suite. |
+| `/politica-privacidad/` | Politica de privacidad. |
+| `/aviso-legal/` | Aviso legal. |
+| `/cookies/` | Politica de cookies. |
+| `/condiciones/` | Condiciones de compra. |
+| `/politica-cancelacion/` | Politica de cancelacion. |
+| `/politica-reembolso/` | Politica de reembolso. |
+| `/la-finca/`, `/bodas/`, `/celebraciones/`, `/pop-up/`, `/reservar/`, `/contacto/` | Rutas stub temporales hacia secciones o enlaces relacionados. |
 
-La web publica menciona Finca La Llaguna como uno de los espacios donde Perigallo desarrolla experiencias. El enlace externo actual de la finca se mantiene como:
+## Backend
 
-```text
-https://fincalallaguna.com/
-```
+El backend esta en `/api` y requiere PHP con PDO MySQL/MariaDB y OpenSSL.
 
-No modificar esta URL sin confirmar previamente la estrategia de dominio de la finca.
+Endpoints principales:
 
-## Rutas publicas actuales
-
-| Ruta | Tipo actual | Notas |
-| --- | --- | --- |
-| `/` | Home publica principal | Pagina comercial principal. |
-| `/solicitud-evento/` | Formulario publico | Solicitud inicial para celebraciones/eventos. |
-| `/politica-privacidad/` | Pagina legal provisional | Texto pendiente de validacion legal final. |
-| `/la-finca/` | Stub con meta refresh | Redirige a `/#finca`. |
-| `/bodas/` | Stub con meta refresh | Redirige a `/#celebrate`. |
-| `/celebraciones/` | Stub con meta refresh | Redirige a `/#celebrate`. |
-| `/pop-up/` | Stub con meta refresh | Redirige a `/#popup`. |
-| `/reservar/` | Stub con meta refresh | Redirige a `/#fechas`; revisar porque la home usa tambien `#reservas`. |
-| `/contacto/` | Stub con meta refresh | Redirige a `/#contact`. |
-
-## Archivos que no deben desplegarse
-
-No borrar sin aprobacion, pero no subir al webroot publico:
-
-- `perigallo-web-redesign.zip`
-- `perigallo-web-perigallo-restaurado.zip`
-- `_reference-web-periallo/`
-- `_reference-web-periallo/perigallo-web.zip`
-- `index.original-perigallo-2026-05-06.html`
-- `index.multi-page-before-restore-2026-05-07.html`
-- `.claude/`
-- Documentacion interna de `docs/`, salvo decision explicita.
+- `GET /api/events`
+- `GET /api/events/{slug}`
+- `POST /api/orders`
+- `GET /api/orders/{token}`
+- `POST /api/redsys/notification`
+- `GET /api/admin/session`
+- `POST /api/admin/login`
+- `POST /api/admin/logout`
+- `GET /api/admin/summary`
+- `GET /api/admin/orders`
+- `POST /api/admin/events`
+- `POST /api/admin/events/{id}/ticket-types`
+- `POST /api/admin/tickets/scan`
 
 ## Desarrollo local
 
-Desde la raiz del proyecto:
+Para revisar la parte estatica:
 
 ```bash
 python3 -m http.server 8000
@@ -72,65 +77,56 @@ Abrir:
 http://127.0.0.1:8000/
 ```
 
-Si el puerto `8000` esta ocupado, usar otro puerto:
+Para probar `/api` hace falta un entorno PHP compatible con Apache/Nginx y MariaDB. Ver `docs/TICKETING_DEPLOYMENT.md`.
 
-```bash
-python3 -m http.server 8743
+## Variables de entorno
+
+Copiar `.env.example` a un entorno seguro fuera del repositorio o cargar las variables desde Plesk. No commitear `.env`.
+
+Redsys debe empezar siempre en TEST:
+
+```text
+REDSYS_ENV=test
+REDSYS_TEST_URL=https://sis-t.redsys.es:25443/sis/realizarPago
 ```
 
-## Validacion local minima
+## Base de datos
 
-Comprobar que estas rutas devuelven `200`:
+Aplicar:
 
-- `/`
-- `/solicitud-evento/`
-- `/politica-privacidad/`
-- `/la-finca/`
-- `/bodas/`
-- `/celebraciones/`
-- `/pop-up/`
-- `/reservar/`
-- `/contacto/`
+```bash
+mysql -u USER -p DB_NAME < database/migrations/001_ticketing_schema.sql
+```
 
-Comprobar ademas:
+La migracion crea tablas aisladas para eventos, tipos de entrada, pedidos, intentos de pago, tickets, escaneos y entregas de email.
 
-- No hay `href="#form"` en archivos activos.
-- No hay iframes activos hacia `reservas.perigallo.com`.
-- Los enlaces a Reservas, Finca La Llaguna e Instagram abren correctamente.
-- La consola del navegador no muestra errores graves.
-- No hay scroll horizontal en mobile.
-- Canonical, Open Graph y Twitter Card de la home apuntan a `https://perigallo.es/`.
+## Validacion minima
 
-## Flujo recomendado antes de inicializar Git
+```bash
+node --check assets/js/ticketing.js
+node --check assets/js/ticketing-admin.js
+node --check assets/js/site.js
+node tests/static-ticketing-check.mjs
+```
 
-1. Revisar `docs/auditoria-independencia-web-publica-perigallo.md`.
-2. Revisar `docs/nota-exclusion-deploy-web-publica.md`.
-3. Confirmar que esta carpeta sera el proyecto independiente de `perigallo.es`.
-4. Confirmar que zips, backups y `_reference-web-periallo/` quedan excluidos.
-5. Confirmar si `docs/` se versiona en Git o se guarda fuera del deploy.
-6. Confirmar si las rutas stub se mantienen temporalmente o se convierten en paginas reales.
-7. Revisar que no hay credenciales, `.env`, datos personales ni configuracion de Suite/Reservas.
-8. Solo entonces, inicializar Git y hacer el primer commit limpio.
+Si hay PHP disponible:
 
-## Checklist previo a deploy
+```bash
+php -l api/index.php
+find api/src -name '*.php' -print -exec php -l {} \;
+```
 
-- Deploy desde una carpeta limpia o lista cerrada de archivos aprobados.
-- Excluir zips, backups, referencias y configuracion local.
-- No incluir Perigallo Suite.
-- No incluir codigo o configuracion del motor de Reservas.
-- Mantener Reservas como enlace externo.
-- Revisar politica de privacidad antes de produccion.
-- Crear o validar `robots.txt` y `sitemap.xml`.
-- Revisar metadatos SEO y Open Graph finales.
-- Validar rutas, enlaces, consola y responsive.
+## No desplegar
 
-## Estado Git
+- `.env` o variantes reales.
+- Zips, backups, snapshots y referencias internas.
+- `.claude/`, `.DS_Store`, logs, temporales.
+- Dumps SQL/DB, certificados, claves privadas.
+- Documentacion interna que no forme parte del paquete aprobado.
 
-Esta carpeta esta inicializada como repositorio Git local independiente. No hay remoto configurado todavia.
+## Documentacion clave
 
-Antes de conectar GitHub, revisar:
-
-- `git status`
-- que no aparecen zips, backups, `_reference-web-periallo/` ni `.claude/`
-- que no aparecen `.env`, dumps, certificados ni claves
-- que el remoto nuevo sera exclusivo para la web publica, no para Suite ni Reservas
+- `docs/CYBERPAC_REDSYS_PERIGALLO_COM.md`
+- `docs/TICKETING_DEPLOYMENT.md`
+- `docs/TICKETING_PRODUCTION_CHECKLIST.md`
+- `docs/estructura-deploy-web-publica.md`

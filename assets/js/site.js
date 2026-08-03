@@ -21,7 +21,7 @@
     reservationEndpoint: window.PERIGALLO_RESERVATION_ENDPOINT || "/api/reservas/pop-up",
     leadEndpoint: window.PERIGALLO_LEAD_ENDPOINT || "/api/solicitudes/celebraciones",
     contactEndpoint: window.PERIGALLO_CONTACT_ENDPOINT || "/api/contactos",
-    fallbackEmail: "hola@perigallo.es"
+    fallbackWhatsapp: window.PERIGALLO_WHATSAPP_URL || "https://wa.me/34691499985"
   };
 
   function payloadFromForm(form) {
@@ -47,12 +47,11 @@
     return config.contactEndpoint;
   }
 
-  function fallbackMail(form, payload) {
-    var subject = encodeURIComponent(form.dataset.fallbackSubject || "Solicitud desde perigallo.es");
+  function fallbackWhatsapp(form, payload) {
     var lines = Object.keys(payload).map(function (key) {
       return key + ": " + payload[key];
     });
-    return "mailto:" + config.fallbackEmail + "?subject=" + subject + "&body=" + encodeURIComponent(lines.join("\n"));
+    return config.fallbackWhatsapp + "?text=" + encodeURIComponent("Solicitud desde perigallo.com\n\n" + lines.join("\n"));
   }
 
   document.querySelectorAll("[data-integrated-form]").forEach(function (form) {
@@ -91,9 +90,9 @@
           if (status) {
             status.classList.remove("is-loading", "is-success");
             status.classList.add("is-error");
-            status.textContent = "No hemos podido completar el envío directo. Abrimos un email con los datos para no perder la solicitud.";
+            status.textContent = "No hemos podido completar el envío directo. Abrimos WhatsApp con los datos para no perder la solicitud.";
           }
-          window.location.href = fallbackMail(form, payload);
+          window.location.href = fallbackWhatsapp(form, payload);
         })
         .finally(function () {
           if (button) button.disabled = false;

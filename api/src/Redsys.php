@@ -1,0 +1,109 @@
+<?php
+declare(strict_types=1);
+
+namespace Perigallo\Ticketing;
+
+use RuntimeException;
+
+final class Redsys
+{
+    public function paymentUrl(): string
+    {
+        return env_value('REDSYS_ENV', 'test') === 'production'
+            ? (env_value('REDSYS_PRODUCTION_URL') ?: 'https://sis.redsys.es/sis/realizarPago')
+            : (env_value('REDSYS_TEST_URL') ?: 'https://sis-t.redsys.es:25443/sis/realizarPago');
+    }
+
+    public function buildRedirectFields(array $params): array
+    {
+        $merchantParameters = $this->encodeMerchantParameters($params);
+        return [
+            'Ds_SignatureVersion' => env_value('REDSYS_SIGNATURE_VERSION', 'HMAC_SHA256_V1'),
+            'Ds_MerchantParameters' => $merchantParameters,
+            'Ds_Signature' => $this->sign($merchantParameters, (string) $params['DS_MERCHANT_ORDER']),
+        ];
+    }
+
+    public function encodeMerchantParameters(array $params): string
+    {
+        $json = json_encode($params, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if ($json === false) {
+            throw new RuntimeException('No se pudieron codificar los parametros Redsys.');
+        }
+        return base64_encode($json);
+    }
+
+    public function decodeMerchantParameters(string $encoded): array
+    {
+        $decoded = base64_decode($this->toBase64($encoded), true);
+        if ($decoded === false) {
+            throw new RuntimeException('MerchantParameters invalido.');
+        }
+        $params = json_decode($decoded, true);
+        if (!is_array($params)) {
+            throw new RuntimeException('Respuesta Redsys invalida.');
+        }
+        return $this->normalize($params);
+    }
+
+    public function validateSignature(string $merchantParameters, string $signature, string $order): bool
+    {
+        $expected = $this->sign($merchantParameters, $order);
+        return hash_equals($this->toBase64($expected), $this->toBase64($signature));
+    }
+
+    public function sign(string $merchantParameters, string $order): string
+    {
+        $key = $this->deriveKey($order);
+        $version = env_value('REDSYS_SIGNATURE_VERSION', 'HMAC_SHA256_V1');
+        $algo = $version === 'HMAC_SHA512_V2' ? 'sha512' : 'sha256';
+        return base64_encode(hash_hmac($algo, $merchantParameters, $key, true));
+    }
+
+    private function deriveKey(string $order): string
+    {
+        $secret = env_value('REDSYS_SECRET_KEY');
+        if (!$secret) {
+            throw new RuntimeException('Clave Redsys no configurada.');
+        }
+        $key = base64_decode($secret, true);
+        if ($key === false) {
+            $key = $secret;
+        }
+        if (!function_exists('openssl_encrypt')) {
+            throw new RuntimeException('OpenSSL es necesario para la firma Redsys.');
+        }
+        $blockSize = 8;
+        $paddedOrder = str_pad($order, (int) (ceil(strlen($order) / $blockSize) * $blockSize), \"\\0\");
+        $derived = openssl_encrypt(
+            $paddedOrder,
+            'DES-EDE3-CBC',
+            $key,
+            OPENSSL_RAW_DATA | OPENSSL_ZERO_PADDING,
+            \"\\0\\0\\0\\0\\0\\0\\0\\0\"
+        );
+        if ($derived === false) {
+            throw new RuntimeException('No se pudo derivar la clave Redsys.');
+        }
+        return $derived;
+    }
+
+    private function normalize(array $params): array
+    {
+        $out = [];
+        foreach ($params as $key => $value) {
+            $out[strtoupper((string) $key)] = $value;
+        }
+        return $out;
+    }
+
+    private function toBase64(string $value): string
+    {
+        $value = strtr($value, '-_', '+/');
+        $pad = strlen($value) % 4;
+        if ($pad) {
+            $value .= str_repeat('=', 4 - $pad);
+        }
+        return $value;
+    }
+}

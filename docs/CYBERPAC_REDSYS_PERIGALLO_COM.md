@@ -1,0 +1,112 @@
+# Cyberpac Redsys en perigallo.com
+
+## Objetivo
+
+Perigallo.com usa Cyberpac/Redsys como pasarela de pago redirigida para entradas de experiencias pop-up. La tarjeta nunca se introduce en Perigallo.com: el usuario se redirige al entorno seguro de Redsys y Redsys devuelve el resultado al backend de Perigallo.
+
+## Modo actual
+
+El proyecto queda preparado para TEST.
+
+```text
+REDSYS_ENV=test
+REDSYS_TEST_URL=https://sis-t.redsys.es:25443/sis/realizarPago
+REDSYS_PRODUCTION_URL=https://sis.redsys.es/sis/realizarPago
+```
+
+No cambiar a produccion hasta completar el checklist de `docs/TICKETING_PRODUCTION_CHECKLIST.md`.
+
+## URLs que debe validar el banco
+
+URL de notificacion servidor a servidor:
+
+```text
+https://perigallo.com/api/redsys/notification
+```
+
+URL OK del navegador:
+
+```text
+https://perigallo.com/entradas/pago/correcto/
+```
+
+URL KO del navegador:
+
+```text
+https://perigallo.com/entradas/pago/error/
+```
+
+La confirmacion real del pedido solo se hace desde la notificacion servidor a servidor. La URL OK del navegador es informativa y no marca pedidos como pagados.
+
+## Variables necesarias
+
+Configurar en Plesk o en el entorno PHP, nunca dentro del repositorio:
+
+```text
+APP_ENV=production
+APP_BASE_URL=https://perigallo.com
+APP_TIMEZONE=Europe/Madrid
+APP_SECRET=valor-largo-aleatorio
+
+DB_HOST=localhost
+DB_PORT=3306
+DB_DATABASE=nombre_db_aislada
+DB_USERNAME=usuario_db
+DB_PASSWORD=password_db
+DB_CHARSET=utf8mb4
+
+ADMIN_USERNAME=usuario_admin
+ADMIN_PASSWORD_HASH=hash_password_generado_con_password_hash
+
+REDSYS_ENV=test
+REDSYS_MERCHANT_CODE=codigo_comercio_test
+REDSYS_TERMINAL=1
+REDSYS_CURRENCY=978
+REDSYS_SECRET_KEY=clave_secreta_test
+REDSYS_SIGNATURE_VERSION=HMAC_SHA256_V1
+REDSYS_TRANSACTION_TYPE=0
+REDSYS_BIZUM_ENABLED=false
+TICKET_RESERVATION_MINUTES=30
+
+MAIL_FROM=entradas@perigallo.com
+MAIL_FROM_NAME=Perigallo
+```
+
+## Flujo de pago
+
+1. El cliente selecciona entradas en `/entradas/checkout/?event=slug`.
+2. El backend crea un pedido pendiente y bloquea capacidad disponible de forma temporal.
+3. El backend genera los parametros firmados de Redsys en servidor.
+4. El navegador envia al cliente al TPV de Redsys.
+5. Redsys llama a `/api/redsys/notification`.
+6. El backend valida firma, importe, comercio, moneda, terminal y respuesta.
+7. Si la respuesta es correcta, el pedido pasa a pagado, se generan tickets y se prepara email de confirmacion.
+8. El usuario puede ver el pedido en `/entradas/pedido/?token=...`.
+
+## Seguridad
+
+- La clave secreta de Redsys solo vive en servidor.
+- No se aceptan pagos confirmados desde `UrlOK`.
+- Cada notificacion Redsys se guarda en `payment_attempts`.
+- El stock se calcula con pedidos pagados y reservas temporales no expiradas.
+- La creacion de pedidos bloquea los tipos de entrada con `FOR UPDATE` para reducir riesgo de sobreventa.
+- El admin usa sesion segura, password hash y CSRF.
+
+## Paso a produccion
+
+Solo cambiar:
+
+```text
+REDSYS_ENV=production
+REDSYS_MERCHANT_CODE=codigo_real
+REDSYS_SECRET_KEY=clave_real
+```
+
+Despues de:
+
+- Validar pago test correcto.
+- Validar pago test rechazado.
+- Validar notificacion Redsys.
+- Validar email de confirmacion.
+- Validar escaneo de acceso.
+- Hacer backup de base de datos.

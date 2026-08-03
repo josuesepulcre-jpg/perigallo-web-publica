@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Control de acceso | Perigallo</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/ticketing.css">
+</head>
+<body class="ticketing-page">
+<header class="ticketing-nav">
+  <a href="/admin/entradas/" aria-label="Volver al panel"><img class="ticketing-logo" src="/assets/images/perigallo-logo-original.png" alt="Perigallo"></a>
+  <nav>
+    <a href="/admin/entradas/">Panel</a>
+    <a href="/eventos/">Eventos</a>
+  </nav>
+</header>
+<main class="ticketing-main">
+  <section class="ticket-hero">
+    <div class="ticket-hero-inner">
+      <div>
+        <span class="ticket-eyebrow">Acceso</span>
+        <h1 class="ticket-title">Validar <em>entrada</em></h1>
+        <p class="ticket-copy">Selecciona el evento y escanea o introduce el código impreso en la entrada. El sistema marca la entrada como utilizada en una única operación.</p>
+      </div>
+    </div>
+  </section>
+  <section class="ticket-section">
+    <div class="ticket-section-inner">
+      <form class="ticket-panel ticket-form" data-ticket-scan>
+        <div class="ticket-form-grid">
+          <div class="ticket-field"><label>Evento</label><select name="event_id" required></select></div>
+          <div class="ticket-field"><label>Código / QR</label><input name="code" autocomplete="off" required autofocus></div>
+        </div>
+        <button class="ticket-btn primary" type="submit">Validar entrada</button>
+        <p class="ticket-status" data-scan-status></p>
+      </form>
+    </div>
+  </section>
+</main>
+<script src="/assets/js/ticketing-admin.js" defer></script>
+</body>
+</html>

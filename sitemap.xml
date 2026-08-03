@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://perigallo.com/</loc>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://perigallo.com/eventos/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://perigallo.com/politica-privacidad/</loc>
+    <priority>0.2</priority>
+  </url>
+  <url>
+    <loc>https://perigallo.com/aviso-legal/</loc>
+    <priority>0.2</priority>
+  </url>
+  <url>
+    <loc>https://perigallo.com/cookies/</loc>
+    <priority>0.2</priority>
+  </url>
+  <url>
+    <loc>https://perigallo.com/condiciones/</loc>
+    <priority>0.2</priority>
+  </url>
+  <url>
+    <loc>https://perigallo.com/politica-cancelacion/</loc>
+    <priority>0.2</priority>
+  </url>
+  <url>
+    <loc>https://perigallo.com/politica-reembolso/</loc>
+    <priority>0.2</priority>
+  </url>
+</urlset>

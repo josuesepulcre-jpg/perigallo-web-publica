@@ -16,6 +16,9 @@ Thumbs.db
 !.env.example
 *.local
 *.sql
+!database/
+!database/migrations/
+!database/migrations/*.sql
 *.sqlite
 *.sqlite3
 *.db

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout entradas | Perigallo</title>
+  <meta name="robots" content="noindex,follow">
+  <link rel="canonical" href="https://perigallo.com/entradas/checkout/">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/ticketing.css">
+</head>
+<body class="ticketing-page">
+  <header class="ticketing-nav">
+    <a href="/eventos/" aria-label="Volver a eventos Perigallo"><img class="ticketing-logo" src="/assets/images/perigallo-logo-original.png" alt="Perigallo"></a>
+    <nav><a href="/">Inicio</a><a href="/eventos/">Cambiar evento</a></nav>
+  </header>
+  <main class="ticketing-main">
+    <section class="ticket-hero">
+      <div class="ticket-hero-inner">
+        <div>
+          <span class="ticket-eyebrow">Compra segura</span>
+          <h1 class="ticket-title">Completa tu <em>pedido</em></h1>
+          <p class="ticket-copy">Selecciona entradas, introduce tus datos y continúa al pago seguro de Cyberpac/Redsys.</p>
+        </div>
+        <p class="ticket-copy">No guardamos datos de tarjeta. El pago se confirma únicamente cuando Redsys notifica al servidor de Perigallo.</p>
+      </div>
+    </section>
+    <section class="ticket-section">
+      <div class="ticket-section-inner">
+        <form class="ticket-panel ticket-form" data-ticket-checkout>
+          <h2 data-checkout-event-title>Evento</h2>
+          <div data-ticket-types class="ticket-types">Cargando entradas...</div>
+          <div class="ticket-form-grid">
+            <div class="ticket-field"><label for="first_name">Nombre</label><input id="first_name" name="first_name" autocomplete="given-name" required></div>
+            <div class="ticket-field"><label for="last_name">Apellidos</label><input id="last_name" name="last_name" autocomplete="family-name" required></div>
+            <div class="ticket-field"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required></div>
+            <div class="ticket-field"><label for="phone">Teléfono / WhatsApp</label><input id="phone" name="phone" autocomplete="tel" required></div>
+          </div>
+          <label class="ticket-check"><input type="checkbox" name="privacy_accepted" required> Acepto la <a href="/politica-privacidad/" target="_blank" rel="noopener noreferrer">política de privacidad</a>.</label>
+          <label class="ticket-check"><input type="checkbox" name="terms_accepted" required> Acepto las <a href="/condiciones/" target="_blank" rel="noopener noreferrer">condiciones de compra, cancelación y acceso</a>.</label>
+          <div class="ticket-status" data-ticket-status></div>
+          <button class="ticket-btn primary" type="submit">Pagar con tarjeta</button>
+        </form>
+      </div>
+    </section>
+  </main>
+  <script src="/assets/js/ticketing.js" defer></script>
+</body>
+</html>

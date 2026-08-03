@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /entradas/pedido/
+
+Sitemap: https://perigallo.com/sitemap.xml
