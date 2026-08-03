@@ -70,6 +70,8 @@ mysql -u DB_USER -p DB_NAME < database/migrations/001_ticketing_schema.sql
 mysql -u DB_USER -p DB_NAME < database/migrations/002_event_editor.sql
 mysql -u DB_USER -p DB_NAME < database/migrations/003_suite_experience_integration.sql
 mysql -u DB_USER -p DB_NAME < database/migrations/004_long_public_event_information.sql
+mysql -u DB_USER -p DB_NAME < database/migrations/005_configure_la_perigalla_01_publication.sql
+mysql -u DB_USER -p DB_NAME < database/migrations/006_test_checkout_sandbox.sql
 ```
 
 La segunda migración amplía eventos y entradas sin borrar pedidos, pagos, códigos ni asistentes ya existentes. La tercera conserva esos datos y añade el identificador común para la integración privada con Suite. La cuarta cambia los textos públicos a `LONGTEXT`, sin eliminar contenido existente. Ejecutarlas antes de desplegar la versión con editor integrado.
@@ -108,6 +110,7 @@ DB_PASSWORD=...
 ADMIN_USERNAME=...
 ADMIN_PASSWORD_HASH=...
 REDSYS_ENV=test
+PAYMENT_ENVIRONMENT=sandbox
 REDSYS_MERCHANT_CODE=...
 REDSYS_TERMINAL=1
 REDSYS_CURRENCY=978

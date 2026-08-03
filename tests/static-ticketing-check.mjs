@@ -6,18 +6,21 @@ const root = process.cwd();
 const required = [
   "api/index.php",
   "api/src/Ticketing.php",
+  "api/src/TicketDeliveryService.php",
   "api/src/Redsys.php",
   "database/migrations/001_ticketing_schema.sql",
   "database/migrations/002_event_editor.sql",
   "database/migrations/003_suite_experience_integration.sql",
   "database/migrations/004_long_public_event_information.sql",
   "database/migrations/005_configure_la_perigalla_01_publication.sql",
+  "database/migrations/006_test_checkout_sandbox.sql",
   "eventos/index.html",
   "eventos/evento.html",
   "entradas/checkout/index.html",
   "entradas/pedido/index.html",
   "entradas/pago/correcto/index.html",
   "entradas/pago/error/index.html",
+  "entradas/pago/prueba/index.html",
   "admin/entradas/index.html",
   "admin/entradas/evento/index.html",
   "admin/entradas/vista-previa/index.html",
@@ -150,11 +153,20 @@ if (incompleteFaq.rows.length !== 2 || incompleteFaq.invalidLines.join(",") !== 
 }
 
 const publicJs = readFileSync(join(root, "assets/js/ticketing.js"), "utf8");
-for (const marker of ["Información de la experiencia", "Código de vestimenta", "event.contact_info", "experienceAccordions", "initExperienceAccordions", "aria-expanded", "eventMetadata", "event-story-has-media", "poster=", "Probar recorrido de compra", "Seleccionar entradas", "ticketPurchaseAction", "ticket-access-secondary", "renderCheckoutPreview", "Vista previa de compra", "checkoutTicketMarkup", "data-quantity-action", "renderCheckoutSummary"]) {
+for (const marker of ["Información de la experiencia", "Código de vestimenta", "event.contact_info", "experienceAccordions", "initExperienceAccordions", "aria-expanded", "eventMetadata", "event-story-has-media", "poster=", "Probar recorrido de compra", "Seleccionar entradas", "ticketPurchaseAction", "ticket-access-secondary", "renderCheckoutPreview", "Modo de pruebas", "checkoutTicketMarkup", "data-quantity-action", "renderCheckoutSummary"]) {
   if (!publicJs.includes(marker)) throw new Error(`Missing public information rendering: ${marker}`);
 }
-if (!publicJs.includes('if (preview) {\n        renderCheckoutPreview') || !publicJs.includes('No se ha creado ningún pedido')) {
-  throw new Error("Preview checkout must render locally without creating an order.");
+for (const marker of ["adminRequest", "data-start-test-payment", "Continuar al pago de prueba", "initTestPayment", "data-test-payment", "MODO DE PRUEBAS"]) {
+  if (!publicJs.includes(marker)) throw new Error(`Missing sandbox checkout marker: ${marker}`);
+}
+if (publicJs.includes("No se ha creado ningún pedido")) throw new Error("Preview checkout must continue into the isolated test-payment flow.");
+
+const testMigration = readFileSync(join(root, "database/migrations/006_test_checkout_sandbox.sql"), "utf8");
+for (const marker of ["is_test", "environment", "payment_status", "delivery_status", "test_session_id", "ticket_delivery_logs"]) {
+  if (!testMigration.includes(marker)) throw new Error(`Sandbox migration is missing ${marker}.`);
+}
+for (const marker of ["createTestOrder", "completeTestPayment", "ticket_delivery_logs", "is_test = 0", "TicketDeliveryService"]) {
+  if (!(api + ticketing).includes(marker)) throw new Error(`Missing isolated test-order contract: ${marker}`);
 }
 
 const checkout = readFileSync(join(root, "entradas/checkout/index.html"), "utf8");

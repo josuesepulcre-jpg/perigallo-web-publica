@@ -159,6 +159,19 @@ try {
         return;
     }
 
+    if ($method === 'POST' && preg_match('#^/admin/events/([0-9]+)/test-orders$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        json_response(['ok' => true] + $ticketing->createTestOrder((int) $m[1], read_json_body()), 201);
+        return;
+    }
+
+    if ($method === 'POST' && preg_match('#^/admin/test-orders/([A-Za-z0-9_-]+)/complete$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        $data = read_json_body();
+        json_response(['ok' => true] + $ticketing->completeTestPayment($m[1], (string) ($data['outcome'] ?? 'technical_error')));
+        return;
+    }
+
     if ($method === 'GET' && $path === '/admin/events') {
         AdminAuth::require();
         json_response(['ok' => true, 'events' => $ticketing->adminListEvents()]);

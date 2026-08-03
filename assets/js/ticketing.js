@@ -348,11 +348,11 @@
     }
     if (preview) {
       form.classList.add("ticket-form-preview");
-      if (eyebrow) eyebrow.textContent = "Vista previa privada";
+      if (eyebrow) eyebrow.textContent = "Modo de pruebas";
       if (title) title.innerHTML = "Así se completa <em>una compra</em>";
-      if (copy) copy.textContent = "Recorre la selección de entradas, los datos y el resumen final sin crear pedidos ni abrir el pago.";
-      if (safetyCopy) safetyCopy.textContent = "Esta demostración no reserva plazas, no guarda datos y no conecta con Redsys.";
-      if (submit) submit.innerHTML = "Ver resumen de compra <span aria-hidden=\"true\">→</span>";
+      if (copy) copy.textContent = "Completa el recorrido aislado: pedido de prueba, pago sandbox, entradas y comunicaciones de prueba.";
+      if (safetyCopy) safetyCopy.textContent = "MODO DE PRUEBAS · No se realizará ningún cargo real ni se modificará el aforo.";
+      if (submit) submit.innerHTML = "Ver resumen de prueba <span aria-hidden=\"true\">→</span>";
     }
     var endpoint = preview ? api + "/admin/events/" + encodeURIComponent(previewId) + "/preview" : api + "/events/" + encodeURIComponent(slug);
     request(endpoint, preview ? { cache: "no-store" } : undefined).then(function (data) {
@@ -371,6 +371,7 @@
       typesBox.innerHTML = (needsCode ? '<div class="checkout-field checkout-promo"><label for="promo_code">Código promocional</label><input id="promo_code" name="promo_code" autocomplete="off" placeholder="Solo si alguna entrada lo requiere"></div>' : '') + types.map(checkoutTicketMarkup).join("");
       form.dataset.eventSlug = event.slug;
       form.dataset.eventTitle = event.title;
+      form.dataset.previewEventId = event.id;
       refreshCheckout();
     }).catch(function (error) {
       status.textContent = error.message;
@@ -540,14 +541,95 @@
     layout.hidden = true;
     confirmation.hidden = false;
     confirmation.innerHTML = [
-      '<span class="ticket-eyebrow">Vista previa de compra</span>',
+      '<span class="ticket-eyebrow">Modo de pruebas</span>',
       '<h2>Así vería <em>tu pedido</em> la persona asistente</h2>',
-      '<p class="ticket-copy">Este es un resumen de demostración para <strong>' + escapeHtml(eventTitle) + '</strong>. No se ha creado ningún pedido, no se han guardado datos y no se ha abierto el pago.</p>',
-      '<div class="ticket-preview-summary"><div><span>Contacto</span><strong>' + escapeHtml((payload.first_name + " " + payload.last_name).trim() || "Nombre de ejemplo") + '</strong><small>' + escapeHtml(payload.email || "correo@ejemplo.com") + '</small></div><div><span>Importe total</span><strong>' + cents(total) + '</strong><small>El pago seguro se abriría después de confirmar.</small></div></div>',
+      '<p class="ticket-copy">Completarás el recorrido de <strong>' + escapeHtml(eventTitle) + '</strong> con un pedido aislado y el entorno sandbox. No se realizará ningún cargo real.</p>',
+      '<div class="ticket-preview-summary"><div><span>Contacto</span><strong>' + escapeHtml((payload.first_name + " " + payload.last_name).trim() || "Nombre de ejemplo") + '</strong><small>' + escapeHtml(payload.email || "correo@ejemplo.com") + '</small></div><div><span>Importe total</span><strong>' + cents(total) + '</strong><small>Las entradas y los envíos se marcarán como prueba.</small></div></div>',
       '<ul class="ticket-preview-items">' + itemRows + '</ul>',
-      '<div class="checkout-preview-actions"><button class="ticket-btn primary" type="button" data-restart-checkout-preview>Volver a editar la compra</button><a class="ticket-btn" href="/admin/entradas/">Volver al editor</a></div>'
+      '<div class="checkout-preview-actions"><button class="ticket-btn primary" type="button" data-start-test-payment>Continuar al pago de prueba</button><button class="ticket-btn" type="button" data-restart-checkout-preview>Volver a editar la compra</button><a class="checkout-preview-editor-link" href="/admin/entradas/">Volver al editor</a></div>'
     ].join("");
     confirmation.querySelector("[data-restart-checkout-preview]").addEventListener("click", function () { layout.hidden = false; confirmation.hidden = true; form.querySelector("[data-quantity-action]").focus(); });
+    confirmation.querySelector("[data-start-test-payment]").addEventListener("click", function (event) {
+      var button = event.currentTarget;
+      button.disabled = true;
+      button.textContent = "Creando pedido de prueba…";
+      var testSessionKey = "perigallo-test-checkout-" + String(form.dataset.previewEventId || "event");
+      var testSessionId = sessionStorage.getItem(testSessionKey);
+      if (!testSessionId) {
+        testSessionId = (window.crypto && window.crypto.randomUUID ? window.crypto.randomUUID() : String(Date.now()) + "-" + Math.random()).replace(/[^A-Za-z0-9_-]/g, "");
+        sessionStorage.setItem(testSessionKey, testSessionId);
+      }
+      payload.test_session_id = testSessionId;
+      adminRequest(api + "/admin/events/" + encodeURIComponent(form.dataset.previewEventId) + "/test-orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }).then(function (data) {
+        window.location.assign(data.payment.url);
+      }).catch(function (error) {
+        button.disabled = false;
+        button.textContent = "Continuar al pago de prueba";
+        var notice = document.createElement("p");
+        notice.className = "ticket-status";
+        notice.textContent = error.message;
+        button.closest(".checkout-preview-actions").appendChild(notice);
+      });
+    });
+  }
+
+  function adminRequest(url, options) {
+    options = options || {};
+    return request(api + "/admin/session").then(function (session) {
+      if (!session.authenticated || !session.csrf) throw new Error("La sesión del editor ha caducado. Vuelve a iniciar sesión para ejecutar la prueba.");
+      options.headers = Object.assign({}, options.headers || {}, { "X-CSRF-Token": session.csrf });
+      return request(url, options);
+    });
+  }
+
+  function initTestPayment() {
+    var root = document.querySelector("[data-test-payment]");
+    if (!root) return;
+    var token = qs("token");
+    if (!token) {
+      root.innerHTML = '<p class="ticket-status">Falta el identificador del pedido de prueba.</p>';
+      return;
+    }
+    request(api + "/orders/" + encodeURIComponent(token)).then(function (data) {
+      var order = data.order;
+      if (!order.is_test) throw new Error("Este pago no pertenece al entorno de pruebas.");
+      renderTestPayment(root, order);
+    }).catch(function (error) {
+      root.innerHTML = '<p class="ticket-status">' + escapeHtml(error.message) + '</p>';
+    });
+  }
+
+  function renderTestPayment(root, order, message) {
+    var items = (order.items || []).map(function (item) { return '<li><span>' + Number(item.quantity) + ' × ' + escapeHtml(item.ticket_type_name) + '</span><strong>' + cents(item.total_cents) + '</strong></li>'; }).join("");
+    root.innerHTML = [
+      '<div class="ticket-panel">',
+      '<span class="ticket-eyebrow">TPV · entorno sandbox</span>',
+      '<h1 class="ticket-title">Pago de <em>prueba</em></h1>',
+      '<p class="ticket-copy">Pedido ' + escapeHtml(order.reference) + ' · No se realizará ningún cargo real. Esta pantalla permite comprobar los resultados del flujo completo.</p>',
+      '<div class="ticket-preview-summary"><div><span>Comprador</span><strong>' + escapeHtml(order.name) + '</strong><small>' + escapeHtml(order.email) + '</small></div><div><span>Importe de prueba</span><strong>' + cents(order.total_cents) + '</strong><small>Entorno aislado de producción</small></div></div>',
+      '<ul class="ticket-preview-items">' + items + '</ul>',
+      message ? '<p class="ticket-status">' + escapeHtml(message) + '</p>' : '',
+      '<div class="checkout-preview-actions"><button class="ticket-btn primary" type="button" data-test-outcome="accepted">Simular pago aceptado</button><button class="ticket-btn" type="button" data-test-outcome="denied">Simular pago rechazado</button><button class="checkout-preview-editor-link" type="button" data-test-outcome="cancelled">Cancelar prueba</button></div>',
+      '</div>'
+    ].join("");
+    root.querySelectorAll("[data-test-outcome]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        root.querySelectorAll("[data-test-outcome]").forEach(function (item) { item.disabled = true; });
+        adminRequest(api + "/admin/test-orders/" + encodeURIComponent(order.token) + "/complete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ outcome: button.dataset.testOutcome }) }).then(function (data) {
+          if (data.outcome === "accepted") {
+            window.location.assign("/entradas/pedido/?token=" + encodeURIComponent(order.token));
+            return;
+          }
+          renderTestPayment(root, data.order, data.outcome === "cancelled" ? "El pago de prueba se ha cancelado. Puedes volver a intentarlo sin crear un segundo pedido." : "El pago de prueba ha sido rechazado. Puedes volver a intentarlo sin duplicar las entradas.");
+        }).catch(function (error) {
+          renderTestPayment(root, order, error.message);
+        });
+      });
+    });
   }
 
   function initOrderStatus() {
@@ -562,10 +644,12 @@
       var order = data.order;
       root.innerHTML = [
         '<div class="ticket-panel">',
-        '<span class="ticket-eyebrow">Pedido ' + escapeHtml(order.status) + '</span>',
+        '<span class="ticket-eyebrow">' + (order.is_test ? 'Pedido de prueba · ' : 'Pedido ') + escapeHtml(order.reference || order.status) + '</span>',
         '<h1 class="ticket-title">Tus <em>entradas</em></h1>',
-        '<p class="ticket-copy">Pedido a nombre de ' + escapeHtml(order.name) + '. Importe: ' + cents(order.total_cents) + '.</p>',
-        '<div class="ticket-list">' + (order.tickets || []).map(ticketPass).join("") + '</div>',
+        '<p class="ticket-copy">Pedido a nombre de ' + escapeHtml(order.name) + '. Importe: ' + cents(order.total_cents) + '.' + (order.is_test ? ' Esta entrada de prueba no tiene validez de acceso real.' : '') + '</p>',
+        order.is_test ? '<p class="ticket-status">Correo: ' + escapeHtml(order.deliveries && order.deliveries.some(function (item) { return item.channel === "email" && item.status === "sent"; }) ? 'enviado' : 'registrado') + ' · WhatsApp: simulado hasta configurar un proveedor transaccional.</p>' : '',
+        order.is_test && order.deliveries && order.deliveries.some(function (item) { return item.channel === "whatsapp" && item.payload; }) ? '<details><summary>Ver mensaje de WhatsApp de prueba</summary><pre>' + escapeHtml(order.deliveries.find(function (item) { return item.channel === "whatsapp" && item.payload; }).payload) + '</pre></details>' : '',
+        '<div class="ticket-list">' + (order.tickets || []).map(function (ticket) { return ticketPass(ticket, order.is_test); }).join("") + '</div>',
         '</div>'
       ].join("");
     }).catch(function (error) {
@@ -573,8 +657,8 @@
     });
   }
 
-  function ticketPass(ticket) {
-    return '<article class="ticket-pass"><div><h3>' + escapeHtml(ticket.event_title) + '</h3><p>' + escapeHtml(fmtDate(ticket.starts_at)) + ' · ' + escapeHtml(ticket.location || "") + '</p><p>' + escapeHtml(ticket.ticket_type_name || "") + '</p><p class="ticket-code">' + escapeHtml(ticket.public_code) + '</p></div><div class="ticket-qr">Código acceso<br>' + escapeHtml(ticket.public_code) + '</div></article>';
+  function ticketPass(ticket, isTest) {
+    return '<article class="ticket-pass"><div>' + (isTest ? '<span class="ticket-eyebrow">Entrada de prueba · sin validez de acceso real</span>' : '') + '<h3>' + escapeHtml(ticket.event_title) + '</h3><p>' + escapeHtml(fmtDate(ticket.starts_at)) + ' · ' + escapeHtml(ticket.location || "") + '</p><p>' + escapeHtml(ticket.ticket_type_name || "") + '</p><p class="ticket-code">' + escapeHtml(ticket.public_code) + '</p></div><div class="ticket-qr">' + (isTest ? 'Código de prueba' : 'Código acceso') + '<br>' + escapeHtml(ticket.public_code) + '</div></article>';
   }
 
   function escapeHtml(value) {
@@ -591,4 +675,5 @@
   initEventDetail();
   initCheckout();
   initOrderStatus();
+  initTestPayment();
 })();

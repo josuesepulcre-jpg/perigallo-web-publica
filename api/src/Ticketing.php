@@ -202,7 +202,7 @@ final class Ticketing
         $items->execute([(int) $order['id']]);
 
         $tickets = $this->pdo->prepare(
-            'SELECT t.public_code, t.status, t.issued_at, e.title AS event_title, e.starts_at, e.location, toi.ticket_type_name
+            'SELECT t.public_code, t.status, t.issued_at, e.title AS event_title, e.starts_at, e.ends_at, e.location, e.locality, e.province, e.dress_code, toi.ticket_type_name
              FROM tickets t
              JOIN events e ON e.id = t.event_id
              JOIN ticket_order_items toi ON toi.id = t.order_item_id
@@ -211,9 +211,18 @@ final class Ticketing
         );
         $tickets->execute([(int) $order['id']]);
 
+        $delivery = $this->pdo->prepare('SELECT channel, status, recipient, payload, created_at FROM ticket_delivery_logs WHERE order_id = ? ORDER BY id DESC');
+        $delivery->execute([(int) $order['id']]);
+
         return [
             'token' => $order['public_token'],
             'status' => $this->effectiveOrderStatus($order),
+            'is_test' => !empty($order['is_test']),
+            'environment' => $order['environment'] ?? 'production',
+            'reference' => $order['test_reference'] ?: $order['redsys_order'],
+            'order_status' => $order['order_status'] ?? null,
+            'payment_status' => $order['payment_status'] ?? null,
+            'delivery_status' => $order['delivery_status'] ?? null,
             'name' => $order['name'],
             'email' => $order['email'],
             'phone' => $order['phone'],
@@ -223,7 +232,143 @@ final class Ticketing
             'paid_at' => $order['paid_at'],
             'items' => $items->fetchAll(),
             'tickets' => $tickets->fetchAll(),
+            'deliveries' => $delivery->fetchAll(),
         ];
+    }
+
+    /** Creates an admin-only sandbox order. It never reserves production capacity. */
+    public function createTestOrder(int $eventId, array $data): array
+    {
+        if (env_value('PAYMENT_ENVIRONMENT', 'sandbox') !== 'sandbox') {
+            throw new RuntimeException('El modo de pruebas está desactivado en este entorno.');
+        }
+        require_fields($data, ['first_name', 'last_name', 'email', 'phone', 'items']);
+        if (empty($data['privacy_accepted']) || empty($data['terms_accepted']) || !is_array($data['items'])) {
+            throw new RuntimeException('Completa los datos y acepta las condiciones para continuar.');
+        }
+        $testSession = substr(preg_replace('/[^A-Za-z0-9_-]/', '', (string) ($data['test_session_id'] ?? '')) ?: public_token(18), 0, 96);
+        $existing = $this->pdo->prepare('SELECT public_token FROM ticket_orders WHERE test_session_id = ? AND is_test = 1 LIMIT 1');
+        $existing->execute([$testSession]);
+        $existingToken = (string) ($existing->fetchColumn() ?: '');
+        if ($existingToken !== '') {
+            return [
+                'order' => $this->getOrderByToken($existingToken),
+                'payment' => ['sandbox' => true, 'url' => app_base_url() . '/entradas/pago/prueba/?token=' . rawurlencode($existingToken)],
+            ];
+        }
+
+        $this->pdo->beginTransaction();
+        try {
+            $event = $this->requireAdminEvent($eventId);
+            $publicToken = public_token();
+            $redsysOrder = $this->nextRedsysOrder();
+            $firstName = clean_string((string) $data['first_name'], 120);
+            $lastName = clean_string((string) $data['last_name'], 160);
+            $email = mb_strtolower(clean_string((string) $data['email'], 190));
+            $phone = clean_string((string) $data['phone'], 60);
+            $name = trim($firstName . ' ' . $lastName);
+            $expires = (new DateTimeImmutable('now'))->add(new DateInterval('PT30M'))->format('Y-m-d H:i:s');
+            $orderStmt = $this->pdo->prepare(
+                'INSERT INTO ticket_orders
+                 (public_token, redsys_order, first_name, last_name, name, email, phone, subtotal_cents, total_cents, currency, status, reservation_expires_at, ip_address, user_agent, is_test, environment, order_status, payment_status, delivery_status, test_session_id, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, "payment_processing", ?, ?, ?, 1, "sandbox", "pending_payment", "pending", "pending", ?, NOW(), NOW())'
+            );
+            $orderStmt->execute([$publicToken, $redsysOrder, $firstName, $lastName, $name, $email, $phone, env_value('REDSYS_CURRENCY', '978'), $expires, client_ip(), substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255), $testSession]);
+            $orderId = (int) $this->pdo->lastInsertId();
+            $reference = 'TEST-PG' . str_pad((string) $eventId, 2, '0', STR_PAD_LEFT) . '-' . str_pad((string) $orderId, 6, '0', STR_PAD_LEFT);
+            $this->pdo->prepare('UPDATE ticket_orders SET test_reference = ? WHERE id = ?')->execute([$reference, $orderId]);
+
+            $total = 0;
+            $quantityTotal = 0;
+            foreach ($data['items'] as $item) {
+                $typeId = (int) ($item['ticket_type_id'] ?? 0);
+                $quantity = (int) ($item['quantity'] ?? 0);
+                if ($typeId <= 0 || $quantity <= 0) {
+                    continue;
+                }
+                $type = $this->lockTestTicketType($typeId, $eventId, (string) ($data['promo_code'] ?? ''));
+                if (!$type) {
+                    throw new RuntimeException('Tipo de entrada no disponible para la prueba.');
+                }
+                if ($quantity < (int) $type['min_quantity'] || $quantity > (int) $type['max_per_order']) {
+                    throw new RuntimeException('Cantidad no permitida para ' . $type['name'] . '.');
+                }
+                $unitPrice = (int) $type['price_cents'] + (int) round((int) $type['price_cents'] * (float) ($type['tax_rate'] ?? 0) / 100) + (int) ($type['fee_cents'] ?? 0);
+                $lineTotal = $quantity * $unitPrice;
+                $total += $lineTotal;
+                $quantityTotal += $quantity;
+                $this->pdo->prepare(
+                    'INSERT INTO ticket_order_items (order_id, event_id, ticket_type_id, ticket_type_name, quantity, unit_price_cents, total_cents, created_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, NOW())'
+                )->execute([$orderId, $eventId, $typeId, $type['name'], $quantity, $unitPrice, $lineTotal]);
+            }
+            if ($quantityTotal === 0) {
+                throw new RuntimeException('Selecciona al menos una entrada para la prueba.');
+            }
+            $this->pdo->prepare('UPDATE ticket_orders SET subtotal_cents = ?, total_cents = ?, updated_at = NOW() WHERE id = ?')->execute([$total, $total, $orderId]);
+            $this->pdo->prepare(
+                'INSERT INTO payment_attempts (order_id, redsys_order, environment, amount_cents, currency, signature_version, status, created_at, updated_at)
+                 VALUES (?, ?, "test", ?, ?, "sandbox-simulator", "created", NOW(), NOW())'
+            )->execute([$orderId, $redsysOrder, $total, env_value('REDSYS_CURRENCY', '978')]);
+            $this->pdo->commit();
+
+            return [
+                'order' => $this->getOrderByToken($publicToken),
+                'payment' => ['sandbox' => true, 'url' => app_base_url() . '/entradas/pago/prueba/?token=' . rawurlencode($publicToken)],
+            ];
+        } catch (\Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
+    /** Completes a controlled sandbox attempt; only available through admin CSRF. */
+    public function completeTestPayment(string $token, string $outcome): array
+    {
+        $outcome = in_array($outcome, ['accepted', 'denied', 'cancelled', 'technical_error'], true) ? $outcome : 'technical_error';
+        $this->pdo->beginTransaction();
+        try {
+            $stmt = $this->pdo->prepare('SELECT * FROM ticket_orders WHERE public_token = ? AND is_test = 1 AND environment = "sandbox" FOR UPDATE');
+            $stmt->execute([$token]);
+            $order = $stmt->fetch();
+            if (!$order) {
+                throw new RuntimeException('Pedido de prueba no encontrado.');
+            }
+            if ($order['payment_status'] === 'paid') {
+                $this->pdo->commit();
+                return ['order' => $this->getOrderByToken($token), 'outcome' => 'accepted'];
+            }
+            $statusMap = [
+                'accepted' => ['paid', 'confirmed', 'paid'],
+                'denied' => ['denied', 'failed', 'failed'],
+                'cancelled' => ['cancelled', 'cancelled', 'cancelled'],
+                'technical_error' => ['denied', 'failed', 'failed'],
+            ];
+            [$legacyStatus, $orderStatus, $paymentStatus] = $statusMap[$outcome];
+            $this->pdo->prepare(
+                'UPDATE ticket_orders SET status = ?, order_status = ?, payment_status = ?, paid_at = IF(? = "paid", NOW(), paid_at), updated_at = NOW() WHERE id = ?'
+            )->execute([$legacyStatus, $orderStatus, $paymentStatus, $paymentStatus, $order['id']]);
+            $this->pdo->prepare(
+                'UPDATE payment_attempts SET status = ?, response_code = ?, notification_received_at = NOW(), raw_response = ?, updated_at = NOW() WHERE order_id = ?'
+            )->execute([$outcome === 'accepted' ? 'accepted' : 'denied', $outcome === 'accepted' ? '0000' : '9999', json_encode(['sandbox' => true, 'outcome' => $outcome]), $order['id']]);
+            if ($outcome === 'accepted') {
+                $this->generateTicketsOnce((int) $order['id']);
+                $this->pdo->prepare('UPDATE ticket_orders SET delivery_status = "generated" WHERE id = ?')->execute([$order['id']]);
+            }
+            $this->pdo->commit();
+
+            if ($outcome === 'accepted') {
+                $this->sendTestConfirmation((int) $order['id']);
+            }
+            return ['order' => $this->getOrderByToken($token), 'outcome' => $outcome];
+        } catch (\Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $e;
+        }
     }
 
     public function processRedsysNotification(array $post): array
@@ -316,14 +461,14 @@ final class Ticketing
 
     public function adminSummary(): array
     {
-        $orders = $this->pdo->query('SELECT status, COUNT(*) AS total, COALESCE(SUM(total_cents),0) AS amount FROM ticket_orders GROUP BY status')->fetchAll();
+        $orders = $this->pdo->query('SELECT status, COUNT(*) AS total, COALESCE(SUM(total_cents),0) AS amount FROM ticket_orders WHERE is_test = 0 GROUP BY status')->fetchAll();
         $events = $this->adminListEvents();
         return ['orders' => $orders, 'events' => $events];
     }
 
     public function adminOrders(): array
     {
-        return $this->pdo->query('SELECT id, public_token, redsys_order, name, email, phone, total_cents, status, reservation_expires_at, paid_at, created_at FROM ticket_orders ORDER BY id DESC LIMIT 200')->fetchAll();
+        return $this->pdo->query('SELECT id, public_token, redsys_order, test_reference, is_test, environment, order_status, payment_status, delivery_status, name, email, phone, total_cents, status, reservation_expires_at, paid_at, created_at FROM ticket_orders ORDER BY id DESC LIMIT 200')->fetchAll();
     }
 
     public function adminCreateEvent(array $data): array
@@ -1051,7 +1196,7 @@ final class Ticketing
               COALESCE(SUM(CASE WHEN tor.status="paid" THEN toi.quantity ELSE 0 END), 0) AS sold,
               COALESCE(SUM(CASE WHEN tor.status IN ("pending","payment_processing") AND tor.reservation_expires_at > NOW() THEN toi.quantity ELSE 0 END), 0) AS reserved,
               COALESCE(SUM(CASE WHEN tor.status="paid" THEN toi.total_cents ELSE 0 END), 0) AS revenue_cents
-             FROM ticket_order_items toi JOIN ticket_orders tor ON tor.id=toi.order_id WHERE toi.event_id=?'
+             FROM ticket_order_items toi JOIN ticket_orders tor ON tor.id=toi.order_id WHERE toi.event_id=? AND tor.is_test = 0'
         );
         $stmt->execute([$eventId]);
         $row = $stmt->fetch() ?: [];
@@ -1064,7 +1209,7 @@ final class Ticketing
             'SELECT
               COALESCE(SUM(CASE WHEN tor.status="paid" THEN toi.quantity ELSE 0 END), 0) AS sold,
               COALESCE(SUM(CASE WHEN tor.status IN ("pending","payment_processing") AND tor.reservation_expires_at > NOW() THEN toi.quantity ELSE 0 END), 0) AS reserved
-             FROM ticket_order_items toi JOIN ticket_orders tor ON tor.id=toi.order_id WHERE toi.ticket_type_id=?'
+             FROM ticket_order_items toi JOIN ticket_orders tor ON tor.id=toi.order_id WHERE toi.ticket_type_id=? AND tor.is_test = 0'
         );
         $stmt->execute([$ticketTypeId]);
         $row = $stmt->fetch() ?: [];
@@ -1339,6 +1484,17 @@ final class Ticketing
         return $type ?: null;
     }
 
+    private function lockTestTicketType(int $typeId, int $eventId, string $promoCode): ?array
+    {
+        $stmt = $this->pdo->prepare('SELECT * FROM ticket_types WHERE id = ? AND event_id = ? AND status <> "archived" FOR UPDATE');
+        $stmt->execute([$typeId, $eventId]);
+        $type = $stmt->fetch();
+        if ($type && !empty($type['requires_promo']) && (trim($promoCode) === '' || empty($type['promo_code_hash']) || !password_verify($promoCode, (string) $type['promo_code_hash']))) {
+            throw new RuntimeException('El código promocional no es válido para esta entrada.');
+        }
+        return $type ?: null;
+    }
+
     private function promoCodeHash(array $data, string $existing = ''): ?string
     {
         if (empty($data['requires_promo'])) {
@@ -1364,6 +1520,7 @@ final class Ticketing
              FROM ticket_order_items toi
              JOIN ticket_orders tor ON tor.id = toi.order_id
              WHERE toi.ticket_type_id = ?
+             AND tor.is_test = 0
              AND (
                 tor.status = "paid"
                 OR (tor.status IN ("pending","payment_processing") AND tor.reservation_expires_at > NOW())
@@ -1426,6 +1583,9 @@ final class Ticketing
         if ((int) $existing->fetchColumn() > 0) {
             return;
         }
+        $orderStmt = $this->pdo->prepare('SELECT is_test, test_reference FROM ticket_orders WHERE id = ?');
+        $orderStmt->execute([$orderId]);
+        $order = $orderStmt->fetch() ?: [];
         $items = $this->pdo->prepare('SELECT * FROM ticket_order_items WHERE order_id = ? ORDER BY id ASC');
         $items->execute([$orderId]);
         $insert = $this->pdo->prepare(
@@ -1435,7 +1595,9 @@ final class Ticketing
         foreach ($items->fetchAll() as $item) {
             for ($i = 0; $i < (int) $item['quantity']; $i++) {
                 $token = public_token(32);
-                $code = 'PG-' . strtoupper(substr(bin2hex(random_bytes(8)), 0, 12));
+                $code = !empty($order['is_test'])
+                    ? 'PG-TEST-' . strtoupper(substr(bin2hex(random_bytes(7)), 0, 10))
+                    : 'PG-' . strtoupper(substr(bin2hex(random_bytes(8)), 0, 12));
                 $insert->execute([
                     $item['id'],
                     $item['event_id'],
@@ -1458,5 +1620,28 @@ final class Ticketing
         $link = app_base_url() . '/entradas/pedido/?token=' . rawurlencode((string) $order['public_token']);
         $body = "Hola {$order['name']},\n\nTu pago se ha confirmado correctamente.\n\nPuedes consultar y descargar tus entradas aqui:\n{$link}\n\nContacto Perigallo: +34 691 499 985\n";
         $this->mailer->queueOrderEmail($this->pdo, $orderId, (string) $order['email'], 'Tus entradas Perigallo', $body);
+    }
+
+    private function sendTestConfirmation(int $orderId): void
+    {
+        $orderStmt = $this->pdo->prepare('SELECT * FROM ticket_orders WHERE id = ? AND is_test = 1');
+        $orderStmt->execute([$orderId]);
+        $order = $orderStmt->fetch();
+        if (!$order) {
+            return;
+        }
+        $eventStmt = $this->pdo->prepare('SELECT e.* FROM events e JOIN ticket_order_items toi ON toi.event_id = e.id WHERE toi.order_id = ? LIMIT 1');
+        $eventStmt->execute([$orderId]);
+        $event = $eventStmt->fetch();
+        if (!$event) {
+            return;
+        }
+        $quantityStmt = $this->pdo->prepare('SELECT COALESCE(SUM(quantity), 0) FROM ticket_order_items WHERE order_id = ?');
+        $quantityStmt->execute([$orderId]);
+        $quantity = (int) $quantityStmt->fetchColumn();
+        $delivery = new TicketDeliveryService($this->mailer);
+        $result = $delivery->sendTestOrder($this->pdo, $order, $event, $quantity);
+        $status = $result['email'] === 'sent' ? 'partially_sent' : 'failed';
+        $this->pdo->prepare('UPDATE ticket_orders SET delivery_status = ?, updated_at = NOW() WHERE id = ?')->execute([$status, $orderId]);
     }
 }
