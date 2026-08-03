@@ -108,7 +108,7 @@
         '<section class="event-story"><div><span class="ticket-eyebrow">La experiencia</span><h2>' + escapeHtml(event.title) + '</h2><p class="ticket-copy">' + escapeHtml(event.description || "") + '</p></div></section>',
         video,
         gallery ? '<section class="event-gallery">' + gallery + '</section>' : '',
-        experienceAccordions(event) ? '<section class="event-public-information"><span class="ticket-eyebrow">Antes de venir</span><h2>Información de la experiencia</h2><div class="experience-accordions">' + experienceAccordions(event) + '</div></section>' : ''
+        experienceAccordions(event) ? '<section class="event-public-information event-public-information-accordions"><div class="experience-accordions">' + experienceAccordions(event) + '</div></section>' : ''
       ].join("");
   }
 
