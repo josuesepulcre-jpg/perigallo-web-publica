@@ -91,7 +91,7 @@
       var logo = event.logo_url ? '<img class="event-logo" src="' + escapeAttr(previewAssetUrl(event.logo_url, preview)) + '" alt="Logotipo de ' + escapeHtml(event.title) + '">' : '';
       var imageUrl = previewAssetUrl(event.image_url || "/assets/images/finca-la-llaguna-principal.jpg", preview);
       var video = event.video_url ? '<div class="event-story-media"><section class="event-video"><video controls playsinline preload="metadata" poster="' + escapeAttr(imageUrl) + '" src="' + escapeAttr(previewAssetUrl(event.video_url, preview)) + '">Tu navegador no puede reproducir este vídeo.</video></section></div>' : '';
-      var action = preview ? '<button class="ticket-btn primary" type="button" disabled>Vista previa: compra desactivada</button>' : (onSale.length ? '<a class="ticket-btn primary" href="/entradas/checkout/?event=' + encodeURIComponent(event.slug) + '">Comprar entradas</a>' : '<span class="ticket-status">' + (types.length ? 'Las entradas no están disponibles en este momento.' : 'Próximamente anunciaremos las entradas.') + '</span>');
+      var action = preview ? '<a class="ticket-btn primary" href="/entradas/checkout/?preview=1&amp;id=' + encodeURIComponent(event.id) + '">Probar recorrido de compra</a><p class="ticket-preview-note">Vista privada: no se crea ningún pedido ni se accede al pago.</p>' : (onSale.length ? '<a class="ticket-btn primary" href="/entradas/checkout/?event=' + encodeURIComponent(event.slug) + '">Comprar entradas</a>' : '<span class="ticket-status">' + (types.length ? 'Las entradas no están disponibles en este momento.' : 'Próximamente anunciaremos las entradas.') + '</span>');
       var storyClass = video ? "event-story event-story-layout event-story-has-media" : "event-story event-story-layout";
       return [
         '<div class="event-detail-layout">',
@@ -221,27 +221,44 @@
   function initCheckout() {
     var form = document.querySelector("[data-ticket-checkout]");
     if (!form) return;
+    var preview = qs("preview") === "1";
     var slug = qs("event");
+    var previewId = qs("id");
     var typesBox = form.querySelector("[data-ticket-types]");
     var status = form.querySelector("[data-ticket-status]");
     var eventTitle = document.querySelector("[data-checkout-event-title]");
-    if (!slug) {
+    var eyebrow = document.querySelector("[data-checkout-eyebrow]");
+    var title = document.querySelector("[data-checkout-title]");
+    var copy = document.querySelector("[data-checkout-copy]");
+    var safetyCopy = document.querySelector("[data-checkout-safety-copy]");
+    var submit = form.querySelector('button[type="submit"]');
+    if ((!preview && !slug) || (preview && !previewId)) {
       status.textContent = "Falta el evento.";
       return;
     }
-    request(api + "/events/" + encodeURIComponent(slug)).then(function (data) {
+    if (preview) {
+      form.classList.add("ticket-form-preview");
+      if (eyebrow) eyebrow.textContent = "Vista previa privada";
+      if (title) title.innerHTML = "Así se completa <em>una compra</em>";
+      if (copy) copy.textContent = "Recorre la selección de entradas, los datos y el resumen final sin crear pedidos ni abrir el pago.";
+      if (safetyCopy) safetyCopy.textContent = "Esta demostración no reserva plazas, no guarda datos y no conecta con Redsys.";
+      if (submit) submit.textContent = "Ver resumen de compra";
+    }
+    var endpoint = preview ? api + "/admin/events/" + encodeURIComponent(previewId) + "/preview" : api + "/events/" + encodeURIComponent(slug);
+    request(endpoint, preview ? { cache: "no-store" } : undefined).then(function (data) {
       var event = data.event;
       if (eventTitle) eventTitle.textContent = event.title;
-      var types = (event.ticket_types || []).filter(function (type) { return (type.effective_status || type.status) === "on_sale"; });
+      var types = (event.ticket_types || []).filter(function (type) { return preview || (type.effective_status || type.status) === "on_sale"; });
       if (!types.length) {
-        status.textContent = "No hay entradas disponibles para comprar en este momento.";
-        form.querySelector('button[type="submit"]').disabled = true;
+        status.textContent = preview ? "Añade al menos un tipo de entrada en el editor para comprobar el recorrido de compra." : "No hay entradas disponibles para comprar en este momento.";
+        submit.disabled = true;
         return;
       }
       var needsCode = types.some(function (type) { return type.requires_promo; });
       typesBox.innerHTML = (needsCode ? '<label class="ticket-field"><span>Código promocional</span><input name="promo_code" autocomplete="off" placeholder="Solo si una entrada lo requiere"></label>' : '') + types.map(function (type) {
         var price = type.final_price_cents != null ? type.final_price_cents : type.price_cents;
-        return '<label class="ticket-type"><span><strong>' + escapeHtml(type.name) + '</strong><br><small>' + cents(price) + ' · ' + Number(type.available || 0) + ' disponibles</small></span><input min="0" max="' + Number(type.max_per_order || 10) + '" value="0" type="number" name="ticket_' + type.id + '" data-ticket-type="' + type.id + '"></label>';
+        var availability = preview ? 'Vista previa · ' + Number(type.available || 0) + ' disponibles' : cents(price) + ' · ' + Number(type.available || 0) + ' disponibles';
+        return '<label class="ticket-type"><span><strong>' + escapeHtml(type.name) + '</strong><br><small>' + (preview ? escapeHtml(availability) + ' · ' + cents(price) : escapeHtml(availability)) + '</small></span><input min="0" max="' + Number(type.max_per_order || 10) + '" value="0" type="number" name="ticket_' + type.id + '" data-ticket-type="' + type.id + '" data-ticket-name="' + escapeAttr(type.name) + '" data-ticket-price="' + Number(price || 0) + '"></label>';
       }).join("");
       form.dataset.eventSlug = event.slug;
     }).catch(function (error) {
@@ -250,7 +267,6 @@
 
     form.addEventListener("submit", function (event) {
       event.preventDefault();
-      status.textContent = "Creando pedido seguro...";
       var payload = {
         event_slug: form.dataset.eventSlug,
         first_name: form.first_name.value,
@@ -264,6 +280,11 @@
           return { ticket_type_id: Number(input.dataset.ticketType), quantity: Number(input.value || 0) };
         }).filter(function (item) { return item.quantity > 0; })
       };
+      if (preview) {
+        renderCheckoutPreview(form, payload, eventTitle ? eventTitle.textContent : "Este evento");
+        return;
+      }
+      status.textContent = "Creando pedido seguro...";
       request(api + "/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -289,6 +310,29 @@
         status.textContent = error.message;
       });
     });
+  }
+
+  function renderCheckoutPreview(form, payload, eventTitle) {
+    var selectedInputs = Array.from(form.querySelectorAll("[data-ticket-type]")).filter(function (input) { return Number(input.value || 0) > 0; });
+    if (!selectedInputs.length) {
+      form.querySelector("[data-ticket-status]").textContent = "Selecciona al menos una entrada para ver el resumen.";
+      return;
+    }
+    var total = selectedInputs.reduce(function (sum, input) { return sum + Number(input.value || 0) * Number(input.dataset.ticketPrice || 0); }, 0);
+    var itemRows = selectedInputs.map(function (input) {
+      return '<li><span>' + Number(input.value) + ' × ' + escapeHtml(input.dataset.ticketName) + '</span><strong>' + cents(Number(input.value) * Number(input.dataset.ticketPrice || 0)) + '</strong></li>';
+    }).join("");
+    form.innerHTML = [
+      '<div class="ticket-preview-confirmation">',
+      '<span class="ticket-eyebrow">Vista previa de compra</span>',
+      '<h2>Así vería <em>tu pedido</em> la persona asistente</h2>',
+      '<p class="ticket-copy">Este es un resumen de demostración para <strong>' + escapeHtml(eventTitle) + '</strong>. No se ha creado ningún pedido, no se han guardado datos y no se ha abierto el pago.</p>',
+      '<div class="ticket-preview-summary"><div><span>Contacto</span><strong>' + escapeHtml((payload.first_name + " " + payload.last_name).trim() || "Nombre de ejemplo") + '</strong><small>' + escapeHtml(payload.email || "correo@ejemplo.com") + '</small></div><div><span>Importe total</span><strong>' + cents(total) + '</strong><small>El pago seguro se abriría después de confirmar.</small></div></div>',
+      '<ul class="ticket-preview-items">' + itemRows + '</ul>',
+      '<div class="ticket-preview-actions"><button class="ticket-btn primary" type="button" data-restart-checkout-preview>Volver a editar la compra</button><a class="ticket-btn" href="/admin/entradas/">Volver al editor</a></div>',
+      '</div>'
+    ].join("");
+    form.querySelector("[data-restart-checkout-preview]").addEventListener("click", function () { window.location.reload(); });
   }
 
   function initOrderStatus() {

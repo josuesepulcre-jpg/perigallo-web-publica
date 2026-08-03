@@ -143,8 +143,16 @@ if (incompleteFaq.rows.length !== 2 || incompleteFaq.invalidLines.join(",") !== 
 }
 
 const publicJs = readFileSync(join(root, "assets/js/ticketing.js"), "utf8");
-for (const marker of ["Información de la experiencia", "Código de vestimenta", "event.contact_info", "experienceAccordions", "initExperienceAccordions", "aria-expanded", "eventMetadata", "event-story-has-media", "poster="]) {
+for (const marker of ["Información de la experiencia", "Código de vestimenta", "event.contact_info", "experienceAccordions", "initExperienceAccordions", "aria-expanded", "eventMetadata", "event-story-has-media", "poster=", "Probar recorrido de compra", "renderCheckoutPreview", "Vista previa de compra"]) {
   if (!publicJs.includes(marker)) throw new Error(`Missing public information rendering: ${marker}`);
+}
+if (!publicJs.includes('if (preview) {\n        renderCheckoutPreview') || !publicJs.includes('No se ha creado ningún pedido')) {
+  throw new Error("Preview checkout must render locally without creating an order.");
+}
+
+const checkout = readFileSync(join(root, "entradas/checkout/index.html"), "utf8");
+for (const marker of ["data-checkout-eyebrow", "data-checkout-title", "data-checkout-safety-copy"]) {
+  if (!checkout.includes(marker)) throw new Error(`Missing preview-aware checkout marker: ${marker}`);
 }
 
 const css = readFileSync(join(root, "assets/css/ticketing.css"), "utf8");
