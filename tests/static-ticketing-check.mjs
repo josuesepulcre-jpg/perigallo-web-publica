@@ -48,6 +48,7 @@ const activeFiles = [
   "solicitud-evento/index.html",
   "assets/js/ticketing.js",
   "assets/js/ticketing-admin.js",
+  "assets/css/event-information-accordions.css",
 ];
 
 const forbidden = [
@@ -90,6 +91,11 @@ for (const marker of [
   if (!(api + ticketing).includes(marker)) {
     throw new Error(`Missing event editor contract: ${marker}`);
   }
+}
+
+const publicTicketing = readFileSync(join(root, "assets/js/ticketing.js"), "utf8");
+for (const marker of ["experience-accordion-nested", "Preguntas frecuentes", "Cancelaciones y devoluciones", "linkifyText"]) {
+  if (!publicTicketing.includes(marker)) throw new Error(`Missing public information accordion marker: ${marker}`);
 }
 
 const editor = readFileSync(join(root, "admin/entradas/evento/index.html"), "utf8");

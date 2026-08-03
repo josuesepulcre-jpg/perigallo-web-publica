@@ -108,36 +108,66 @@
         '<section class="event-story"><div><span class="ticket-eyebrow">La experiencia</span><h2>' + escapeHtml(event.title) + '</h2><p class="ticket-copy">' + escapeHtml(event.description || "") + '</p></div></section>',
         video,
         gallery ? '<section class="event-gallery">' + gallery + '</section>' : '',
-        event.included_text || event.access_conditions ? '<section class="event-public-information"><span class="ticket-eyebrow">Antes de venir</span><h2>Información de la experiencia</h2><div class="experience-accordions">' + experienceAccordions(event) + '</div></section>' : '',
-        event.dress_code || event.recommendations || event.accessibility_info || event.minor_policy || event.refund_policy ? '<section class="event-public-information event-additional-information"><div class="event-public-information-grid">' + publicInfo(event) + '</div></section>' : '',
-        event.parking_info || event.access_notes || event.maps_url ? '<section class="event-arrival"><h2>Llegar y disfrutar</h2><p>' + escapeHtml(event.access_notes || event.parking_info || "") + '</p>' + (event.maps_url ? '<a class="ticket-btn" href="' + escapeAttr(event.maps_url) + '" target="_blank" rel="noopener noreferrer">Abrir mapa</a>' : '') + '</section>' : '',
-        (event.faq || []).length ? '<section class="event-faqs"><h2>Preguntas frecuentes</h2>' + publicFaq(event.faq) + '</section>' : '',
-        event.contact_info ? '<section class="event-arrival event-contact"><h2>Contacto</h2><p>' + escapeHtml(event.contact_info) + '</p></section>' : ''
+        experienceAccordions(event) ? '<section class="event-public-information"><span class="ticket-eyebrow">Antes de venir</span><h2>Información de la experiencia</h2><div class="experience-accordions">' + experienceAccordions(event) + '</div></section>' : ''
       ].join("");
   }
 
-  function publicInfo(event) {
-    var entries = [["Código de vestimenta", event.dress_code], ["Recomendaciones", event.recommendations], ["Accesibilidad", event.accessibility_info], ["Política de menores", event.minor_policy], ["Política de devolución", event.refund_policy]];
-    return entries.filter(function (item) { return item[1]; }).map(function (item) { return '<article class="event-info-card"><h3>' + escapeHtml(item[0]) + '</h3><p>' + escapeHtml(item[1]) + '</p></article>'; }).join("");
+  function textParagraphs(value) {
+    return String(value || "").trim().split(/\n\s*\n/).filter(Boolean).map(function (paragraph) { return '<p>' + linkifyText(paragraph).replace(/\n/g, "<br>") + '</p>'; }).join("");
   }
 
-  function textParagraphs(value) {
-    return String(value || "").trim().split(/\n\s*\n/).filter(Boolean).map(function (paragraph) { return '<p>' + escapeHtml(paragraph) + '</p>'; }).join("");
+  function linkifyText(value) {
+    return escapeHtml(value)
+      .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>')
+      .replace(/(^|[\s(])([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})(?=$|[\s).,;:])/gi, '$1<a href="mailto:$2">$2</a>')
+      .replace(/(^|[\s(])((?:\+?\d[\s.-]?){8,}\d)(?=$|[\s).,;:])/g, function (_, prefix, phone) { return prefix + '<a href="tel:' + phone.replace(/[^+\d]/g, "") + '">' + phone + '</a>'; });
+  }
+
+  function locationInformation(event) {
+    var details = [event.location, event.address, [event.postal_code, event.locality, event.province].filter(Boolean).join(" · "), event.access_notes, event.parking_info].filter(Boolean).join("\n\n");
+    return textParagraphs(details) + (event.maps_url ? '<p><a class="ticket-btn" href="' + escapeAttr(event.maps_url) + '" target="_blank" rel="noopener noreferrer">Abrir mapa</a></p>' : '');
+  }
+
+  function scheduleInformation(event) {
+    var rows = [];
+    if (event.schedule_note) rows.push(event.schedule_note);
+    if (event.doors_open_at) rows.push("Apertura de puertas: " + fmtDate(event.doors_open_at));
+    if (event.starts_at) rows.push("Inicio de la experiencia: " + fmtDate(event.starts_at));
+    if (event.ends_at) rows.push("Finalización prevista: " + fmtDate(event.ends_at));
+    return textParagraphs(rows.join("\n\n"));
+  }
+
+  function accordionMarkup(item, index, nested) {
+    var panelId = "experience-information-" + (nested ? "faq-" : "panel-") + index;
+    return '<article class="experience-accordion' + (nested ? ' experience-accordion-nested' : '') + '" data-experience-accordion>' +
+      '<button class="experience-accordion-trigger" type="button" data-experience-accordion-trigger aria-expanded="false" aria-controls="' + panelId + '">' +
+      '<span class="experience-accordion-number">' + escapeHtml(String(index + 1).padStart(2, "0")) + '</span><span class="experience-accordion-copy"><span class="experience-accordion-title">' + escapeHtml(item.title) + '</span></span><span class="experience-accordion-icon" aria-hidden="true"></span></button>' +
+      '<div class="experience-accordion-panel" id="' + panelId + '" role="region" aria-label="' + escapeHtml(item.title) + '" aria-hidden="true"><div class="experience-accordion-content">' + item.content + '</div></div>' +
+      '</article>';
+  }
+
+  function faqAccordion(items) {
+    var questions = items.filter(function (item) { return item && (typeof item === "object" ? item.question : item); }).map(function (item) {
+      return { title: typeof item === "object" ? item.question : item, content: textParagraphs(typeof item === "object" ? item.answer : "") };
+    });
+    return questions.length ? '<div class="experience-accordion-nested-list">' + questions.map(function (item, index) { return accordionMarkup(item, index, true); }).join("") + '</div>' : '';
   }
 
   function experienceAccordions(event) {
     var entries = [
-      { number: "01", title: "Qué incluye la entrada", summary: "Descubre todos los momentos, servicios y experiencias incluidos.", value: event.included_text },
-      { number: "02", title: "Condiciones de acceso", summary: "Consulta la información necesaria antes de asistir.", value: event.access_conditions }
+      { title: "Información de la experiencia", content: textParagraphs(event.included_text), visible: !!event.included_text },
+      { title: "Horarios", content: scheduleInformation(event), visible: !!(event.schedule_note || event.doors_open_at || event.starts_at || event.ends_at) },
+      { title: "Ubicación y cómo llegar", content: locationInformation(event), visible: !!(event.location || event.address || event.access_notes || event.parking_info || event.maps_url) },
+      { title: "Condiciones de acceso", content: textParagraphs(event.access_conditions), visible: !!event.access_conditions },
+      { title: "Código de vestimenta", content: textParagraphs(event.dress_code), visible: !!event.dress_code },
+      { title: "Recomendaciones", content: textParagraphs(event.recommendations), visible: !!event.recommendations },
+      { title: "Accesibilidad", content: textParagraphs(event.accessibility_info), visible: !!event.accessibility_info },
+      { title: "Política de menores", content: textParagraphs(event.minor_policy), visible: !!event.minor_policy },
+      { title: "Cancelaciones y devoluciones", content: textParagraphs(event.refund_policy), visible: !!event.refund_policy },
+      { title: "Contacto", content: textParagraphs(event.contact_info), visible: !!event.contact_info },
+      { title: "Preguntas frecuentes", content: faqAccordion(event.faq || []), visible: !!(event.faq || []).length }
     ];
-    return entries.filter(function (item) { return item.value; }).map(function (item, index) {
-      var panelId = "experience-information-panel-" + index;
-      return '<article class="experience-accordion" data-experience-accordion>' +
-        '<button class="experience-accordion-trigger" type="button" data-experience-accordion-trigger aria-expanded="false" aria-controls="' + panelId + '">' +
-        '<span class="experience-accordion-number">' + item.number + '</span><span class="experience-accordion-copy"><span class="experience-accordion-title">' + escapeHtml(item.title) + '</span><span class="experience-accordion-summary">' + escapeHtml(item.summary) + '</span></span><span class="experience-accordion-icon" aria-hidden="true"></span></button>' +
-        '<div class="experience-accordion-panel" id="' + panelId + '" role="region" aria-label="' + escapeHtml(item.title) + '" aria-hidden="true"><div class="experience-accordion-content">' + textParagraphs(item.value) + '</div></div>' +
-        '</article>';
-    }).join("");
+    return entries.filter(function (item) { return item.visible && item.content; }).map(function (item, index) { return accordionMarkup(item, index, false); }).join("");
   }
 
   function initExperienceAccordions(root) {
@@ -146,23 +176,10 @@
       if (!trigger || !root.contains(trigger)) return;
       var accordion = trigger.closest("[data-experience-accordion]");
       var wasOpen = accordion.classList.contains("is-open");
-      root.querySelectorAll("[data-experience-accordion]").forEach(function (item) {
-        item.classList.remove("is-open");
-        var itemTrigger = item.querySelector("[data-experience-accordion-trigger]");
-        var panel = item.querySelector(".experience-accordion-panel");
-        itemTrigger.setAttribute("aria-expanded", "false");
-        panel.setAttribute("aria-hidden", "true");
-      });
-      if (!wasOpen) {
-        accordion.classList.add("is-open");
-        trigger.setAttribute("aria-expanded", "true");
-        accordion.querySelector(".experience-accordion-panel").setAttribute("aria-hidden", "false");
-      }
+      accordion.classList.toggle("is-open", !wasOpen);
+      trigger.setAttribute("aria-expanded", String(!wasOpen));
+      accordion.querySelector(".experience-accordion-panel").setAttribute("aria-hidden", String(wasOpen));
     });
-  }
-
-  function publicFaq(items) {
-    return items.map(function (item) { var question = typeof item === "object" ? item.question : item; var answer = typeof item === "object" ? item.answer : ""; return '<details class="event-faq"><summary>' + escapeHtml(question) + '</summary><p>' + escapeHtml(answer) + '</p></details>'; }).join("");
   }
 
   function ticketTypeRow(type) {
