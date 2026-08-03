@@ -20,6 +20,7 @@ const required = [
   "docs/TICKETING_DEPLOYMENT.md",
   "docs/TICKETING_PRODUCTION_CHECKLIST.md",
   ".env.example",
+  ".htaccess",
 ];
 
 const missing = required.filter((file) => !existsSync(join(root, file)));

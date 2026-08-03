@@ -1,0 +1,15 @@
+Options -Indexes
+
+<Files ".env">
+  Require all denied
+</Files>
+
+<FilesMatch "^\.">
+  Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^api(?:/(.*))?$ api/index.php [QSA,L]
+  RewriteRule ^eventos/([a-z0-9-]+)/?$ eventos/evento.html?slug=$1 [QSA,L]
+</IfModule>
