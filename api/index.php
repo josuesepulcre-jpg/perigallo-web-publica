@@ -205,6 +205,23 @@ try {
         return;
     }
 
+    if ($method === 'PATCH' && preg_match('#^/admin/events/([0-9]+)/public-information$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        $event = $ticketing->adminUpdatePublicInformation((int) $m[1], read_json_body());
+        json_response(['ok' => true, 'event' => $event, 'public_information' => [
+            'included_text' => $event['included_text'] ?? '',
+            'access_conditions' => $event['access_conditions'] ?? '',
+            'minor_policy' => $event['minor_policy'] ?? '',
+            'refund_policy' => $event['refund_policy'] ?? '',
+            'faq' => $event['faq'] ?? [],
+            'contact_info' => $event['contact_info'] ?? '',
+            'recommendations' => $event['recommendations'] ?? '',
+            'dress_code' => $event['dress_code'] ?? '',
+            'accessibility_info' => $event['accessibility_info'] ?? '',
+        ]]);
+        return;
+    }
+
     if ($method === 'POST' && preg_match('#^/admin/events/([0-9]+)/(publish|unpublish)$#', $path, $m)) {
         AdminAuth::requireCsrf();
         json_response(['ok' => true, 'event' => $ticketing->adminSetEventPublication((int) $m[1], $m[2] === 'publish')]);

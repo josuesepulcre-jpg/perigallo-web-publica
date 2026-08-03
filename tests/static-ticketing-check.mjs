@@ -70,7 +70,9 @@ const api = readFileSync(join(root, "api/index.php"), "utf8");
 const ticketing = readFileSync(join(root, "api/src/Ticketing.php"), "utf8");
 for (const marker of [
   "/admin/events/([0-9]+)/preview",
+  "/admin/events/([0-9]+)/public-information",
   "adminUpdateEvent",
+  "adminUpdatePublicInformation",
   "adminDuplicateEvent",
   "adminDuplicateTicketType",
   "adminArchiveOrDeleteTicketType",
@@ -108,7 +110,7 @@ for (const field of ["included_text", "access_conditions", "minor_policy", "refu
 }
 
 const adminJs = readFileSync(join(root, "assets/js/ticketing-admin.js"), "utf8");
-for (const marker of ["function parseFaq", "line.indexOf(\"|\")", "Guardando cambios y abriendo vista previa", "post_max_size en Plesk", "No se han podido guardar los cambios. El contenido permanece en el editor."]) {
+for (const marker of ["function parseFaq", "line.indexOf(\"|\")", "Guardando cambios y abriendo vista previa", "post_max_size en Plesk", "savePublicInformation", "public-information", "No se han podido guardar los cambios. El contenido permanece en el editor."]) {
   if (!adminJs.includes(marker)) throw new Error(`Missing reliable public information behavior: ${marker}`);
 }
 const parseFaqSource = adminJs.match(/function parseFaq\(value\) \{[\s\S]*?\n  \}\n\n  function formData/);

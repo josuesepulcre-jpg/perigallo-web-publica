@@ -659,6 +659,53 @@ final class Ticketing
         return $this->adminGetEvent($eventId) ?? [];
     }
 
+    /**
+     * Guarda exclusivamente los textos públicos. No depende de fechas, SEO,
+     * recursos visuales ni otros campos obligatorios del evento completo.
+     */
+    public function adminUpdatePublicInformation(int $eventId, array $data): array
+    {
+        $existing = $this->requireAdminEvent($eventId);
+        $fields = ['included_text', 'access_conditions', 'minor_policy', 'refund_policy', 'contact_info', 'recommendations', 'dress_code', 'accessibility_info'];
+        $values = [];
+        foreach ($fields as $field) {
+            $value = array_key_exists($field, $data) ? $data[$field] : ($existing[$field] ?? '');
+            if ($value !== null && !is_string($value) && !is_numeric($value)) {
+                throw new InvalidArgumentException('El campo ' . $field . ' debe contener texto.');
+            }
+            // trim elimina solo espacios exteriores: se conservan saltos de línea y párrafos internos.
+            $values[$field] = trim((string) ($value ?? ''));
+        }
+        $faq = array_key_exists('faq', $data) ? $data['faq'] : ($existing['faq_json'] ?? null);
+        if ($faq !== null && !is_array($faq) && !is_string($faq)) {
+            throw new InvalidArgumentException('Las preguntas frecuentes no tienen un formato válido.');
+        }
+
+        try {
+            $stmt = $this->pdo->prepare(
+                'UPDATE events SET
+                  included_text=?, access_conditions=?, minor_policy=?, refund_policy=?, faq_json=?, contact_info=?, recommendations=?, dress_code=?, accessibility_info=?, updated_at=NOW()
+                  WHERE id=?'
+            );
+            $stmt->execute([
+                $values['included_text'],
+                $values['access_conditions'],
+                $values['minor_policy'],
+                $values['refund_policy'],
+                $this->jsonArray($faq),
+                $values['contact_info'],
+                $values['recommendations'],
+                $values['dress_code'],
+                $values['accessibility_info'],
+                $eventId,
+            ]);
+        } catch (\Throwable $error) {
+            error_log('Public event information save failed for event ' . $eventId . ': ' . $error->getMessage() . "\n" . $error->getTraceAsString());
+            throw $error;
+        }
+        return $this->adminGetEvent($eventId) ?? [];
+    }
+
     public function adminSetEventPublication(int $eventId, bool $publish): array
     {
         $event = $this->requireAdminEvent($eventId);

@@ -65,6 +65,7 @@ Endpoints principales:
 - `GET /api/admin/events/{id}`
 - `POST /api/admin/events`
 - `PUT /api/admin/events/{id}`
+- `PATCH /api/admin/events/{id}/public-information`
 - `POST /api/admin/events/{id}/publish`, `/unpublish` y `/duplicate`
 - `GET /api/admin/events/{id}/preview`
 - `POST /api/admin/events/{id}/ticket-types`

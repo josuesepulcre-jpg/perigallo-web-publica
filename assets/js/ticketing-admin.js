@@ -1,6 +1,6 @@
 (function () {
   var api = "/api";
-  var state = { csrf: "", event: null, dirty: false, saving: false, publicDirty: {} };
+  var state = { csrf: "", event: null, dirty: false, saving: false, publicDirty: {}, nonPublicDirty: false };
   var mediaState = { root: null, selected: {}, uploading: {}, messages: {}, previews: {}, dragIndex: null };
   var money = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" });
 
@@ -13,7 +13,11 @@
         try { data = raw ? JSON.parse(raw) : {}; } catch (error) { data = {}; }
         if (!response.ok || !data.ok) {
           var fallback = response.status === 413 ? "El servidor ha rechazado el contenido por tamaño. Aumenta post_max_size en Plesk." : "No se pudo completar la solicitud (HTTP " + response.status + ").";
-          throw new Error(data.error || fallback);
+          var requestError = new Error(data.error || fallback);
+          requestError.status = response.status;
+          requestError.statusText = response.statusText;
+          requestError.responseBody = raw;
+          throw requestError;
         }
         return data;
       });
@@ -147,7 +151,7 @@
 
   function setDirty(value) {
     state.dirty = value;
-    if (!value) state.publicDirty = {};
+    if (!value) { state.publicDirty = {}; state.nonPublicDirty = false; }
     var node = document.querySelector("[data-save-state]");
     if (node) node.textContent = value ? "Cambios sin guardar" : "Guardado";
     refreshPublicInformation();
@@ -206,6 +210,28 @@
     data.gallery = data.gallery.filter(function (item) { return typeof item === "string" && item.trim(); });
     data.faq = parseFaq(data.faq).rows;
     return data;
+  }
+
+  var publicInformationFields = ["included_text", "access_conditions", "minor_policy", "refund_policy", "faq", "contact_info", "recommendations", "dress_code", "accessibility_info"];
+
+  function publicInformationPayload(form) {
+    var payload = {};
+    publicInformationFields.forEach(function (name) {
+      var field = input(form, name);
+      payload[name] = field ? field.value : "";
+    });
+    payload.faq = parseFaq(payload.faq).rows;
+    return payload;
+  }
+
+  function fillPublicInformation(eventData) {
+    publicInformationFields.forEach(function (name) {
+      var field = publicInput(name);
+      if (!field) return;
+      var value = name === "faq" ? (eventData.faq || []).map(function (row) { return typeof row === "object" ? (row.question || "") + " | " + (row.answer || "") : row; }).join("\n") : eventData[name];
+      field.value = value == null ? "" : value;
+    });
+    refreshPublicInformation();
   }
 
   function publicInput(name) { return document.querySelector('[data-public-input][name="' + name + '"]'); }
@@ -286,6 +312,40 @@
     }).finally(function () { setEditorSaving(false); });
   }
 
+  function savePublicInformation(id, form) {
+    if (state.saving) return Promise.reject(new Error("Ya se están guardando los cambios."));
+    var payload = publicInformationPayload(form);
+    var payloadJson = JSON.stringify(payload);
+    setEditorSaving(true);
+    return jsonRequest(api + "/admin/events/" + id + "/public-information", "PATCH", payload).then(function (data) {
+      state.event = data.event;
+      fillPublicInformation(data.event);
+      state.publicDirty = {};
+      setDirty(!!state.nonPublicDirty);
+      return data;
+    }).catch(function (error) {
+      // No se registra el contenido; solo metadatos útiles para diagnosticar el servidor.
+      console.error("Error guardando información pública", {
+        status: error.status || 0,
+        statusText: error.statusText || "",
+        responseBody: error.responseBody || "",
+        error: error.message,
+        payloadKeys: Object.keys(payload),
+        payloadSize: new Blob([payloadJson]).size
+      });
+      throw error;
+    }).finally(function () { setEditorSaving(false); });
+  }
+
+  function isPublicSectionActive() {
+    var section = document.querySelector("[data-editor-section].is-active");
+    return !!section && section.dataset.editorSection === "public";
+  }
+
+  function saveActiveEditorSection(id, form) {
+    return isPublicSectionActive() ? savePublicInformation(id, form) : saveEditorEvent(id, form);
+  }
+
   function switchEditorSection(name) {
     document.querySelectorAll("[data-editor-section]").forEach(function (section) { section.classList.toggle("is-active", section.dataset.editorSection === name); });
     document.querySelectorAll("[data-editor-tab]").forEach(function (tab) { tab.classList.toggle("is-active", tab.dataset.editorTab === name); });
@@ -347,12 +407,12 @@
     requireSession(function () {
       loadEditor(id).catch(showFatal);
       var form = document.querySelector("[data-event-form]");
-      form.addEventListener("input", function () { setDirty(true); });
-      form.addEventListener("change", function () { setDirty(true); });
+      form.addEventListener("input", function (event) { if (!event.target.matches("[data-public-input]")) state.nonPublicDirty = true; setDirty(true); });
+      form.addEventListener("change", function (event) { if (!event.target.matches("[data-public-input]")) state.nonPublicDirty = true; setDirty(true); });
       document.querySelectorAll("[data-editor-tab]").forEach(function (tab) { tab.addEventListener("click", function () { switchEditorSection(tab.dataset.editorTab); }); });
       document.querySelector("[data-save-event]").addEventListener("click", function () {
         editorNotice("Guardando...");
-        saveEditorEvent(id, form).then(function () { editorNotice("Cambios guardados correctamente."); }).catch(function (error) { editorNotice("No se han podido guardar los cambios. El contenido permanece en el editor. " + error.message, true); });
+        saveActiveEditorSection(id, form).then(function () { editorNotice(isPublicSectionActive() ? "Información pública guardada correctamente." : "Cambios guardados correctamente."); }).catch(function (error) { editorNotice("No se han podido guardar los cambios. El contenido permanece en el editor. " + error.message, true); });
       });
       document.querySelector("[data-publish-event]").addEventListener("click", function () {
         editorNotice("Guardando antes de publicar...");
@@ -370,7 +430,7 @@
         var showPreview = function () { previewWindow.location.replace("/admin/entradas/vista-previa/?id=" + id); };
         if (!state.dirty) return showPreview();
         editorNotice("Guardando cambios y abriendo vista previa...");
-        saveEditorEvent(id, form).then(showPreview).catch(function (error) { if (!previewWindow.closed) previewWindow.close(); editorNotice("No se ha podido guardar para abrir la vista previa. El contenido permanece en el editor. " + error.message, true); });
+        saveActiveEditorSection(id, form).then(showPreview).catch(function (error) { if (!previewWindow.closed) previewWindow.close(); editorNotice("No se ha podido guardar para abrir la vista previa. El contenido permanece en el editor. " + error.message, true); });
       });
       document.querySelector("[data-archive-event]").addEventListener("click", function () {
         if (window.confirm("¿Archivar o eliminar este evento? Las ventas existentes quedarán protegidas.")) jsonRequest(api + "/admin/events/" + id, "DELETE").then(function () { window.location.href = "/admin/entradas/"; }).catch(function (error) { editorNotice(error.message, true); });
