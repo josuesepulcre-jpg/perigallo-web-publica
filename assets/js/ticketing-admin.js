@@ -346,6 +346,12 @@
     return isPublicSectionActive() ? savePublicInformation(id, form) : saveEditorEvent(id, form);
   }
 
+  function saveForPreview(id, form) {
+    // La vista previa debe incluir recursos visuales u otros cambios pendientes,
+    // aunque el usuario esté situado en Información pública.
+    return state.nonPublicDirty ? saveEditorEvent(id, form) : saveActiveEditorSection(id, form);
+  }
+
   function switchEditorSection(name) {
     document.querySelectorAll("[data-editor-section]").forEach(function (section) { section.classList.toggle("is-active", section.dataset.editorSection === name); });
     document.querySelectorAll("[data-editor-tab]").forEach(function (tab) { tab.classList.toggle("is-active", tab.dataset.editorTab === name); });
@@ -430,7 +436,7 @@
         var showPreview = function () { previewWindow.location.replace("/admin/entradas/vista-previa/?id=" + id); };
         if (!state.dirty) return showPreview();
         editorNotice("Guardando cambios y abriendo vista previa...");
-        saveActiveEditorSection(id, form).then(showPreview).catch(function (error) { if (!previewWindow.closed) previewWindow.close(); editorNotice("No se ha podido guardar para abrir la vista previa. El contenido permanece en el editor. " + error.message, true); });
+        saveForPreview(id, form).then(showPreview).catch(function (error) { if (!previewWindow.closed) previewWindow.close(); editorNotice("No se ha podido guardar para abrir la vista previa. El contenido permanece en el editor. " + error.message, true); });
       });
       document.querySelector("[data-archive-event]").addEventListener("click", function () {
         if (window.confirm("¿Archivar o eliminar este evento? Las ventas existentes quedarán protegidas.")) jsonRequest(api + "/admin/events/" + id, "DELETE").then(function () { window.location.href = "/admin/entradas/"; }).catch(function (error) { editorNotice(error.message, true); });
@@ -563,6 +569,7 @@
       releasePreview(config.field);
       delete mediaState.selected[config.field];
       mediaState.messages[config.field] = "Archivo subido. Guarda el evento para confirmar el cambio.";
+      state.nonPublicDirty = true;
       setDirty(true);
     }).catch(function (error) { mediaState.messages[config.field] = "Error: " + error.message; }).finally(function () { delete mediaState.uploading[config.field]; renderEventMediaManager(); });
   }
@@ -582,7 +589,7 @@
         setGalleryValue(saved);
         mediaState.messages.gallery = failures.length ? "Error: " + failures.length + " archivo(s) no se han subido. Corrige esos archivos y vuelve a intentarlo." : "Galería actualizada. Guarda el evento para confirmar el cambio.";
         delete mediaState.uploading.gallery;
-        if (files.length !== failures.length) setDirty(true);
+        if (files.length !== failures.length) { state.nonPublicDirty = true; setDirty(true); }
         renderEventMediaManager();
         return;
       }
@@ -607,7 +614,7 @@
       mediaState.uploading.gallery = true;
       mediaState.messages.gallery = "Reemplazando imagen...";
       renderEventMediaManager();
-      uploadMedia(file, "gallery").then(function (media) { var saved = galleryValue(); saved[index] = media.url; setGalleryValue(saved); mediaState.messages.gallery = "Imagen reemplazada. Guarda el evento para confirmar el cambio."; setDirty(true); }).catch(function (uploadError) { mediaState.messages.gallery = "Error: " + uploadError.message; }).finally(function () { delete mediaState.uploading.gallery; renderEventMediaManager(); });
+      uploadMedia(file, "gallery").then(function (media) { var saved = galleryValue(); saved[index] = media.url; setGalleryValue(saved); mediaState.messages.gallery = "Imagen reemplazada. Guarda el evento para confirmar el cambio."; state.nonPublicDirty = true; setDirty(true); }).catch(function (uploadError) { mediaState.messages.gallery = "Error: " + uploadError.message; }).finally(function () { delete mediaState.uploading.gallery; renderEventMediaManager(); });
     });
     picker.click();
   }
@@ -639,15 +646,15 @@
       var field = button.dataset.mediaField;
       if (action === "choose") { var picker = root.querySelector('#' + mediaId(field)); if (picker) picker.click(); return; }
       if (action === "upload") { if (field === "gallery") uploadGallery(); else { var config = mediaConfigs().find(function (item) { return item.field === field; }); if (config) uploadSingle(config); } return; }
-      if (action === "remove" && window.confirm("¿Quitar este recurso del evento? El archivo seguirá protegido en el servidor, pero dejará de mostrarse al guardar.")) { releasePreview(field); delete mediaState.selected[field]; setMediaValue(field, ""); if (field === "social_image_url") setMediaValue("seo_image_url", ""); mediaState.messages[field] = "Recurso eliminado del evento. Guarda para confirmar el cambio."; setDirty(true); renderEventMediaManager(); return; }
+      if (action === "remove" && window.confirm("¿Quitar este recurso del evento? El archivo seguirá protegido en el servidor, pero dejará de mostrarse al guardar.")) { releasePreview(field); delete mediaState.selected[field]; setMediaValue(field, ""); if (field === "social_image_url") setMediaValue("seo_image_url", ""); mediaState.messages[field] = "Recurso eliminado del evento. Guarda para confirmar el cambio."; state.nonPublicDirty = true; setDirty(true); renderEventMediaManager(); return; }
       var index = Number(button.dataset.galleryIndex);
-      if (action === "gallery-remove" && window.confirm("¿Quitar esta imagen de la galería del evento?")) { var saved = galleryValue(); saved.splice(index, 1); setGalleryValue(saved); mediaState.messages.gallery = "Imagen eliminada de la galería. Guarda para confirmar el cambio."; setDirty(true); renderEventMediaManager(); }
+      if (action === "gallery-remove" && window.confirm("¿Quitar esta imagen de la galería del evento?")) { var saved = galleryValue(); saved.splice(index, 1); setGalleryValue(saved); mediaState.messages.gallery = "Imagen eliminada de la galería. Guarda para confirmar el cambio."; state.nonPublicDirty = true; setDirty(true); renderEventMediaManager(); }
       if (action === "gallery-remove-pending") { var pending = mediaState.selected.gallery || []; releasePreview("gallery-" + index); pending.splice(index, 1); mediaState.selected.gallery = pending; renderEventMediaManager(); }
       if (action === "gallery-replace") replaceGallery(index);
     });
     root.addEventListener("dragstart", function (event) { var item = event.target.closest("[data-gallery-index]"); if (!item) return; mediaState.dragIndex = Number(item.dataset.galleryIndex); item.classList.add("is-dragging"); });
     root.addEventListener("dragover", function (event) { if (event.target.closest("[data-gallery-index]")) event.preventDefault(); });
-    root.addEventListener("drop", function (event) { var item = event.target.closest("[data-gallery-index]"); if (!item || mediaState.dragIndex == null) return; event.preventDefault(); var from = mediaState.dragIndex; var to = Number(item.dataset.galleryIndex); var saved = galleryValue(); if (from !== to) { var moved = saved.splice(from, 1)[0]; saved.splice(to, 0, moved); setGalleryValue(saved); mediaState.messages.gallery = "Orden actualizado. Guarda el evento para confirmar el cambio."; setDirty(true); } mediaState.dragIndex = null; renderEventMediaManager(); });
+    root.addEventListener("drop", function (event) { var item = event.target.closest("[data-gallery-index]"); if (!item || mediaState.dragIndex == null) return; event.preventDefault(); var from = mediaState.dragIndex; var to = Number(item.dataset.galleryIndex); var saved = galleryValue(); if (from !== to) { var moved = saved.splice(from, 1)[0]; saved.splice(to, 0, moved); setGalleryValue(saved); mediaState.messages.gallery = "Orden actualizado. Guarda el evento para confirmar el cambio."; state.nonPublicDirty = true; setDirty(true); } mediaState.dragIndex = null; renderEventMediaManager(); });
     root.addEventListener("dragend", function () { mediaState.dragIndex = null; root.querySelectorAll(".is-dragging").forEach(function (item) { item.classList.remove("is-dragging"); }); });
   }
 

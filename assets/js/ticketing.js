@@ -24,6 +24,11 @@
     });
   }
 
+  function previewAssetUrl(url, preview) {
+    if (!url || !preview) return url;
+    return url + (url.indexOf("?") === -1 ? "?" : "&") + "preview=" + Date.now();
+  }
+
   function eventCard(event) {
     var href = "/eventos/" + encodeURIComponent(event.slug) + "/";
     return [
@@ -69,7 +74,7 @@
       return;
     }
     var endpoint = preview ? api + "/admin/events/" + encodeURIComponent(previewId) + "/preview" : api + "/events/" + encodeURIComponent(slug);
-    request(endpoint).then(function (data) {
+    request(endpoint, preview ? { cache: "no-store" } : undefined).then(function (data) {
       var event = data.event;
       if (!preview) document.title = (event.seo_title || event.title) + " | Entradas Perigallo";
       root.innerHTML = renderEventDetail(event, preview);
@@ -81,13 +86,13 @@
   function renderEventDetail(event, preview) {
       var types = event.ticket_types || [];
       var onSale = types.filter(function (type) { return (type.effective_status || type.status) === "on_sale"; });
-      var gallery = (event.gallery || []).filter(Boolean).map(function (url) { return '<img loading="lazy" src="' + escapeAttr(url) + '" alt="Detalle de ' + escapeHtml(event.title) + '">'; }).join("");
-      var logo = event.logo_url ? '<img class="event-logo" src="' + escapeAttr(event.logo_url) + '" alt="Logotipo de ' + escapeHtml(event.title) + '">' : '';
-      var video = event.video_url ? '<section class="event-video"><video controls preload="metadata" src="' + escapeAttr(event.video_url) + '">Tu navegador no puede reproducir este vídeo.</video></section>' : '';
+      var gallery = (event.gallery || []).filter(Boolean).map(function (url) { return '<img loading="lazy" src="' + escapeAttr(previewAssetUrl(url, preview)) + '" alt="Detalle de ' + escapeHtml(event.title) + '">'; }).join("");
+      var logo = event.logo_url ? '<img class="event-logo" src="' + escapeAttr(previewAssetUrl(event.logo_url, preview)) + '" alt="Logotipo de ' + escapeHtml(event.title) + '">' : '';
+      var video = event.video_url ? '<section class="event-video"><video controls preload="metadata" src="' + escapeAttr(previewAssetUrl(event.video_url, preview)) + '">Tu navegador no puede reproducir este vídeo.</video></section>' : '';
       var action = preview ? '<button class="ticket-btn primary" type="button" disabled>Vista previa: compra desactivada</button>' : (onSale.length ? '<a class="ticket-btn primary" href="/entradas/checkout/?event=' + encodeURIComponent(event.slug) + '">Comprar entradas</a>' : '<span class="ticket-status">' + (types.length ? 'Las entradas no están disponibles en este momento.' : 'Próximamente anunciaremos las entradas.') + '</span>');
       return [
         '<div class="ticket-detail">',
-        '<div class="ticket-detail-media" style="background-image:url(' + escapeAttr(event.image_url || "/assets/images/finca-la-llaguna-principal.jpg") + ')"></div>',
+        '<div class="ticket-detail-media" style="background-image:url(' + escapeAttr(previewAssetUrl(event.image_url || "/assets/images/finca-la-llaguna-principal.jpg", preview)) + ')"></div>',
         '<div>',
         logo,
         '<span class="ticket-eyebrow">' + escapeHtml(event.location) + '</span>',
