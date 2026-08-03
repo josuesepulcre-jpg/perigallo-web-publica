@@ -466,14 +466,14 @@
     var available = Math.max(0, Number(type.available || 0));
     var max = Math.max(0, Math.min(available, Number(type.max_per_order || available)));
     var unavailable = max === 0;
-    var availability = unavailable ? "Entrada agotada" : (available <= 8 ? "Últimas " + available + " entradas" : available + " entradas disponibles");
+    var availability = unavailable ? "Sin disponibilidad" : "Plazas limitadas";
     return [
       '<article class="checkout-ticket' + (unavailable ? ' is-unavailable' : '') + '" data-ticket-card>',
       '<div class="checkout-ticket-copy"><h3>' + escapeHtml(type.name) + '</h3>',
       type.description ? '<p>' + escapeHtml(type.description) + '</p>' : '',
       '<div class="checkout-ticket-meta"><span>' + escapeHtml(availability) + '</span>' + (type.requires_promo ? '<span>Código necesario</span>' : '') + '</div></div>',
       '<div class="checkout-ticket-controls"><div class="checkout-ticket-price">' + cents(price) + '<small>por persona</small></div>',
-      '<div class="quantity-stepper"><button type="button" data-quantity-action="decrease" aria-label="Restar una entrada de ' + escapeAttr(type.name) + '" disabled>−</button><output data-quantity-output aria-live="polite">0</output><button type="button" data-quantity-action="increase" aria-label="Añadir una entrada de ' + escapeAttr(type.name) + '"' + (unavailable ? ' disabled' : '') + '>+</button></div>',
+      '<div class="quantity-stepper"><output data-quantity-output aria-live="polite">0</output><div class="quantity-stepper-actions"><button type="button" data-quantity-action="increase" aria-label="Añadir una entrada de ' + escapeAttr(type.name) + '"' + (unavailable ? ' disabled' : '') + '>+</button><button type="button" data-quantity-action="decrease" aria-label="Restar una entrada de ' + escapeAttr(type.name) + '" disabled>−</button></div></div>',
       '<input class="checkout-quantity-input" min="0" max="' + max + '" value="0" type="number" name="ticket_' + type.id + '" data-ticket-type="' + type.id + '" data-ticket-name="' + escapeAttr(type.name) + '" data-ticket-price="' + price + '">',
       '<div class="checkout-ticket-subtotal" data-ticket-subtotal></div></div></article>'
     ].join("");
