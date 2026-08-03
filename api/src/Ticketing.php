@@ -777,30 +777,51 @@ final class Ticketing
         return $this->adminCreateTicketType($eventId, $copy);
     }
 
-    public function adminUploadImage(array $file): array
+    public function adminUploadImage(array $file, string $kind = 'image'): array
     {
         if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-            throw new RuntimeException('No se pudo recibir la imagen.');
+            throw new RuntimeException('No se pudo recibir el archivo.');
         }
-        if ((int) ($file['size'] ?? 0) < 1 || (int) $file['size'] > 5 * 1024 * 1024) {
-            throw new RuntimeException('La imagen debe pesar menos de 5 MB.');
+        $allowedKinds = ['image', 'card', 'social', 'gallery', 'logo', 'video'];
+        if (!in_array($kind, $allowedKinds, true)) {
+            throw new RuntimeException('Tipo de recurso no permitido.');
         }
         $tmp = (string) ($file['tmp_name'] ?? '');
-        $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($tmp);
-        $extensions = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/avif' => 'avif'];
-        if (!isset($extensions[$mime])) {
-            throw new RuntimeException('Formato no permitido. Usa JPG, PNG, WebP o AVIF.');
+        if ($tmp === '' || !is_uploaded_file($tmp)) {
+            throw new RuntimeException('El archivo recibido no es válido.');
         }
-        $directory = dirname(__DIR__, 2) . '/assets/uploads/events';
+        $isVideo = $kind === 'video';
+        $maxSize = $isVideo ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
+        if ((int) ($file['size'] ?? 0) < 1 || (int) $file['size'] > $maxSize) {
+            throw new RuntimeException($isVideo ? 'El vídeo debe pesar menos de 50 MB.' : 'La imagen debe pesar menos de 5 MB.');
+        }
+        $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($tmp);
+        $extensions = $isVideo
+            ? ['video/mp4' => 'mp4', 'video/webm' => 'webm', 'video/quicktime' => 'mov']
+            : ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/avif' => 'avif'];
+        if (!isset($extensions[$mime])) {
+            throw new RuntimeException($isVideo ? 'Formato no permitido. Usa MP4, WebM o MOV.' : 'Formato no permitido. Usa JPG, PNG, WebP o AVIF.');
+        }
+        $extension = strtolower(pathinfo((string) ($file['name'] ?? ''), PATHINFO_EXTENSION));
+        $allowedFileExtensions = $isVideo ? ['mp4', 'webm', 'mov'] : ['jpg', 'jpeg', 'png', 'webp', 'avif'];
+        if (!in_array($extension, $allowedFileExtensions, true)) {
+            throw new RuntimeException($isVideo ? 'La extensión del vídeo no es válida.' : 'La extensión de la imagen no es válida.');
+        }
+        $directory = dirname(__DIR__, 2) . '/assets/uploads/events' . ($isVideo ? '/videos' : '');
         if (!is_dir($directory) && !mkdir($directory, 0755, true) && !is_dir($directory)) {
-            throw new RuntimeException('No se pudo preparar el directorio de imagenes.');
+            throw new RuntimeException('No se pudo preparar el directorio de subidas.');
         }
         $name = date('Ymd-His') . '-' . bin2hex(random_bytes(8)) . '.' . $extensions[$mime];
         $target = $directory . '/' . $name;
         if (!move_uploaded_file($tmp, $target)) {
-            throw new RuntimeException('No se pudo guardar la imagen.');
+            throw new RuntimeException('No se pudo guardar el archivo.');
         }
-        return ['url' => '/assets/uploads/events/' . $name];
+        return [
+            'url' => '/assets/uploads/events' . ($isVideo ? '/videos' : '') . '/' . $name,
+            'filename' => $name,
+            'mime_type' => $mime,
+            'media_type' => $isVideo ? 'video' : 'image',
+        ];
     }
 
     public function scanTicket(array $data): array
@@ -1198,6 +1219,7 @@ final class Ticketing
             'social_image_url' => $event['social_image_url'] ?? null,
             'gallery' => $this->decodedArray($event['gallery_json'] ?? null),
             'video_url' => $event['video_url'] ?? null,
+            'logo_url' => $event['logo_url'] ?? null,
             'location' => $event['location'],
             'address' => $event['address'],
             'maps_url' => $event['maps_url'] ?? null,

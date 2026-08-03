@@ -158,5 +158,7 @@ https://perigallo.com/api/redsys/notification
 - El TPV se abre como redireccion segura.
 - La confirmacion de pago depende de la notificacion servidor a servidor.
 - Si el email del servidor no esta configurado, los envios quedaran registrados como error en `email_deliveries`; el pedido/ticket no se pierde.
-- La subida de imágenes se guarda en `assets/uploads/events/`. El proceso PHP debe tener permiso de escritura únicamente sobre esa carpeta; no se suben esos archivos al repositorio.
+- El editor sube portada, tarjeta, imagen social, logotipo y galería a `assets/uploads/events/`; los vídeos promocionales se guardan en `assets/uploads/events/videos/`. El proceso PHP debe tener permiso de escritura únicamente sobre esas carpetas; los archivos subidos no se versionan en Git.
+- Formatos de imagen admitidos: JPG, PNG, WebP y AVIF, hasta 5 MB. Formatos de vídeo admitidos: MP4, WebM y MOV, hasta 50 MB. SVG no se admite para evitar servir contenido vectorial no saneado.
+- Para vídeos de más de 16 MB, ajustar en Plesk `upload_max_filesize` y `post_max_size` a al menos `64M` antes de probar la subida.
 - En este alojamiento, confirmar siempre el `DOCROOT` real de Plesk antes de sincronizar archivos. El archivo `.env` debe existir solamente en el directorio servido y no debe entrar en Git.

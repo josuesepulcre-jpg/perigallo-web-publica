@@ -76,10 +76,21 @@ for (const marker of [
   "publication_at <= NOW()",
   "require_suite_service",
   "integrationUpdateExperience",
+  "media_type",
+  "video/quicktime",
+  "logo_url",
 ]) {
   if (!(api + ticketing).includes(marker)) {
     throw new Error(`Missing event editor contract: ${marker}`);
   }
+}
+
+const editor = readFileSync(join(root, "admin/entradas/evento/index.html"), "utf8");
+for (const marker of ["data-event-media-manager", "name=\"social_image_url\"", "name=\"gallery\""]) {
+  if (!editor.includes(marker)) throw new Error(`Missing media editor marker: ${marker}`);
+}
+if (editor.includes("Galería (una URL por línea)") || editor.includes("data-upload-media")) {
+  throw new Error("Legacy media uploader is still present in the event editor.");
 }
 
 console.log("Static ticketing checks passed");

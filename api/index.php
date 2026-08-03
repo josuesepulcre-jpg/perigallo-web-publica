@@ -195,7 +195,7 @@ try {
 
     if ($method === 'POST' && $path === '/admin/media') {
         AdminAuth::requireCsrf();
-        json_response(['ok' => true, 'media' => $ticketing->adminUploadImage($_FILES['file'] ?? [])], 201);
+        json_response(['ok' => true, 'media' => $ticketing->adminUploadImage($_FILES['file'] ?? [], (string) ($_POST['kind'] ?? 'image'))], 201);
         return;
     }
 

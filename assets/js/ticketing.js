@@ -82,11 +82,14 @@
       var types = event.ticket_types || [];
       var onSale = types.filter(function (type) { return (type.effective_status || type.status) === "on_sale"; });
       var gallery = (event.gallery || []).filter(Boolean).map(function (url) { return '<img loading="lazy" src="' + escapeAttr(url) + '" alt="Detalle de ' + escapeHtml(event.title) + '">'; }).join("");
+      var logo = event.logo_url ? '<img class="event-logo" src="' + escapeAttr(event.logo_url) + '" alt="Logotipo de ' + escapeHtml(event.title) + '">' : '';
+      var video = event.video_url ? '<section class="event-video"><video controls preload="metadata" src="' + escapeAttr(event.video_url) + '">Tu navegador no puede reproducir este vídeo.</video></section>' : '';
       var action = preview ? '<button class="ticket-btn primary" type="button" disabled>Vista previa: compra desactivada</button>' : (onSale.length ? '<a class="ticket-btn primary" href="/entradas/checkout/?event=' + encodeURIComponent(event.slug) + '">Comprar entradas</a>' : '<span class="ticket-status">' + (types.length ? 'Las entradas no están disponibles en este momento.' : 'Próximamente anunciaremos las entradas.') + '</span>');
       return [
         '<div class="ticket-detail">',
         '<div class="ticket-detail-media" style="background-image:url(' + escapeAttr(event.image_url || "/assets/images/finca-la-llaguna-principal.jpg") + ')"></div>',
         '<div>',
+        logo,
         '<span class="ticket-eyebrow">' + escapeHtml(event.location) + '</span>',
         '<h1 class="ticket-title">' + escapeHtml(event.title) + '</h1>',
         event.subtitle ? '<p class="event-subtitle">' + escapeHtml(event.subtitle) + '</p>' : '',
@@ -96,7 +99,8 @@
         action,
         '</div>',
         '</div>',
-        '<section class="event-story"><div><span class="ticket-eyebrow">La experiencia</span><h2>' + escapeHtml(event.title) + '</h2><p class="ticket-copy">' + escapeHtml(event.description || "") + '</p>' + (event.recommendations ? '<p class="ticket-copy">' + escapeHtml(event.recommendations) + '</p>' : '') + '</div>' + (event.video_url ? '<a class="ticket-btn" href="' + escapeAttr(event.video_url) + '" target="_blank" rel="noopener noreferrer">Ver vídeo</a>' : '') + '</section>',
+        '<section class="event-story"><div><span class="ticket-eyebrow">La experiencia</span><h2>' + escapeHtml(event.title) + '</h2><p class="ticket-copy">' + escapeHtml(event.description || "") + '</p>' + (event.recommendations ? '<p class="ticket-copy">' + escapeHtml(event.recommendations) + '</p>' : '') + '</div></section>',
+        video,
         gallery ? '<section class="event-gallery">' + gallery + '</section>' : '',
         event.included_text || event.access_conditions || event.minor_policy || event.refund_policy || event.accessibility_info ? '<section class="event-info-grid">' + publicInfo(event) + '</section>' : '',
         event.parking_info || event.access_notes || event.maps_url ? '<section class="event-arrival"><h2>Llegar y disfrutar</h2><p>' + escapeHtml(event.access_notes || event.parking_info || "") + '</p>' + (event.maps_url ? '<a class="ticket-btn" href="' + escapeAttr(event.maps_url) + '" target="_blank" rel="noopener noreferrer">Abrir mapa</a>' : '') + '</section>' : '',

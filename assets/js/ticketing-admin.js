@@ -1,6 +1,7 @@
 (function () {
   var api = "/api";
   var state = { csrf: "", event: null, dirty: false };
+  var mediaState = { root: null, selected: {}, uploading: {}, messages: {}, previews: {}, dragIndex: null };
   var money = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" });
 
   function request(url, options) {
@@ -153,7 +154,9 @@
     Array.prototype.forEach.call(form.elements, function (field) {
       if (!field.name) return;
       var value = eventData[field.name];
-      if (field.name === "gallery") value = (eventData.gallery || []).join("\n");
+      if (field.name === "gallery") value = JSON.stringify(eventData.gallery || []);
+      if (field.name === "social_image_url" && !value) value = eventData.seo_image_url || "";
+      if (field.name === "seo_image_url" && !value) value = eventData.social_image_url || "";
       if (field.name === "faq") value = (eventData.faq || []).map(function (row) { return typeof row === "object" ? (row.question || "") + " | " + (row.answer || "") : row; }).join("\n");
       if (field.type === "checkbox") field.checked = !!value;
       else if (field.type === "datetime-local") field.value = dateInput(value);
@@ -163,6 +166,7 @@
     document.querySelector("[data-editor-status]").textContent = statusLabel(eventData.effective_status || eventData.status);
     document.querySelector("[data-editor-status]").className = "status-pill status-" + (eventData.effective_status || eventData.status);
     document.querySelector("[data-ticket-count]").textContent = (eventData.ticket_types || []).length;
+    renderEventMediaManager();
   }
 
   function formData(form) {
@@ -171,7 +175,9 @@
       if (!field.name || field.type === "button" || field.type === "submit") return;
       data[field.name] = field.type === "checkbox" ? field.checked : field.value;
     });
-    data.gallery = String(data.gallery || "").split(/\r?\n/).map(function (item) { return item.trim(); }).filter(Boolean);
+    try { data.gallery = JSON.parse(String(data.gallery || "[]")); } catch (error) { data.gallery = []; }
+    if (!Array.isArray(data.gallery)) data.gallery = [];
+    data.gallery = data.gallery.filter(function (item) { return typeof item === "string" && item.trim(); });
     data.faq = String(data.faq || "").split(/\r?\n/).map(function (line) {
       var parts = line.split("|");
       return { question: (parts.shift() || "").trim(), answer: parts.join("|").trim() };
@@ -251,15 +257,24 @@
         jsonRequest(api + "/admin/events/" + id, "PUT", formData(form)).then(function () { return jsonRequest(api + "/admin/events/" + id + "/publish", "POST", {}); }).then(function (data) { state.event = data.event; fillEventForm(data.event); setDirty(false); editorNotice("Evento publicado."); }).catch(function (error) { editorNotice(error.message, true); });
       });
       document.querySelector("[data-preview-event]").addEventListener("click", function () {
-        var open = function () { window.open("/admin/entradas/vista-previa/?id=" + id, "_blank", "noopener"); };
-        if (!state.dirty) return open();
-        jsonRequest(api + "/admin/events/" + id, "PUT", formData(form)).then(function (data) { state.event = data.event; setDirty(false); open(); }).catch(function (error) { editorNotice(error.message, true); });
+        // Open the tab while this click still has user activation. Opening it after
+        // an async save is treated as a popup and can be blocked by the browser.
+        var previewWindow = window.open("about:blank", "_blank");
+        if (!previewWindow) {
+          editorNotice("El navegador ha bloqueado la vista previa. Permite las ventanas emergentes para este sitio e inténtalo de nuevo.", true);
+          return;
+        }
+        previewWindow.opener = null;
+        var showPreview = function () { previewWindow.location.replace("/admin/entradas/vista-previa/?id=" + id); };
+        if (!state.dirty) return showPreview();
+        editorNotice("Guardando cambios y abriendo vista previa...");
+        jsonRequest(api + "/admin/events/" + id, "PUT", formData(form)).then(function (data) { state.event = data.event; setDirty(false); showPreview(); }).catch(function (error) { if (!previewWindow.closed) previewWindow.close(); editorNotice(error.message, true); });
       });
       document.querySelector("[data-archive-event]").addEventListener("click", function () {
         if (window.confirm("¿Archivar o eliminar este evento? Las ventas existentes quedarán protegidas.")) jsonRequest(api + "/admin/events/" + id, "DELETE").then(function () { window.location.href = "/admin/entradas/"; }).catch(function (error) { editorNotice(error.message, true); });
       });
       initTicketForm(id);
-      initMediaUpload();
+      initEventMediaManager();
       window.addEventListener("beforeunload", function (event) { if (state.dirty) { event.preventDefault(); event.returnValue = ""; } });
     });
   }
@@ -292,17 +307,182 @@
     });
   }
 
-  function initMediaUpload() {
-    var button = document.querySelector("[data-upload-media]");
-    if (!button) return;
-    button.addEventListener("click", function () {
-      var file = document.querySelector("[data-media-file]").files[0];
-      var status = document.querySelector("[data-upload-state]");
-      if (!file) { status.textContent = "Selecciona una imagen primero."; return; }
-      status.textContent = "Subiendo...";
-      var body = new FormData(); body.append("file", file);
-      request(api + "/admin/media", { method: "POST", headers: { "X-CSRF-Token": state.csrf }, body: body }).then(function (data) { input(document.querySelector("[data-event-form]"), "image_url").value = data.media.url; setDirty(true); status.textContent = "Imagen subida. Se ha asignado como portada."; }).catch(function (error) { status.textContent = error.message; });
+  function mediaConfigs() {
+    return [
+      { field: "image_url", kind: "image", label: "Imagen de portada", description: "Imagen principal de la página pública del evento.", accept: "image/jpeg,image/png,image/webp,image/avif", recommendation: "Panorámica · ideal 1600 × 900 · máximo 5 MB", preview: "cover" },
+      { field: "card_image_url", kind: "card", label: "Imagen para tarjeta", description: "Aparece en listados y tarjetas de próximas experiencias.", accept: "image/jpeg,image/png,image/webp,image/avif", recommendation: "Horizontal · ideal 1200 × 900 · máximo 5 MB", preview: "card" },
+      { field: "social_image_url", kind: "social", label: "Imagen social", description: "Se reserva para compartir la experiencia y sus metadatos sociales.", accept: "image/jpeg,image/png,image/webp,image/avif", recommendation: "1200 × 630 px · formato Open Graph · máximo 5 MB", preview: "social" },
+      { field: "video_url", kind: "video", label: "Vídeo promocional", description: "Una pieza breve para acompañar la historia pública del evento.", accept: "video/mp4,video/webm,video/quicktime", recommendation: "MP4, WebM o MOV · ideal 1920 × 1080 · máximo 50 MB", preview: "video" },
+      { field: "logo_url", kind: "logo", label: "Logotipo del evento", description: "Identidad visual del evento; se muestra sobre fondo neutro.", accept: "image/png,image/webp,image/jpeg,image/avif", recommendation: "PNG o WebP preferentemente · fondo transparente · máximo 5 MB", preview: "logo" }
+    ];
+  }
+
+  function mediaForm() { return document.querySelector("[data-event-form]"); }
+  function mediaValue(field) { var node = input(mediaForm(), field); return node ? node.value : ""; }
+  function setMediaValue(field, value) { var node = input(mediaForm(), field); if (node) node.value = value || ""; }
+  function galleryValue() { try { var parsed = JSON.parse(mediaValue("gallery") || "[]"); return Array.isArray(parsed) ? parsed.filter(Boolean) : []; } catch (error) { return []; } }
+  function setGalleryValue(values) { setMediaValue("gallery", JSON.stringify(values)); }
+  function mediaId(field) { return "event-media-" + field.replace(/[^a-z0-9_-]/gi, "-"); }
+  function releasePreview(field) { if (mediaState.previews[field]) { URL.revokeObjectURL(mediaState.previews[field]); delete mediaState.previews[field]; } }
+  function selectedPreview(field, file) { releasePreview(field); if (file) mediaState.previews[field] = URL.createObjectURL(file); return mediaState.previews[field] || ""; }
+  function isAllowedFile(file, config) {
+    var max = config.kind === "video" ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
+    var allowed = config.accept.split(",");
+    if (!file || !allowed.includes(file.type)) return "El formato del archivo no es válido para este recurso.";
+    if (!file.size || file.size > max) return "El archivo supera el límite de " + (config.kind === "video" ? "50" : "5") + " MB.";
+    return "";
+  }
+
+  function previewMarkup(config, url, label) {
+    if (!url) return '<div class="event-media-preview event-media-preview-empty event-media-preview-' + config.preview + '"><span>Vista previa disponible al subir el archivo</span></div>';
+    if (config.kind === "video") return '<div class="event-media-preview event-media-preview-video"><video controls preload="metadata" src="' + escapeHtml(url) + '">Tu navegador no puede reproducir este vídeo.</video></div>';
+    return '<div class="event-media-preview event-media-preview-' + config.preview + '"><img src="' + escapeHtml(url) + '" alt="Vista previa de ' + escapeHtml(label) + '"></div>';
+  }
+
+  function mediaCardMarkup(config) {
+    var file = mediaState.selected[config.field];
+    var current = mediaValue(config.field);
+    var preview = file ? (mediaState.previews[config.field] || selectedPreview(config.field, file)) : current;
+    var status = mediaState.messages[config.field] || "";
+    var uploading = !!mediaState.uploading[config.field];
+    return '<article class="event-media-card event-media-card-' + config.preview + '">' +
+      '<div class="event-media-card-head"><div><span class="ticket-eyebrow">' + escapeHtml(config.label) + '</span><p>' + escapeHtml(config.description) + '</p></div><span class="event-media-status' + (status.indexOf("Error") === 0 ? ' is-error' : '') + '">' + escapeHtml(status) + '</span></div>' +
+      previewMarkup(config, preview, config.label) +
+      '<p class="event-media-recommendation">' + escapeHtml(config.recommendation) + '</p>' +
+      '<input id="' + mediaId(config.field) + '" data-media-input data-media-field="' + config.field + '" type="file" accept="' + config.accept + '" hidden>' +
+      '<div class="event-media-file-name">' + escapeHtml(file ? file.name : (current ? "Archivo guardado" : "Ningún archivo seleccionado")) + '</div>' +
+      '<div class="event-media-actions"><button class="ticket-btn" type="button" data-media-action="choose" data-media-field="' + config.field + '">' + (current ? "Reemplazar" : "Seleccionar archivo") + '</button><button class="ticket-btn primary" type="button" data-media-action="upload" data-media-field="' + config.field + '"' + (!file || uploading ? " disabled" : "") + '>' + (uploading ? "Subiendo..." : "Subir archivo") + '</button>' + (current ? '<button class="text-action danger" type="button" data-media-action="remove" data-media-field="' + config.field + '">Eliminar</button>' : '') + '</div>' +
+      '</article>';
+  }
+
+  function galleryMarkup() {
+    var saved = galleryValue();
+    var selected = mediaState.selected.gallery || [];
+    var status = mediaState.messages.gallery || "";
+    var uploading = !!mediaState.uploading.gallery;
+    var savedItems = saved.map(function (url, index) {
+      return '<article class="event-gallery-item" draggable="true" data-gallery-index="' + index + '"><img src="' + escapeHtml(url) + '" alt="Imagen ' + (index + 1) + ' de la galería"><span class="event-gallery-order">' + (index + 1) + '</span><div><button class="text-action" type="button" data-media-action="gallery-replace" data-gallery-index="' + index + '">Reemplazar</button><button class="text-action danger" type="button" data-media-action="gallery-remove" data-gallery-index="' + index + '">Eliminar</button></div></article>';
+    }).join("");
+    var pendingItems = selected.map(function (file, index) { var key = "gallery-" + index; return '<article class="event-gallery-item is-pending"><img src="' + escapeHtml(mediaState.previews[key] || selectedPreview(key, file)) + '" alt="Pendiente: ' + escapeHtml(file.name) + '"><span class="event-gallery-pending">Pendiente</span><div><button class="text-action danger" type="button" data-media-action="gallery-remove-pending" data-gallery-index="' + index + '">Quitar</button></div></article>'; }).join("");
+    return '<article class="event-media-card event-media-card-gallery"><div class="event-media-card-head"><div><span class="ticket-eyebrow">Galería de imágenes</span><p>Añade las imágenes en el orden en que quieres mostrarlas. Arrastra las imágenes guardadas para reordenarlas.</p></div><span class="event-media-status' + (status.indexOf("Error") === 0 ? ' is-error' : '') + '">' + escapeHtml(status) + '</span></div><p class="event-media-recommendation">JPG, PNG, WebP o AVIF · ideal 1200 × 900 · máximo 5 MB por archivo</p><input id="event-media-gallery" data-media-input data-media-field="gallery" type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple hidden><div class="event-media-actions"><button class="ticket-btn" type="button" data-media-action="choose" data-media-field="gallery">Seleccionar imágenes</button><button class="ticket-btn primary" type="button" data-media-action="upload" data-media-field="gallery"' + (!selected.length || uploading ? " disabled" : "") + '>' + (uploading ? "Subiendo..." : "Subir imágenes") + '</button></div><div class="event-gallery-grid" data-gallery-grid>' + (savedItems || pendingItems ? savedItems + pendingItems : '<div class="event-gallery-empty">Todavía no hay imágenes en la galería.</div>') + '</div></article>';
+  }
+
+  function renderEventMediaManager() {
+    var root = mediaState.root || document.querySelector("[data-event-media-manager]");
+    if (!root || !mediaForm()) return;
+    mediaState.root = root;
+    root.innerHTML = mediaConfigs().map(mediaCardMarkup).join("") + galleryMarkup();
+  }
+
+  function uploadMedia(file, kind) {
+    var body = new FormData();
+    body.append("file", file);
+    body.append("kind", kind);
+    return request(api + "/admin/media", { method: "POST", headers: { "X-CSRF-Token": state.csrf }, body: body }).then(function (data) {
+      if (!data.media || !data.media.url) throw new Error("El servidor no devolvió la ruta del archivo.");
+      return data.media;
     });
+  }
+
+  function uploadSingle(config) {
+    var file = mediaState.selected[config.field];
+    var error = isAllowedFile(file, config);
+    if (error) { mediaState.messages[config.field] = "Error: " + error; renderEventMediaManager(); return; }
+    mediaState.uploading[config.field] = true;
+    mediaState.messages[config.field] = "Subiendo archivo...";
+    renderEventMediaManager();
+    uploadMedia(file, config.kind).then(function (media) {
+      setMediaValue(config.field, media.url);
+      if (config.field === "social_image_url") setMediaValue("seo_image_url", media.url);
+      releasePreview(config.field);
+      delete mediaState.selected[config.field];
+      mediaState.messages[config.field] = "Archivo subido. Guarda el evento para confirmar el cambio.";
+      setDirty(true);
+    }).catch(function (error) { mediaState.messages[config.field] = "Error: " + error.message; }).finally(function () { delete mediaState.uploading[config.field]; renderEventMediaManager(); });
+  }
+
+  function uploadGallery() {
+    var files = (mediaState.selected.gallery || []).slice();
+    if (!files.length) return;
+    mediaState.uploading.gallery = true;
+    var saved = galleryValue();
+    var index = 0;
+    var failures = [];
+    function next() {
+      if (index >= files.length) {
+        files.forEach(function (file, itemIndex) { releasePreview("gallery-" + itemIndex); });
+        mediaState.selected.gallery = failures;
+        failures.forEach(function (file, itemIndex) { selectedPreview("gallery-" + itemIndex, file); });
+        setGalleryValue(saved);
+        mediaState.messages.gallery = failures.length ? "Error: " + failures.length + " archivo(s) no se han subido. Corrige esos archivos y vuelve a intentarlo." : "Galería actualizada. Guarda el evento para confirmar el cambio.";
+        delete mediaState.uploading.gallery;
+        if (files.length !== failures.length) setDirty(true);
+        renderEventMediaManager();
+        return;
+      }
+      var file = files[index];
+      var error = isAllowedFile(file, { kind: "image", accept: "image/jpeg,image/png,image/webp,image/avif" });
+      if (error) { failures.push(file); mediaState.messages.gallery = "Error: " + file.name + ". " + error; index += 1; next(); return; }
+      mediaState.messages.gallery = "Subiendo " + (index + 1) + " de " + files.length + "...";
+      renderEventMediaManager();
+      uploadMedia(file, "gallery").then(function (media) { if (!saved.includes(media.url)) saved.push(media.url); }).catch(function (uploadError) { failures.push(file); mediaState.messages.gallery = "Error: " + file.name + ". " + uploadError.message; }).finally(function () { index += 1; next(); });
+    }
+    next();
+  }
+
+  function replaceGallery(index) {
+    var picker = document.createElement("input");
+    picker.type = "file";
+    picker.accept = "image/jpeg,image/png,image/webp,image/avif";
+    picker.addEventListener("change", function () {
+      var file = picker.files[0];
+      var error = isAllowedFile(file, { kind: "image", accept: picker.accept });
+      if (error) { mediaState.messages.gallery = "Error: " + error; renderEventMediaManager(); return; }
+      mediaState.uploading.gallery = true;
+      mediaState.messages.gallery = "Reemplazando imagen...";
+      renderEventMediaManager();
+      uploadMedia(file, "gallery").then(function (media) { var saved = galleryValue(); saved[index] = media.url; setGalleryValue(saved); mediaState.messages.gallery = "Imagen reemplazada. Guarda el evento para confirmar el cambio."; setDirty(true); }).catch(function (uploadError) { mediaState.messages.gallery = "Error: " + uploadError.message; }).finally(function () { delete mediaState.uploading.gallery; renderEventMediaManager(); });
+    });
+    picker.click();
+  }
+
+  function initEventMediaManager() {
+    var root = document.querySelector("[data-event-media-manager]");
+    if (!root) return;
+    mediaState.root = root;
+    root.addEventListener("change", function (event) {
+      var target = event.target;
+      if (!target.matches("[data-media-input]")) return;
+      var field = target.dataset.mediaField;
+      var config = mediaConfigs().find(function (item) { return item.field === field; });
+      var files = Array.from(target.files || []);
+      if (field === "gallery") {
+        mediaState.selected.gallery = (mediaState.selected.gallery || []).concat(files).filter(function (file, index, rows) { return rows.findIndex(function (item) { return item.name === file.name && item.size === file.size && item.lastModified === file.lastModified; }) === index; });
+        mediaState.selected.gallery.forEach(function (file, index) { selectedPreview("gallery-" + index, file); });
+      } else if (config && files[0]) {
+        mediaState.selected[field] = files[0];
+        selectedPreview(field, files[0]);
+      }
+      mediaState.messages[field] = "";
+      renderEventMediaManager();
+    });
+    root.addEventListener("click", function (event) {
+      var button = event.target.closest("[data-media-action]");
+      if (!button) return;
+      var action = button.dataset.mediaAction;
+      var field = button.dataset.mediaField;
+      if (action === "choose") { var picker = root.querySelector('#' + mediaId(field)); if (picker) picker.click(); return; }
+      if (action === "upload") { if (field === "gallery") uploadGallery(); else { var config = mediaConfigs().find(function (item) { return item.field === field; }); if (config) uploadSingle(config); } return; }
+      if (action === "remove" && window.confirm("¿Quitar este recurso del evento? El archivo seguirá protegido en el servidor, pero dejará de mostrarse al guardar.")) { releasePreview(field); delete mediaState.selected[field]; setMediaValue(field, ""); if (field === "social_image_url") setMediaValue("seo_image_url", ""); mediaState.messages[field] = "Recurso eliminado del evento. Guarda para confirmar el cambio."; setDirty(true); renderEventMediaManager(); return; }
+      var index = Number(button.dataset.galleryIndex);
+      if (action === "gallery-remove" && window.confirm("¿Quitar esta imagen de la galería del evento?")) { var saved = galleryValue(); saved.splice(index, 1); setGalleryValue(saved); mediaState.messages.gallery = "Imagen eliminada de la galería. Guarda para confirmar el cambio."; setDirty(true); renderEventMediaManager(); }
+      if (action === "gallery-remove-pending") { var pending = mediaState.selected.gallery || []; releasePreview("gallery-" + index); pending.splice(index, 1); mediaState.selected.gallery = pending; renderEventMediaManager(); }
+      if (action === "gallery-replace") replaceGallery(index);
+    });
+    root.addEventListener("dragstart", function (event) { var item = event.target.closest("[data-gallery-index]"); if (!item) return; mediaState.dragIndex = Number(item.dataset.galleryIndex); item.classList.add("is-dragging"); });
+    root.addEventListener("dragover", function (event) { if (event.target.closest("[data-gallery-index]")) event.preventDefault(); });
+    root.addEventListener("drop", function (event) { var item = event.target.closest("[data-gallery-index]"); if (!item || mediaState.dragIndex == null) return; event.preventDefault(); var from = mediaState.dragIndex; var to = Number(item.dataset.galleryIndex); var saved = galleryValue(); if (from !== to) { var moved = saved.splice(from, 1)[0]; saved.splice(to, 0, moved); setGalleryValue(saved); mediaState.messages.gallery = "Orden actualizado. Guarda el evento para confirmar el cambio."; setDirty(true); } mediaState.dragIndex = null; renderEventMediaManager(); });
+    root.addEventListener("dragend", function () { mediaState.dragIndex = null; root.querySelectorAll(".is-dragging").forEach(function (item) { item.classList.remove("is-dragging"); }); });
   }
 
   function initScanner() {
