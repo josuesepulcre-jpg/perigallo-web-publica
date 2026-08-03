@@ -99,7 +99,7 @@
   function renderEventDetail(event, preview) {
       var types = event.ticket_types || [];
       var gallery = (event.gallery || []).filter(Boolean).map(function (url) { return '<img loading="lazy" src="' + escapeAttr(previewAssetUrl(url, preview)) + '" alt="Detalle de ' + escapeHtml(event.title) + '">'; }).join("");
-      var logo = event.logo_url ? '<img class="event-logo" src="' + escapeAttr(previewAssetUrl(event.logo_url, preview)) + '" alt="Logotipo de ' + escapeHtml(event.title) + '">' : '';
+      var brand = event.logo_url ? '<div class="event-brand-signature"><img class="event-logo" src="' + escapeAttr(previewAssetUrl(event.logo_url, preview)) + '" alt="Logotipo de ' + escapeHtml(event.title) + '"></div>' : '';
       var imageUrl = previewAssetUrl(event.image_url || "/assets/images/finca-la-llaguna-principal.jpg", preview);
       var video = event.video_url ? '<div class="event-story-media"><section class="event-video"><video controls playsinline preload="metadata" poster="' + escapeAttr(imageUrl) + '" src="' + escapeAttr(previewAssetUrl(event.video_url, preview)) + '">Tu navegador no puede reproducir este vídeo.</video></section></div>' : '';
       var ticketCards = types.length ? types.map(function (type) { return ticketTypeRow(type, event, preview); }).join("") : '<p class="ticket-status event-access-empty">Próximamente anunciaremos las entradas.</p>';
@@ -107,13 +107,15 @@
       return [
         '<div class="event-detail-layout">',
         '<section class="ticket-detail event-hero">',
+        brand,
         '<figure class="ticket-detail-media event-hero-media"><img src="' + escapeAttr(imageUrl) + '" alt="Cartel de ' + escapeHtml(event.title) + '"></figure>',
         '<div class="event-hero-copy">',
-        logo,
-        '<span class="ticket-eyebrow">' + escapeHtml(event.location || "Perigallo") + '</span>',
+        '<div class="event-hero-introduction">',
+        '<span class="ticket-eyebrow">Experiencia Perigallo</span>',
         '<h1 class="ticket-title">' + escapeHtml(event.title) + '</h1>',
         event.subtitle ? '<p class="event-subtitle">' + escapeHtml(event.subtitle) + '</p>' : '',
         '<p class="ticket-copy event-intro">' + escapeHtml(event.short_description || event.description) + '</p>',
+        '</div>',
         '<section class="event-access">',
         '<div class="ticket-types">' + ticketCards + '</div>',
         '</section>',
@@ -291,7 +293,7 @@
 
   function ticketPurchaseAction(type, event, preview) {
     if (preview) {
-      return '<div class="ticket-access-action"><a class="ticket-btn primary" href="/entradas/checkout/?preview=1&amp;id=' + encodeURIComponent(event.id) + '">Probar recorrido de compra <span aria-hidden="true">→</span></a><p class="ticket-preview-note"><span aria-hidden="true">◦</span> Vista privada: puedes completar el recorrido sin crear un pedido ni acceder al pago.</p></div>';
+      return '<div class="ticket-access-action"><a class="ticket-btn primary" href="/entradas/checkout/?preview=1&amp;id=' + encodeURIComponent(event.id) + '">Probar recorrido de compra <span aria-hidden="true">→</span></a><p class="ticket-preview-note"><span aria-hidden="true">◦</span> Vista privada: el pedido y el pago se ejecutan en modo de pruebas, sin cargos ni aforo real.</p></div>';
     }
     if ((type.effective_status || type.status) === "on_sale") {
       return '<div class="ticket-access-action"><a class="ticket-btn primary" href="/entradas/checkout/?event=' + encodeURIComponent(event.slug) + '">Seleccionar entradas <span aria-hidden="true">→</span></a></div>';
