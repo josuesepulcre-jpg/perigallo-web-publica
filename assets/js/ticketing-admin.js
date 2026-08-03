@@ -4,7 +4,9 @@
   var money = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" });
 
   function request(url, options) {
-    return fetch(url, options || {}).then(function (response) {
+    options = options || {};
+    options.credentials = "same-origin";
+    return fetch(url, options).then(function (response) {
       return response.json().catch(function () { return { ok: false, error: "Respuesta no valida del servidor." }; }).then(function (data) {
         if (!response.ok || !data.ok) throw new Error(data.error || "No se pudo completar la solicitud.");
         return data;

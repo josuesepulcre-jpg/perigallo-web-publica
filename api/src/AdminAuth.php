@@ -10,6 +10,8 @@ final class AdminAuth
         if (session_status() === PHP_SESSION_ACTIVE) {
             return;
         }
+        // Aisla el panel de las cookies de sesiones heredadas (por ejemplo, WordPress).
+        session_name('perigallo_ticketing_admin');
         session_set_cookie_params([
             'lifetime' => 0,
             'path' => '/',
