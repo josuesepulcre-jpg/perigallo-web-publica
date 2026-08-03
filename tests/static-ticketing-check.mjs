@@ -49,6 +49,7 @@ const activeFiles = [
   "solicitud-evento/index.html",
   "assets/js/ticketing.js",
   "assets/js/ticketing-admin.js",
+  "assets/css/checkout.css",
   "assets/css/event-information-accordions.css",
 ];
 
@@ -149,7 +150,7 @@ if (incompleteFaq.rows.length !== 2 || incompleteFaq.invalidLines.join(",") !== 
 }
 
 const publicJs = readFileSync(join(root, "assets/js/ticketing.js"), "utf8");
-for (const marker of ["Información de la experiencia", "Código de vestimenta", "event.contact_info", "experienceAccordions", "initExperienceAccordions", "aria-expanded", "eventMetadata", "event-story-has-media", "poster=", "Probar recorrido de compra", "renderCheckoutPreview", "Vista previa de compra"]) {
+for (const marker of ["Información de la experiencia", "Código de vestimenta", "event.contact_info", "experienceAccordions", "initExperienceAccordions", "aria-expanded", "eventMetadata", "event-story-has-media", "poster=", "Probar recorrido de compra", "renderCheckoutPreview", "Vista previa de compra", "checkoutTicketMarkup", "data-quantity-action", "renderCheckoutSummary"]) {
   if (!publicJs.includes(marker)) throw new Error(`Missing public information rendering: ${marker}`);
 }
 if (!publicJs.includes('if (preview) {\n        renderCheckoutPreview') || !publicJs.includes('No se ha creado ningún pedido')) {
@@ -157,8 +158,13 @@ if (!publicJs.includes('if (preview) {\n        renderCheckoutPreview') || !publ
 }
 
 const checkout = readFileSync(join(root, "entradas/checkout/index.html"), "utf8");
-for (const marker of ["data-checkout-eyebrow", "data-checkout-title", "data-checkout-safety-copy"]) {
+for (const marker of ["data-checkout-eyebrow", "data-checkout-title", "data-checkout-safety-copy", "data-checkout-summary", "data-checkout-submit", "checkout.css"]) {
   if (!checkout.includes(marker)) throw new Error(`Missing preview-aware checkout marker: ${marker}`);
+}
+
+const checkoutCss = readFileSync(join(root, "assets/css/checkout.css"), "utf8");
+for (const marker of [".quantity-stepper", ":-webkit-autofill", ".checkout-check-mark", ".checkout-summary", ".checkout-submit", "@media(max-width:860px)"]) {
+  if (!checkoutCss.includes(marker)) throw new Error(`Missing premium checkout style: ${marker}`);
 }
 
 const css = readFileSync(join(root, "assets/css/ticketing.css"), "utf8");
