@@ -2,6 +2,7 @@
   var api = "/api";
   var state = { csrf: "", event: null, dirty: false, saving: false, publicDirty: {}, nonPublicDirty: false };
   var mediaState = { root: null, selected: {}, uploading: {}, messages: {}, previews: {}, dragIndex: null };
+  var ticketDrawerState = { dirty: false, saving: false };
   var money = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" });
 
   function request(url, options) {
@@ -375,12 +376,23 @@
     if (!target) return;
     if (!types.length) { target.innerHTML = '<div class="admin-empty"><strong>Aún no hay entradas.</strong><span>Crea al menos una antes de publicar el evento.</span></div>'; return; }
     target.innerHTML = types.map(function (type, index) {
-      return '<article class="admin-ticket-card" data-ticket-id="' + Number(type.id) + '"><div><span class="status-pill status-' + escapeHtml(type.effective_status) + '">' + escapeHtml(statusLabel(type.effective_status)) + '</span><h3>' + escapeHtml(type.name) + '</h3><p>' + escapeHtml(type.description || "Sin descripción") + '</p><dl class="ticket-metrics"><div><dt>Precio final</dt><dd>' + cents(type.final_price_cents) + '</dd></div><div><dt>Vendidas</dt><dd>' + Number(type.sold) + '</dd></div><div><dt>Reservadas</dt><dd>' + Number(type.reserved) + '</dd></div><div><dt>Restantes</dt><dd>' + Number(type.available) + '</dd></div></dl></div><div class="ticket-card-actions"><button class="text-action" type="button" data-ticket-action="edit">Editar</button><button class="text-action" type="button" data-ticket-action="duplicate">Duplicar</button><button class="text-action" type="button" data-ticket-action="up" ' + (index ? "" : "disabled") + '>↑</button><button class="text-action" type="button" data-ticket-action="down" ' + (index === types.length - 1 ? "disabled" : "") + '>↓</button><button class="text-action danger" type="button" data-ticket-action="delete">Archivar</button></div></article>';
+      var salePeriod = type.sale_starts_at || type.sale_ends_at ? '<p class="ticket-sale-period">Venta: ' + escapeHtml(type.sale_starts_at ? dateText(type.sale_starts_at) : "inmediata") + ' · ' + escapeHtml(type.sale_ends_at ? dateText(type.sale_ends_at) : "sin fecha de cierre") + '</p>' : '';
+      return '<article class="admin-ticket-card" data-ticket-id="' + Number(type.id) + '"><div class="ticket-card-content"><span class="status-pill status-' + escapeHtml(type.effective_status) + '">' + escapeHtml(statusLabel(type.effective_status)) + '</span><h3>' + escapeHtml(type.name) + '</h3><p class="ticket-card-description">' + escapeHtml(type.description || "Sin descripción") + '</p>' + salePeriod + '<dl class="ticket-metrics"><div><dt>Precio final</dt><dd>' + cents(type.final_price_cents) + '</dd></div><div><dt>Vendidas</dt><dd>' + Number(type.sold) + '</dd></div><div><dt>Reservadas</dt><dd>' + Number(type.reserved) + '</dd></div><div><dt>Restantes</dt><dd>' + Number(type.available) + '</dd></div><div><dt>Cupo total</dt><dd>' + Number(type.capacity) + '</dd></div></dl></div><details class="ticket-action-menu"><summary aria-label="Acciones para ' + escapeHtml(type.name) + '">•••</summary><div><button type="button" data-ticket-action="edit">Editar</button><button type="button" data-ticket-action="duplicate">Duplicar</button><button type="button" data-ticket-action="up" ' + (index ? "" : "disabled") + '>Subir</button><button type="button" data-ticket-action="down" ' + (index === types.length - 1 ? "disabled" : "") + '>Bajar</button><button class="danger" type="button" data-ticket-action="delete">Archivar</button></div></details></article>';
     }).join("");
+  }
+
+  function updateTicketPricePreview(form) {
+    var target = form.querySelector("[data-ticket-final-price]");
+    if (!target) return;
+    var price = Math.max(0, Number(input(form, "price").value || 0));
+    var fee = Math.max(0, Number(input(form, "fee").value || 0));
+    var tax = Math.max(0, Number(input(form, "tax_rate").value || 0));
+    target.textContent = money.format(price + Math.round(price * tax) / 100 + fee);
   }
 
   function fillTicketForm(ticket) {
     var form = document.querySelector("[data-ticket-type-form]");
+    if (!form) return;
     form.reset();
     Object.keys(ticket || {}).forEach(function (key) {
       var field = input(form, key);
@@ -392,7 +404,45 @@
     input(form, "price").value = ticket ? (Number(ticket.price_cents || 0) / 100).toFixed(2) : "";
     input(form, "fee").value = ticket ? (Number(ticket.fee_cents || 0) / 100).toFixed(2) : "0";
     input(form, "ticket_type_id").value = ticket ? ticket.id : "";
-    document.querySelector("[data-ticket-form-title]").textContent = ticket ? "Editar tipo de entrada" : "Crear tipo de entrada";
+    document.querySelector("[data-ticket-form-title]").textContent = ticket ? "Editar entrada" : "Nueva entrada";
+    document.querySelector("[data-ticket-submit]").textContent = ticket ? "Guardar cambios" : "Crear entrada";
+    updateTicketPricePreview(form);
+    ticketDrawerState.dirty = false;
+  }
+
+  function openTicketDrawer(ticket) {
+    var drawer = document.querySelector("[data-ticket-drawer]");
+    if (!drawer) return;
+    fillTicketForm(ticket || null);
+    drawer.hidden = false;
+    document.body.classList.add("has-ticket-drawer");
+    window.setTimeout(function () { input(document.querySelector("[data-ticket-type-form]"), "name").focus(); }, 0);
+  }
+
+  function closeTicketDrawer(force) {
+    var drawer = document.querySelector("[data-ticket-drawer]");
+    if (!drawer || drawer.hidden) return true;
+    if (!force && ticketDrawerState.dirty && !window.confirm("Tienes cambios sin guardar. ¿Quieres cerrar el formulario?")) return false;
+    drawer.hidden = true;
+    document.body.classList.remove("has-ticket-drawer");
+    ticketDrawerState.dirty = false;
+    return true;
+  }
+
+  function validateTicketForm(form) {
+    var minimum = Number(input(form, "min_quantity").value || 1);
+    var maximum = Number(input(form, "max_per_order").value || 1);
+    var capacity = Number(input(form, "capacity").value || 0);
+    var tax = Number(input(form, "tax_rate").value || 0);
+    var start = input(form, "sale_starts_at").value;
+    var end = input(form, "sale_ends_at").value;
+    var ticketId = Number(input(form, "ticket_type_id").value || 0);
+    var existing = (state.event && state.event.ticket_types || []).find(function (type) { return Number(type.id) === ticketId; });
+    if (maximum < minimum) return "El máximo por compra no puede ser inferior al mínimo.";
+    if (tax < 0 || tax > 100) return "El IVA debe estar entre 0 % y 100 %.";
+    if (existing && capacity < Number(existing.sold || 0) + Number(existing.reserved || 0)) return "El cupo no puede ser inferior a las entradas vendidas o reservadas.";
+    if (start && end && end < start) return "El fin de venta no puede ser anterior al inicio de venta.";
+    return "";
   }
 
   function loadEditor(eventId) {
@@ -447,21 +497,30 @@
       document.querySelector(".editor-back").addEventListener("click", function (event) {
         if (state.dirty && !window.confirm("Tienes cambios sin guardar. Si abandonas esta página, se perderán.")) event.preventDefault();
       });
-      window.addEventListener("beforeunload", function (event) { if (state.dirty) { event.preventDefault(); event.returnValue = ""; } });
+      window.addEventListener("beforeunload", function (event) { if (state.dirty || ticketDrawerState.dirty) { event.preventDefault(); event.returnValue = ""; } });
     });
   }
 
   function initTicketForm(eventId) {
     var form = document.querySelector("[data-ticket-type-form]");
     if (!form) return;
-    fillTicketForm(null);
+    document.querySelector("[data-open-ticket-form]").addEventListener("click", function () { openTicketDrawer(null); });
+    document.querySelectorAll("[data-close-ticket-drawer]").forEach(function (button) { button.addEventListener("click", function () { closeTicketDrawer(false); }); });
+    document.addEventListener("keydown", function (event) { if (event.key === "Escape") closeTicketDrawer(false); });
+    form.addEventListener("input", function () { ticketDrawerState.dirty = true; updateTicketPricePreview(form); });
+    form.addEventListener("change", function () { ticketDrawerState.dirty = true; updateTicketPricePreview(form); });
     form.addEventListener("submit", function (event) {
       event.preventDefault();
+      var validationError = validateTicketForm(form);
+      if (validationError) { editorNotice(validationError, true); return; }
       var ticketId = Number(input(form, "ticket_type_id").value || 0);
       var url = api + "/admin/events/" + eventId + "/ticket-types" + (ticketId ? "/" + ticketId : "");
-      jsonRequest(url, ticketId ? "PUT" : "POST", ticketPayload(form)).then(function () { return loadEditor(eventId); }).then(function () { fillTicketForm(null); editorNotice("Entrada guardada."); switchEditorSection("tickets"); }).catch(function (error) { editorNotice(error.message, true); });
+      var submit = form.querySelector("[data-ticket-submit]");
+      ticketDrawerState.saving = true;
+      submit.disabled = true;
+      submit.textContent = "Guardando...";
+      jsonRequest(url, ticketId ? "PUT" : "POST", ticketPayload(form)).then(function () { return loadEditor(eventId); }).then(function () { closeTicketDrawer(true); editorNotice("Entrada guardada."); switchEditorSection("tickets"); }).catch(function (error) { editorNotice(error.message, true); }).finally(function () { ticketDrawerState.saving = false; submit.disabled = false; submit.textContent = ticketId ? "Guardar cambios" : "Crear entrada"; });
     });
-    document.querySelector("[data-reset-ticket-form]").addEventListener("click", function () { fillTicketForm(null); });
     document.querySelector("[data-ticket-type-list]").addEventListener("click", function (event) {
       var card = event.target.closest("[data-ticket-id]");
       var action = event.target.dataset.ticketAction;
@@ -469,7 +528,7 @@
       var ticketId = Number(card.dataset.ticketId);
       var types = state.event.ticket_types || [];
       var index = types.findIndex(function (row) { return Number(row.id) === ticketId; });
-      if (action === "edit") { fillTicketForm(types[index]); form.scrollIntoView({ behavior: "smooth", block: "start" }); }
+      if (action === "edit") openTicketDrawer(types[index]);
       if (action === "duplicate") jsonRequest(api + "/admin/events/" + eventId + "/ticket-types/" + ticketId + "/duplicate", "POST", {}).then(function () { return loadEditor(eventId); }).catch(function (error) { editorNotice(error.message, true); });
       if ((action === "up" || action === "down") && index >= 0) {
         var swap = action === "up" ? index - 1 : index + 1;

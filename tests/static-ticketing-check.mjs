@@ -104,6 +104,10 @@ for (const marker of ["data-public-information", "data-public-input", "data-faq-
   if (!editor.includes(marker)) throw new Error(`Missing public information editor marker: ${marker}`);
 }
 
+for (const marker of ["data-open-ticket-form", "data-ticket-drawer", "data-ticket-final-price", "data-close-ticket-drawer"]) {
+  if (!editor.includes(marker)) throw new Error(`Missing ticket drawer marker: ${marker}`);
+}
+
 const longPublicInformationMigration = readFileSync(join(root, "database/migrations/004_long_public_event_information.sql"), "utf8");
 for (const field of ["included_text", "access_conditions", "minor_policy", "refund_policy", "contact_info", "recommendations", "dress_code", "accessibility_info"]) {
   if (!new RegExp(`MODIFY COLUMN ${field} LONGTEXT`).test(longPublicInformationMigration)) {
@@ -114,6 +118,9 @@ for (const field of ["included_text", "access_conditions", "minor_policy", "refu
 const adminJs = readFileSync(join(root, "assets/js/ticketing-admin.js"), "utf8");
 for (const marker of ["function parseFaq", "line.indexOf(\"|\")", "Guardando cambios y abriendo vista previa", "post_max_size en Plesk", "savePublicInformation", "public-information", "No se han podido guardar los cambios. El contenido permanece en el editor."]) {
   if (!adminJs.includes(marker)) throw new Error(`Missing reliable public information behavior: ${marker}`);
+}
+for (const marker of ["openTicketDrawer", "closeTicketDrawer", "updateTicketPricePreview", "validateTicketForm", "Tienes cambios sin guardar. ¿Quieres cerrar el formulario?"]) {
+  if (!adminJs.includes(marker)) throw new Error(`Missing ticket drawer behavior: ${marker}`);
 }
 const parseFaqSource = adminJs.match(/function parseFaq\(value\) \{[\s\S]*?\n  \}\n\n  function formData/);
 if (!parseFaqSource) throw new Error("Unable to locate the FAQ parser.");
@@ -137,6 +144,9 @@ for (const marker of ["Información de la experiencia", "Código de vestimenta",
 const css = readFileSync(join(root, "assets/css/ticketing.css"), "utf8");
 for (const marker of [".public-information-editor", "white-space:pre-wrap", ".event-public-information", ".experience-accordion", "prefers-reduced-motion"]) {
   if (!css.includes(marker)) throw new Error(`Missing long-text presentation style: ${marker}`);
+}
+for (const marker of [".ticket-editor-drawer", ".ticket-drawer-grid", ".ticket-action-menu", ".ticket-final-price"]) {
+  if (!css.includes(marker)) throw new Error(`Missing ticket drawer style: ${marker}`);
 }
 
 console.log("Static ticketing checks passed");
