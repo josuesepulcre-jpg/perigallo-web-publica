@@ -559,6 +559,12 @@ final class Ticketing
         $existing = $this->requireAdminEvent($eventId);
         $merged = array_merge($existing, $data);
         $status = $this->eventStatus($merged);
+        // El acceso solo mediante enlace nunca debe aparecer en los listados.
+        // Se conserva el valor para que al desactivarlo el editor vuelva a mostrar
+        // el ajuste de listados que corresponda.
+        if (!empty($merged['link_only'])) {
+            $merged['unlisted'] = true;
+        }
         $visible = !empty($merged['visible']) ? 1 : 0;
         if ($status === 'published') {
             $this->validateEventForPublication($merged);
@@ -568,6 +574,9 @@ final class Ticketing
             $this->validateEventForPublication($merged);
             if (empty($merged['publication_at']) || strtotime((string) $merged['publication_at']) === false) {
                 throw new RuntimeException('Indica una fecha de publicación para programar el evento.');
+            }
+            if (strtotime((string) $merged['publication_at']) <= time()) {
+                throw new RuntimeException('La fecha programada debe ser posterior al momento actual.');
             }
             $visible = 1;
         }

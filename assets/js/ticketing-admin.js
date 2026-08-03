@@ -180,6 +180,90 @@
     document.querySelector("[data-ticket-count]").textContent = (eventData.ticket_types || []).length;
     renderEventMediaManager();
     refreshPublicInformation();
+    refreshPublicationEditor();
+  }
+
+  function publicationUrl(slug) {
+    return window.location.origin + "/eventos/" + encodeURIComponent(String(slug || "").replace(/^\/+|\/+$/g, ""));
+  }
+
+  function normalizePublicationSlug(value) {
+    return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 140);
+  }
+
+  function refreshPublicationEditor() {
+    var root = document.querySelector("[data-publication-editor]");
+    var form = document.querySelector("[data-event-form]");
+    if (!root || !form) return;
+    var slug = input(form, "slug");
+    var status = input(form, "status");
+    var schedule = root.querySelector("[data-publication-schedule]");
+    var date = input(form, "publication_at");
+    var visible = input(form, "visible");
+    var unlisted = input(form, "unlisted");
+    var linkOnly = input(form, "link_only");
+    var canonical = input(form, "canonical_url");
+    var customCanonical = root.querySelector("[data-custom-canonical]");
+    var url = publicationUrl(slug.value);
+    if (!customCanonical.dataset.initialized) {
+      customCanonical.checked = !!canonical.value && canonical.value !== url;
+      customCanonical.dataset.initialized = "true";
+    }
+    var supportedStatus = ["draft", "scheduled", "published"].includes(status.value) ? status.value : "published";
+    root.querySelectorAll('[name="publication-status-choice"]').forEach(function (choice) { choice.checked = choice.value === supportedStatus; });
+    schedule.hidden = status.value !== "scheduled";
+    date.disabled = status.value !== "scheduled";
+    root.querySelector("[data-public-url-preview]").textContent = slug.value ? url : "Introduce un slug para generar la dirección pública.";
+    root.querySelector("[data-open-public-url]").href = url;
+    root.querySelector("[data-open-public-url]").toggleAttribute("aria-disabled", !slug.value);
+    root.querySelector("[data-copy-public-url]").disabled = !slug.value;
+    if (linkOnly.checked) { unlisted.checked = true; unlisted.disabled = true; }
+    else unlisted.disabled = !visible.checked;
+    linkOnly.disabled = !visible.checked;
+    root.querySelectorAll(".publication-setting").forEach(function (row) { row.classList.toggle("is-disabled", !!row.querySelector("input").disabled); });
+    if (!customCanonical.checked) canonical.value = url;
+    canonical.readOnly = !customCanonical.checked;
+    ["title", "description"].forEach(function (kind) {
+      var field = input(form, kind === "title" ? "seo_title" : "seo_description");
+      var count = root.querySelector('[data-seo-count="' + kind + '"]');
+      if (count) count.textContent = field.value.length + " caracteres";
+    });
+    root.querySelector("[data-seo-preview-title]").textContent = input(form, "seo_title").value || "Título SEO de la experiencia";
+    root.querySelector("[data-seo-preview-url]").textContent = url;
+    root.querySelector("[data-seo-preview-description]").textContent = input(form, "seo_description").value || "La descripción SEO aparecerá aquí cuando la completes.";
+  }
+
+  function initPublicationEditor() {
+    var root = document.querySelector("[data-publication-editor]");
+    var form = document.querySelector("[data-event-form]");
+    if (!root || !form) return;
+    var slug = input(form, "slug");
+    var status = input(form, "status");
+    var canonical = input(form, "canonical_url");
+    var customCanonical = root.querySelector("[data-custom-canonical]");
+    root.addEventListener("input", function (event) {
+      if (event.target === slug) {
+        var normalized = normalizePublicationSlug(slug.value);
+        slug.value = normalized;
+        slug.setCustomValidity(normalized ? "" : "Introduce una dirección pública válida.");
+      }
+      refreshPublicationEditor();
+    });
+    root.addEventListener("change", function (event) {
+      var target = event.target;
+      if (target.name === "publication-status-choice") {
+        if (status.value === "published" && target.value === "draft" && !window.confirm("La experiencia dejará de estar disponible públicamente. ¿Quieres pasarla a borrador?")) { refreshPublicationEditor(); return; }
+        status.value = target.value;
+      }
+      if (target === input(form, "link_only") && target.checked) input(form, "unlisted").checked = true;
+      if (target === customCanonical && !target.checked) canonical.value = publicationUrl(slug.value);
+      refreshPublicationEditor();
+    });
+    root.querySelector("[data-copy-public-url]").addEventListener("click", function () {
+      var url = publicationUrl(slug.value);
+      if (navigator.clipboard) navigator.clipboard.writeText(url).then(function () { editorNotice("URL pública copiada."); }).catch(function () { editorNotice("No se pudo copiar la URL.", true); });
+    });
+    refreshPublicationEditor();
   }
 
   function parseFaq(value) {
@@ -494,6 +578,7 @@
       initTicketForm(id);
       initEventMediaManager();
       initPublicInformation();
+      initPublicationEditor();
       document.querySelector(".editor-back").addEventListener("click", function (event) {
         if (state.dirty && !window.confirm("Tienes cambios sin guardar. Si abandonas esta página, se perderán.")) event.preventDefault();
       });

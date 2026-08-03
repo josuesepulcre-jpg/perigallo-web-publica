@@ -11,6 +11,7 @@ const required = [
   "database/migrations/002_event_editor.sql",
   "database/migrations/003_suite_experience_integration.sql",
   "database/migrations/004_long_public_event_information.sql",
+  "database/migrations/005_configure_la_perigalla_01_publication.sql",
   "eventos/index.html",
   "eventos/evento.html",
   "entradas/checkout/index.html",
@@ -110,7 +111,7 @@ for (const marker of ["data-public-information", "data-public-input", "data-faq-
   if (!editor.includes(marker)) throw new Error(`Missing public information editor marker: ${marker}`);
 }
 
-for (const marker of ["data-open-ticket-form", "data-ticket-drawer", "data-ticket-final-price", "data-close-ticket-drawer"]) {
+for (const marker of ["data-open-ticket-form", "data-ticket-drawer", "data-ticket-final-price", "data-close-ticket-drawer", "data-publication-editor", "data-publication-status", "data-copy-public-url"]) {
   if (!editor.includes(marker)) throw new Error(`Missing ticket drawer marker: ${marker}`);
 }
 
@@ -121,8 +122,13 @@ for (const field of ["included_text", "access_conditions", "minor_policy", "refu
   }
 }
 
+const perigallaPublicationMigration = readFileSync(join(root, "database/migrations/005_configure_la_perigalla_01_publication.sql"), "utf8");
+for (const marker of ["WHERE id = 1", "status = 'draft'", "la-perigalla-01-ibicenca", "show_availability = 1"]) {
+  if (!perigallaPublicationMigration.includes(marker)) throw new Error(`La Perigalla publication migration is missing ${marker}.`);
+}
+
 const adminJs = readFileSync(join(root, "assets/js/ticketing-admin.js"), "utf8");
-for (const marker of ["function parseFaq", "line.indexOf(\"|\")", "Guardando cambios y abriendo vista previa", "post_max_size en Plesk", "savePublicInformation", "public-information", "No se han podido guardar los cambios. El contenido permanece en el editor."]) {
+for (const marker of ["function parseFaq", "line.indexOf(\"|\")", "Guardando cambios y abriendo vista previa", "post_max_size en Plesk", "savePublicInformation", "public-information", "No se han podido guardar los cambios. El contenido permanece en el editor.", "initPublicationEditor", "normalizePublicationSlug", "refreshPublicationEditor"]) {
   if (!adminJs.includes(marker)) throw new Error(`Missing reliable public information behavior: ${marker}`);
 }
 for (const marker of ["openTicketDrawer", "closeTicketDrawer", "updateTicketPricePreview", "validateTicketForm", "Tienes cambios sin guardar. ¿Quieres cerrar el formulario?"]) {
