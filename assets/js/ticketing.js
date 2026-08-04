@@ -650,6 +650,9 @@
           order.is_test ? '<p class="ticket-status">Operación de prueba: no se ha realizado ningún cargo real.</p>' : '',
           '<div class="ticket-actions"><a class="ticket-btn primary" href="/entradas/pedido/?token=' + encodeURIComponent(token) + '">Ver mis entradas</a><a class="ticket-btn" href="/eventos/">Volver a eventos</a></div>'
         ].join("");
+        window.setTimeout(function () {
+          window.location.replace("/entradas/pedido/?token=" + encodeURIComponent(token));
+        }, 900);
         return true;
       }
       if (failed) {
@@ -671,7 +674,17 @@
     }
     function check() {
       request(api + "/orders/" + encodeURIComponent(token)).then(function (data) {
-        if (render(data.order) || attempts >= maxAttempts) return;
+        if (render(data.order)) return;
+        if (attempts >= maxAttempts) {
+          root.innerHTML = [
+            '<span class="ticket-eyebrow">Confirmación pendiente</span>',
+            '<h1 class="ticket-title">Estamos revisando <em>tu pago</em></h1>',
+            '<p class="ticket-copy">No vuelvas a pagar. Aún no hemos recibido una confirmación válida del banco, pero puedes comprobar el estado de nuevo.</p>',
+            '<div class="ticket-actions"><button class="ticket-btn primary" type="button" data-retry-payment-status>Comprobar de nuevo</button><a class="ticket-btn" href="/entradas/pedido/?token=' + encodeURIComponent(token) + '">Ver mi pedido</a><a class="ticket-btn" href="https://wa.me/34691499985" target="_blank" rel="noopener noreferrer">Contactar</a></div>'
+          ].join("");
+          root.querySelector("[data-retry-payment-status]").addEventListener("click", function () { attempts = 0; check(); });
+          return;
+        }
         attempts += 1;
         window.setTimeout(check, 2500);
       }).catch(function (error) {

@@ -333,8 +333,12 @@ final class Ticketing
     {
         $merchantParameters = (string) ($post['Ds_MerchantParameters'] ?? $post['Ds_MerchantParameters'.PHP_EOL] ?? '');
         $signature = (string) ($post['Ds_Signature'] ?? '');
+        $signatureVersion = (string) ($post['Ds_SignatureVersion'] ?? '');
         if ($merchantParameters === '' || $signature === '') {
             throw new RuntimeException('Notificacion Redsys incompleta.');
+        }
+        if ($signatureVersion !== (string) env_value('REDSYS_SIGNATURE_VERSION', 'HMAC_SHA256_V1')) {
+            throw new RuntimeException('Version de firma Redsys no coincide.');
         }
         $params = $this->redsys->decodeMerchantParameters($merchantParameters);
         $orderNumber = (string) ($params['DS_ORDER'] ?? '');
@@ -381,7 +385,7 @@ final class Ticketing
             if ($merchantCode !== (string) env_value('REDSYS_MERCHANT_CODE', '')) {
                 throw new RuntimeException('Comercio Redsys no coincide.');
             }
-            if ($terminal !== (string) env_value('REDSYS_TERMINAL', '1')) {
+            if ($terminal !== $this->redsys->terminal()) {
                 throw new RuntimeException('Terminal Redsys no coincide.');
             }
             if ($transactionType !== (string) env_value('REDSYS_TRANSACTION_TYPE', '0')) {
@@ -424,6 +428,7 @@ final class Ticketing
                     $this->sendConfirmation((int) $order['id']);
                 }
             }
+            error_log('Perigallo Redsys notification processed: order=' . $orderNumber . ' attempt=' . $attempt['id'] . ' response=' . $responseCode . ' accepted=' . ($accepted ? '1' : '0'));
             return ['ok' => true, 'accepted' => $accepted, 'order' => $orderNumber];
         } catch (\Throwable $e) {
             $this->pdo->rollBack();
@@ -1525,7 +1530,7 @@ final class Ticketing
             'DS_MERCHANT_MERCHANTCODE' => env_value('REDSYS_MERCHANT_CODE', ''),
             'DS_MERCHANT_CURRENCY' => env_value('REDSYS_CURRENCY', '978'),
             'DS_MERCHANT_TRANSACTIONTYPE' => env_value('REDSYS_TRANSACTION_TYPE', '0'),
-            'DS_MERCHANT_TERMINAL' => env_value('REDSYS_TERMINAL', '1'),
+            'DS_MERCHANT_TERMINAL' => $this->redsys->terminal(),
             'DS_MERCHANT_MERCHANTURL' => $base . '/api/redsys/notification',
             'DS_MERCHANT_URLOK' => $base . '/entradas/pago/correcto/?token=' . rawurlencode($publicToken),
             'DS_MERCHANT_URLKO' => $base . '/entradas/pago/error/?token=' . rawurlencode($publicToken),

@@ -183,8 +183,12 @@ const testMigration = readFileSync(join(root, "database/migrations/006_test_chec
 for (const marker of ["is_test", "environment", "payment_status", "delivery_status", "test_session_id", "ticket_delivery_logs"]) {
   if (!testMigration.includes(marker)) throw new Error(`Sandbox migration is missing ${marker}.`);
 }
-for (const marker of ["createTestOrder", "assertConfigured", "assertSandboxConfigured", "redsysForm", "ticket_delivery_logs", "is_test = 0", "TicketDeliveryService"]) {
+for (const marker of ["createTestOrder", "assertConfigured", "assertSandboxConfigured", "redsysForm", "ticket_delivery_logs", "is_test = 0", "TicketDeliveryService", "Ds_SignatureVersion", "notification processed"]) {
   if (!(api + ticketing).includes(marker)) throw new Error(`Missing isolated test-order contract: ${marker}`);
+}
+const redsys = readFileSync(join(root, "api/src/Redsys.php"), "utf8");
+for (const marker of ["function terminal", "str_pad", "str_replace(' ', '+', $value)"]) {
+  if (!redsys.includes(marker)) throw new Error(`Missing Redsys terminal or Base64 normalization: ${marker}`);
 }
 
 const checkout = readFileSync(join(root, "entradas/checkout/index.html"), "utf8");

@@ -53,7 +53,12 @@ try {
     }
 
     if ($method === 'POST' && $path === '/redsys/notification') {
-        $result = $ticketing->processRedsysNotification($_POST);
+        $notification = $_POST;
+        if (!$notification) {
+            parse_str((string) file_get_contents('php://input'), $notification);
+        }
+        error_log('Perigallo Redsys notification received: remote=' . client_ip() . ' keys=' . implode(',', array_keys($notification)));
+        $result = $ticketing->processRedsysNotification($notification);
         json_response($result);
         return;
     }
@@ -297,7 +302,12 @@ try {
         json_response(['ok' => false, 'error' => $e->getMessage()], 409);
         return;
     }
-    error_log('Perigallo ticketing API error: ' . $e->getMessage());
+    $isRedsysNotification = $method === 'POST' && $path === '/redsys/notification';
+    error_log(($isRedsysNotification ? 'Perigallo Redsys notification rejected: ' : 'Perigallo ticketing API error: ') . $e->getMessage());
+    if ($isRedsysNotification) {
+        json_response(['ok' => false, 'error' => 'Notificacion de pago rechazada.'], 400);
+        return;
+    }
     $isProd = env_value('APP_ENV', 'production') === 'production';
     json_response(['ok' => false, 'error' => $isProd ? 'No se pudo procesar la solicitud.' : $e->getMessage()], 500);
 } catch (Throwable $e) {

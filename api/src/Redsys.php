@@ -39,6 +39,15 @@ final class Redsys
             : (env_value('REDSYS_TEST_URL') ?: 'https://sis-t.redsys.es:25443/sis/realizarPago');
     }
 
+    public function terminal(): string
+    {
+        $terminal = trim((string) env_value('REDSYS_TERMINAL', '1'));
+        if ($terminal === '' || !ctype_digit($terminal)) {
+            throw new RuntimeException('El terminal Redsys debe contener solo dígitos.');
+        }
+        return str_pad(ltrim($terminal, '0') ?: '0', 3, '0', STR_PAD_LEFT);
+    }
+
     public function buildRedirectFields(array $params): array
     {
         $merchantParameters = $this->encodeMerchantParameters($params);
@@ -124,6 +133,8 @@ final class Redsys
 
     private function toBase64(string $value): string
     {
+        // Algunos proxies convierten el signo + de un formulario URL-encoded en un espacio.
+        $value = str_replace(' ', '+', $value);
         $value = strtr($value, '-_', '+/');
         $pad = strlen($value) % 4;
         if ($pad) {
