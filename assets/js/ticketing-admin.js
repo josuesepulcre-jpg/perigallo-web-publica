@@ -813,20 +813,41 @@
     requireSession(function () {
       var wrap = document.querySelector("[data-ticket-scan-wrap]");
       var status = form.querySelector("[data-scan-status]");
+      var decision = form.querySelector("[data-scan-decision]");
+      var connection = form.querySelector("[data-connection-status]");
       var cameraWrap = form.querySelector("[data-ticket-camera-wrap]");
       var video = form.querySelector("[data-ticket-camera]");
       var attendeesRoot = document.querySelector("[data-ticket-attendees]");
       var stream = null;
       var scanning = false;
       var locked = false;
+      var proposal = null;
       if (wrap) wrap.hidden = false;
 
-      function resultCopy(result) {
-        return ({ valida: "Entrada válida. Acceso registrado.", ya_utilizada: "Esta entrada ya se utilizó.", cancelada: "Esta entrada está cancelada.", reembolsada: "Esta entrada está reembolsada.", bloqueada: "Esta entrada está bloqueada.", otro_evento: "Esta entrada corresponde a otra experiencia.", inexistente: "No encontramos una entrada válida." })[result] || "No se pudo validar la entrada.";
+      function updateConnection() {
+        if (!connection) return;
+        connection.textContent = navigator.onLine ? "Conectado al control en tiempo real" : "Sin conexión: no se pueden registrar accesos";
+        connection.className = navigator.onLine ? "is-online" : "is-offline";
       }
-      function resultDetails(result) {
-        if (!result || !result.ticket) return "";
-        return " " + [result.ticket.attendee_name, result.ticket.ticket_type_name, result.ticket.public_code].filter(Boolean).join(" · ");
+      updateConnection();
+      window.addEventListener("online", updateConnection);
+      window.addEventListener("offline", updateConnection);
+
+      function accessStatus(value) {
+        return ({ not_entered: "Sin acceder", inside: "Dentro", outside: "Fuera" })[value] || "Sin estado";
+      }
+      function administrativeStatus(value) {
+        return ({ issued: "Activa", cancelled: "Cancelada", refunded: "Reembolsada", blocked: "Bloqueada" })[value] || value;
+      }
+      function actionLabel(action) {
+        return ({ entry: "Confirmar primera entrada", exit: "Confirmar salida", reentry: "Confirmar reentrada" })[action] || "Confirmar movimiento";
+      }
+      function actionDetail(action) {
+        return ({ entry: "La entrada es válida y está pendiente de acceder.", exit: "La persona está actualmente dentro del recinto.", reentry: "La persona había salido. Se comprobarán las reglas de reentrada." })[action] || "";
+      }
+      function clearProposal() {
+        proposal = null;
+        if (decision) decision.innerHTML = "";
       }
       function stopCamera() {
         scanning = false;
@@ -835,7 +856,11 @@
         if (video) video.srcObject = null;
         if (cameraWrap) cameraWrap.hidden = true;
       }
-      function attendeeStatus(value) { return ({ issued: "Pendiente", used: "Acceso realizado", cancelled: "Cancelada", refunded: "Reembolsada", blocked: "Bloqueada" })[value] || value; }
+      function attendeeAction(attendee) {
+        if (attendee.status !== "issued") return "";
+        var next = attendee.access_status === "not_entered" ? "entry" : (attendee.access_status === "inside" ? "exit" : "reentry");
+        return '<button class="text-action" type="button" data-propose-ticket="' + escapeHtml(attendee.public_code) + '" data-propose-action="' + next + '">' + escapeHtml(actionLabel(next)) + '</button>';
+      }
       function loadAttendees() {
         var eventId = Number(form.event_id.value || 0);
         if (!eventId || !attendeesRoot) { if (attendeesRoot) attendeesRoot.hidden = true; return; }
@@ -843,54 +868,96 @@
           var metrics = data.metrics || {};
           attendeesRoot.hidden = false;
           var attendees = data.attendees || [];
-          attendeesRoot.innerHTML = '<div class="ticket-attendee-head"><div><span class="ticket-eyebrow">Asistentes</span><h2>Control de acceso</h2></div><div class="ticket-attendee-metrics"><span>' + Number(metrics.total || 0) + ' emitidas</span><span>' + Number(metrics.used || 0) + ' dentro</span><span>' + Number(metrics.pending || 0) + ' pendientes</span><span>' + Number(metrics.access_percent || 0) + '% acceso</span></div></div><div class="ticket-attendee-filters"><label>Buscar<input type="search" data-attendee-search placeholder="Nombre, teléfono, pedido o código"></label><label>Estado<select data-attendee-filter><option value="all">Todas</option><option value="issued">Pendientes</option><option value="used">Acceso realizado</option><option value="cancelled">Canceladas</option><option value="refunded">Reembolsadas</option><option value="blocked">Bloqueadas</option></select></label></div><div class="ticket-attendee-table" data-attendee-table></div>';
+          var history = data.history || [];
+          attendeesRoot.innerHTML = '<div class="ticket-attendee-head"><div><span class="ticket-eyebrow">Estado en directo</span><h2>Control de acceso</h2></div><div class="ticket-attendee-metrics"><span>' + Number(metrics.not_entered || 0) + ' sin acceder</span><span>' + Number(metrics.inside || 0) + ' dentro</span><span>' + Number(metrics.outside || 0) + ' fuera</span><span>' + Number(metrics.entries || 0) + ' entradas</span><span>' + Number(metrics.exits || 0) + ' salidas</span></div></div><div class="ticket-attendee-filters"><label>Buscar<input type="search" data-attendee-search placeholder="Nombre, teléfono, pedido o código"></label><label>Presencia<select data-attendee-filter><option value="all">Todas</option><option value="not_entered">Sin acceder</option><option value="inside">Dentro</option><option value="outside">Fuera</option><option value="incidents">Incidencias</option></select></label></div><div class="ticket-attendee-table" data-attendee-table></div><details class="ticket-access-history"><summary>Historial de movimientos</summary><div data-access-history></div></details>';
           function drawAttendees() {
             var search = (attendeesRoot.querySelector("[data-attendee-search]").value || "").toLowerCase().trim();
             var filter = attendeesRoot.querySelector("[data-attendee-filter]").value;
             var rows = attendees.filter(function (attendee) {
               var searchable = [attendee.name, attendee.email, attendee.phone, attendee.public_code, attendee.order_reference, attendee.ticket_type_name].join(" ").toLowerCase();
-              return (!search || searchable.includes(search)) && (filter === "all" || attendee.status === filter);
+              var isIncident = attendee.status !== "issued";
+              return (!search || searchable.includes(search)) && (filter === "all" || (filter === "incidents" ? isIncident : attendee.access_status === filter));
             });
-            attendeesRoot.querySelector("[data-attendee-table]").innerHTML = '<div class="ticket-attendee-row ticket-attendee-labels"><span>Asistente</span><span>Entrada</span><span>Estado</span><span>Acción</span></div>' + rows.map(function (attendee) { return '<div class="ticket-attendee-row"><span><strong>' + escapeHtml(attendee.name) + '</strong><small>' + escapeHtml(attendee.email) + ' · ' + escapeHtml(attendee.phone || "sin teléfono") + '</small></span><span><strong>' + escapeHtml(attendee.ticket_type_name) + '</strong><small>' + escapeHtml(attendee.public_code) + ' · ' + escapeHtml(attendee.order_reference || "") + '</small></span><span class="attendee-status attendee-' + escapeHtml(attendee.status) + '">' + escapeHtml(attendeeStatus(attendee.status)) + (attendee.used_at ? '<small>' + escapeHtml(dateText(attendee.used_at)) + '</small>' : '') + '</span><span>' + (attendee.status === "used" && state.role === "admin" ? '<button class="text-action" type="button" data-revert-ticket="' + escapeHtml(attendee.public_code) + '">Revertir</button>' : '') + '</span></div>'; }).join("") + (rows.length ? "" : '<p class="ticket-status">No hay asistentes que coincidan con ese filtro.</p>');
+            attendeesRoot.querySelector("[data-attendee-table]").innerHTML = '<div class="ticket-attendee-row ticket-attendee-labels"><span>Asistente</span><span>Entrada</span><span>Presencia</span><span>Acción</span></div>' + rows.map(function (attendee) { return '<div class="ticket-attendee-row"><span><strong>' + escapeHtml(attendee.name) + '</strong><small>' + escapeHtml(attendee.email) + ' · ' + escapeHtml(attendee.phone || "sin teléfono") + '</small></span><span><strong>' + escapeHtml(attendee.ticket_type_name) + '</strong><small>' + escapeHtml(attendee.public_code) + ' · ' + escapeHtml(attendee.order_reference || "") + '</small></span><span class="attendee-status attendee-' + escapeHtml(attendee.access_status || attendee.status) + '"><strong>' + escapeHtml(attendee.status === "issued" ? accessStatus(attendee.access_status) : administrativeStatus(attendee.status)) + '</strong><small>' + (attendee.last_entry_at ? 'Última entrada: ' + escapeHtml(dateText(attendee.last_entry_at)) : 'Sin movimientos') + '</small></span><span>' + attendeeAction(attendee) + (state.role === "admin" && attendee.last_access_action && attendee.last_access_action !== "reversal" ? '<button class="text-action danger" type="button" data-revert-ticket="' + escapeHtml(attendee.public_code) + '">Revertir último</button>' : '') + '</span></div>'; }).join("") + (rows.length ? "" : '<p class="ticket-status">No hay asistentes que coincidan con ese filtro.</p>');
           }
+          attendeesRoot.querySelector("[data-access-history]").innerHTML = history.length ? history.map(function (movement) { return '<div class="ticket-access-history-row"><strong>' + escapeHtml(({ entry: "Entrada", exit: "Salida", reentry: "Reentrada", reversal: "Corrección" })[movement.action] || movement.action) + '</strong><span>' + escapeHtml(movement.name || "Entrada") + ' · ' + escapeHtml(dateText(movement.created_at)) + '</span><small>' + escapeHtml(movement.performed_by || "Equipo Perigallo") + (movement.notes ? ' · ' + escapeHtml(movement.notes) : "") + '</small></div>'; }).join("") : '<p class="ticket-status">Todavía no hay movimientos registrados.</p>';
           attendeesRoot.querySelector("[data-attendee-search]").addEventListener("input", drawAttendees);
           attendeesRoot.querySelector("[data-attendee-filter]").addEventListener("change", drawAttendees);
           drawAttendees();
         }).catch(function (error) { attendeesRoot.hidden = false; attendeesRoot.textContent = error.message; });
       }
-      function validate(value) {
+      function renderProposal(data, value) {
+        if (!data.ticket || !data.action) {
+          clearProposal();
+          status.textContent = data.message || "No se puede registrar ningún movimiento.";
+          status.className = "ticket-status is-error";
+          if (navigator.vibrate) navigator.vibrate([80, 60, 80]);
+          return;
+        }
+        proposal = { value: value, action: data.action, ticket: data.ticket, method: data.method || "qr" };
+        status.textContent = "Entrada identificada. Revisa y confirma el movimiento.";
+        status.className = "ticket-status is-ready";
+        decision.innerHTML = '<section class="ticket-access-decision is-' + escapeHtml(data.action) + '"><span class="ticket-eyebrow">Movimiento propuesto</span><h2>' + escapeHtml(actionLabel(data.action).replace("Confirmar ", "")) + '</h2><p><strong>' + escapeHtml(data.ticket.attendee_name) + '</strong> · ' + escapeHtml(data.ticket.ticket_type_name) + '</p><p>' + escapeHtml(actionDetail(data.action)) + '</p><div class="ticket-access-decision-meta"><span>' + escapeHtml(accessStatus(data.ticket.access_status)) + '</span><span>' + Number(data.ticket.entry_count || 0) + ' entradas · ' + Number(data.ticket.exit_count || 0) + ' salidas</span></div><div class="ticket-actions"><button class="ticket-btn primary" type="button" data-confirm-access>' + escapeHtml(actionLabel(data.action)) + '</button><button class="ticket-btn" type="button" data-cancel-access>Cancelar</button></div></section>';
+        if (navigator.vibrate) navigator.vibrate(60);
+      }
+      function inspect(value, method) {
         if (!value || locked) return;
+        if (!navigator.onLine) { status.textContent = "No hay conexión. Por seguridad no se ha registrado ningún acceso."; status.className = "ticket-status is-error"; return; }
         locked = true;
+        clearProposal();
         status.textContent = "Comprobando entrada...";
         status.className = "ticket-status";
         jsonRequest(api + "/admin/tickets/scan", "POST", {
           event_id: Number(form.event_id.value || 0),
           code: value,
+          mode: form.access_mode ? form.access_mode.value : "automatic",
+          method: method || "manual",
           device_reference: navigator.userAgent.slice(0, 190),
           access_point: form.access_point ? form.access_point.value.trim() : "",
         }).then(function (data) {
-          status.textContent = resultCopy(data.result) + resultDetails(data);
-          status.className = "ticket-status scan-" + data.result;
-          if (navigator.vibrate) navigator.vibrate(data.result === "valida" ? [80] : [80, 60, 80]);
+          data.method = method || "manual";
+          renderProposal(data, value);
           form.code.value = "";
           form.code.focus();
           loadAttendees();
         }).catch(function (error) { status.textContent = error.message; status.className = "ticket-status is-error"; }).finally(function () { locked = false; });
       }
+      function confirmProposal() {
+        if (!proposal || locked) return;
+        if (!navigator.onLine) { status.textContent = "No hay conexión. El movimiento no se ha registrado."; status.className = "ticket-status is-error"; return; }
+        if ((proposal.action === "exit" || proposal.action === "reentry") && !window.confirm(proposal.action === "exit" ? "¿Confirmar que esta persona sale del recinto?" : "¿Autorizar la reentrada de esta persona?")) return;
+        locked = true;
+        status.textContent = "Registrando movimiento...";
+        status.className = "ticket-status";
+        jsonRequest(api + "/admin/tickets/access-movement", "POST", {
+          event_id: Number(form.event_id.value || 0), token: proposal.value, action: proposal.action,
+          method: proposal.method, device_reference: navigator.userAgent.slice(0, 190), access_point: form.access_point ? form.access_point.value.trim() : "",
+        }).then(function (data) {
+          status.textContent = data.message || "Movimiento registrado.";
+          status.className = "ticket-status is-success";
+          clearProposal();
+          if (navigator.vibrate) navigator.vibrate([80, 45, 120]);
+          loadAttendees();
+          form.code.focus();
+        }).catch(function (error) { status.textContent = error.message; status.className = "ticket-status is-error"; }).finally(function () { locked = false; });
+      }
       function scanFrame(detector) {
         if (!scanning || !video || locked) { if (scanning) window.requestAnimationFrame(function () { scanFrame(detector); }); return; }
         detector.detect(video).then(function (codes) {
-          if (codes.length && codes[0].rawValue) { form.code.value = codes[0].rawValue; stopCamera(); validate(codes[0].rawValue); return; }
+          if (codes.length && codes[0].rawValue) { form.code.value = codes[0].rawValue; stopCamera(); inspect(codes[0].rawValue, "qr"); return; }
           window.requestAnimationFrame(function () { scanFrame(detector); });
         }).catch(function () { window.requestAnimationFrame(function () { scanFrame(detector); }); });
       }
       request(api + "/admin/events").then(function (data) {
         form.event_id.innerHTML = '<option value="">Selecciona evento</option>' + data.events.map(function (event) { return '<option value="' + Number(event.id) + '">' + escapeHtml(event.title) + '</option>'; }).join("");
+        var storedMode = window.localStorage.getItem("perigallo-access-mode");
+        if (storedMode && form.access_mode) form.access_mode.value = storedMode;
         var ticket = q("ticket");
         if (ticket) form.code.value = ticket;
       });
-      form.event_id.addEventListener("change", loadAttendees);
-      form.addEventListener("submit", function (event) { event.preventDefault(); validate(form.code.value.trim()); });
+      form.event_id.addEventListener("change", function () { clearProposal(); loadAttendees(); });
+      if (form.access_mode) form.access_mode.addEventListener("change", function () { window.localStorage.setItem("perigallo-access-mode", form.access_mode.value); clearProposal(); });
+      form.addEventListener("submit", function (event) { event.preventDefault(); inspect(form.code.value.trim(), "manual"); });
       form.querySelector("[data-open-camera]").addEventListener("click", function () {
         if (!form.event_id.value) { status.textContent = "Selecciona primero la experiencia."; return; }
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.BarcodeDetector) { status.textContent = "Este navegador no permite abrir el lector. Introduce el código de la entrada manualmente."; return; }
@@ -900,13 +967,20 @@
         }).then(function () { scanFrame(new window.BarcodeDetector({ formats: ["qr_code"] })); }).catch(function () { status.textContent = "No se pudo abrir la cámara. Revisa los permisos y vuelve a intentarlo."; stopCamera(); });
       });
       form.querySelector("[data-close-camera]").addEventListener("click", stopCamera);
+      if (decision) decision.addEventListener("click", function (event) {
+        if (event.target.closest("[data-confirm-access]")) { confirmProposal(); return; }
+        if (event.target.closest("[data-cancel-access]")) { clearProposal(); status.textContent = "Movimiento cancelado. No se ha modificado la entrada."; status.className = "ticket-status"; form.code.focus(); }
+      });
       if (attendeesRoot) attendeesRoot.addEventListener("click", function (event) {
+        var propose = event.target.closest("[data-propose-ticket]");
+        if (propose) { form.code.value = propose.dataset.proposeTicket; inspect(propose.dataset.proposeTicket, "manual"); return; }
         var button = event.target.closest("[data-revert-ticket]");
-        if (state.role !== "admin" || !button || !window.confirm("¿Revertir este acceso? La entrada volverá a estar disponible y se registrará la corrección.")) return;
+        if (state.role !== "admin" || !button || !window.confirm("¿Revertir el último movimiento? La corrección quedará registrada en el historial.")) return;
         jsonRequest(api + "/admin/events/" + Number(form.event_id.value) + "/tickets/" + encodeURIComponent(button.dataset.revertTicket) + "/revert", "POST", { reason: "Corrección desde control de acceso" })
-          .then(function () { status.textContent = "Acceso revertido. La entrada vuelve a estar disponible."; status.className = "ticket-status"; loadAttendees(); })
+          .then(function () { status.textContent = "Último movimiento revertido y registrado en el historial."; status.className = "ticket-status is-success"; loadAttendees(); })
           .catch(function (error) { status.textContent = error.message; status.className = "ticket-status is-error"; });
       });
+      window.setInterval(function () { if (document.visibilityState === "visible" && form.event_id.value) loadAttendees(); }, 20000);
     });
   }
 

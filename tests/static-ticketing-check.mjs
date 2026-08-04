@@ -17,6 +17,7 @@ const required = [
   "database/migrations/006_test_checkout_sandbox.sql",
   "database/migrations/007_la_perigalla_total_white_dress_code.sql",
   "database/migrations/008_secure_ticket_delivery_and_qr.sql",
+  "database/migrations/009_ticket_access_movements.sql",
   "eventos/index.html",
   "eventos/evento.html",
   "entradas/checkout/index.html",
@@ -194,8 +195,24 @@ const secureDeliveryMigration = readFileSync(join(root, "database/migrations/008
 for (const marker of ["qr_token_ciphertext", "not_configured", "device_reference", "revertida"]) {
   if (!secureDeliveryMigration.includes(marker)) throw new Error(`Secure delivery migration is missing ${marker}.`);
 }
-for (const marker of ["ticketQrUrl", "encryptQrToken", "extractQrToken", "adminEventAttendees", "reverseTicketCheckIn", "resendOrderEmail"]) {
+const accessMovementMigration = readFileSync(join(root, "database/migrations/009_ticket_access_movements.sql"), "utf8");
+for (const marker of ["ticket_access_movements", "access_status", "allow_reentry", "maximum_reentries", "reentry_until", "reversal_of_id"]) {
+  if (!accessMovementMigration.includes(marker)) throw new Error(`Access movement migration is missing ${marker}.`);
+}
+for (const marker of ["ticketQrUrl", "encryptQrToken", "extractQrToken", "adminEventAttendees", "reverseTicketCheckIn", "registerAccessMovement", "ticket_access_movements", "resendOrderEmail"]) {
   if (!(api + ticketing).includes(marker)) throw new Error(`Missing secure delivery contract: ${marker}`);
+}
+for (const marker of ["/admin/tickets/access-movement", "requireAccessCsrf"]) {
+  if (!api.includes(marker)) throw new Error(`Missing access movement endpoint contract: ${marker}`);
+}
+for (const file of ["check-in/index.html", "admin/entradas/acceso/index.html"]) {
+  const page = readFileSync(join(root, file), "utf8");
+  for (const marker of ["name=\"access_mode\"", "data-scan-decision", "data-connection-status"]) {
+    if (!page.includes(marker)) throw new Error(`Missing access scanner UI marker ${marker} in ${file}`);
+  }
+}
+for (const marker of ["access-movement", "Confirmar primera entrada", "ticket-access-decision", "perigallo-access-mode"]) {
+  if (!adminJs.includes(marker)) throw new Error(`Missing access scanner behavior: ${marker}`);
 }
 const adminAuth = readFileSync(join(root, "api/src/AdminAuth.php"), "utf8");
 for (const marker of ["ACCESS_USERNAME", "ACCESS_PASSWORD_HASH", "control_acceso", "requireAccessCsrf", "can_revert"]) {

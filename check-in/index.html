@@ -7,7 +7,7 @@
   <title>Control de acceso | Perigallo</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/assets/css/ticketing.css?v=20260804-ticket-pdf-v6">
+  <link rel="stylesheet" href="/assets/css/ticketing.css?v=20260804-access-control-v1">
 </head>
 <body class="ticketing-page">
   <header class="ticketing-nav"><a href="/admin/entradas/" aria-label="Volver al panel"><img class="ticketing-logo" src="/assets/images/perigallo-logo-original.png" alt="Perigallo"></a><nav><a href="/admin/entradas/">Panel</a></nav></header>
@@ -16,15 +16,16 @@
     <section class="ticket-section">
       <div class="ticket-section-inner" data-ticket-scan-wrap hidden>
         <form class="ticket-panel ticket-form" data-ticket-scan>
-          <div class="ticket-form-grid"><div class="ticket-field"><label>Evento</label><select name="event_id" required></select></div><div class="ticket-field"><label>Punto de acceso</label><input name="access_point" autocomplete="organization" placeholder="Ej. puerta principal"></div><div class="ticket-field"><label>Código / QR</label><input name="code" autocomplete="off" required placeholder="Escanea o escribe el código"></div></div>
-          <div class="ticket-actions"><button class="ticket-btn primary" type="button" data-open-camera>Abrir escáner</button><button class="ticket-btn" type="submit">Validar manualmente</button></div>
-          <div class="ticket-camera" data-ticket-camera-wrap hidden><video data-ticket-camera playsinline muted></video><p>Enfoca el código QR. La validación se hará contra el evento seleccionado.</p><button class="ticket-btn" type="button" data-close-camera>Cerrar cámara</button></div><p class="ticket-status" data-scan-status aria-live="polite"></p>
+          <div class="ticket-form-grid"><div class="ticket-field"><label>Evento</label><select name="event_id" required></select></div><div class="ticket-field"><label>Modo de acceso</label><select name="access_mode"><option value="automatic">Automático</option><option value="entry">Solo entradas</option><option value="exit">Solo salidas</option></select></div><div class="ticket-field"><label>Punto de acceso</label><input name="access_point" autocomplete="organization" placeholder="Ej. puerta principal"></div><div class="ticket-field"><label>Código / QR</label><input name="code" autocomplete="off" required placeholder="Escanea o escribe el código"></div></div>
+          <div class="ticket-scanner-meta"><span data-connection-status>Comprobando conexión...</span><span>La cámara solo propone el movimiento; el equipo lo confirma.</span></div>
+          <div class="ticket-actions"><button class="ticket-btn primary" type="button" data-open-camera>Abrir escáner</button><button class="ticket-btn" type="submit">Comprobar entrada</button></div>
+          <div class="ticket-camera" data-ticket-camera-wrap hidden><video data-ticket-camera playsinline muted></video><p>Enfoca el código QR. Cada movimiento se consulta y confirma en el servidor.</p><button class="ticket-btn" type="button" data-close-camera>Cerrar cámara</button></div><p class="ticket-status" data-scan-status aria-live="polite"></p><div data-scan-decision aria-live="polite"></div>
         </form>
         <section class="ticket-attendees" data-ticket-attendees hidden aria-live="polite"></section>
       </div>
       <div class="ticket-section-inner" data-admin-login-wrap hidden><div class="ticket-panel login-panel"><span class="ticket-eyebrow">Acceso privado</span><h2>Entrar al control de acceso</h2><form class="ticket-form" data-admin-login><div class="ticket-form-grid"><div class="ticket-field"><label for="username">Usuario</label><input id="username" name="username" autocomplete="username" required></div><div class="ticket-field"><label for="password">Contraseña</label><input id="password" name="password" type="password" autocomplete="current-password" required></div></div><button class="ticket-btn primary" type="submit">Entrar</button><p class="ticket-status" data-admin-status></p></form></div></div>
     </section>
   </main>
-  <script src="/assets/js/ticketing-admin.js" defer></script>
+  <script src="/assets/js/ticketing-admin.js?v=20260804-access-control-v1" defer></script>
 </body>
 </html>

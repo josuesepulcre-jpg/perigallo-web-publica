@@ -798,7 +798,7 @@ final class Ticketing
               slug=?, title=?, subtitle=?, short_description=?, description=?, category=?, event_type=?, origin_app=?, source_updated_at=NOW(), tags=?, locale=?,
               image_url=?, card_image_url=?, social_image_url=?, gallery_json=?, video_url=?, logo_url=?,
               location=?, address=?, postal_code=?, locality=?, province=?, country=?, maps_url=?, access_notes=?, parking_info=?, venue_type=?,
-              starts_at=?, ends_at=?, doors_open_at=?, timezone=?, schedule_note=?, sale_starts_at=?, sale_ends_at=?, capacity=?,
+              starts_at=?, ends_at=?, doors_open_at=?, timezone=?, schedule_note=?, sale_starts_at=?, sale_ends_at=?, capacity=?, allow_reentry=?, maximum_reentries=?, reentry_until=?, require_manual_confirmation_for_reentry=?,
               included_text=?, access_conditions=?, minor_policy=?, refund_policy=?, faq_json=?, contact_info=?, recommendations=?, dress_code=?, accessibility_info=?,
               status=?, visible=?, promoter=?, publication_at=?, unlisted=?, link_only=?, show_sold_out=?, show_availability=?, show_price_from=?,
               seo_title=?, seo_description=?, seo_image_url=?, canonical_url=?, updated_at=NOW()
@@ -839,6 +839,10 @@ final class Ticketing
             $saleStartsAt,
             $saleEndsAt,
             $capacity,
+            array_key_exists('allow_reentry', $merged) && empty($merged['allow_reentry']) ? 0 : 1,
+            isset($merged['maximum_reentries']) && (int) $merged['maximum_reentries'] > 0 ? (int) $merged['maximum_reentries'] : null,
+            $this->nullableDate((string) ($merged['reentry_until'] ?? '')),
+            array_key_exists('require_manual_confirmation_for_reentry', $merged) && empty($merged['require_manual_confirmation_for_reentry']) ? 0 : 1,
             trim((string) ($merged['included_text'] ?? '')),
             trim((string) ($merged['access_conditions'] ?? '')),
             trim((string) ($merged['minor_policy'] ?? '')),
@@ -1092,65 +1096,83 @@ final class Ticketing
         if ($eventId < 1 || $scannedValue === '') {
             throw new InvalidArgumentException('Selecciona un evento e introduce o escanea una entrada.');
         }
-        $qrToken = $this->extractQrToken($scannedValue);
+        $event = $this->requireAdminEvent($eventId);
+        $ticket = $this->findTicketForAccess($scannedValue);
+        $mode = in_array((string) ($data['mode'] ?? 'automatic'), ['entry', 'exit', 'automatic'], true) ? (string) $data['mode'] : 'automatic';
+        $result = $this->accessPreview($ticket, $event, $eventId, $mode);
+        $this->recordScanAttempt($ticket, $eventId, $scannedValue, $result['audit_result'], $device, $data, $this->extractQrToken($scannedValue) !== null);
+        return [
+            'result' => $result['result'],
+            'action' => $result['action'],
+            'message' => $result['message'],
+            'mode' => $mode,
+            'ticket' => $ticket ? $this->ticketAccessPayload($ticket) : null,
+        ];
+    }
+
+    public function registerAccessMovement(array $data): array
+    {
+        require_fields($data, ['event_id', 'action']);
+        $eventId = (int) $data['event_id'];
+        $scannedValue = clean_string((string) ($data['token'] ?? $data['code'] ?? ''), 512);
+        $action = (string) $data['action'];
+        if ($eventId < 1 || $scannedValue === '' || !in_array($action, ['entry', 'exit', 'reentry'], true)) {
+            throw new InvalidArgumentException('Faltan datos para registrar el movimiento.');
+        }
+        $method = in_array((string) ($data['method'] ?? 'qr'), ['qr', 'manual'], true) ? (string) $data['method'] : 'qr';
+        $device = clean_string((string) ($data['device_reference'] ?? ''), 190);
+        $notes = clean_string((string) ($data['notes'] ?? ''), 500);
         $this->pdo->beginTransaction();
         try {
-            $stmt = $this->pdo->prepare(
-                'SELECT t.*, o.name AS attendee_name, toi.ticket_type_name
-                 FROM tickets t
-                 JOIN ticket_order_items toi ON toi.id = t.order_item_id
-                 JOIN ticket_orders o ON o.id = toi.order_id
-                 WHERE ' . ($qrToken !== null ? 't.qr_token_hash = ?' : 't.public_code = ?') . ' FOR UPDATE'
-            );
-            $stmt->execute([$qrToken !== null ? hash('sha256', $qrToken) : $scannedValue]);
-            $ticket = $stmt->fetch();
-            $result = 'inexistente';
-            if ($ticket) {
-                if ((int) $ticket['event_id'] !== $eventId) {
-                    $result = 'otro_evento';
-                } elseif ($ticket['status'] === 'cancelled') {
-                    $result = 'cancelada';
-                } elseif ($ticket['status'] === 'refunded') {
-                    $result = 'reembolsada';
-                } elseif ($ticket['status'] === 'blocked') {
-                    $result = 'bloqueada';
-                } elseif ($ticket['status'] === 'used') {
-                    $result = 'ya_utilizada';
-                } elseif ($ticket['status'] === 'issued') {
-                    $result = 'valida';
-                    $accessedAt = now_mysql();
-                    $this->pdo->prepare('UPDATE tickets SET status = "used", used_at = ?, updated_at = NOW() WHERE id = ?')->execute([$accessedAt, $ticket['id']]);
-                    $ticket['status'] = 'used';
-                    $ticket['used_at'] = $accessedAt;
-                }
+            $event = $this->requireAdminEvent($eventId);
+            $ticket = $this->findTicketForAccess($scannedValue, true);
+            if (!$ticket) {
+                throw new RuntimeException('No encontramos una entrada válida.', 409);
             }
-            $this->pdo->prepare(
-                'INSERT INTO ticket_scans (ticket_id, event_id, scanned_code, result, scanned_by, ip_address, device_reference, metadata, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())'
-            )->execute([
-                $ticket['id'] ?? null,
-                $eventId,
-                $scannedValue,
-                $result,
-                AdminAuth::operatorName(),
-                client_ip(),
-                $device ?: null,
-                json_encode([
-                    'source' => $qrToken !== null ? 'qr' : 'manual',
-                    'access_point' => clean_string((string) ($data['access_point'] ?? ''), 120) ?: null,
-                ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-            ]);
+            if ((int) $ticket['event_id'] !== $eventId) {
+                throw new RuntimeException('Esta entrada corresponde a otra experiencia.', 409);
+            }
+            if ((string) $ticket['status'] !== 'issued') {
+                throw new RuntimeException($this->administrativeAccessMessage((string) $ticket['status']), 409);
+            }
+            $previous = (string) ($ticket['access_status'] ?? 'not_entered');
+            $expected = $previous === 'not_entered' ? 'entry' : ($previous === 'inside' ? 'exit' : 'reentry');
+            if ($action !== $expected) {
+                throw new RuntimeException($this->unexpectedAccessActionMessage($previous), 409);
+            }
+            if ($action === 'reentry') {
+                $this->assertReentryAllowed($event, $ticket);
+            }
+
+            $at = now_mysql();
+            $next = $action === 'exit' ? 'outside' : 'inside';
+            $entryCount = (int) ($ticket['entry_count'] ?? 0) + ($action === 'exit' ? 0 : 1);
+            $exitCount = (int) ($ticket['exit_count'] ?? 0) + ($action === 'exit' ? 1 : 0);
+            $firstEntryAt = $action === 'entry' ? ((string) ($ticket['first_entry_at'] ?? '') ?: $at) : ($ticket['first_entry_at'] ?? null);
+            $lastEntryAt = $action === 'exit' ? ($ticket['last_entry_at'] ?? null) : $at;
+            $lastExitAt = $action === 'exit' ? $at : ($ticket['last_exit_at'] ?? null);
+            $update = $this->pdo->prepare(
+                'UPDATE tickets SET access_status=?, first_entry_at=?, last_entry_at=?, last_exit_at=?, entry_count=?, exit_count=?, last_access_action=?, last_access_by=?, used_at=?, updated_at=NOW()
+                 WHERE id=? AND event_id=? AND status="issued" AND access_status=?'
+            );
+            $update->execute([$next, $firstEntryAt, $lastEntryAt, $lastExitAt, $entryCount, $exitCount, $action, AdminAuth::operatorName(), $lastEntryAt, $ticket['id'], $eventId, $previous]);
+            if ($update->rowCount() !== 1) {
+                throw new RuntimeException('El estado de esta entrada acaba de cambiar en otro dispositivo. Vuelve a escanearla.', 409);
+            }
+            $this->insertAccessMovement((int) $ticket['id'], $eventId, $action, $previous, $next, $method, $device, $notes);
             $this->pdo->commit();
-            return ['result' => $result, 'ticket' => $ticket ? [
-                'public_code' => $ticket['public_code'],
-                'status' => $ticket['status'],
-                'used_at' => $ticket['used_at'],
-                'attendee_name' => $ticket['attendee_name'],
-                'ticket_type_name' => $ticket['ticket_type_name'],
-            ] : null];
-        } catch (\Throwable $e) {
-            $this->pdo->rollBack();
-            throw $e;
+            $ticket['access_status'] = $next;
+            $ticket['first_entry_at'] = $firstEntryAt;
+            $ticket['last_entry_at'] = $lastEntryAt;
+            $ticket['last_exit_at'] = $lastExitAt;
+            $ticket['entry_count'] = $entryCount;
+            $ticket['exit_count'] = $exitCount;
+            return ['result' => 'success', 'action' => $action, 'message' => $this->accessMovementMessage($action), 'ticket' => $this->ticketAccessPayload($ticket)];
+        } catch (\Throwable $error) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $error;
         }
     }
 
@@ -1158,25 +1180,41 @@ final class Ticketing
     {
         $this->requireAdminEvent($eventId);
         $rows = $this->pdo->prepare(
-            'SELECT t.id, t.public_code, t.status, t.used_at, toi.ticket_type_name,
+            'SELECT t.id, t.public_code, t.status, t.access_status, t.first_entry_at, t.last_entry_at, t.last_exit_at, t.entry_count, t.exit_count, t.last_access_action, t.last_access_by, toi.ticket_type_name,
                     o.name, o.email, o.phone, COALESCE(o.test_reference, o.redsys_order) AS order_reference
              FROM tickets t
              JOIN ticket_order_items toi ON toi.id = t.order_item_id
              JOIN ticket_orders o ON o.id = toi.order_id
              WHERE t.event_id = ?
-             ORDER BY t.used_at DESC, o.created_at ASC, t.id ASC'
+             ORDER BY FIELD(t.access_status, "inside", "outside", "not_entered"), t.last_entry_at DESC, o.created_at ASC, t.id ASC'
         );
         $rows->execute([$eventId]);
         $tickets = $rows->fetchAll();
-        $metrics = ['issued' => 0, 'used' => 0, 'cancelled' => 0, 'refunded' => 0, 'blocked' => 0];
+        $metrics = ['issued' => 0, 'cancelled' => 0, 'refunded' => 0, 'blocked' => 0, 'not_entered' => 0, 'inside' => 0, 'outside' => 0, 'entries' => 0, 'exits' => 0, 'reentries' => 0];
         foreach ($tickets as $ticket) {
             $status = (string) $ticket['status'];
             $metrics[$status] = ($metrics[$status] ?? 0) + 1;
+            if ($status === 'issued') {
+                $presence = (string) ($ticket['access_status'] ?? 'not_entered');
+                $metrics[$presence] = ($metrics[$presence] ?? 0) + 1;
+                $metrics['entries'] += (int) ($ticket['entry_count'] ?? 0);
+                $metrics['exits'] += (int) ($ticket['exit_count'] ?? 0);
+                $metrics['reentries'] += max(0, (int) ($ticket['entry_count'] ?? 0) - 1);
+            }
         }
         $metrics['total'] = count($tickets);
-        $metrics['pending'] = $metrics['issued'];
-        $metrics['access_percent'] = $metrics['total'] > 0 ? (int) round($metrics['used'] / $metrics['total'] * 100) : 0;
-        return ['metrics' => $metrics, 'attendees' => $tickets];
+        $metrics['pending'] = $metrics['not_entered'];
+        $metrics['access_percent'] = $metrics['issued'] > 0 ? (int) round($metrics['inside'] / $metrics['issued'] * 100) : 0;
+        $history = $this->pdo->prepare(
+            'SELECT m.action, m.previous_access_status, m.new_access_status, m.method, m.performed_by, m.device_reference, m.notes, m.created_at, t.public_code, o.name
+             FROM ticket_access_movements m
+             JOIN tickets t ON t.id = m.ticket_id
+             JOIN ticket_order_items toi ON toi.id = t.order_item_id
+             JOIN ticket_orders o ON o.id = toi.order_id
+             WHERE m.event_id = ? ORDER BY m.id DESC LIMIT 100'
+        );
+        $history->execute([$eventId]);
+        return ['metrics' => $metrics, 'attendees' => $tickets, 'history' => $history->fetchAll()];
     }
 
     public function reverseTicketCheckIn(int $eventId, string $code, string $reason = ''): array
@@ -1194,19 +1232,23 @@ final class Ticketing
             if (!$ticket) {
                 throw new InvalidArgumentException('Entrada no encontrada para esta experiencia.');
             }
-            if ($ticket['status'] !== 'used') {
-                throw new RuntimeException('Solo se puede revertir una entrada ya utilizada.', 409);
+            $movement = $this->pdo->prepare(
+                'SELECT m.* FROM ticket_access_movements m
+                 WHERE m.ticket_id = ? AND m.action IN ("entry", "exit", "reentry")
+                   AND NOT EXISTS (SELECT 1 FROM ticket_access_movements r WHERE r.reversal_of_id = m.id)
+                 ORDER BY m.id DESC LIMIT 1 FOR UPDATE'
+            );
+            $movement->execute([$ticket['id']]);
+            $last = $movement->fetch();
+            if (!$last) {
+                throw new RuntimeException('No hay ningún movimiento de acceso que revertir.', 409);
             }
-            $this->pdo->prepare('UPDATE tickets SET status = "issued", used_at = NULL, updated_at = NOW() WHERE id = ?')->execute([$ticket['id']]);
-            $this->pdo->prepare(
-                'INSERT INTO ticket_scans (ticket_id, event_id, scanned_code, result, scanned_by, ip_address, device_reference, metadata, created_at)
-                 VALUES (?, ?, ?, "revertida", ?, ?, ?, ?, NOW())'
-            )->execute([
-                $ticket['id'], $eventId, $code, AdminAuth::operatorName(), client_ip(), clean_string($reason, 190) ?: null,
-                json_encode(['reason' => clean_string($reason, 190) ?: null], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-            ]);
+            $this->insertAccessMovement((int) $ticket['id'], $eventId, 'reversal', (string) $last['new_access_status'], (string) $last['previous_access_status'], 'manual', clean_string($reason, 190), clean_string($reason, 500), (int) $last['id']);
+            $summary = $this->rebuildAccessSummary((int) $ticket['id']);
+            $this->pdo->prepare('UPDATE tickets SET access_status=?, first_entry_at=?, last_entry_at=?, last_exit_at=?, entry_count=?, exit_count=?, last_access_action="reversal", last_access_by=?, used_at=?, updated_at=NOW() WHERE id=?')
+                ->execute([$summary['access_status'], $summary['first_entry_at'], $summary['last_entry_at'], $summary['last_exit_at'], $summary['entry_count'], $summary['exit_count'], AdminAuth::operatorName(), $summary['last_entry_at'], $ticket['id']]);
             $this->pdo->commit();
-            return ['public_code' => $code, 'status' => 'issued'];
+            return ['public_code' => $code, 'access_status' => $summary['access_status']];
         } catch (\Throwable $error) {
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
@@ -1215,11 +1257,105 @@ final class Ticketing
         }
     }
 
+    private function findTicketForAccess(string $scannedValue, bool $forUpdate = false): ?array
+    {
+        $qrToken = $this->extractQrToken($scannedValue);
+        $stmt = $this->pdo->prepare(
+            'SELECT t.*, o.name AS attendee_name, toi.ticket_type_name
+             FROM tickets t
+             JOIN ticket_order_items toi ON toi.id = t.order_item_id
+             JOIN ticket_orders o ON o.id = toi.order_id
+             WHERE ' . ($qrToken !== null ? 't.qr_token_hash = ?' : 't.public_code = ?') . ($forUpdate ? ' FOR UPDATE' : '')
+        );
+        $stmt->execute([$qrToken !== null ? hash('sha256', $qrToken) : $scannedValue]);
+        return $stmt->fetch() ?: null;
+    }
+
+    private function accessPreview(?array $ticket, array $event, int $eventId, string $mode): array
+    {
+        if (!$ticket) return ['result' => 'inexistente', 'action' => null, 'message' => 'No encontramos una entrada válida.', 'audit_result' => 'inexistente'];
+        if ((int) $ticket['event_id'] !== $eventId) return ['result' => 'otro_evento', 'action' => null, 'message' => 'Esta entrada corresponde a otra experiencia.', 'audit_result' => 'otro_evento'];
+        if ((string) $ticket['status'] !== 'issued') return ['result' => (string) $ticket['status'], 'action' => null, 'message' => $this->administrativeAccessMessage((string) $ticket['status']), 'audit_result' => $this->auditResultForStatus((string) $ticket['status'])];
+        $presence = (string) ($ticket['access_status'] ?? 'not_entered');
+        if ($mode === 'entry' && $presence === 'inside') return ['result' => 'already_inside', 'action' => null, 'message' => 'El asistente ya está dentro del recinto.', 'audit_result' => 'dentro'];
+        if ($mode === 'exit' && $presence === 'outside') return ['result' => 'already_outside', 'action' => null, 'message' => 'La salida ya está registrada.', 'audit_result' => 'fuera'];
+        if ($mode === 'exit' && $presence === 'not_entered') return ['result' => 'not_entered', 'action' => null, 'message' => 'Esta entrada todavía no ha accedido.', 'audit_result' => 'sin_acceder'];
+        $action = $presence === 'not_entered' ? 'entry' : ($presence === 'inside' ? 'exit' : 'reentry');
+        if ($action === 'reentry' && empty($event['allow_reentry'])) return ['result' => 'reentry_not_allowed', 'action' => null, 'message' => 'La reentrada no está permitida para este evento.', 'audit_result' => 'reentrada_no_permitida'];
+        return ['result' => 'ready', 'action' => $action, 'message' => $this->accessMovementPrompt($action), 'audit_result' => $presence === 'inside' ? 'dentro' : ($presence === 'outside' ? 'fuera' : 'sin_acceder')];
+    }
+
+    private function recordScanAttempt(?array $ticket, int $eventId, string $scannedValue, string $result, string $device, array $data, bool $isQr): void
+    {
+        $storedCode = $ticket['public_code'] ?? ('token:' . substr(hash('sha256', $scannedValue), 0, 24));
+        $this->pdo->prepare('INSERT INTO ticket_scans (ticket_id, event_id, scanned_code, result, scanned_by, ip_address, device_reference, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())')
+            ->execute([$ticket['id'] ?? null, $eventId, $storedCode, $result, AdminAuth::operatorName(), client_ip(), $device ?: null, json_encode(['source' => $isQr ? 'qr' : 'manual', 'access_point' => clean_string((string) ($data['access_point'] ?? ''), 120) ?: null], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)]);
+    }
+
+    private function insertAccessMovement(int $ticketId, int $eventId, string $action, string $previous, string $next, string $method, string $device, string $notes, ?int $reversalOfId = null): void
+    {
+        $this->pdo->prepare('INSERT INTO ticket_access_movements (ticket_id, event_id, action, previous_access_status, new_access_status, method, performed_by, device_reference, notes, reversal_of_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())')
+            ->execute([$ticketId, $eventId, $action, $previous, $next, $method, AdminAuth::operatorName(), $device ?: null, $notes ?: null, $reversalOfId]);
+    }
+
+    private function assertReentryAllowed(array $event, array $ticket): void
+    {
+        if (empty($event['allow_reentry'])) throw new RuntimeException('La reentrada no está permitida para este evento.', 409);
+        $limit = (int) ($event['maximum_reentries'] ?? 0);
+        if ($limit > 0 && max(0, (int) ($ticket['entry_count'] ?? 0) - 1) >= $limit) throw new RuntimeException('Esta entrada ha alcanzado el máximo de reentradas permitido.', 409);
+        $until = (string) ($event['reentry_until'] ?? '');
+        if ($until !== '' && strtotime($until) < time()) throw new RuntimeException('La hora límite para reentrar ya ha finalizado.', 409);
+    }
+
+    private function rebuildAccessSummary(int $ticketId): array
+    {
+        $stmt = $this->pdo->prepare('SELECT action, created_at FROM ticket_access_movements m WHERE m.ticket_id = ? AND m.action IN ("entry", "exit", "reentry") AND NOT EXISTS (SELECT 1 FROM ticket_access_movements r WHERE r.reversal_of_id = m.id) ORDER BY m.id ASC');
+        $stmt->execute([$ticketId]);
+        $movements = $stmt->fetchAll();
+        $entries = array_values(array_filter($movements, fn (array $movement) => in_array($movement['action'], ['entry', 'reentry'], true)));
+        $exits = array_values(array_filter($movements, fn (array $movement) => $movement['action'] === 'exit'));
+        $last = $movements ? $movements[count($movements) - 1] : null;
+        return ['access_status' => !$last ? 'not_entered' : ($last['action'] === 'exit' ? 'outside' : 'inside'), 'first_entry_at' => $entries[0]['created_at'] ?? null, 'last_entry_at' => $entries ? $entries[count($entries) - 1]['created_at'] : null, 'last_exit_at' => $exits ? $exits[count($exits) - 1]['created_at'] : null, 'entry_count' => count($entries), 'exit_count' => count($exits)];
+    }
+
+    private function ticketAccessPayload(array $ticket): array
+    {
+        return ['public_code' => $ticket['public_code'], 'status' => $ticket['status'], 'access_status' => $ticket['access_status'] ?? 'not_entered', 'first_entry_at' => $ticket['first_entry_at'] ?? null, 'last_entry_at' => $ticket['last_entry_at'] ?? null, 'last_exit_at' => $ticket['last_exit_at'] ?? null, 'entry_count' => (int) ($ticket['entry_count'] ?? 0), 'exit_count' => (int) ($ticket['exit_count'] ?? 0), 'last_access_by' => $ticket['last_access_by'] ?? null, 'attendee_name' => $ticket['attendee_name'], 'ticket_type_name' => $ticket['ticket_type_name']];
+    }
+
+    private function administrativeAccessMessage(string $status): string
+    {
+        return ['cancelled' => 'Esta entrada está cancelada.', 'refunded' => 'Esta entrada está reembolsada.', 'blocked' => 'Esta entrada está bloqueada.'][ $status ] ?? 'Esta entrada no puede acceder.';
+    }
+
+    private function auditResultForStatus(string $status): string
+    {
+        return ['cancelled' => 'cancelada', 'refunded' => 'reembolsada', 'blocked' => 'bloqueada'][ $status ] ?? 'inexistente';
+    }
+
+    private function unexpectedAccessActionMessage(string $presence): string
+    {
+        return ['not_entered' => 'Esta entrada todavía no ha accedido.', 'inside' => 'El asistente ya está dentro del recinto.', 'outside' => 'La salida ya está registrada.'][ $presence ] ?? 'El estado de acceso no es válido.';
+    }
+
+    private function accessMovementPrompt(string $action): string
+    {
+        return ['entry' => 'Primera entrada preparada para confirmar.', 'exit' => 'El asistente está dentro. Confirma la salida.', 'reentry' => 'El asistente está fuera. Confirma la reentrada.'][ $action ] ?? 'Movimiento pendiente.';
+    }
+
+    private function accessMovementMessage(string $action): string
+    {
+        return ['entry' => 'Acceso autorizado.', 'exit' => 'Salida registrada.', 'reentry' => 'Reentrada autorizada.'][ $action ] ?? 'Movimiento registrado.';
+    }
+
     private function adminEvent(array $event): array
     {
         $metrics = $this->eventMetrics((int) $event['id']);
         $event['id'] = (int) $event['id'];
         $event['capacity'] = (int) $event['capacity'];
+        $event['allow_reentry'] = !array_key_exists('allow_reentry', $event) || (bool) $event['allow_reentry'];
+        $event['maximum_reentries'] = isset($event['maximum_reentries']) ? (int) $event['maximum_reentries'] : null;
+        $event['require_manual_confirmation_for_reentry'] = !array_key_exists('require_manual_confirmation_for_reentry', $event) || (bool) $event['require_manual_confirmation_for_reentry'];
         $event['visible'] = (bool) $event['visible'];
         foreach (['unlisted', 'link_only', 'show_sold_out', 'show_availability', 'show_price_from'] as $field) {
             $event[$field] = array_key_exists($field, $event) ? (bool) $event[$field] : false;
