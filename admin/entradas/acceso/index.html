@@ -32,6 +32,7 @@
       <form class="ticket-panel ticket-form" data-ticket-scan>
         <div class="ticket-form-grid">
           <div class="ticket-field"><label>Evento</label><select name="event_id" required></select></div>
+          <div class="ticket-field"><label>Punto de acceso</label><input name="access_point" autocomplete="organization" placeholder="Ej. puerta principal"></div>
           <div class="ticket-field"><label>Código / QR</label><input name="code" autocomplete="off" required autofocus placeholder="Escanea o escribe el código"></div>
         </div>
         <div class="ticket-actions"><button class="ticket-btn primary" type="button" data-open-camera>Abrir escáner</button><button class="ticket-btn" type="submit">Validar manualmente</button></div>

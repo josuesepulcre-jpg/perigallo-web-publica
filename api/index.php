@@ -57,6 +57,11 @@ try {
         return;
     }
 
+    if ($method === 'POST' && preg_match('#^/orders/([A-Za-z0-9_-]+)/resend-whatsapp$#', $path, $m)) {
+        json_response(['ok' => true] + $ticketing->resendOrderWhatsApp($m[1]));
+        return;
+    }
+
     if ($method === 'POST' && $path === '/redsys/notification') {
         $notification = $_POST;
         if (!$notification) {

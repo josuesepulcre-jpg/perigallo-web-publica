@@ -203,7 +203,7 @@ final class Ticketing
         $items->execute([(int) $order['id']]);
 
         $tickets = $this->pdo->prepare(
-            'SELECT t.id, t.public_code, t.qr_token_ciphertext, t.status, t.issued_at, t.used_at, e.title AS event_title, e.starts_at, e.ends_at, e.location, e.locality, e.province, e.dress_code, toi.ticket_type_name
+            'SELECT t.id, t.public_code, t.qr_token_ciphertext, t.status, t.issued_at, t.used_at, e.title AS event_title, e.starts_at, e.ends_at, e.doors_open_at, e.location, e.address, e.locality, e.province, e.dress_code, toi.ticket_type_name
              FROM tickets t
              JOIN events e ON e.id = t.event_id
              JOIN ticket_order_items toi ON toi.id = t.order_item_id
@@ -270,19 +270,47 @@ final class Ticketing
             throw new RuntimeException('Ya hemos preparado un envio recientemente. Espera unos minutos antes de solicitar otro.', 409);
         }
 
+        $link = app_base_url() . '/entradas/pedido/?token=' . rawurlencode((string) $order['public_token']);
+        $this->mailer->queueOrderEmail(
+            $this->pdo,
+            (int) $order['id'],
+            (string) $order['email'],
+            'Tus entradas Perigallo',
+            "Hola {$order['name']},\n\nPuedes consultar y descargar tus entradas aquí:\n{$link}\n\nContacto Perigallo: +34 691 499 985\n"
+        );
+
+        return ['message' => 'Hemos preparado un nuevo envio a ' . (string) $order['email'] . '.'];
+    }
+
+    public function resendOrderWhatsApp(string $token): array
+    {
+        $order = $this->getOrderRecordByToken($token);
+        if (!$order || $this->effectiveOrderStatus($order) !== 'paid') {
+            throw new RuntimeException('No se pueden reenviar entradas de este pedido.', 409);
+        }
+        $recent = $this->pdo->prepare(
+            'SELECT status, created_at FROM ticket_delivery_logs WHERE order_id = ? AND channel = "whatsapp" ORDER BY id DESC LIMIT 1'
+        );
+        $recent->execute([(int) $order['id']]);
+        $lastAttempt = $recent->fetch() ?: [];
+        if (($lastAttempt['status'] ?? '') !== 'not_configured' && !empty($lastAttempt['created_at']) && strtotime((string) $lastAttempt['created_at']) > time() - 300) {
+            throw new RuntimeException('Ya existe un intento reciente de WhatsApp. Espera unos minutos antes de volver a solicitarlo.', 409);
+        }
         $eventStmt = $this->pdo->prepare('SELECT e.* FROM events e JOIN ticket_order_items toi ON toi.event_id = e.id WHERE toi.order_id = ? LIMIT 1');
         $eventStmt->execute([(int) $order['id']]);
         $event = $eventStmt->fetch();
         $quantityStmt = $this->pdo->prepare('SELECT COALESCE(SUM(quantity), 0) FROM ticket_order_items WHERE order_id = ?');
         $quantityStmt->execute([(int) $order['id']]);
-        $quantity = (int) $quantityStmt->fetchColumn();
-        if ($event) {
-            $result = (new TicketDeliveryService($this->mailer))->sendOrder($this->pdo, $order, $event, $quantity);
-            $status = $result['email'] === 'sent' && $result['whatsapp'] === 'sent' ? 'sent' : ($result['email'] === 'sent' ? 'partially_sent' : 'failed');
-            $this->pdo->prepare('UPDATE ticket_orders SET delivery_status = ?, updated_at = NOW() WHERE id = ?')->execute([$status, $orderId]);
+        if (!$event) {
+            throw new RuntimeException('No se ha encontrado la experiencia de este pedido.', 409);
         }
-
-        return ['message' => 'Hemos preparado un nuevo envio a ' . (string) $order['email'] . '.'];
+        $status = (new WhatsAppDeliveryService())->sendOrder($this->pdo, $order, $event, (int) $quantityStmt->fetchColumn());
+        $messages = [
+            'sent' => 'Hemos enviado el enlace de tus entradas por WhatsApp.',
+            'not_configured' => 'El envío por WhatsApp todavía no está configurado. Puedes descargar las entradas desde esta página.',
+            'failed' => 'No se pudo enviar WhatsApp. Tus entradas siguen disponibles en esta página.',
+        ];
+        return ['status' => $status, 'message' => $messages[$status] ?? 'Estamos preparando el envío por WhatsApp.'];
     }
 
     /** Creates an admin-only sandbox order. It never reserves production capacity. */
@@ -1067,9 +1095,13 @@ final class Ticketing
         $qrToken = $this->extractQrToken($scannedValue);
         $this->pdo->beginTransaction();
         try {
-            $stmt = $qrToken !== null
-                ? $this->pdo->prepare('SELECT * FROM tickets WHERE qr_token_hash = ? FOR UPDATE')
-                : $this->pdo->prepare('SELECT * FROM tickets WHERE public_code = ? FOR UPDATE');
+            $stmt = $this->pdo->prepare(
+                'SELECT t.*, o.name AS attendee_name, toi.ticket_type_name
+                 FROM tickets t
+                 JOIN ticket_order_items toi ON toi.id = t.order_item_id
+                 JOIN ticket_orders o ON o.id = toi.order_id
+                 WHERE ' . ($qrToken !== null ? 't.qr_token_hash = ?' : 't.public_code = ?') . ' FOR UPDATE'
+            );
             $stmt->execute([$qrToken !== null ? hash('sha256', $qrToken) : $scannedValue]);
             $ticket = $stmt->fetch();
             $result = 'inexistente';
@@ -1093,8 +1125,8 @@ final class Ticketing
                 }
             }
             $this->pdo->prepare(
-                'INSERT INTO ticket_scans (ticket_id, event_id, scanned_code, result, scanned_by, ip_address, device_reference, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, NOW())'
+                'INSERT INTO ticket_scans (ticket_id, event_id, scanned_code, result, scanned_by, ip_address, device_reference, metadata, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())'
             )->execute([
                 $ticket['id'] ?? null,
                 $eventId,
@@ -1103,12 +1135,18 @@ final class Ticketing
                 $_SESSION['admin'] ?? 'admin',
                 client_ip(),
                 $device ?: null,
+                json_encode([
+                    'source' => $qrToken !== null ? 'qr' : 'manual',
+                    'access_point' => clean_string((string) ($data['access_point'] ?? ''), 120) ?: null,
+                ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ]);
             $this->pdo->commit();
             return ['result' => $result, 'ticket' => $ticket ? [
                 'public_code' => $ticket['public_code'],
                 'status' => $ticket['status'],
                 'used_at' => $ticket['used_at'],
+                'attendee_name' => $ticket['attendee_name'],
+                'ticket_type_name' => $ticket['ticket_type_name'],
             ] : null];
         } catch (\Throwable $e) {
             $this->pdo->rollBack();
@@ -1161,10 +1199,11 @@ final class Ticketing
             }
             $this->pdo->prepare('UPDATE tickets SET status = "issued", used_at = NULL, updated_at = NOW() WHERE id = ?')->execute([$ticket['id']]);
             $this->pdo->prepare(
-                'INSERT INTO ticket_scans (ticket_id, event_id, scanned_code, result, scanned_by, ip_address, device_reference, created_at)
-                 VALUES (?, ?, ?, "revertida", ?, ?, ?, NOW())'
+                'INSERT INTO ticket_scans (ticket_id, event_id, scanned_code, result, scanned_by, ip_address, device_reference, metadata, created_at)
+                 VALUES (?, ?, ?, "revertida", ?, ?, ?, ?, NOW())'
             )->execute([
                 $ticket['id'], $eventId, $code, $_SESSION['admin'] ?? 'admin', client_ip(), clean_string($reason, 190) ?: null,
+                json_encode(['reason' => clean_string($reason, 190) ?: null], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ]);
             $this->pdo->commit();
             return ['public_code' => $code, 'status' => 'issued'];
@@ -1799,9 +1838,17 @@ final class Ticketing
         if (!$order) {
             return;
         }
-        $link = app_base_url() . '/entradas/pedido/?token=' . rawurlencode((string) $order['public_token']);
-        $body = "Hola {$order['name']},\n\nTu pago se ha confirmado correctamente.\n\nPuedes consultar y descargar tus entradas aqui:\n{$link}\n\nContacto Perigallo: +34 691 499 985\n";
-        $this->mailer->queueOrderEmail($this->pdo, $orderId, (string) $order['email'], 'Tus entradas Perigallo', $body);
+        $eventStmt = $this->pdo->prepare('SELECT e.* FROM events e JOIN ticket_order_items toi ON toi.event_id = e.id WHERE toi.order_id = ? LIMIT 1');
+        $eventStmt->execute([$orderId]);
+        $event = $eventStmt->fetch();
+        if (!$event) {
+            return;
+        }
+        $quantityStmt = $this->pdo->prepare('SELECT COALESCE(SUM(quantity), 0) FROM ticket_order_items WHERE order_id = ?');
+        $quantityStmt->execute([$orderId]);
+        $result = (new TicketDeliveryService($this->mailer))->sendOrder($this->pdo, $order, $event, (int) $quantityStmt->fetchColumn());
+        $status = $result['email'] === 'sent' && $result['whatsapp'] === 'sent' ? 'sent' : ($result['email'] === 'sent' ? 'partially_sent' : 'failed');
+        $this->pdo->prepare('UPDATE ticket_orders SET delivery_status = ?, updated_at = NOW() WHERE id = ?')->execute([$status, $orderId]);
     }
 
     private function sendTestConfirmation(int $orderId): void

@@ -16,7 +16,7 @@
     <section class="ticket-section">
       <div class="ticket-section-inner" data-ticket-scan-wrap hidden>
         <form class="ticket-panel ticket-form" data-ticket-scan>
-          <div class="ticket-form-grid"><div class="ticket-field"><label>Evento</label><select name="event_id" required></select></div><div class="ticket-field"><label>Código / QR</label><input name="code" autocomplete="off" required placeholder="Escanea o escribe el código"></div></div>
+          <div class="ticket-form-grid"><div class="ticket-field"><label>Evento</label><select name="event_id" required></select></div><div class="ticket-field"><label>Punto de acceso</label><input name="access_point" autocomplete="organization" placeholder="Ej. puerta principal"></div><div class="ticket-field"><label>Código / QR</label><input name="code" autocomplete="off" required placeholder="Escanea o escribe el código"></div></div>
           <div class="ticket-actions"><button class="ticket-btn primary" type="button" data-open-camera>Abrir escáner</button><button class="ticket-btn" type="submit">Validar manualmente</button></div>
           <div class="ticket-camera" data-ticket-camera-wrap hidden><video data-ticket-camera playsinline muted></video><p>Enfoca el código QR. La validación se hará contra el evento seleccionado.</p><button class="ticket-btn" type="button" data-close-camera>Cerrar cámara</button></div><p class="ticket-status" data-scan-status aria-live="polite"></p>
         </form>

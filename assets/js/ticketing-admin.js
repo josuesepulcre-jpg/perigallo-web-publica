@@ -819,6 +819,10 @@
       function resultCopy(result) {
         return ({ valida: "Entrada válida. Acceso registrado.", ya_utilizada: "Esta entrada ya se utilizó.", cancelada: "Esta entrada está cancelada.", reembolsada: "Esta entrada está reembolsada.", bloqueada: "Esta entrada está bloqueada.", otro_evento: "Esta entrada corresponde a otra experiencia.", inexistente: "No encontramos una entrada válida." })[result] || "No se pudo validar la entrada.";
       }
+      function resultDetails(result) {
+        if (!result || !result.ticket) return "";
+        return " " + [result.ticket.attendee_name, result.ticket.ticket_type_name, result.ticket.public_code].filter(Boolean).join(" · ");
+      }
       function stopCamera() {
         scanning = false;
         if (stream) stream.getTracks().forEach(function (track) { track.stop(); });
@@ -833,7 +837,20 @@
         request(api + "/admin/events/" + eventId + "/attendees").then(function (data) {
           var metrics = data.metrics || {};
           attendeesRoot.hidden = false;
-          attendeesRoot.innerHTML = '<div class="ticket-attendee-head"><div><span class="ticket-eyebrow">Asistentes</span><h2>Control de acceso</h2></div><div class="ticket-attendee-metrics"><span>' + Number(metrics.used || 0) + ' dentro</span><span>' + Number(metrics.pending || 0) + ' pendientes</span><span>' + Number(metrics.access_percent || 0) + '% acceso</span></div></div><div class="ticket-attendee-table"><div class="ticket-attendee-row ticket-attendee-labels"><span>Asistente</span><span>Entrada</span><span>Estado</span><span>Acción</span></div>' + (data.attendees || []).map(function (attendee) { return '<div class="ticket-attendee-row"><span><strong>' + escapeHtml(attendee.name) + '</strong><small>' + escapeHtml(attendee.email) + '</small></span><span><strong>' + escapeHtml(attendee.ticket_type_name) + '</strong><small>' + escapeHtml(attendee.public_code) + '</small></span><span class="attendee-status attendee-' + escapeHtml(attendee.status) + '">' + escapeHtml(attendeeStatus(attendee.status)) + (attendee.used_at ? '<small>' + escapeHtml(dateText(attendee.used_at)) + '</small>' : '') + '</span><span>' + (attendee.status === "used" ? '<button class="text-action" type="button" data-revert-ticket="' + escapeHtml(attendee.public_code) + '">Revertir</button>' : '') + '</span></div>'; }).join("") + '</div>';
+          var attendees = data.attendees || [];
+          attendeesRoot.innerHTML = '<div class="ticket-attendee-head"><div><span class="ticket-eyebrow">Asistentes</span><h2>Control de acceso</h2></div><div class="ticket-attendee-metrics"><span>' + Number(metrics.total || 0) + ' emitidas</span><span>' + Number(metrics.used || 0) + ' dentro</span><span>' + Number(metrics.pending || 0) + ' pendientes</span><span>' + Number(metrics.access_percent || 0) + '% acceso</span></div></div><div class="ticket-attendee-filters"><label>Buscar<input type="search" data-attendee-search placeholder="Nombre, teléfono, pedido o código"></label><label>Estado<select data-attendee-filter><option value="all">Todas</option><option value="issued">Pendientes</option><option value="used">Acceso realizado</option><option value="cancelled">Canceladas</option><option value="refunded">Reembolsadas</option><option value="blocked">Bloqueadas</option></select></label></div><div class="ticket-attendee-table" data-attendee-table></div>';
+          function drawAttendees() {
+            var search = (attendeesRoot.querySelector("[data-attendee-search]").value || "").toLowerCase().trim();
+            var filter = attendeesRoot.querySelector("[data-attendee-filter]").value;
+            var rows = attendees.filter(function (attendee) {
+              var searchable = [attendee.name, attendee.email, attendee.phone, attendee.public_code, attendee.order_reference, attendee.ticket_type_name].join(" ").toLowerCase();
+              return (!search || searchable.includes(search)) && (filter === "all" || attendee.status === filter);
+            });
+            attendeesRoot.querySelector("[data-attendee-table]").innerHTML = '<div class="ticket-attendee-row ticket-attendee-labels"><span>Asistente</span><span>Entrada</span><span>Estado</span><span>Acción</span></div>' + rows.map(function (attendee) { return '<div class="ticket-attendee-row"><span><strong>' + escapeHtml(attendee.name) + '</strong><small>' + escapeHtml(attendee.email) + ' · ' + escapeHtml(attendee.phone || "sin teléfono") + '</small></span><span><strong>' + escapeHtml(attendee.ticket_type_name) + '</strong><small>' + escapeHtml(attendee.public_code) + ' · ' + escapeHtml(attendee.order_reference || "") + '</small></span><span class="attendee-status attendee-' + escapeHtml(attendee.status) + '">' + escapeHtml(attendeeStatus(attendee.status)) + (attendee.used_at ? '<small>' + escapeHtml(dateText(attendee.used_at)) + '</small>' : '') + '</span><span>' + (attendee.status === "used" ? '<button class="text-action" type="button" data-revert-ticket="' + escapeHtml(attendee.public_code) + '">Revertir</button>' : '') + '</span></div>'; }).join("") + (rows.length ? "" : '<p class="ticket-status">No hay asistentes que coincidan con ese filtro.</p>');
+          }
+          attendeesRoot.querySelector("[data-attendee-search]").addEventListener("input", drawAttendees);
+          attendeesRoot.querySelector("[data-attendee-filter]").addEventListener("change", drawAttendees);
+          drawAttendees();
         }).catch(function (error) { attendeesRoot.hidden = false; attendeesRoot.textContent = error.message; });
       }
       function validate(value) {
@@ -845,8 +862,9 @@
           event_id: Number(form.event_id.value || 0),
           code: value,
           device_reference: navigator.userAgent.slice(0, 190),
+          access_point: form.access_point ? form.access_point.value.trim() : "",
         }).then(function (data) {
-          status.textContent = resultCopy(data.result);
+          status.textContent = resultCopy(data.result) + resultDetails(data);
           status.className = "ticket-status scan-" + data.result;
           if (navigator.vibrate) navigator.vibrate(data.result === "valida" ? [80] : [80, 60, 80]);
           form.code.value = "";

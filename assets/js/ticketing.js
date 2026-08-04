@@ -621,7 +621,7 @@
         '<h1 class="ticket-title">Tus entradas están <em>listas</em></h1>',
         '<p class="ticket-copy">' + escapeHtml(order.name) + ', hemos preparado ' + tickets.length + ' ' + (tickets.length === 1 ? 'entrada' : 'entradas') + ' para tu experiencia. Guárdalas en tu teléfono o descárgalas ahora.</p>',
         '<dl class="ticket-order-summary"><div><dt>Pedido</dt><dd>' + escapeHtml(order.reference || '—') + '</dd></div><div><dt>Importe pagado</dt><dd>' + cents(order.total_cents) + '</dd></div><div><dt>Correo</dt><dd>' + escapeHtml(deliveryLabel(order, "email")) + '</dd></div><div><dt>WhatsApp</dt><dd>' + escapeHtml(deliveryLabel(order, "whatsapp")) + '</dd></div></dl>',
-        '<div class="ticket-actions ticket-delivery-actions"><button class="ticket-btn primary" type="button" data-download-all>Descargar todas las entradas</button><button class="ticket-btn" type="button" data-resend-email>Enviar de nuevo por correo</button><a class="ticket-btn" href="#entradas">Ver detalles del pedido</a></div>',
+        '<div class="ticket-actions ticket-delivery-actions"><button class="ticket-btn primary" type="button" data-download-all>Descargar todas las entradas</button><button class="ticket-btn" type="button" data-resend-email>Enviar de nuevo por correo</button><button class="ticket-btn" type="button" data-resend-whatsapp>Enviar por WhatsApp</button><a class="ticket-btn" href="#entradas">Ver detalles del pedido</a></div>',
         '<p class="ticket-delivery-note">Las entradas se han preparado para <strong>' + escapeHtml(order.email) + '</strong>. Presenta el QR en el acceso: cada código es válido para una sola entrada.</p>',
         '<div class="ticket-list" id="entradas">' + tickets.map(function (ticket, index) { return ticketPass(ticket, order.is_test, index + 1); }).join("") + '</div>',
         '</div>'
@@ -718,6 +718,14 @@
         .then(function (data) { resend.textContent = "Correo solicitado"; root.querySelector(".ticket-delivery-note").textContent = data.message; })
         .catch(function (error) { resend.disabled = false; resend.textContent = "Enviar de nuevo por correo"; root.querySelector(".ticket-delivery-note").textContent = error.message; });
     });
+    var whatsapp = root.querySelector("[data-resend-whatsapp]");
+    if (whatsapp) whatsapp.addEventListener("click", function () {
+      whatsapp.disabled = true;
+      whatsapp.textContent = "Comprobando envío...";
+      request(api + "/orders/" + encodeURIComponent(token) + "/resend-whatsapp", { method: "POST" })
+        .then(function (data) { whatsapp.textContent = data.status === "sent" ? "WhatsApp enviado" : "WhatsApp no configurado"; root.querySelector(".ticket-delivery-note").textContent = data.message; })
+        .catch(function (error) { whatsapp.disabled = false; whatsapp.textContent = "Enviar por WhatsApp"; root.querySelector(".ticket-delivery-note").textContent = error.message; });
+    });
     root.querySelectorAll("[data-download-ticket]").forEach(function (button) {
       button.addEventListener("click", function () { downloadTicketPdf(order, Number(button.dataset.downloadTicket), button); });
     });
@@ -729,7 +737,7 @@
     return '<article class="ticket-pass"><div class="ticket-pass-main">' +
       '<span class="ticket-eyebrow">Entrada ' + String(number).padStart(2, "0") + ' · ' + escapeHtml(status) + '</span>' +
       '<h3>' + escapeHtml(ticket.event_title) + '</h3>' +
-      '<dl class="ticket-pass-details"><div><dt>Fecha</dt><dd>' + escapeHtml(fmtDate(ticket.starts_at)) + '</dd></div><div><dt>Lugar</dt><dd>' + escapeHtml(ticket.location || "Por confirmar") + '</dd></div><div><dt>Tipo</dt><dd>' + escapeHtml(ticket.ticket_type_name || "Entrada") + '</dd></div><div><dt>Código</dt><dd class="ticket-code">' + escapeHtml(ticket.public_code) + '</dd></div></dl>' +
+      '<dl class="ticket-pass-details"><div><dt>Fecha</dt><dd>' + escapeHtml(fmtDate(ticket.starts_at)) + '</dd></div>' + (ticket.doors_open_at ? '<div><dt>Apertura</dt><dd>' + escapeHtml(fmtTime(ticket.doors_open_at)) + '</dd></div>' : '') + '<div><dt>Lugar</dt><dd>' + escapeHtml([ticket.location, ticket.address, ticket.locality].filter(Boolean).join(", ") || "Por confirmar") + '</dd></div><div><dt>Tipo</dt><dd>' + escapeHtml(ticket.ticket_type_name || "Entrada") + '</dd></div><div><dt>Código</dt><dd class="ticket-code">' + escapeHtml(ticket.public_code) + '</dd></div></dl>' +
       '<p class="ticket-access-copy">Presenta este código en el acceso. El QR es válido para un único acceso.</p>' +
       '<button class="ticket-btn" type="button" data-download-ticket="' + (number - 1) + '">Descargar entrada</button></div>' +
       '<div class="ticket-qr">' + qr + '<small>' + escapeHtml(ticket.public_code) + '</small></div></article>';
@@ -791,7 +799,7 @@
     pdf.setDrawColor(205, 177, 151); pdf.line(25, 70, 185, 70);
     pdf.setFont("helvetica", "normal"); pdf.setFontSize(11); pdf.setTextColor(245, 241, 229);
     pdf.text("FECHA Y HORA", 25, 85); pdf.text(fmtDate(ticket.starts_at), 25, 93, { maxWidth: 105 });
-    pdf.text("LUGAR", 25, 111); pdf.text((ticket.location || "Por confirmar") + (ticket.locality ? ", " + ticket.locality : ""), 25, 119, { maxWidth: 105 });
+    pdf.text("LUGAR", 25, 111); pdf.text([ticket.location, ticket.address, ticket.locality].filter(Boolean).join(", ") || "Por confirmar", 25, 119, { maxWidth: 105 });
     pdf.text("TIPO DE ENTRADA", 25, 137); pdf.text(ticket.ticket_type_name || "Entrada", 25, 145, { maxWidth: 105 });
     pdf.text("TITULAR", 25, 163); pdf.text(order.name || "", 25, 171, { maxWidth: 105 });
     pdf.addImage(qr, "PNG", 132, 82, 47, 47);
