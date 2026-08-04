@@ -67,17 +67,24 @@
     document.querySelectorAll("[data-admin-user-role]").forEach(function (node) { node.textContent = roleLabel(sessionData.role); });
     document.querySelectorAll("[data-admin-nav]").forEach(function (node) {
       var active = currentNav();
+      var navigation = sessionData.role === "control_acceso"
+        ? '<nav class="admin-side-nav" aria-label="Navegación de control de acceso">' +
+            '<span class="admin-nav-label">Operativa</span>' +
+            '<a href="/admin/" data-admin-nav-item="dashboard">Mi acceso</a>' +
+            '<a href="/admin/acceso/" data-admin-nav-item="access">Abrir escáner</a>' +
+          '</nav>'
+        : '<nav class="admin-side-nav" aria-label="Navegación de administración">' +
+            '<span class="admin-nav-label">Inicio</span>' +
+            '<a href="/admin/" data-admin-nav-item="dashboard">Panel principal</a>' +
+            '<span class="admin-nav-label">Gestión</span>' +
+            '<a href="/admin/eventos/" data-admin-nav-item="events">Eventos</a>' +
+            '<a href="/admin/ventas/" data-admin-nav-item="sales">Pedidos y ventas</a>' +
+            '<span class="admin-nav-label">Operativa</span>' +
+            '<a href="/admin/acceso/" data-admin-nav-item="access">Control de acceso</a>' +
+          '</nav>';
       node.innerHTML =
         '<a class="admin-brand" href="/admin/" aria-label="Administración Perigallo"><img src="/assets/images/perigallo-logo-original.png" alt="Perigallo"><span>Administración</span></a>' +
-        '<nav class="admin-side-nav" aria-label="Navegación de administración">' +
-          '<span class="admin-nav-label">Inicio</span>' +
-          '<a href="/admin/" data-admin-nav-item="dashboard">Panel principal</a>' +
-          '<span class="admin-nav-label">Gestión</span>' +
-          '<a href="/admin/eventos/" data-admin-nav-item="events">Eventos</a>' +
-          '<a href="/admin/ventas/" data-admin-nav-item="sales">Pedidos y ventas</a>' +
-          '<span class="admin-nav-label">Operativa</span>' +
-          '<a href="/admin/acceso/" data-admin-nav-item="access">Control de acceso</a>' +
-        '</nav>' +
+        navigation +
         '<div class="admin-account"><span data-admin-user-name></span><small data-admin-user-role></small><button type="button" data-admin-logout>Cerrar sesión</button></div>';
       var activeNode = node.querySelector('[data-admin-nav-item="' + active + '"]');
       if (activeNode) activeNode.classList.add("is-active");
@@ -96,7 +103,6 @@
       if (!data.authenticated) { window.location.replace(loginUrl()); return; }
       state.csrf = data.csrf || "";
       state.session = data;
-      if (data.role === "control_acceso" && currentNav() !== "access") { window.location.replace("/admin/acceso/"); return; }
       injectShell(data);
       onReady(data);
     }).catch(function (error) { renderPageError(error.message || "No se pudo comprobar la sesión."); });
@@ -191,7 +197,13 @@
 
   function initDashboard() {
     if (!document.querySelector("[data-admin-dashboard]")) return;
-    requireSession(function () {
+    requireSession(function (sessionData) {
+      if (sessionData.role === "control_acceso") {
+        document.querySelector("[data-admin-dashboard]").innerHTML =
+          '<section class="admin-page-heading"><div><span class="ticket-eyebrow">Operativa de puerta</span><h1>Control de <em>acceso.</em></h1><p>Esta cuenta está preparada para validar entradas y consultar el estado de acceso durante la experiencia.</p></div></section>' +
+          '<section class="admin-empty"><strong>¿Vas a gestionar la puerta?</strong><span>Selecciona el evento y abre el escáner desde tu teléfono. La configuración, publicación y ventas están disponibles únicamente para la cuenta de administración.</span><a class="ticket-btn primary" href="/admin/acceso/">Abrir escáner</a></section>';
+        return;
+      }
       Promise.all([request(api + "/admin/summary"), request(api + "/admin/orders")]).then(function (result) {
         state.events = result[0].summary.events || [];
         state.orders = result[1].orders || [];
