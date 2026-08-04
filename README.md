@@ -33,10 +33,16 @@ Las solicitudes y reservas externas se abren fuera de la pagina principal para e
 | `/mis-entradas/` | Recuperación neutral por correo/teléfono y acceso mediante enlace temporal revocable. |
 | `/entradas/pago/correcto/` | Retorno informativo de pago correcto. |
 | `/entradas/pago/error/` | Retorno informativo de pago fallido/cancelado. |
-| `/admin/entradas/` | Listado privado de eventos, ventas y entradas. |
-| `/admin/entradas/evento/?id=ID` | Editor completo de evento y tipos de entrada. |
+| `/admin/` | Panel privado central de Administración Perigallo. |
+| `/admin/login/` | Acceso privado del backoffice, con retorno seguro a la pantalla solicitada. |
+| `/admin/eventos/` | Listado privado de eventos. |
+| `/admin/eventos/ID/editar/` | Editor completo de evento y tipos de entrada. |
+| `/admin/ventas/` | Pedidos y ventas registrados. |
+| `/admin/acceso/` | Escáner/verificación privada de accesos. |
+| `/admin/entradas/` | Ruta heredada: redirige al listado de eventos. |
+| `/admin/entradas/evento/?id=ID` | Ruta heredada: redirige al editor semántico. |
 | `/admin/entradas/vista-previa/?id=ID` | Vista previa privada del evento, incluso en borrador. |
-| `/admin/entradas/acceso/` | Escaner/verificacion privada de accesos. |
+| `/admin/entradas/acceso/` | Ruta heredada del escáner privado. |
 | `/solicitud-evento/` | Pasarela legacy hacia la solicitud oficial de Perigallo Suite. |
 | `/politica-privacidad/` | Politica de privacidad. |
 | `/aviso-legal/` | Aviso legal. |

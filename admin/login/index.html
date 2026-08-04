@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Acceso | Administración Perigallo</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/ticketing.css?v=20260804-admin-v1">
+</head>
+<body class="ticketing-page admin-login-page">
+<main class="admin-login-layout">
+  <section class="admin-login-intro">
+    <a href="/" class="admin-brand admin-brand-login"><img src="/assets/images/perigallo-logo-original.png" alt="Perigallo"><span>Administración</span></a>
+    <div><span class="ticket-eyebrow">Acceso privado</span><h1>Administración <em>Perigallo</em></h1><p>Eventos, ventas y control de acceso desde un mismo lugar.</p></div>
+  </section>
+  <section class="admin-login-card">
+    <span class="ticket-eyebrow">Identificación</span><h2>Bienvenido</h2><p>Introduce tus credenciales para continuar.</p>
+    <form class="ticket-form" data-admin-login-page novalidate>
+      <div class="ticket-field"><label for="admin-username">Correo o usuario</label><input id="admin-username" name="username" autocomplete="username" required></div>
+      <div class="ticket-field"><label for="admin-password">Contraseña</label><div class="admin-password-field"><input id="admin-password" name="password" type="password" autocomplete="current-password" required><button type="button" data-toggle-password aria-pressed="false">Mostrar</button></div></div>
+      <button class="ticket-btn primary" type="submit">Acceder</button>
+      <p class="ticket-status" data-admin-login-status aria-live="polite"></p>
+    </form>
+  </section>
+</main>
+<script src="/assets/js/admin-backoffice.js?v=20260804-admin-v1" defer></script>
+</body>
+</html>

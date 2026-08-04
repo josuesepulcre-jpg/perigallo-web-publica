@@ -112,6 +112,7 @@ final class AdminAuth
             'authenticated' => self::isAuthenticated(),
             'csrf' => $_SESSION['csrf'] ?? null,
             'role' => self::role(),
+            'operator' => self::isAuthenticated() ? self::operatorName() : null,
             'can_scan' => self::isAuthenticated(),
             'can_revert' => self::isAdmin(),
         ];

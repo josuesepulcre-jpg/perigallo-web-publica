@@ -607,12 +607,30 @@ final class Ticketing
     {
         $orders = $this->pdo->query('SELECT status, COUNT(*) AS total, COALESCE(SUM(total_cents),0) AS amount FROM ticket_orders WHERE is_test = 0 GROUP BY status')->fetchAll();
         $events = $this->adminListEvents();
-        return ['orders' => $orders, 'events' => $events];
+        $latestOrders = $this->adminOrders(6);
+        return ['orders' => $orders, 'events' => $events, 'latest_orders' => $latestOrders];
     }
 
-    public function adminOrders(): array
+    public function adminOrders(int $limit = 200): array
     {
-        return $this->pdo->query('SELECT id, public_token, redsys_order, test_reference, is_test, environment, order_status, payment_status, delivery_status, name, email, phone, total_cents, status, reservation_expires_at, paid_at, created_at FROM ticket_orders ORDER BY id DESC LIMIT 200')->fetchAll();
+        $limit = max(1, min(200, $limit));
+        return $this->pdo->query(
+            'SELECT o.id, o.public_token, o.redsys_order, o.test_reference, o.is_test, o.environment,
+                    o.order_status, o.payment_status, o.delivery_status, o.name, o.email, o.phone,
+                    o.total_cents, o.status, o.reservation_expires_at, o.paid_at, o.created_at,
+                    COALESCE(items.ticket_quantity, 0) AS ticket_quantity,
+                    items.event_title
+             FROM ticket_orders o
+             LEFT JOIN (
+                SELECT oi.order_id, SUM(oi.quantity) AS ticket_quantity,
+                       GROUP_CONCAT(DISTINCT e.title ORDER BY e.title SEPARATOR " · ") AS event_title
+                FROM ticket_order_items oi
+                LEFT JOIN events e ON e.id = oi.event_id
+                GROUP BY oi.order_id
+             ) items ON items.order_id = o.id
+             ORDER BY o.id DESC
+             LIMIT ' . $limit
+        )->fetchAll();
     }
 
     public function adminCreateEvent(array $data): array

@@ -32,6 +32,10 @@ const required = [
   "admin/entradas/evento/index.html",
   "admin/entradas/vista-previa/index.html",
   "admin/entradas/acceso/index.html",
+  "admin/index.html",
+  "admin/login/index.html",
+  "admin/eventos/index.html",
+  "admin/ventas/index.html",
   "check-in/index.html",
   "assets/vendor/qrcode-generator.min.js",
   "assets/vendor/jspdf.umd.min.js",
@@ -62,6 +66,7 @@ const activeFiles = [
   "solicitud-evento/index.html",
   "assets/js/ticketing.js",
   "assets/js/ticketing-admin.js",
+  "assets/js/admin-backoffice.js",
   "assets/css/checkout.css",
   "assets/css/event-information-accordions.css",
 ];
@@ -153,6 +158,19 @@ for (const marker of ["function parseFaq", "line.indexOf(\"|\")", "Guardando cam
 }
 for (const marker of ["openTicketDrawer", "closeTicketDrawer", "updateTicketPricePreview", "validateTicketForm", "Tienes cambios sin guardar. ¿Quieres cerrar el formulario?"]) {
   if (!adminJs.includes(marker)) throw new Error(`Missing ticket drawer behavior: ${marker}`);
+}
+
+const adminBackoffice = readFileSync(join(root, "assets/js/admin-backoffice.js"), "utf8");
+for (const marker of ["/admin/login/", "data-admin-dashboard", "data-admin-events-list", "data-admin-orders-list", "/admin/eventos/", "/admin/acceso/"]) {
+  if (!adminBackoffice.includes(marker)) throw new Error(`Missing central backoffice marker: ${marker}`);
+}
+const adminLogin = readFileSync(join(root, "admin/login/index.html"), "utf8");
+for (const marker of ["Administración Perigallo", "data-admin-login-page", "data-toggle-password"]) {
+  if (!adminLogin.includes(marker)) throw new Error(`Missing central login marker: ${marker}`);
+}
+const rootHtaccess = readFileSync(join(root, ".htaccess"), "utf8");
+for (const marker of ["^admin/acceso", "^admin/eventos/([0-9]+)/editar"]) {
+  if (!rootHtaccess.includes(marker)) throw new Error(`Missing central admin rewrite: ${marker}`);
 }
 const parseFaqSource = adminJs.match(/function parseFaq\(value\) \{[\s\S]*?\n  \}\n\n  function formData/);
 if (!parseFaqSource) throw new Error("Unable to locate the FAQ parser.");

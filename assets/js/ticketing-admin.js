@@ -51,8 +51,10 @@
   function requireSession(onReady) {
     return session().then(function (data) {
       if (!data.authenticated) {
-        var login = document.querySelector("[data-admin-login-wrap]");
-        if (login) login.hidden = false;
+        // The central login keeps expired sessions out of the editor and the
+        // access desk instead of leaving a confusing "No autorizado" state.
+        var next = window.location.pathname + window.location.search;
+        window.location.replace("/admin/login/?next=" + encodeURIComponent(next));
         return;
       }
       document.querySelectorAll("[data-admin-login-wrap]").forEach(function (node) { node.hidden = true; });
@@ -119,6 +121,10 @@
   function initList() {
     var root = document.querySelector("[data-admin-list]");
     if (!root) return;
+    if (/^\/admin\/entradas\/?$/.test(window.location.pathname)) {
+      window.location.replace("/admin/eventos/");
+      return;
+    }
     requireSession(function (sessionData) {
       if (sessionData.role === "control_acceso") {
         window.location.replace("/admin/entradas/acceso/");
@@ -128,13 +134,13 @@
       loadEvents();
       document.querySelector("[data-event-search]").addEventListener("input", function (event) { renderEvents(state.events || [], event.target.value); });
       document.querySelector("[data-create-event]").addEventListener("click", function () {
-        jsonRequest(api + "/admin/events", "POST", { title: "Nuevo evento" }).then(function (data) { window.location.href = "/admin/entradas/evento/?id=" + data.event.id; }).catch(showFatal);
+        jsonRequest(api + "/admin/events", "POST", { title: "Nuevo evento" }).then(function (data) { window.location.href = "/admin/eventos/" + data.event.id + "/editar/"; }).catch(showFatal);
       });
       root.addEventListener("click", function (event) {
         var card = event.target.closest("[data-event-id]");
         if (!card) return;
         var id = Number(card.dataset.eventId);
-        if (event.target.closest("[data-open-event]")) { window.location.href = "/admin/entradas/evento/?id=" + id; return; }
+        if (event.target.closest("[data-open-event]")) { window.location.href = "/admin/eventos/" + id + "/editar/"; return; }
         if (event.target.closest("[data-copy-link]")) {
           navigator.clipboard.writeText(window.location.origin + "/eventos/" + (state.events.find(function (row) { return Number(row.id) === id; }) || {}).slug + "/");
           event.target.textContent = "Enlace copiado";
@@ -144,7 +150,7 @@
         if (!action) return;
         if (action === "preview") window.open("/admin/entradas/vista-previa/?id=" + id, "_blank", "noopener");
         if (action === "publication") jsonRequest(api + "/admin/events/" + id + "/" + ((state.events.find(function (row) { return Number(row.id) === id; }) || {}).visible ? "unpublish" : "publish"), "POST", {}).then(loadEvents).catch(showFatal);
-        if (action === "duplicate") jsonRequest(api + "/admin/events/" + id + "/duplicate", "POST", {}).then(function (data) { window.location.href = "/admin/entradas/evento/?id=" + data.event.id; }).catch(showFatal);
+        if (action === "duplicate") jsonRequest(api + "/admin/events/" + id + "/duplicate", "POST", {}).then(function (data) { window.location.href = "/admin/eventos/" + data.event.id + "/editar/"; }).catch(showFatal);
         if (action === "archive" && window.confirm("¿Archivar o eliminar este evento? Los eventos con ventas se archivarán para proteger los pedidos.")) jsonRequest(api + "/admin/events/" + id, "DELETE").then(loadEvents).catch(showFatal);
       });
     });
@@ -549,6 +555,10 @@
     if (!root) return;
     var id = Number(q("id") || 0);
     if (!id) { editorNotice("Falta el identificador del evento.", true); return; }
+    if (/^\/admin\/entradas\/evento\/?$/.test(window.location.pathname)) {
+      window.location.replace("/admin/eventos/" + id + "/editar/");
+      return;
+    }
     requireSession(function () {
       loadEditor(id).catch(showFatal);
       var form = document.querySelector("[data-event-form]");
@@ -578,7 +588,7 @@
         saveForPreview(id, form).then(showPreview).catch(function (error) { if (!previewWindow.closed) previewWindow.close(); editorNotice("No se ha podido guardar para abrir la vista previa. El contenido permanece en el editor. " + error.message, true); });
       });
       document.querySelector("[data-archive-event]").addEventListener("click", function () {
-        if (window.confirm("¿Archivar o eliminar este evento? Las ventas existentes quedarán protegidas.")) jsonRequest(api + "/admin/events/" + id, "DELETE").then(function () { window.location.href = "/admin/entradas/"; }).catch(function (error) { editorNotice(error.message, true); });
+        if (window.confirm("¿Archivar o eliminar este evento? Las ventas existentes quedarán protegidas.")) jsonRequest(api + "/admin/events/" + id, "DELETE").then(function () { window.location.href = "/admin/eventos/"; }).catch(function (error) { editorNotice(error.message, true); });
       });
       initTicketForm(id);
       initEventMediaManager();
