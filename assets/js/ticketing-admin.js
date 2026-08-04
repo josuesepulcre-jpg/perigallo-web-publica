@@ -1,6 +1,6 @@
 (function () {
   var api = "/api";
-  var state = { csrf: "", event: null, dirty: false, saving: false, publicDirty: {}, nonPublicDirty: false };
+  var state = { csrf: "", role: null, event: null, dirty: false, saving: false, publicDirty: {}, nonPublicDirty: false };
   var mediaState = { root: null, selected: {}, uploading: {}, messages: {}, previews: {}, dragIndex: null };
   var ticketDrawerState = { dirty: false, saving: false };
   var money = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" });
@@ -43,6 +43,7 @@
   function session() {
     return request(api + "/admin/session").then(function (data) {
       state.csrf = data.csrf || "";
+      state.role = data.role || null;
       return data;
     });
   }
@@ -55,7 +56,7 @@
         return;
       }
       document.querySelectorAll("[data-admin-login-wrap]").forEach(function (node) { node.hidden = true; });
-      onReady();
+      onReady(data);
     }).catch(showFatal);
   }
 
@@ -118,7 +119,11 @@
   function initList() {
     var root = document.querySelector("[data-admin-list]");
     if (!root) return;
-    requireSession(function () {
+    requireSession(function (sessionData) {
+      if (sessionData.role === "control_acceso") {
+        window.location.replace("/admin/entradas/acceso/");
+        return;
+      }
       root.hidden = false;
       loadEvents();
       document.querySelector("[data-event-search]").addEventListener("input", function (event) { renderEvents(state.events || [], event.target.value); });
@@ -846,7 +851,7 @@
               var searchable = [attendee.name, attendee.email, attendee.phone, attendee.public_code, attendee.order_reference, attendee.ticket_type_name].join(" ").toLowerCase();
               return (!search || searchable.includes(search)) && (filter === "all" || attendee.status === filter);
             });
-            attendeesRoot.querySelector("[data-attendee-table]").innerHTML = '<div class="ticket-attendee-row ticket-attendee-labels"><span>Asistente</span><span>Entrada</span><span>Estado</span><span>Acción</span></div>' + rows.map(function (attendee) { return '<div class="ticket-attendee-row"><span><strong>' + escapeHtml(attendee.name) + '</strong><small>' + escapeHtml(attendee.email) + ' · ' + escapeHtml(attendee.phone || "sin teléfono") + '</small></span><span><strong>' + escapeHtml(attendee.ticket_type_name) + '</strong><small>' + escapeHtml(attendee.public_code) + ' · ' + escapeHtml(attendee.order_reference || "") + '</small></span><span class="attendee-status attendee-' + escapeHtml(attendee.status) + '">' + escapeHtml(attendeeStatus(attendee.status)) + (attendee.used_at ? '<small>' + escapeHtml(dateText(attendee.used_at)) + '</small>' : '') + '</span><span>' + (attendee.status === "used" ? '<button class="text-action" type="button" data-revert-ticket="' + escapeHtml(attendee.public_code) + '">Revertir</button>' : '') + '</span></div>'; }).join("") + (rows.length ? "" : '<p class="ticket-status">No hay asistentes que coincidan con ese filtro.</p>');
+            attendeesRoot.querySelector("[data-attendee-table]").innerHTML = '<div class="ticket-attendee-row ticket-attendee-labels"><span>Asistente</span><span>Entrada</span><span>Estado</span><span>Acción</span></div>' + rows.map(function (attendee) { return '<div class="ticket-attendee-row"><span><strong>' + escapeHtml(attendee.name) + '</strong><small>' + escapeHtml(attendee.email) + ' · ' + escapeHtml(attendee.phone || "sin teléfono") + '</small></span><span><strong>' + escapeHtml(attendee.ticket_type_name) + '</strong><small>' + escapeHtml(attendee.public_code) + ' · ' + escapeHtml(attendee.order_reference || "") + '</small></span><span class="attendee-status attendee-' + escapeHtml(attendee.status) + '">' + escapeHtml(attendeeStatus(attendee.status)) + (attendee.used_at ? '<small>' + escapeHtml(dateText(attendee.used_at)) + '</small>' : '') + '</span><span>' + (attendee.status === "used" && state.role === "admin" ? '<button class="text-action" type="button" data-revert-ticket="' + escapeHtml(attendee.public_code) + '">Revertir</button>' : '') + '</span></div>'; }).join("") + (rows.length ? "" : '<p class="ticket-status">No hay asistentes que coincidan con ese filtro.</p>');
           }
           attendeesRoot.querySelector("[data-attendee-search]").addEventListener("input", drawAttendees);
           attendeesRoot.querySelector("[data-attendee-filter]").addEventListener("change", drawAttendees);
@@ -897,7 +902,7 @@
       form.querySelector("[data-close-camera]").addEventListener("click", stopCamera);
       if (attendeesRoot) attendeesRoot.addEventListener("click", function (event) {
         var button = event.target.closest("[data-revert-ticket]");
-        if (!button || !window.confirm("¿Revertir este acceso? La entrada volverá a estar disponible y se registrará la corrección.")) return;
+        if (state.role !== "admin" || !button || !window.confirm("¿Revertir este acceso? La entrada volverá a estar disponible y se registrará la corrección.")) return;
         jsonRequest(api + "/admin/events/" + Number(form.event_id.value) + "/tickets/" + encodeURIComponent(button.dataset.revertTicket) + "/revert", "POST", { reason: "Corrección desde control de acceso" })
           .then(function () { status.textContent = "Acceso revertido. La entrada vuelve a estar disponible."; status.className = "ticket-status"; loadAttendees(); })
           .catch(function (error) { status.textContent = error.message; status.className = "ticket-status is-error"; });

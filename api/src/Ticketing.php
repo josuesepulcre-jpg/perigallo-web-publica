@@ -1132,7 +1132,7 @@ final class Ticketing
                 $eventId,
                 $scannedValue,
                 $result,
-                $_SESSION['admin'] ?? 'admin',
+                AdminAuth::operatorName(),
                 client_ip(),
                 $device ?: null,
                 json_encode([
@@ -1202,7 +1202,7 @@ final class Ticketing
                 'INSERT INTO ticket_scans (ticket_id, event_id, scanned_code, result, scanned_by, ip_address, device_reference, metadata, created_at)
                  VALUES (?, ?, ?, "revertida", ?, ?, ?, ?, NOW())'
             )->execute([
-                $ticket['id'], $eventId, $code, $_SESSION['admin'] ?? 'admin', client_ip(), clean_string($reason, 190) ?: null,
+                $ticket['id'], $eventId, $code, AdminAuth::operatorName(), client_ip(), clean_string($reason, 190) ?: null,
                 json_encode(['reason' => clean_string($reason, 190) ?: null], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ]);
             $this->pdo->commit();

@@ -73,6 +73,17 @@ Endpoints principales:
 - `POST /api/admin/media`
 - `POST /api/admin/tickets/scan`
 
+## Control de acceso
+
+`/admin/entradas/acceso/` es el lector privado de QR. El QR contiene únicamente
+un token aleatorio; el servidor compara su hash, bloquea la fila de la entrada
+durante la comprobación y registra cada intento en `ticket_scans`.
+
+- `ADMIN_USERNAME` y `ADMIN_PASSWORD_HASH`: administración completa, incluida la reversión de un acceso.
+- `ACCESS_USERNAME` y `ACCESS_PASSWORD_HASH`: cuenta opcional para puerta; puede escanear y consultar el historial, sin editar eventos, pedidos ni revertir validaciones.
+
+El escáner solicita cámara trasera mediante HTTPS y mantiene la introducción manual como alternativa para navegadores que no implementen `BarcodeDetector`.
+
 ## Desarrollo local
 
 Para revisar la parte estatica:

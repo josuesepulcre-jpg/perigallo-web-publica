@@ -181,7 +181,7 @@ try {
     }
 
     if ($method === 'GET' && $path === '/admin/events') {
-        AdminAuth::require();
+        AdminAuth::requireAccess();
         json_response(['ok' => true, 'events' => $ticketing->adminListEvents()]);
         return;
     }
@@ -299,13 +299,13 @@ try {
     }
 
     if ($method === 'POST' && $path === '/admin/tickets/scan') {
-        AdminAuth::requireCsrf();
+        AdminAuth::requireAccessCsrf();
         json_response(['ok' => true] + $ticketing->scanTicket(read_json_body()));
         return;
     }
 
     if ($method === 'GET' && preg_match('#^/admin/events/([0-9]+)/attendees$#', $path, $m)) {
-        AdminAuth::require();
+        AdminAuth::requireAccess();
         json_response(['ok' => true] + $ticketing->adminEventAttendees((int) $m[1]));
         return;
     }

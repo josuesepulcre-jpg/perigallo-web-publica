@@ -197,6 +197,10 @@ for (const marker of ["qr_token_ciphertext", "not_configured", "device_reference
 for (const marker of ["ticketQrUrl", "encryptQrToken", "extractQrToken", "adminEventAttendees", "reverseTicketCheckIn", "resendOrderEmail"]) {
   if (!(api + ticketing).includes(marker)) throw new Error(`Missing secure delivery contract: ${marker}`);
 }
+const adminAuth = readFileSync(join(root, "api/src/AdminAuth.php"), "utf8");
+for (const marker of ["ACCESS_USERNAME", "ACCESS_PASSWORD_HASH", "control_acceso", "requireAccessCsrf", "can_revert"]) {
+  if (!(adminAuth + api).includes(marker)) throw new Error(`Missing access-control role contract: ${marker}`);
+}
 if (!whatsAppDelivery.includes("WHATSAPP_PROVIDER") || !whatsAppDelivery.includes("meta_cloud")) {
   throw new Error("Missing transactional WhatsApp provider adapter.");
 }
