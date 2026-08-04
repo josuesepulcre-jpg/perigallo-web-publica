@@ -72,6 +72,20 @@ MAIL_FROM=entradas@perigallo.com
 MAIL_FROM_NAME=Perigallo
 ```
 
+## Bizum
+
+Perigallo usa la misma integración **Redsys por redirección (Cyberpac)** para tarjeta y Bizum. No existe un segundo TPV ni se recogen teléfonos, PINes o claves Bizum en Perigallo: Redsys los solicita en su pasarela segura.
+
+Mientras `REDSYS_BIZUM_ENABLED=false`, el checkout muestra únicamente tarjeta. Cuando CaixaBank/Redsys confirme Bizum para el mismo FUC y terminal, activar:
+
+```text
+REDSYS_BIZUM_ENABLED=true
+```
+
+Bizum se firma en servidor como una autorización estándar y añade `DS_MERCHANT_PAYMETHODS=z` (minúscula). La tarjeta conserva los parámetros actuales. El callback firmado de `/api/redsys/notification` sigue siendo la única fuente que confirma el pedido y genera las entradas.
+
+Antes de activar Bizum: aplicar `database/migrations/012_payment_methods_bizum.sql`, probar autorización, rechazo y abandono en TEST, y comprobar que el pedido figura como `Bizum` en `/admin/ventas/`. El logotipo oficial debe descargarse desde los materiales autorizados de Bizum/Redsys antes de incorporarlo como recurso visual.
+
 ## Flujo de pago
 
 1. El cliente selecciona entradas en `/entradas/checkout/?event=slug`.

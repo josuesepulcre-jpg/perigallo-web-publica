@@ -205,7 +205,8 @@
     return orders.map(function (order) {
       var reference = order.redsys_order || order.test_reference || ("Pedido " + order.id);
       var displayStatus = order.display_status || order.payment_status || order.status;
-      return '<article class="admin-order-row"><div><strong>' + escapeHtml(order.name || "Comprador sin nombre") + '</strong><small>' + escapeHtml(order.event_title || "Evento por asignar") + ' · ' + escapeHtml(reference) + (Number(order.is_test) ? ' · Prueba' : '') + '</small></div><span>' + Number(order.ticket_quantity || 0) + ' entrada' + (Number(order.ticket_quantity || 0) === 1 ? "" : "s") + '</span><span class="status-pill status-' + escapeHtml(displayStatus) + '">' + escapeHtml(statusLabel(displayStatus)) + '</span><strong>' + formatMoney(order.total_cents) + '</strong>' + (compact ? "" : orderActions(order)) + '</article>';
+      var paymentMethod = order.payment_method === "bizum" ? "Bizum" : "Tarjeta";
+      return '<article class="admin-order-row"><div><strong>' + escapeHtml(order.name || "Comprador sin nombre") + '</strong><small>' + escapeHtml(order.event_title || "Evento por asignar") + ' · ' + escapeHtml(reference) + ' · ' + paymentMethod + (Number(order.is_test) ? ' · Prueba' : '') + '</small></div><span>' + Number(order.ticket_quantity || 0) + ' entrada' + (Number(order.ticket_quantity || 0) === 1 ? "" : "s") + '</span><span class="status-pill status-' + escapeHtml(displayStatus) + '">' + escapeHtml(statusLabel(displayStatus)) + '</span><strong>' + formatMoney(order.total_cents) + '</strong>' + (compact ? "" : orderActions(order)) + '</article>';
     }).join("");
   }
 

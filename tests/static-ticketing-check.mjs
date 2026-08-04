@@ -20,6 +20,7 @@ const required = [
   "database/migrations/009_ticket_access_movements.sql",
   "database/migrations/010_order_access_recovery.sql",
   "database/migrations/011_admin_users_and_order_operations.sql",
+  "database/migrations/012_payment_methods_bizum.sql",
   "eventos/index.html",
   "eventos/evento.html",
   "entradas/checkout/index.html",
@@ -276,10 +277,22 @@ const redsys = readFileSync(join(root, "api/src/Redsys.php"), "utf8");
 for (const marker of ["function terminal", "str_pad", "str_replace(' ', '+', $value)"]) {
   if (!redsys.includes(marker)) throw new Error(`Missing Redsys terminal or Base64 normalization: ${marker}`);
 }
+const bizumMigration = readFileSync(join(root, "database/migrations/012_payment_methods_bizum.sql"), "utf8");
+for (const marker of ["payment_method", "ENUM('card','bizum')", "idx_payment_attempts_method"]) {
+  if (!bizumMigration.includes(marker)) throw new Error(`Bizum payment migration is missing ${marker}.`);
+}
+for (const marker of ["availablePaymentMethods", "REDSYS_BIZUM_ENABLED", "DS_MERCHANT_PAYMETHODS", "'z'"]) {
+  if (!(redsys + ticketing).includes(marker)) throw new Error(`Bizum payment contract is missing ${marker}.`);
+}
+const envExample = readFileSync(join(root, ".env.example"), "utf8");
+if (!envExample.includes("REDSYS_BIZUM_ENABLED=false")) throw new Error("Bizum feature flag is missing from .env.example.");
 
 const checkout = readFileSync(join(root, "entradas/checkout/index.html"), "utf8");
 for (const marker of ["data-checkout-eyebrow", "data-checkout-title", "data-checkout-safety-copy", "data-checkout-summary", "data-checkout-submit", "checkout.css"]) {
   if (!checkout.includes(marker)) throw new Error(`Missing preview-aware checkout marker: ${marker}`);
+}
+for (const marker of ["data-payment-methods", "payment_method", "Método de pago"]) {
+  if (!checkout.includes(marker) && !publicJs.includes(marker)) throw new Error(`Checkout payment method UI is missing ${marker}.`);
 }
 
 const checkoutCss = readFileSync(join(root, "assets/css/checkout.css"), "utf8");

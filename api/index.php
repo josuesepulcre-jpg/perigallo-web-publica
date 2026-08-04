@@ -36,6 +36,11 @@ try {
         return;
     }
 
+    if ($method === 'GET' && $path === '/payment-methods') {
+        json_response(['ok' => true, 'methods' => $ticketing->publicPaymentMethods()]);
+        return;
+    }
+
     if ($method === 'POST' && $path === '/orders') {
         $result = $ticketing->createOrder(read_json_body());
         json_response(['ok' => true] + $result, 201);

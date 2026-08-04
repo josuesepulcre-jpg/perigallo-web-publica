@@ -58,6 +58,11 @@ final class Ticketing
         return $event;
     }
 
+    public function publicPaymentMethods(): array
+    {
+        return $this->redsys->availablePaymentMethods();
+    }
+
     public function createOrder(array $data): array
     {
         require_fields($data, ['event_slug', 'first_name', 'last_name', 'email', 'phone', 'items']);
@@ -71,6 +76,7 @@ final class Ticketing
         $this->pdo->beginTransaction();
         try {
             $event = $this->findEventForSale((string) $data['event_slug']);
+            $paymentMethod = $this->redsys->paymentMethod((string) ($data['payment_method'] ?? 'card'));
             $reservationMinutes = max(5, (int) (env_value('TICKET_RESERVATION_MINUTES', '30') ?? '30'));
             $expires = (new DateTimeImmutable('now'))->add(new DateInterval('PT' . $reservationMinutes . 'M'))->format('Y-m-d H:i:s');
             $publicToken = public_token();
@@ -162,8 +168,8 @@ final class Ticketing
             $this->redsys->assertConfigured();
             $this->pdo->prepare(
                 'INSERT INTO payment_attempts
-                 (order_id, redsys_order, environment, amount_cents, currency, signature_version, status, created_at, updated_at)
-                 VALUES (?, ?, ?, ?, ?, ?, "created", NOW(), NOW())'
+                 (order_id, redsys_order, environment, amount_cents, currency, signature_version, payment_method, status, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, "created", NOW(), NOW())'
             )->execute([
                 $orderId,
                 $redsysOrder,
@@ -171,6 +177,7 @@ final class Ticketing
                 $subtotal,
                 env_value('REDSYS_CURRENCY', '978'),
                 env_value('REDSYS_SIGNATURE_VERSION', 'HMAC_SHA256_V1'),
+                $paymentMethod,
             ]);
 
             $this->pdo->prepare('UPDATE ticket_orders SET status = "payment_processing", updated_at = NOW() WHERE id = ?')
@@ -180,7 +187,7 @@ final class Ticketing
 
             return [
                 'order' => $this->getOrderByToken($publicToken),
-                'payment' => $this->redsysForm($redsysOrder, $subtotal, $event, $publicToken),
+                'payment' => $this->redsysForm($redsysOrder, $subtotal, $event, $publicToken, $paymentMethod),
             ];
         } catch (\Throwable $e) {
             if ($this->pdo->inTransaction()) {
@@ -192,7 +199,18 @@ final class Ticketing
 
     public function getOrderByToken(string $token): ?array
     {
-        $stmt = $this->pdo->prepare('SELECT * FROM ticket_orders WHERE public_token = ? LIMIT 1');
+        $stmt = $this->pdo->prepare(
+            'SELECT o.*, (
+                SELECT pa.payment_method
+                FROM payment_attempts pa
+                WHERE pa.order_id = o.id
+                ORDER BY pa.id DESC
+                LIMIT 1
+             ) AS payment_method
+             FROM ticket_orders o
+             WHERE o.public_token = ?
+             LIMIT 1'
+        );
         $stmt->execute([$token]);
         $order = $stmt->fetch();
         if (!$order) {
@@ -239,6 +257,7 @@ final class Ticketing
             'reference' => $order['test_reference'] ?: $order['redsys_order'],
             'order_status' => $order['order_status'] ?? null,
             'payment_status' => $order['payment_status'] ?? null,
+            'payment_method' => $order['payment_method'] ?? null,
             'delivery_status' => $order['delivery_status'] ?? null,
             'name' => $order['name'],
             'email' => $order['email'],
@@ -413,6 +432,7 @@ final class Ticketing
             throw new RuntimeException('Completa los datos y acepta las condiciones para continuar.');
         }
         $event = $this->requireAdminEvent($eventId);
+        $paymentMethod = $this->redsys->paymentMethod((string) ($data['payment_method'] ?? 'card'));
         $testSession = substr(preg_replace('/[^A-Za-z0-9_-]/', '', (string) ($data['test_session_id'] ?? '')) ?: public_token(18), 0, 96);
         $existing = $this->pdo->prepare('SELECT public_token, redsys_order, total_cents, status FROM ticket_orders WHERE test_session_id = ? AND is_test = 1 ORDER BY id DESC LIMIT 1');
         $existing->execute([$testSession]);
@@ -426,7 +446,7 @@ final class Ticketing
             }
             return [
                 'order' => $this->getOrderByToken((string) $existingOrder['public_token']),
-                'payment' => ['sandbox' => true] + $this->redsysForm((string) $existingOrder['redsys_order'], (int) $existingOrder['total_cents'], $event, (string) $existingOrder['public_token']),
+                'payment' => ['sandbox' => true] + $this->redsysForm((string) $existingOrder['redsys_order'], (int) $existingOrder['total_cents'], $event, (string) $existingOrder['public_token'], $paymentMethod),
             ];
         }
 
@@ -479,14 +499,14 @@ final class Ticketing
             }
             $this->pdo->prepare('UPDATE ticket_orders SET subtotal_cents = ?, total_cents = ?, updated_at = NOW() WHERE id = ?')->execute([$total, $total, $orderId]);
             $this->pdo->prepare(
-                'INSERT INTO payment_attempts (order_id, redsys_order, environment, amount_cents, currency, signature_version, status, created_at, updated_at)
-                 VALUES (?, ?, "test", ?, ?, ?, "created", NOW(), NOW())'
-            )->execute([$orderId, $redsysOrder, $total, env_value('REDSYS_CURRENCY', '978'), env_value('REDSYS_SIGNATURE_VERSION', 'HMAC_SHA256_V1')]);
+                'INSERT INTO payment_attempts (order_id, redsys_order, environment, amount_cents, currency, signature_version, payment_method, status, created_at, updated_at)
+                 VALUES (?, ?, "test", ?, ?, ?, ?, "created", NOW(), NOW())'
+            )->execute([$orderId, $redsysOrder, $total, env_value('REDSYS_CURRENCY', '978'), env_value('REDSYS_SIGNATURE_VERSION', 'HMAC_SHA256_V1'), $paymentMethod]);
             $this->pdo->commit();
 
             return [
                 'order' => $this->getOrderByToken($publicToken),
-                'payment' => ['sandbox' => true] + $this->redsysForm($redsysOrder, $total, $event, $publicToken),
+                'payment' => ['sandbox' => true] + $this->redsysForm($redsysOrder, $total, $event, $publicToken, $paymentMethod),
             ];
         } catch (\Throwable $e) {
             if ($this->pdo->inTransaction()) {
@@ -558,7 +578,6 @@ final class Ticketing
             if ($transactionType !== (string) env_value('REDSYS_TRANSACTION_TYPE', '0')) {
                 throw new RuntimeException('Tipo de operacion Redsys no coincide.');
             }
-
             $accepted = ctype_digit($responseCode) && (int) $responseCode >= 0 && (int) $responseCode <= 99;
             $attemptStatus = $accepted ? 'accepted' : 'denied';
             $orderStatus = $accepted ? 'paid' : 'denied';
@@ -595,7 +614,7 @@ final class Ticketing
                     $this->sendConfirmation((int) $order['id']);
                 }
             }
-            error_log('Perigallo Redsys notification processed: order=' . $orderNumber . ' attempt=' . $attempt['id'] . ' response=' . $responseCode . ' accepted=' . ($accepted ? '1' : '0'));
+            error_log('Perigallo Redsys notification processed: order=' . $orderNumber . ' attempt=' . $attempt['id'] . ' method=' . ($attempt['payment_method'] ?? 'card') . ' response=' . $responseCode . ' accepted=' . ($accepted ? '1' : '0'));
             return ['ok' => true, 'accepted' => $accepted, 'order' => $orderNumber];
         } catch (\Throwable $e) {
             $this->pdo->rollBack();
@@ -619,6 +638,7 @@ final class Ticketing
                     o.order_status, o.payment_status, o.delivery_status, o.name, o.email, o.phone,
                     o.total_cents, o.status, o.reservation_expires_at, o.paid_at, o.created_at,
                     CASE WHEN o.status IN ("cancelled", "refunded") THEN o.status ELSE COALESCE(o.payment_status, o.status) END AS display_status,
+                    COALESCE((SELECT pa.payment_method FROM payment_attempts pa WHERE pa.order_id = o.id ORDER BY pa.id DESC LIMIT 1), "card") AS payment_method,
                     COALESCE(items.ticket_quantity, 0) AS ticket_quantity,
                     items.event_title
              FROM ticket_orders o
@@ -732,6 +752,7 @@ final class Ticketing
                     o.order_status, o.payment_status, o.delivery_status, o.name, o.email, o.phone,
                     o.total_cents, o.status, o.reservation_expires_at, o.paid_at, o.created_at,
                     CASE WHEN o.status IN ("cancelled", "refunded") THEN o.status ELSE COALESCE(o.payment_status, o.status) END AS display_status,
+                    COALESCE((SELECT pa.payment_method FROM payment_attempts pa WHERE pa.order_id = o.id ORDER BY pa.id DESC LIMIT 1), "card") AS payment_method,
                     COALESCE(items.ticket_quantity, 0) AS ticket_quantity, items.event_title
              FROM ticket_orders o
              LEFT JOIN (
@@ -2058,7 +2079,7 @@ final class Ticketing
         throw new RuntimeException('No se pudo generar numero de pedido Redsys.');
     }
 
-    private function redsysForm(string $redsysOrder, int $amountCents, array $event, string $publicToken): array
+    private function redsysForm(string $redsysOrder, int $amountCents, array $event, string $publicToken, string $paymentMethod = 'card'): array
     {
         $base = app_base_url();
         $params = [
@@ -2074,6 +2095,9 @@ final class Ticketing
             'DS_MERCHANT_MERCHANTNAME' => 'Perigallo',
             'DS_MERCHANT_PRODUCTDESCRIPTION' => mb_substr('Entradas ' . preg_replace('/[^A-Za-z0-9 \\-]/', '', (string) $event['title']), 0, 120),
         ];
+        if ($paymentMethod === 'bizum') {
+            $params['DS_MERCHANT_PAYMETHODS'] = 'z';
+        }
         return [
             'url' => $this->redsys->paymentUrl(),
             'fields' => $this->redsys->buildRedirectFields($params),

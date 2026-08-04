@@ -7,6 +7,30 @@ use RuntimeException;
 
 final class Redsys
 {
+    public function availablePaymentMethods(): array
+    {
+        $methods = ['card'];
+        if ($this->bizumEnabled()) {
+            $methods[] = 'bizum';
+        }
+        return $methods;
+    }
+
+    public function paymentMethod(?string $requested): string
+    {
+        $method = strtolower(trim((string) $requested));
+        if ($method === '') {
+            $method = 'card';
+        }
+        if (!in_array($method, ['card', 'bizum'], true)) {
+            throw new RuntimeException('El método de pago seleccionado no está disponible.');
+        }
+        if ($method === 'bizum' && !$this->bizumEnabled()) {
+            throw new RuntimeException('Bizum no está disponible en este momento. Elige tarjeta para continuar.');
+        }
+        return $method;
+    }
+
     public function assertConfigured(): void
     {
         $environment = env_value('REDSYS_ENV', 'test');
@@ -46,6 +70,11 @@ final class Redsys
             throw new RuntimeException('El terminal Redsys debe contener solo dígitos.');
         }
         return str_pad(ltrim($terminal, '0') ?: '0', 3, '0', STR_PAD_LEFT);
+    }
+
+    private function bizumEnabled(): bool
+    {
+        return filter_var(env_value('REDSYS_BIZUM_ENABLED', 'false'), FILTER_VALIDATE_BOOLEAN);
     }
 
     public function buildRedirectFields(array $params): array

@@ -10,6 +10,7 @@
 - [ ] Redsys en TEST funcionando.
 - [ ] Pago TEST correcto validado.
 - [ ] Pago TEST rechazado validado.
+- [ ] Bizum permanece oculto mientras `REDSYS_BIZUM_ENABLED=false`.
 - [ ] Notificacion Redsys recibida en `/api/redsys/notification`.
 - [ ] URL OK no confirma pedidos por si sola.
 - [ ] Tickets generados solo tras pago confirmado.
@@ -42,6 +43,14 @@ REDSYS_PRODUCTION_URL=https://sis.redsys.es/sis/realizarPago
 REDSYS_CURRENCY=978
 REDSYS_TRANSACTION_TYPE=0
 ```
+
+## Activación de Bizum
+
+- [ ] CaixaBank/Redsys ha habilitado Bizum para el mismo FUC y terminal.
+- [ ] Migración `012_payment_methods_bizum.sql` aplicada una sola vez.
+- [ ] Compra Bizum TEST autorizada y rechazada comprobadas antes de activar producción.
+- [ ] El callback firmado muestra el método `Bizum` en `/admin/ventas/`.
+- [ ] `REDSYS_BIZUM_ENABLED=true` solo se configura tras estas validaciones.
 
 ## Prueba posterior al cambio
 

@@ -77,6 +77,7 @@ mysql -u DB_USER -p DB_NAME < database/migrations/008_secure_ticket_delivery_and
 mysql -u DB_USER -p DB_NAME < database/migrations/009_ticket_access_movements.sql
 mysql -u DB_USER -p DB_NAME < database/migrations/010_order_access_recovery.sql
 mysql -u DB_USER -p DB_NAME < database/migrations/011_admin_users_and_order_operations.sql
+mysql -u DB_USER -p DB_NAME < database/migrations/012_payment_methods_bizum.sql
 ```
 
 La segunda migración amplía eventos y entradas sin borrar pedidos, pagos, códigos ni asistentes ya existentes. La tercera conserva esos datos y añade el identificador común para la integración privada con Suite. La cuarta cambia los textos públicos a `LONGTEXT`, sin eliminar contenido existente. Ejecutarlas antes de desplegar la versión con editor integrado. Para actualizar una instalación existente, ejecutar `008_secure_ticket_delivery_and_qr.sql` **antes** de copiar el PHP nuevo: añade las columnas y estados que este código consulta.
@@ -122,6 +123,7 @@ REDSYS_MERCHANT_CODE=...
 REDSYS_TERMINAL=1
 REDSYS_CURRENCY=978
 REDSYS_SECRET_KEY=...
+REDSYS_BIZUM_ENABLED=false
 MAIL_FROM=entradas@perigallo.com
 MAIL_FROM_NAME=Perigallo
 # WhatsApp solo se activa con una plantilla de Meta aprobada. No se usa ni se marca
@@ -176,6 +178,8 @@ https://perigallo.com/api/redsys/notification
 13. Ejecutar `010_order_access_recovery.sql`, abrir `/mis-entradas/` y solicitar un enlace con un pedido de prueba. La respuesta debe ser neutra tanto si existe como si no existe una compra; el enlace recibido debe abrir las entradas y caducar a los 30 días.
 14. Ejecutar `011_admin_users_and_order_operations.sql`, entrar con la cuenta propietaria y abrir `/admin/usuarios/`. Crear una cuenta de prueba de control de acceso, comprobar que no puede entrar en ventas y después desactivarla.
 15. En `/admin/ventas/`, comprobar los filtros. La cancelación revoca las entradas sin ejecutar un abono; **Registrar devolución** solo se usa después de devolver el importe desde el TPV/Redsys. La eliminación permanente solo se muestra para pedidos marcados como prueba y la cuenta propietaria.
+16. Tras aplicar `012_payment_methods_bizum.sql`, comprobar que los pedidos muestran `Tarjeta` o `Bizum` en el backoffice.
+17. Cuando CaixaBank/Redsys confirme Bizum para el mismo FUC y terminal, establecer `REDSYS_BIZUM_ENABLED=true` y probar una compra Bizum en TEST. El teléfono, PIN y autenticación se solicitan exclusivamente en la pasarela bancaria.
 
 ## Observaciones
 
