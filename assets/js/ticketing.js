@@ -22,6 +22,12 @@
     return new Intl.DateTimeFormat("es-ES", { hour: "2-digit", minute: "2-digit" }).format(new Date(value.replace(" ", "T")));
   }
 
+  function fmtTicketDate(value) {
+    if (!value) return "";
+    var formatted = new Intl.DateTimeFormat("es-ES", { weekday: "short", day: "2-digit", month: "short", year: "numeric" }).format(new Date(value.replace(" ", "T")));
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  }
+
   function cents(value) {
     return money.format((Number(value || 0) / 100));
   }
@@ -821,7 +827,6 @@
     var muted = [222, 212, 194];
     var title = ticket.event_title || "Perigallo";
     var subtitle = ticket.event_subtitle || "Una experiencia gastronómica de Perigallo.";
-    var date = fmtDate(ticket.starts_at);
     var place = [ticket.location, ticket.address, ticket.locality].filter(Boolean).join(", ") || "Por confirmar";
 
     pdf.setFillColor.apply(pdf, deepTeal); pdf.rect(0, 0, 210, 297, "F");
@@ -857,7 +862,8 @@
     pdf.setFont("courier", "normal"); pdf.setFontSize(9.5); pdf.setTextColor.apply(pdf, ivory); pdf.text(ticket.public_code || "—", 105, qrY + 101, { align: "center" });
 
     var infoY = qrY + 109;
-    ticketPdfField(pdf, "calendar", "FECHA Y HORA", date || "Por confirmar", 25, infoY, 76, 20, champagne, ivory);
+    var schedule = ticket.starts_at ? fmtTicketDate(ticket.starts_at) + "\n" + fmtTime(ticket.starts_at) + " h" + (ticket.ends_at ? " — " + fmtTime(ticket.ends_at) + " h" : "") : "Por confirmar";
+    ticketPdfField(pdf, "calendar", "FECHA · HORARIO", schedule, 25, infoY, 76, 20, champagne, ivory);
     ticketPdfField(pdf, "ticket", "TIPO DE ENTRADA", ticket.ticket_type_name || "Entrada", 109, infoY, 76, 20, champagne, ivory);
     ticketPdfField(pdf, "pin", "LUGAR", place, 25, infoY + 23, 160, 22, champagne, ivory);
     ticketPdfField(pdf, "person", "TITULAR", order.name || "Por confirmar", 25, infoY + 48, 76, 20, champagne, ivory);
@@ -879,7 +885,9 @@
     pdf.setTextColor.apply(pdf, labelColor); pdf.setFont("helvetica", "normal"); pdf.setFontSize(7.1); pdf.setCharSpace(0.32);
     pdf.text(label, x + 20, y + 7); pdf.setCharSpace(0);
     pdf.setTextColor.apply(pdf, valueColor); pdf.setFont("helvetica", "normal"); pdf.setFontSize(10.5);
-    var lines = pdf.splitTextToSize(String(value || "—"), width - 25).slice(0, 2);
+    var lines = String(value || "—").split("\n").reduce(function (all, line) {
+      return all.concat(pdf.splitTextToSize(line, width - 25));
+    }, []).slice(0, 2);
     pdf.text(lines, x + 20, y + 14, { lineHeightFactor: 1.1 });
   }
 
