@@ -840,9 +840,9 @@
     }
 
     pdf.setDrawColor.apply(pdf, champagne); pdf.setLineWidth(0.3); pdf.line(98, 41, 112, 41);
-    pdf.setTextColor.apply(pdf, champagne); pdf.setFont("helvetica", "normal"); pdf.setFontSize(8); pdf.setCharSpace(0.45);
+    pdf.setTextColor.apply(pdf, champagne); pdf.setFont("helvetica", "normal"); pdf.setFontSize(8.2); pdf.setCharSpace(0);
     pdf.text("ENTRADA OFICIAL", 105, 49, { align: "center" });
-    pdf.setFontSize(6.8); pdf.setCharSpace(0.38); pdf.text("EXPERIENCIA PERIGALLO", 105, 55, { align: "center" }); pdf.setCharSpace(0);
+    pdf.setFontSize(7.1); pdf.text("EXPERIENCIA PERIGALLO", 105, 55, { align: "center" });
 
     pdf.setTextColor.apply(pdf, ivory); pdf.setFont("times", "normal"); pdf.setFontSize(30);
     var titleLines = pdf.splitTextToSize(title, 158).slice(0, 2);
@@ -856,7 +856,7 @@
     pdf.setFillColor.apply(pdf, ivory); pdf.roundedRect(68, qrY, 74, 74, 3, 3, "F");
     pdf.setDrawColor.apply(pdf, champagne); pdf.setLineWidth(0.15); pdf.roundedRect(68, qrY, 74, 74, 3, 3, "S");
     pdf.addImage(qr, "PNG", 74, qrY + 6, 62, 62);
-    pdf.setTextColor.apply(pdf, champagne); pdf.setFont("helvetica", "normal"); pdf.setFontSize(8.5); pdf.setCharSpace(0.32);
+    pdf.setTextColor.apply(pdf, champagne); pdf.setFont("helvetica", "normal"); pdf.setFontSize(8.5); pdf.setCharSpace(0);
     pdf.text("PRESENTA ESTE CÓDIGO", 105, qrY + 80, { align: "center" });
     pdf.text("EN EL ACCESO", 105, qrY + 86, { align: "center" }); pdf.setCharSpace(0);
     pdf.setTextColor.apply(pdf, muted); pdf.setFontSize(9.2); pdf.text("Código válido para un único acceso", 105, qrY + 93, { align: "center" });
