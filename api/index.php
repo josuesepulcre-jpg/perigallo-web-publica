@@ -189,6 +189,56 @@ try {
         return;
     }
 
+    if ($method === 'POST' && preg_match('#^/admin/orders/([0-9]+)/cancel$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        $data = read_json_body();
+        json_response(['ok' => true, 'order' => $ticketing->adminCancelOrder((int) $m[1], AdminAuth::operatorName(), (string) ($data['reason'] ?? ''))]);
+        return;
+    }
+
+    if ($method === 'POST' && preg_match('#^/admin/orders/([0-9]+)/record-refund$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        $data = read_json_body();
+        if (empty($data['confirmed'])) {
+            throw new InvalidArgumentException('Confirma que el abono se ha realizado fuera de esta aplicación.');
+        }
+        json_response(['ok' => true, 'order' => $ticketing->adminRecordRefund((int) $m[1], AdminAuth::operatorName(), (string) ($data['reason'] ?? ''))]);
+        return;
+    }
+
+    if ($method === 'DELETE' && preg_match('#^/admin/orders/([0-9]+)/test$#', $path, $m)) {
+        AdminAuth::requireOwner();
+        $ticketing->adminPurgeTestOrder((int) $m[1], AdminAuth::operatorName());
+        json_response(['ok' => true]);
+        return;
+    }
+
+    if ($method === 'GET' && $path === '/admin/users') {
+        AdminAuth::requireOwnerSession();
+        json_response(['ok' => true, 'users' => AdminAuth::listManagedUsers()]);
+        return;
+    }
+
+    if ($method === 'POST' && $path === '/admin/users') {
+        AdminAuth::requireOwner();
+        json_response(['ok' => true, 'user' => AdminAuth::createManagedUser(read_json_body())], 201);
+        return;
+    }
+
+    if ($method === 'PUT' && preg_match('#^/admin/users/([0-9]+)$#', $path, $m)) {
+        AdminAuth::requireOwner();
+        json_response(['ok' => true, 'user' => AdminAuth::updateManagedUser((int) $m[1], read_json_body())]);
+        return;
+    }
+
+    if ($method === 'POST' && preg_match('#^/admin/users/([0-9]+)/password$#', $path, $m)) {
+        AdminAuth::requireOwner();
+        $data = read_json_body();
+        AdminAuth::updateManagedUserPassword((int) $m[1], (string) ($data['password'] ?? ''));
+        json_response(['ok' => true]);
+        return;
+    }
+
     if ($method === 'POST' && preg_match('#^/admin/events/([0-9]+)/test-orders$#', $path, $m)) {
         AdminAuth::requireCsrf();
         json_response(['ok' => true] + $ticketing->createTestOrder((int) $m[1], read_json_body()), 201);

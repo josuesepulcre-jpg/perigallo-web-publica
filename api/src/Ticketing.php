@@ -618,6 +618,7 @@ final class Ticketing
             'SELECT o.id, o.public_token, o.redsys_order, o.test_reference, o.is_test, o.environment,
                     o.order_status, o.payment_status, o.delivery_status, o.name, o.email, o.phone,
                     o.total_cents, o.status, o.reservation_expires_at, o.paid_at, o.created_at,
+                    CASE WHEN o.status IN ("cancelled", "refunded") THEN o.status ELSE COALESCE(o.payment_status, o.status) END AS display_status,
                     COALESCE(items.ticket_quantity, 0) AS ticket_quantity,
                     items.event_title
              FROM ticket_orders o
@@ -631,6 +632,133 @@ final class Ticketing
              ORDER BY o.id DESC
              LIMIT ' . $limit
         )->fetchAll();
+    }
+
+    public function adminCancelOrder(int $orderId, string $operator, string $reason = ''): array
+    {
+        return $this->changeOrderCommercialStatus($orderId, $operator, 'cancelled', $reason);
+    }
+
+    public function adminRecordRefund(int $orderId, string $operator, string $reason = ''): array
+    {
+        return $this->changeOrderCommercialStatus($orderId, $operator, 'refunded', $reason);
+    }
+
+    public function adminPurgeTestOrder(int $orderId, string $operator): void
+    {
+        $this->pdo->beginTransaction();
+        try {
+            $order = $this->lockedOrder($orderId);
+            if (empty($order['is_test'])) {
+                throw new RuntimeException('Solo se pueden eliminar pedidos de prueba.');
+            }
+            $ticketStatement = $this->pdo->prepare('SELECT t.id FROM tickets t JOIN ticket_order_items oi ON oi.id = t.order_item_id WHERE oi.order_id = ?');
+            $ticketStatement->execute([$orderId]);
+            $ticketIds = array_map('intval', array_column($ticketStatement->fetchAll(), 'id'));
+            if ($ticketIds) {
+                $marks = implode(',', array_fill(0, count($ticketIds), '?'));
+                $movementStatement = $this->pdo->prepare('SELECT id FROM ticket_access_movements WHERE ticket_id IN (' . $marks . ')');
+                $movementStatement->execute($ticketIds);
+                $movementIds = array_map('intval', array_column($movementStatement->fetchAll(), 'id'));
+                if ($movementIds) {
+                    $movementMarks = implode(',', array_fill(0, count($movementIds), '?'));
+                    $this->pdo->prepare('UPDATE ticket_access_movements SET reversal_of_id = NULL WHERE reversal_of_id IN (' . $movementMarks . ')')->execute($movementIds);
+                    $this->pdo->prepare('DELETE FROM ticket_access_movements WHERE id IN (' . $movementMarks . ')')->execute($movementIds);
+                }
+                $this->pdo->prepare('UPDATE ticket_scans SET ticket_id = NULL WHERE ticket_id IN (' . $marks . ')')->execute($ticketIds);
+                $this->pdo->prepare('DELETE FROM tickets WHERE id IN (' . $marks . ')')->execute($ticketIds);
+            }
+            $this->pdo->prepare('DELETE FROM email_deliveries WHERE order_id = ?')->execute([$orderId]);
+            $this->pdo->prepare('DELETE FROM payment_attempts WHERE order_id = ?')->execute([$orderId]);
+            $this->pdo->prepare('DELETE FROM ticket_order_items WHERE order_id = ?')->execute([$orderId]);
+            $this->pdo->prepare('DELETE FROM ticket_orders WHERE id = ?')->execute([$orderId]);
+            $this->auditAdminOperation($operator, 'test_order_deleted', $orderId, ['reference' => $order['test_reference'] ?: $order['redsys_order']]);
+            $this->pdo->commit();
+        } catch (\Throwable $error) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $error;
+        }
+    }
+
+    private function changeOrderCommercialStatus(int $orderId, string $operator, string $targetStatus, string $reason): array
+    {
+        $this->pdo->beginTransaction();
+        try {
+            $order = $this->lockedOrder($orderId);
+            $currentStatus = (string) ($order['status'] ?? '');
+            if (in_array($currentStatus, ['cancelled', 'refunded'], true)) {
+                throw new RuntimeException('Este pedido ya está ' . ($currentStatus === 'refunded' ? 'reembolsado' : 'cancelado') . '.');
+            }
+            if ($targetStatus === 'refunded' && !in_array((string) ($order['payment_status'] ?? $currentStatus), ['paid', 'cancelled'], true) && $currentStatus !== 'paid') {
+                throw new RuntimeException('Solo se puede registrar una devolución sobre un pedido que haya sido cobrado.');
+            }
+            $paymentStatus = $targetStatus === 'refunded' ? 'refunded' : (string) ($order['payment_status'] ?? 'pending');
+            $this->pdo->prepare('UPDATE ticket_orders SET status = ?, order_status = "cancelled", payment_status = ?, updated_at = NOW() WHERE id = ?')
+                ->execute([$targetStatus, $paymentStatus, $orderId]);
+            $ticketStatus = $targetStatus === 'refunded' ? 'refunded' : 'cancelled';
+            $this->pdo->prepare('UPDATE tickets t JOIN ticket_order_items oi ON oi.id = t.order_item_id SET t.status = ?, t.updated_at = NOW() WHERE oi.order_id = ?')
+                ->execute([$ticketStatus, $orderId]);
+            $this->auditAdminOperation($operator, $targetStatus === 'refunded' ? 'order_refund_recorded' : 'order_cancelled', $orderId, [
+                'reason' => clean_string($reason, 500),
+                'payment_status_preserved' => $targetStatus === 'cancelled' ? $paymentStatus : null,
+            ]);
+            $this->pdo->commit();
+            return $this->adminOrderById($orderId);
+        } catch (\Throwable $error) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $error;
+        }
+    }
+
+    private function lockedOrder(int $orderId): array
+    {
+        $statement = $this->pdo->prepare('SELECT * FROM ticket_orders WHERE id = ? FOR UPDATE');
+        $statement->execute([$orderId]);
+        $order = $statement->fetch();
+        if (!$order) {
+            throw new RuntimeException('Pedido no encontrado.');
+        }
+        return $order;
+    }
+
+    private function adminOrderById(int $orderId): array
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT o.id, o.public_token, o.redsys_order, o.test_reference, o.is_test, o.environment,
+                    o.order_status, o.payment_status, o.delivery_status, o.name, o.email, o.phone,
+                    o.total_cents, o.status, o.reservation_expires_at, o.paid_at, o.created_at,
+                    CASE WHEN o.status IN ("cancelled", "refunded") THEN o.status ELSE COALESCE(o.payment_status, o.status) END AS display_status,
+                    COALESCE(items.ticket_quantity, 0) AS ticket_quantity, items.event_title
+             FROM ticket_orders o
+             LEFT JOIN (
+                SELECT oi.order_id, SUM(oi.quantity) AS ticket_quantity,
+                       GROUP_CONCAT(DISTINCT e.title ORDER BY e.title SEPARATOR " · ") AS event_title
+                FROM ticket_order_items oi
+                LEFT JOIN events e ON e.id = oi.event_id
+                GROUP BY oi.order_id
+             ) items ON items.order_id = o.id
+             WHERE o.id = ? LIMIT 1'
+        );
+        $statement->execute([$orderId]);
+        $order = $statement->fetch();
+        if ($order) {
+            return $order;
+        }
+        throw new RuntimeException('Pedido no encontrado.');
+    }
+
+    private function auditAdminOperation(string $operator, string $action, int $orderId, array $context): void
+    {
+        try {
+            $statement = $this->pdo->prepare('INSERT INTO ticket_admin_audit_logs (actor, action, entity_type, entity_id, context_json, created_at) VALUES (?, ?, "ticket_order", ?, ?, NOW())');
+            $statement->execute([$operator, $action, $orderId, json_encode($context, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)]);
+        } catch (\Throwable $error) {
+            // La auditoría será activa tras ejecutar la migración 011. No bloquea una operación ya validada.
+        }
     }
 
     public function adminCreateEvent(array $data): array

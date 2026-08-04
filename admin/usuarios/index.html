@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Equipo y permisos | Administración Perigallo</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/ticketing.css?v=20260804-admin-v1">
+<link rel="stylesheet" href="/assets/css/admin-orders.css?v=20260804-admin-orders-v1">
+</head>
+<body class="ticketing-page admin-backoffice-page">
+<div class="admin-app-shell">
+  <aside class="admin-sidebar" data-admin-nav></aside>
+  <main class="admin-workspace" data-admin-users-page>
+    <p class="ticket-status is-error" data-admin-page-status hidden></p>
+    <header class="admin-page-heading admin-page-heading-compact"><div><span class="ticket-eyebrow">Configuración</span><h1>Equipo y <em>permisos</em></h1><p>Crea accesos para administración o control de puerta. La cuenta propietaria se mantiene protegida en la configuración del servidor.</p></div></header>
+    <section class="admin-owner-notice"><strong>Cuenta propietaria</strong><span>Puede crear usuarios, cambiar permisos y eliminar pedidos de prueba. Su contraseña no se modifica desde este panel.</span></section>
+    <section class="admin-user-create">
+      <div><span class="ticket-eyebrow">Nueva cuenta</span><h2>Dar acceso al equipo</h2></div>
+      <form class="admin-user-form" data-admin-create-user>
+        <label><span>Usuario</span><input name="username" autocomplete="username" required minlength="3" placeholder="nombre.apellido"></label>
+        <label><span>Permiso</span><select name="role"><option value="control_acceso">Control de acceso</option><option value="admin">Administrador</option></select></label>
+        <label><span>Contraseña inicial</span><input name="password" type="password" autocomplete="new-password" required minlength="12" placeholder="Mínimo 12 caracteres"></label>
+        <button type="submit" class="ticket-btn primary">Crear cuenta</button>
+      </form>
+      <p class="ticket-status" data-admin-users-status aria-live="polite"></p>
+    </section>
+    <section class="admin-users-list" data-admin-users-list aria-live="polite"></section>
+  </main>
+</div>
+<script src="/assets/js/admin-backoffice.js?v=20260804-admin-users-v1" defer></script>
+</body>
+</html>

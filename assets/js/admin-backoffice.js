@@ -2,7 +2,7 @@
   "use strict";
 
   var api = "/api";
-  var state = { csrf: "", session: null, events: [], orders: [] };
+  var state = { csrf: "", session: null, events: [], orders: [], users: [] };
   var money = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" });
 
   function escapeHtml(value) {
@@ -57,6 +57,7 @@
     if (path.indexOf("/admin/eventos") === 0) return "events";
     if (path.indexOf("/admin/ventas") === 0) return "sales";
     if (path.indexOf("/admin/acceso") === 0) return "access";
+    if (path.indexOf("/admin/usuarios") === 0) return "users";
     return "dashboard";
   }
 
@@ -81,6 +82,7 @@
             '<a href="/admin/ventas/" data-admin-nav-item="sales">Pedidos y ventas</a>' +
             '<span class="admin-nav-label">Operativa</span>' +
             '<a href="/admin/acceso/" data-admin-nav-item="access">Control de acceso</a>' +
+            (sessionData.is_owner ? '<span class="admin-nav-label">Configuración</span><a href="/admin/usuarios/" data-admin-nav-item="users">Equipo y permisos</a>' : '') +
           '</nav>';
       node.innerHTML =
         '<a class="admin-brand" href="/admin/" aria-label="Administración Perigallo"><img src="/assets/images/perigallo-logo-original.png" alt="Perigallo"><span>Administración</span></a>' +
@@ -187,11 +189,23 @@
       '<section class="admin-dashboard-section"><div class="admin-section-label"><div><span class="ticket-eyebrow">Actividad reciente</span><h2>Últimos pedidos</h2></div><a class="text-action" href="/admin/ventas/">Ver ventas</a></div><div class="admin-recent-orders">' + renderOrdersRows(orders.slice(0, 6), true) + '</div></section>';
   }
 
+  function isClosedOrder(order) { return order.display_status === "cancelled" || order.display_status === "refunded"; }
+
+  function orderActions(order) {
+    if (!state.session || state.session.role !== "admin") return "";
+    var actions = '<div class="admin-order-actions"><a class="text-action" href="/entradas/pedido/?token=' + encodeURIComponent(order.public_token) + '" target="_blank" rel="noopener noreferrer">Ver pedido</a>';
+    if (!isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="cancel" data-order-id="' + Number(order.id) + '">Cancelar</button>';
+    if (!isClosedOrder(order) && (order.payment_status === "paid" || order.status === "paid")) actions += '<button type="button" class="text-action" data-order-action="refund" data-order-id="' + Number(order.id) + '">Registrar devolución</button>';
+    if (state.session.is_owner && Number(order.is_test)) actions += '<button type="button" class="text-action danger" data-order-action="purge-test" data-order-id="' + Number(order.id) + '">Eliminar prueba</button>';
+    return actions + '</div>';
+  }
+
   function renderOrdersRows(orders, compact) {
     if (!orders.length) return '<div class="admin-empty"><strong>No se han registrado pedidos.</strong><span>Los pedidos aparecerán aquí cuando se complete una compra.</span></div>';
     return orders.map(function (order) {
       var reference = order.redsys_order || order.test_reference || ("Pedido " + order.id);
-      return '<article class="admin-order-row"><div><strong>' + escapeHtml(order.name || "Comprador sin nombre") + '</strong><small>' + escapeHtml(order.event_title || "Evento por asignar") + ' · ' + escapeHtml(reference) + '</small></div><span>' + Number(order.ticket_quantity || 0) + ' entrada' + (Number(order.ticket_quantity || 0) === 1 ? "" : "s") + '</span><span class="status-pill status-' + escapeHtml(order.payment_status || order.status) + '">' + escapeHtml(statusLabel(order.payment_status || order.status)) + '</span><strong>' + formatMoney(order.total_cents) + '</strong>' + (compact ? "" : '<a class="text-action" href="/entradas/pedido/?token=' + encodeURIComponent(order.public_token) + '" target="_blank" rel="noopener noreferrer">Ver pedido</a>') + '</article>';
+      var displayStatus = order.display_status || order.payment_status || order.status;
+      return '<article class="admin-order-row"><div><strong>' + escapeHtml(order.name || "Comprador sin nombre") + '</strong><small>' + escapeHtml(order.event_title || "Evento por asignar") + ' · ' + escapeHtml(reference) + (Number(order.is_test) ? ' · Prueba' : '') + '</small></div><span>' + Number(order.ticket_quantity || 0) + ' entrada' + (Number(order.ticket_quantity || 0) === 1 ? "" : "s") + '</span><span class="status-pill status-' + escapeHtml(displayStatus) + '">' + escapeHtml(statusLabel(displayStatus)) + '</span><strong>' + formatMoney(order.total_cents) + '</strong>' + (compact ? "" : orderActions(order)) + '</article>';
     }).join("");
   }
 
@@ -250,20 +264,116 @@
   function initSales() {
     var root = document.querySelector("[data-admin-sales-page]");
     if (!root) return;
-    requireSession(function () {
+    requireSession(function (sessionData) {
       var search = root.querySelector("[data-admin-sales-search]");
+      var filters = root.querySelectorAll("[data-admin-order-filter]");
+      var activeFilter = "active";
+      var status = root.querySelector("[data-admin-orders-status]");
+      function matchesFilter(order) {
+        var displayStatus = order.display_status || order.payment_status || order.status;
+        if (activeFilter === "active") return Number(order.is_test) !== 1 && !isClosedOrder(order) && (displayStatus === "paid" || order.status === "paid" || order.payment_status === "paid");
+        if (activeFilter === "pending") return !isClosedOrder(order) && !(displayStatus === "paid" || order.status === "paid" || order.payment_status === "paid");
+        if (activeFilter === "cancelled") return displayStatus === "cancelled";
+        if (activeFilter === "refunded") return displayStatus === "refunded";
+        if (activeFilter === "tests") return Number(order.is_test) === 1;
+        return true;
+      }
       function render(filter) {
         var term = String(filter || "").trim().toLowerCase();
         var rows = state.orders.filter(function (order) {
-          return !term || [order.name, order.email, order.phone, order.redsys_order, order.test_reference, order.event_title, order.payment_status].join(" ").toLowerCase().includes(term);
+          return matchesFilter(order) && (!term || [order.name, order.email, order.phone, order.redsys_order, order.test_reference, order.event_title, order.payment_status, order.display_status].join(" ").toLowerCase().includes(term));
         });
         root.querySelector("[data-admin-orders-list]").innerHTML = renderOrdersRows(rows, false);
+        if (status) status.textContent = rows.length + (rows.length === 1 ? " pedido mostrado" : " pedidos mostrados");
+      }
+      function reload() {
+        request(api + "/admin/orders").then(function (data) { state.orders = data.orders || []; render(search.value); }).catch(function (error) { renderPageError(error.message); });
+      }
+      function actionMessage(action) {
+        if (action === "cancel") return "Cancelar las entradas de este pedido impedirá su acceso. No realiza ningún abono. ¿Continuar?";
+        if (action === "refund") return "Registra la devolución solo cuando el abono ya se haya realizado en Redsys/TPV. Esta acción revoca las entradas, pero no devuelve dinero automáticamente. ¿Confirmar?";
+        return "Eliminarás definitivamente este pedido de prueba y todas sus entradas. No se puede deshacer. ¿Continuar?";
       }
       request(api + "/admin/orders").then(function (data) {
         state.orders = data.orders || [];
         render();
         search.addEventListener("input", function () { render(search.value); });
+        filters.forEach(function (button) {
+          button.addEventListener("click", function () {
+            activeFilter = button.getAttribute("data-admin-order-filter") || "active";
+            filters.forEach(function (node) { node.classList.toggle("is-active", node === button); });
+            render(search.value);
+          });
+        });
+        root.addEventListener("click", function (event) {
+          var button = event.target.closest("[data-order-action]");
+          if (!button) return;
+          var action = button.getAttribute("data-order-action");
+          var id = Number(button.getAttribute("data-order-id"));
+          if (!id || !window.confirm(actionMessage(action))) return;
+          button.disabled = true;
+          var url = api + "/admin/orders/" + id + (action === "cancel" ? "/cancel" : action === "refund" ? "/record-refund" : "/test");
+          var method = action === "purge-test" ? "DELETE" : "POST";
+          var body = action === "refund" ? { confirmed: true } : {};
+          jsonRequest(url, method, body).then(function () { reload(); }).catch(function (error) { renderPageError(error.message); }).finally(function () { button.disabled = false; });
+        });
       }).catch(function (error) { renderPageError(error.message); });
+    });
+  }
+
+  function renderManagedUsers(root) {
+    var list = root.querySelector("[data-admin-users-list]");
+    if (!state.users.length) {
+      list.innerHTML = '<div class="admin-empty"><strong>No hay cuentas adicionales.</strong><span>Crea una cuenta para administración o control de acceso.</span></div>';
+      return;
+    }
+    list.innerHTML = state.users.map(function (user) {
+      return '<article class="admin-user-row" data-admin-user-row data-user-id="' + Number(user.id) + '">' +
+        '<div><strong>' + escapeHtml(user.username) + '</strong><small>' + (Number(user.is_active) ? 'Acceso activo' : 'Acceso desactivado') + (user.last_login_at ? ' · Último acceso ' + escapeHtml(formatDate(user.last_login_at, true)) : '') + '</small></div>' +
+        '<label><span>Permiso</span><select data-user-role><option value="admin"' + (user.role === 'admin' ? ' selected' : '') + '>Administrador</option><option value="control_acceso"' + (user.role === 'control_acceso' ? ' selected' : '') + '>Control de acceso</option></select></label>' +
+        '<label class="admin-user-active"><input type="checkbox" data-user-active' + (Number(user.is_active) ? ' checked' : '') + '><span>Acceso activo</span></label>' +
+        '<div class="admin-user-actions"><button type="button" class="ticket-btn" data-save-user>Guardar permisos</button><button type="button" class="text-action" data-change-user-password>Cambiar contraseña</button></div>' +
+      '</article>';
+    }).join("");
+  }
+
+  function initUsers() {
+    var root = document.querySelector("[data-admin-users-page]");
+    if (!root) return;
+    requireSession(function (sessionData) {
+      if (!sessionData.is_owner) { renderPageError("Esta sección está reservada para la cuenta propietaria."); return; }
+      var form = root.querySelector("[data-admin-create-user]");
+      var status = root.querySelector("[data-admin-users-status]");
+      function loadUsers() {
+        request(api + "/admin/users").then(function (data) { state.users = data.users || []; renderManagedUsers(root); }).catch(function (error) { renderPageError(error.message); });
+      }
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        var submit = form.querySelector('[type="submit"]');
+        submit.disabled = true;
+        jsonRequest(api + "/admin/users", "POST", { username: form.username.value.trim(), password: form.password.value, role: form.role.value })
+          .then(function () { form.reset(); status.textContent = "Cuenta creada."; loadUsers(); })
+          .catch(function (error) { status.textContent = error.message; })
+          .finally(function () { submit.disabled = false; });
+      });
+      root.addEventListener("click", function (event) {
+        var row = event.target.closest("[data-admin-user-row]");
+        if (!row) return;
+        var id = Number(row.getAttribute("data-user-id"));
+        if (event.target.closest("[data-save-user]")) {
+          jsonRequest(api + "/admin/users/" + id, "PUT", { username: row.querySelector("strong").textContent, role: row.querySelector("[data-user-role]").value, is_active: row.querySelector("[data-user-active]").checked })
+            .then(function () { status.textContent = "Permisos actualizados."; loadUsers(); })
+            .catch(function (error) { status.textContent = error.message; });
+        }
+        if (event.target.closest("[data-change-user-password]")) {
+          var password = window.prompt("Nueva contraseña (mínimo 12 caracteres):");
+          if (!password) return;
+          jsonRequest(api + "/admin/users/" + id + "/password", "POST", { password: password })
+            .then(function () { status.textContent = "Contraseña actualizada."; })
+            .catch(function (error) { status.textContent = error.message; });
+        }
+      });
+      loadUsers();
     });
   }
 
@@ -277,4 +387,5 @@
   initDashboard();
   initEvents();
   initSales();
+  initUsers();
 })();

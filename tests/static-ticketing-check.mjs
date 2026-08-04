@@ -19,6 +19,7 @@ const required = [
   "database/migrations/008_secure_ticket_delivery_and_qr.sql",
   "database/migrations/009_ticket_access_movements.sql",
   "database/migrations/010_order_access_recovery.sql",
+  "database/migrations/011_admin_users_and_order_operations.sql",
   "eventos/index.html",
   "eventos/evento.html",
   "entradas/checkout/index.html",
@@ -36,6 +37,7 @@ const required = [
   "admin/login/index.html",
   "admin/eventos/index.html",
   "admin/ventas/index.html",
+  "admin/usuarios/index.html",
   "check-in/index.html",
   "assets/vendor/qrcode-generator.min.js",
   "assets/vendor/jspdf.umd.min.js",
@@ -69,6 +71,7 @@ const activeFiles = [
   "assets/js/admin-backoffice.js",
   "assets/css/checkout.css",
   "assets/css/event-information-accordions.css",
+  "assets/css/admin-orders.css",
 ];
 
 const forbidden = [
@@ -161,7 +164,7 @@ for (const marker of ["openTicketDrawer", "closeTicketDrawer", "updateTicketPric
 }
 
 const adminBackoffice = readFileSync(join(root, "assets/js/admin-backoffice.js"), "utf8");
-for (const marker of ["/admin/login/", "data-admin-dashboard", "data-admin-events-list", "data-admin-orders-list", "/admin/eventos/", "/admin/acceso/"]) {
+for (const marker of ["/admin/login/", "data-admin-dashboard", "data-admin-events-list", "data-admin-orders-list", "data-admin-users-page", "/admin/eventos/", "/admin/acceso/", "/admin/usuarios/", "data-order-action", "record-refund", "purge-test"]) {
   if (!adminBackoffice.includes(marker)) throw new Error(`Missing central backoffice marker: ${marker}`);
 }
 const adminLogin = readFileSync(join(root, "admin/login/index.html"), "utf8");
@@ -171,6 +174,13 @@ for (const marker of ["Administración Perigallo", "data-admin-login-page", "dat
 const rootHtaccess = readFileSync(join(root, ".htaccess"), "utf8");
 for (const marker of ["^admin/acceso", "^admin/eventos/([0-9]+)/editar"]) {
   if (!rootHtaccess.includes(marker)) throw new Error(`Missing central admin rewrite: ${marker}`);
+}
+const adminUsersMigration = readFileSync(join(root, "database/migrations/011_admin_users_and_order_operations.sql"), "utf8");
+for (const marker of ["ticket_admin_users", "password_hash", "ticket_admin_audit_logs", "control_acceso"]) {
+  if (!adminUsersMigration.includes(marker)) throw new Error(`Admin users migration is missing ${marker}.`);
+}
+for (const marker of ["/admin/orders/([0-9]+)/cancel", "/admin/orders/([0-9]+)/record-refund", "/admin/orders/([0-9]+)/test", "/admin/users", "requireOwner"]) {
+  if (!api.includes(marker) && !adminBackoffice.includes(marker)) throw new Error(`Missing protected backoffice operation: ${marker}`);
 }
 const parseFaqSource = adminJs.match(/function parseFaq\(value\) \{[\s\S]*?\n  \}\n\n  function formData/);
 if (!parseFaqSource) throw new Error("Unable to locate the FAQ parser.");

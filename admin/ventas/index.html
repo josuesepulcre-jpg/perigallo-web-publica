@@ -8,6 +8,7 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/ticketing.css?v=20260804-admin-v1">
+<link rel="stylesheet" href="/assets/css/admin-orders.css?v=20260804-admin-orders-v1">
 </head>
 <body class="ticketing-page admin-backoffice-page">
 <div class="admin-app-shell">
@@ -15,10 +16,21 @@
   <main class="admin-workspace" data-admin-sales-page>
     <p class="ticket-status is-error" data-admin-page-status hidden></p>
     <header class="admin-page-heading admin-page-heading-compact"><div><span class="ticket-eyebrow">Gestión</span><h1>Pedidos y <em>ventas</em></h1><p>Consulta el estado comercial de cada compra sin salir del backoffice.</p></div></header>
-    <section class="admin-list-controls"><label class="admin-search"><span>Buscar pedido</span><input type="search" data-admin-sales-search placeholder="Comprador, evento, referencia o estado"></label></section>
+    <section class="admin-order-toolbar" aria-label="Filtros de pedidos">
+      <div class="admin-filter-group" role="group" aria-label="Estado del pedido">
+        <button type="button" class="is-active" data-admin-order-filter="active">Entradas activas</button>
+        <button type="button" data-admin-order-filter="pending">Pendientes</button>
+        <button type="button" data-admin-order-filter="cancelled">Cancelaciones</button>
+        <button type="button" data-admin-order-filter="refunded">Devoluciones</button>
+        <button type="button" data-admin-order-filter="tests">Pruebas</button>
+        <button type="button" data-admin-order-filter="all">Todas</button>
+      </div>
+      <label class="admin-search"><span>Buscar pedido</span><input type="search" data-admin-sales-search placeholder="Comprador, evento, referencia o estado"></label>
+    </section>
+    <p class="admin-orders-status" data-admin-orders-status aria-live="polite"></p>
     <section class="admin-orders-list" data-admin-orders-list aria-live="polite"></section>
   </main>
 </div>
-<script src="/assets/js/admin-backoffice.js?v=20260804-admin-v2" defer></script>
+<script src="/assets/js/admin-backoffice.js?v=20260804-admin-orders-v1" defer></script>
 </body>
 </html>
