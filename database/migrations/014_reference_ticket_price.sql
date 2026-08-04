@@ -23,4 +23,5 @@ SET tt.reference_price_cents = 9000,
 WHERE e.id = 1
   AND e.title = 'La Perigalla 01'
   AND tt.name = 'Entrada general'
-  AND tt.price_cents = 5800;
+  AND tt.price_cents = 5800
+  AND tt.reference_price_cents IS NULL;
