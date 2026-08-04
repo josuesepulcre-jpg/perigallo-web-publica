@@ -815,6 +815,22 @@
       var status = form.querySelector("[data-scan-status]");
       var modal = document.querySelector("[data-access-modal]");
       var modalContent = document.querySelector("[data-access-modal-content]");
+      // El escáner puede abrirse desde una página aún cacheada durante un
+      // despliegue. Creamos el contenedor si falta para no bloquear el acceso.
+      if (!modal || !modalContent) {
+        modal = document.createElement("div");
+        modal.className = "ticket-access-modal";
+        modal.hidden = true;
+        modal.setAttribute("data-access-modal", "");
+        modal.setAttribute("role", "dialog");
+        modal.setAttribute("aria-modal", "true");
+        modal.setAttribute("aria-labelledby", "access-modal-title");
+        modalContent = document.createElement("section");
+        modalContent.className = "ticket-access-modal-card";
+        modalContent.setAttribute("data-access-modal-content", "");
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+      }
       var connection = form.querySelector("[data-connection-status]");
       var cameraWrap = form.querySelector("[data-ticket-camera-wrap]");
       var video = form.querySelector("[data-ticket-camera]");
