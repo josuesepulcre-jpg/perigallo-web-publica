@@ -311,7 +311,7 @@ try {
 
     if ($method === 'POST' && preg_match('#^/admin/events/([0-9]+)/discounts/validate$#', $path, $m)) {
         AdminAuth::requireCsrf();
-        json_response(['ok' => true, 'discount' => $ticketing->validateTestDiscount((int) $m[1], read_json_body()));
+        json_response(['ok' => true, 'discount' => $ticketing->validateTestDiscount((int) $m[1], read_json_body())]);
         return;
     }
 
