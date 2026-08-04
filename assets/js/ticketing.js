@@ -827,7 +827,8 @@
     var muted = [222, 212, 194];
     var title = ticket.event_title || "Perigallo";
     var subtitle = ticket.event_subtitle || "Una experiencia gastronómica de Perigallo.";
-    var place = [ticket.location, ticket.address, ticket.locality].filter(Boolean).join(", ") || "Por confirmar";
+    var place = [ticket.location, ticket.locality].filter(Boolean).join("\n") || "Por confirmar";
+    var dressCode = ticketDressCode(ticket.dress_code);
 
     pdf.setFillColor.apply(pdf, deepTeal); pdf.rect(0, 0, 210, 297, "F");
     pdf.setDrawColor.apply(pdf, champagne); pdf.setLineWidth(0.25); pdf.rect(8, 7, 194, 283);
@@ -861,13 +862,20 @@
     pdf.setTextColor.apply(pdf, muted); pdf.setFontSize(9.2); pdf.text("Código válido para un único acceso", 105, qrY + 93, { align: "center" });
     pdf.setFont("courier", "normal"); pdf.setFontSize(9.5); pdf.setTextColor.apply(pdf, ivory); pdf.text(ticket.public_code || "—", 105, qrY + 101, { align: "center" });
 
-    var infoY = qrY + 109;
+    var infoY = qrY + 104;
     var schedule = ticket.starts_at ? fmtTicketDate(ticket.starts_at) + "\n" + fmtTime(ticket.starts_at) + " h" + (ticket.ends_at ? " — " + fmtTime(ticket.ends_at) + " h" : "") : "Por confirmar";
     ticketPdfField(pdf, "calendar", "FECHA · HORARIO", schedule, 25, infoY, 76, 20, champagne, ivory);
     ticketPdfField(pdf, "ticket", "TIPO DE ENTRADA", ticket.ticket_type_name || "Entrada", 109, infoY, 76, 20, champagne, ivory);
-    ticketPdfField(pdf, "pin", "LUGAR", place, 25, infoY + 23, 160, 22, champagne, ivory);
-    ticketPdfField(pdf, "person", "TITULAR", order.name || "Por confirmar", 25, infoY + 48, 76, 20, champagne, ivory);
-    ticketPdfField(pdf, "entry", "NÚMERO DE ENTRADA", "Entrada " + String(index).padStart(2, "0") + " de " + String(total).padStart(2, "0"), 109, infoY + 48, 76, 20, champagne, ivory);
+    if (dressCode) {
+      ticketPdfField(pdf, "dress", "CÓDIGO DE VESTIMENTA", dressCode, 25, infoY + 23, 76, 24, champagne, ivory);
+      ticketPdfField(pdf, "pin", "LUGAR", place, 109, infoY + 23, 76, 24, champagne, ivory);
+      ticketPdfField(pdf, "person", "TITULAR", order.name || "Por confirmar", 25, infoY + 50, 76, 20, champagne, ivory);
+      ticketPdfField(pdf, "entry", "NÚMERO DE ENTRADA", "Entrada " + String(index).padStart(2, "0") + " de " + String(total).padStart(2, "0"), 109, infoY + 50, 76, 20, champagne, ivory);
+    } else {
+      ticketPdfField(pdf, "pin", "LUGAR", place, 25, infoY + 23, 160, 22, champagne, ivory);
+      ticketPdfField(pdf, "person", "TITULAR", order.name || "Por confirmar", 25, infoY + 48, 76, 20, champagne, ivory);
+      ticketPdfField(pdf, "entry", "NÚMERO DE ENTRADA", "Entrada " + String(index).padStart(2, "0") + " de " + String(total).padStart(2, "0"), 109, infoY + 48, 76, 20, champagne, ivory);
+    }
 
     pdf.setDrawColor.apply(pdf, champagne); pdf.line(25, 274, 185, 274);
     pdf.setTextColor.apply(pdf, muted); pdf.setFont("helvetica", "normal"); pdf.setFontSize(8);
@@ -903,7 +911,16 @@
       pdf.circle(x + 4.5, y + 2.5, 2.2, "S"); pdf.line(x, y + 9, x + 9, y + 9); pdf.line(x, y + 9, x + 2.1, y + 5.8); pdf.line(x + 9, y + 9, x + 6.9, y + 5.8);
     } else if (icon === "entry") {
       pdf.roundedRect(x, y + 1, 10, 7, 0.9, 0.9, "S"); pdf.line(x + 3, y + 1, x + 3, y + 8); pdf.line(x + 5.2, y + 3.5, x + 8, y + 3.5); pdf.line(x + 5.2, y + 5.7, x + 8, y + 5.7);
+    } else if (icon === "dress") {
+      pdf.line(x + 2.2, y + 1.5, x + 4.5, y); pdf.line(x + 4.5, y, x + 6.8, y + 1.5); pdf.line(x + 2.2, y + 1.5, x, y + 4); pdf.line(x + 6.8, y + 1.5, x + 9, y + 4); pdf.line(x, y + 4, x + 1.5, y + 9); pdf.line(x + 9, y + 4, x + 7.5, y + 9); pdf.line(x + 1.5, y + 9, x + 7.5, y + 9);
     }
+  }
+
+  function ticketDressCode(value) {
+    var source = String(value || "").trim();
+    if (!source) return "";
+    if (/total\s+white|blanco/i.test(source)) return "Total White\nObligatorio ir de blanco";
+    return source;
   }
 
   function savePdf(pdf, filename) {
