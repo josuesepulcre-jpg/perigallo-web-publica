@@ -10,7 +10,7 @@
 - [ ] Redsys en TEST funcionando.
 - [ ] Pago TEST correcto validado.
 - [ ] Pago TEST rechazado validado.
-- [ ] Bizum permanece oculto mientras `REDSYS_BIZUM_ENABLED=false`.
+- [ ] Bizum se muestra como `Próximamente` y no se puede seleccionar mientras `REDSYS_BIZUM_ENABLED=false`.
 - [ ] Notificacion Redsys recibida en `/api/redsys/notification`.
 - [ ] URL OK no confirma pedidos por si sola.
 - [ ] Tickets generados solo tras pago confirmado.

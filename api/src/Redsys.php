@@ -9,11 +9,10 @@ final class Redsys
 {
     public function availablePaymentMethods(): array
     {
-        $methods = ['card'];
-        if ($this->bizumEnabled()) {
-            $methods[] = 'bizum';
-        }
-        return $methods;
+        return [
+            ['id' => 'card', 'available' => true],
+            ['id' => 'bizum', 'available' => $this->bizumEnabled()],
+        ];
     }
 
     public function paymentMethod(?string $requested): string

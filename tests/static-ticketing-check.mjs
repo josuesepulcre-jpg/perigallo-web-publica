@@ -284,6 +284,9 @@ for (const marker of ["payment_method", "ENUM('card','bizum')", "idx_payment_att
 for (const marker of ["availablePaymentMethods", "REDSYS_BIZUM_ENABLED", "DS_MERCHANT_PAYMETHODS", "'z'"]) {
   if (!(redsys + ticketing).includes(marker)) throw new Error(`Bizum payment contract is missing ${marker}.`);
 }
+for (const marker of ["available' => true", "'id' => 'bizum'", "'available' => $this->bizumEnabled()"]) {
+  if (!redsys.includes(marker)) throw new Error(`Bizum visibility contract is missing ${marker}.`);
+}
 const envExample = readFileSync(join(root, ".env.example"), "utf8");
 if (!envExample.includes("REDSYS_BIZUM_ENABLED=false")) throw new Error("Bizum feature flag is missing from .env.example.");
 
@@ -293,6 +296,9 @@ for (const marker of ["data-checkout-eyebrow", "data-checkout-title", "data-chec
 }
 for (const marker of ["data-payment-methods", "payment_method", "Método de pago"]) {
   if (!checkout.includes(marker) && !publicJs.includes(marker)) throw new Error(`Checkout payment method UI is missing ${marker}.`);
+}
+for (const marker of ["Próximamente", "data-unavailable", "checkout-payment-unavailable"]) {
+  if (!publicJs.includes(marker)) throw new Error(`Bizum pending-activation UI is missing ${marker}.`);
 }
 
 const checkoutCss = readFileSync(join(root, "assets/css/checkout.css"), "utf8");

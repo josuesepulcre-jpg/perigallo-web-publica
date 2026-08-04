@@ -367,7 +367,7 @@
     var endpoint = preview ? api + "/admin/events/" + encodeURIComponent(previewId) + "/preview" : api + "/events/" + encodeURIComponent(slug);
     Promise.all([
       request(endpoint, preview ? { cache: "no-store" } : undefined),
-      request(api + "/payment-methods").catch(function () { return { methods: ["card"] }; })
+      request(api + "/payment-methods").catch(function () { return { methods: [{ id: "card", available: true }, { id: "bizum", available: false }] }; })
     ]).then(function (responses) {
       var data = responses[0];
       var paymentOptions = responses[1];
@@ -442,7 +442,9 @@
       var validation = checkoutValidation(form, selected);
       var paymentMethod = selectedPaymentMethod();
       if (paymentMethodsBox) {
-        paymentMethodsBox.querySelectorAll('input[name="payment_method"]').forEach(function (input) { input.disabled = isSubmitting; });
+        paymentMethodsBox.querySelectorAll('input[name="payment_method"]').forEach(function (input) {
+          input.disabled = isSubmitting || input.dataset.unavailable === "true";
+        });
       }
       status.textContent = isSubmitting ? "Preparando el pago seguro..." : validation.message;
       submit.disabled = isSubmitting || !validation.valid;
@@ -506,22 +508,32 @@
 
   function renderPaymentMethods(container, methods) {
     if (!container) return;
-    var allowed = Array.isArray(methods) ? methods : ["card"];
-    if (!allowed.includes("card")) allowed.unshift("card");
-    container.innerHTML = allowed.filter(function (method) {
-      return method === "card" || method === "bizum";
-    }).map(function (method, index) {
+    var received = Array.isArray(methods) ? methods : [];
+    var options = ["card", "bizum"].map(function (id) {
+      var option = received.find(function (method) {
+        return typeof method === "string" ? method === id : method && method.id === id;
+      });
+      return {
+        id: id,
+        available: option ? (typeof option === "string" || option.available !== false) : id === "card"
+      };
+    });
+    container.innerHTML = options.map(function (option) {
+      var method = option.id;
       var isBizum = method === "bizum";
+      var unavailable = !option.available;
       var title = isBizum ? "Bizum" : "Tarjeta de crédito o débito";
-      var copy = isBizum
+      var copy = unavailable
+        ? "Próximamente. Estamos finalizando su activación con la entidad bancaria."
+        : isBizum
         ? "Paga de forma rápida y segura con el número vinculado a tu cuenta Bizum."
         : "Pago seguro a través de la pasarela bancaria.";
       return [
-        '<label class="checkout-payment-card' + (index === 0 ? ' is-selected' : '') + '">',
-        '<input type="radio" name="payment_method" value="' + method + '"' + (index === 0 ? ' checked' : '') + '>',
+        '<label class="checkout-payment-card' + (unavailable ? ' is-unavailable' : '') + (method === "card" ? ' is-selected' : '') + '">',
+        '<input type="radio" name="payment_method" value="' + method + '"' + (method === "card" ? ' checked' : '') + (unavailable ? ' disabled data-unavailable="true"' : '') + '>',
         '<span class="checkout-payment-card-content">',
         '<span class="checkout-payment-card-icon" aria-hidden="true">' + (isBizum ? '◉' : '▭') + '</span>',
-        '<span><strong' + (isBizum ? ' class="checkout-payment-bizum"' : '') + '>' + title + '</strong><small>' + copy + '</small></span>',
+        '<span><strong' + (isBizum ? ' class="checkout-payment-bizum"' : '') + '>' + title + (unavailable ? '<span class="checkout-payment-unavailable">Próximamente</span>' : '') + '</strong><small>' + copy + '</small></span>',
         '</span>',
         '</label>'
       ].join("");

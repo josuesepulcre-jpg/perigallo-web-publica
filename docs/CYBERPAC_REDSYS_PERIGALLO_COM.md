@@ -76,7 +76,7 @@ MAIL_FROM_NAME=Perigallo
 
 Perigallo usa la misma integración **Redsys por redirección (Cyberpac)** para tarjeta y Bizum. No existe un segundo TPV ni se recogen teléfonos, PINes o claves Bizum en Perigallo: Redsys los solicita en su pasarela segura.
 
-Mientras `REDSYS_BIZUM_ENABLED=false`, el checkout muestra únicamente tarjeta. Cuando CaixaBank/Redsys confirme Bizum para el mismo FUC y terminal, activar:
+Mientras `REDSYS_BIZUM_ENABLED=false`, el checkout muestra Bizum con el estado **Próximamente**, pero no permite seleccionarlo ni iniciar un cobro. Cuando CaixaBank/Redsys confirme Bizum para el mismo FUC y terminal, activar:
 
 ```text
 REDSYS_BIZUM_ENABLED=true
