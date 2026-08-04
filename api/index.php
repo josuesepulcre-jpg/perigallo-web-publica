@@ -52,6 +52,11 @@ try {
         return;
     }
 
+    if ($method === 'POST' && preg_match('#^/orders/([A-Za-z0-9_-]+)/resend-email$#', $path, $m)) {
+        json_response(['ok' => true] + $ticketing->resendOrderEmail($m[1]));
+        return;
+    }
+
     if ($method === 'POST' && $path === '/redsys/notification') {
         $notification = $_POST;
         if (!$notification) {
@@ -291,6 +296,19 @@ try {
     if ($method === 'POST' && $path === '/admin/tickets/scan') {
         AdminAuth::requireCsrf();
         json_response(['ok' => true] + $ticketing->scanTicket(read_json_body()));
+        return;
+    }
+
+    if ($method === 'GET' && preg_match('#^/admin/events/([0-9]+)/attendees$#', $path, $m)) {
+        AdminAuth::require();
+        json_response(['ok' => true] + $ticketing->adminEventAttendees((int) $m[1]));
+        return;
+    }
+
+    if ($method === 'POST' && preg_match('#^/admin/events/([0-9]+)/tickets/([^/]+)/revert$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        $data = read_json_body();
+        json_response(['ok' => true] + $ticketing->reverseTicketCheckIn((int) $m[1], rawurldecode($m[2]), (string) ($data['reason'] ?? '')));
         return;
     }
 

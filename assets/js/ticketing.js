@@ -613,16 +613,20 @@
     }
     request(api + "/orders/" + encodeURIComponent(token)).then(function (data) {
       var order = data.order;
+      var tickets = order.tickets || [];
       root.innerHTML = [
         '<div class="ticket-panel">',
-        '<span class="ticket-eyebrow">' + (order.is_test ? 'Pedido de prueba · ' : 'Pedido ') + escapeHtml(order.reference || order.status) + '</span>',
-        '<h1 class="ticket-title">Tus <em>entradas</em></h1>',
-        '<p class="ticket-copy">Pedido a nombre de ' + escapeHtml(order.name) + '. Importe: ' + cents(order.total_cents) + '.' + (order.is_test ? ' Esta entrada de prueba no tiene validez de acceso real.' : '') + '</p>',
-        order.is_test ? '<p class="ticket-status">Correo: ' + escapeHtml(order.deliveries && order.deliveries.some(function (item) { return item.channel === "email" && item.status === "sent"; }) ? 'enviado' : 'registrado') + ' · WhatsApp: simulado hasta configurar un proveedor transaccional.</p>' : '',
-        order.is_test && order.deliveries && order.deliveries.some(function (item) { return item.channel === "whatsapp" && item.payload; }) ? '<details><summary>Ver mensaje de WhatsApp de prueba</summary><pre>' + escapeHtml(order.deliveries.find(function (item) { return item.channel === "whatsapp" && item.payload; }).payload) + '</pre></details>' : '',
-        '<div class="ticket-list">' + (order.tickets || []).map(function (ticket) { return ticketPass(ticket, order.is_test); }).join("") + '</div>',
+        order.is_test ? '<p class="ticket-environment">Entorno de pruebas · No se realiza ningun cargo real</p>' : '',
+        '<span class="ticket-eyebrow">Pedido ' + escapeHtml(order.reference || order.status) + '</span>',
+        '<h1 class="ticket-title">Tus entradas están <em>listas</em></h1>',
+        '<p class="ticket-copy">' + escapeHtml(order.name) + ', hemos preparado ' + tickets.length + ' ' + (tickets.length === 1 ? 'entrada' : 'entradas') + ' para tu experiencia. Guárdalas en tu teléfono o descárgalas ahora.</p>',
+        '<dl class="ticket-order-summary"><div><dt>Pedido</dt><dd>' + escapeHtml(order.reference || '—') + '</dd></div><div><dt>Importe pagado</dt><dd>' + cents(order.total_cents) + '</dd></div><div><dt>Correo</dt><dd>' + escapeHtml(deliveryLabel(order, "email")) + '</dd></div><div><dt>WhatsApp</dt><dd>' + escapeHtml(deliveryLabel(order, "whatsapp")) + '</dd></div></dl>',
+        '<div class="ticket-actions ticket-delivery-actions"><button class="ticket-btn primary" type="button" data-download-all>Descargar todas las entradas</button><button class="ticket-btn" type="button" data-resend-email>Enviar de nuevo por correo</button><a class="ticket-btn" href="#entradas">Ver detalles del pedido</a></div>',
+        '<p class="ticket-delivery-note">Las entradas se han preparado para <strong>' + escapeHtml(order.email) + '</strong>. Presenta el QR en el acceso: cada código es válido para una sola entrada.</p>',
+        '<div class="ticket-list" id="entradas">' + tickets.map(function (ticket, index) { return ticketPass(ticket, order.is_test, index + 1); }).join("") + '</div>',
         '</div>'
       ].join("");
+      bindOrderActions(root, order, token);
     }).catch(function (error) {
       root.innerHTML = '<p class="ticket-status">' + escapeHtml(error.message) + '</p>';
     });
@@ -694,9 +698,126 @@
     check();
   }
 
-  function ticketPass(ticket, isTest) {
-    return '<article class="ticket-pass"><div>' + (isTest ? '<span class="ticket-eyebrow">Entrada de prueba · sin validez de acceso real</span>' : '') + '<h3>' + escapeHtml(ticket.event_title) + '</h3><p>' + escapeHtml(fmtDate(ticket.starts_at)) + ' · ' + escapeHtml(ticket.location || "") + '</p><p>' + escapeHtml(ticket.ticket_type_name || "") + '</p><p class="ticket-code">' + escapeHtml(ticket.public_code) + '</p></div><div class="ticket-qr">' + (isTest ? 'Código de prueba' : 'Código acceso') + '<br>' + escapeHtml(ticket.public_code) + '</div></article>';
+  function deliveryLabel(order, channel) {
+    if (channel === "email" && order.email_delivery) {
+      return ({ sent: "Envío solicitado", pending: "Pendiente de envío", failed: "No se pudo enviar" })[order.email_delivery.status] || "Pendiente";
+    }
+    var delivery = (order.deliveries || []).find(function (item) { return item.channel === channel; });
+    if (!delivery) return channel === "whatsapp" ? "No configurado" : "Pendiente";
+    return ({ sent: "Enviado", delivered: "Entregado", read: "Leído", queued: "Pendiente de envío", pending: "Pendiente de envío", failed: "No se pudo enviar", not_configured: "No configurado" })[delivery.status] || "Pendiente";
   }
+
+  function bindOrderActions(root, order, token) {
+    var all = root.querySelector("[data-download-all]");
+    if (all) all.addEventListener("click", function () { downloadOrderPdf(order, all); });
+    var resend = root.querySelector("[data-resend-email]");
+    if (resend) resend.addEventListener("click", function () {
+      resend.disabled = true;
+      resend.textContent = "Preparando envío...";
+      request(api + "/orders/" + encodeURIComponent(token) + "/resend-email", { method: "POST" })
+        .then(function (data) { resend.textContent = "Correo solicitado"; root.querySelector(".ticket-delivery-note").textContent = data.message; })
+        .catch(function (error) { resend.disabled = false; resend.textContent = "Enviar de nuevo por correo"; root.querySelector(".ticket-delivery-note").textContent = error.message; });
+    });
+    root.querySelectorAll("[data-download-ticket]").forEach(function (button) {
+      button.addEventListener("click", function () { downloadTicketPdf(order, Number(button.dataset.downloadTicket), button); });
+    });
+  }
+
+  function ticketPass(ticket, isTest, number) {
+    var status = ({ issued: "Válida", used: "Utilizada", cancelled: "Cancelada", refunded: "Reembolsada", blocked: "Bloqueada" })[ticket.status] || ticket.status;
+    var qr = ticket.qr_url ? '<img src="' + escapeHtml(qrDataUrl(ticket.qr_url)) + '" alt="QR de acceso para la entrada ' + escapeHtml(ticket.public_code) + '">' : '<span>QR<br>pendiente</span>';
+    return '<article class="ticket-pass"><div class="ticket-pass-main">' +
+      '<span class="ticket-eyebrow">Entrada ' + String(number).padStart(2, "0") + ' · ' + escapeHtml(status) + '</span>' +
+      '<h3>' + escapeHtml(ticket.event_title) + '</h3>' +
+      '<dl class="ticket-pass-details"><div><dt>Fecha</dt><dd>' + escapeHtml(fmtDate(ticket.starts_at)) + '</dd></div><div><dt>Lugar</dt><dd>' + escapeHtml(ticket.location || "Por confirmar") + '</dd></div><div><dt>Tipo</dt><dd>' + escapeHtml(ticket.ticket_type_name || "Entrada") + '</dd></div><div><dt>Código</dt><dd class="ticket-code">' + escapeHtml(ticket.public_code) + '</dd></div></dl>' +
+      '<p class="ticket-access-copy">Presenta este código en el acceso. El QR es válido para un único acceso.</p>' +
+      '<button class="ticket-btn" type="button" data-download-ticket="' + (number - 1) + '">Descargar entrada</button></div>' +
+      '<div class="ticket-qr">' + qr + '<small>' + escapeHtml(ticket.public_code) + '</small></div></article>';
+  }
+
+  function qrDataUrl(value) {
+    if (typeof window.qrcode !== "function") return "";
+    var qr = window.qrcode(0, "M");
+    qr.addData(value);
+    qr.make();
+    return qr.createDataURL(6, 0);
+  }
+
+  function qrPng(value) {
+    return new Promise(function (resolve, reject) {
+      var source = qrDataUrl(value);
+      if (!source) { reject(new Error("No se pudo preparar el QR.")); return; }
+      var image = new Image();
+      image.onload = function () {
+        var canvas = document.createElement("canvas");
+        canvas.width = image.width;
+        canvas.height = image.height;
+        canvas.getContext("2d").drawImage(image, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      };
+      image.onerror = function () { reject(new Error("No se pudo preparar el QR.")); };
+      image.src = source;
+    });
+  }
+
+  function downloadTicketPdf(order, index, button) {
+    var ticket = (order.tickets || [])[index];
+    if (!ticket || !ticket.qr_url || !window.jspdf) return;
+    if (button) { button.disabled = true; button.textContent = "Generando PDF..."; }
+    qrPng(ticket.qr_url).then(function (qr) {
+      var pdf = new window.jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      drawTicketPdf(pdf, order, ticket, qr, 1, 1);
+      savePdf(pdf, pdfName(ticket));
+    }).catch(function (error) { window.alert(error.message); }).finally(function () { if (button) { button.disabled = false; button.textContent = "Descargar entrada"; } });
+  }
+
+  function downloadOrderPdf(order, button) {
+    var tickets = (order.tickets || []).filter(function (ticket) { return !!ticket.qr_url; });
+    if (!tickets.length || !window.jspdf) return;
+    button.disabled = true;
+    button.textContent = "Generando PDF...";
+    Promise.all(tickets.map(function (ticket) { return qrPng(ticket.qr_url); })).then(function (qrs) {
+      var pdf = new window.jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      tickets.forEach(function (ticket, index) { if (index) pdf.addPage(); drawTicketPdf(pdf, order, ticket, qrs[index], index + 1, tickets.length); });
+      savePdf(pdf, "perigallo-pedido-" + safeName(order.reference || "entradas") + ".pdf");
+    }).catch(function (error) { window.alert(error.message); }).finally(function () { button.disabled = false; button.textContent = "Descargar todas las entradas"; });
+  }
+
+  function drawTicketPdf(pdf, order, ticket, qr, index, total) {
+    pdf.setFillColor(30, 51, 56); pdf.rect(0, 0, 210, 297, "F");
+    pdf.setDrawColor(205, 177, 151); pdf.rect(15, 15, 180, 267);
+    pdf.setTextColor(226, 205, 181); pdf.setFont("helvetica", "normal"); pdf.setFontSize(8); pdf.text("PERIGALLO · ENTRADA " + String(index).padStart(2, "0") + " / " + String(total).padStart(2, "0"), 25, 33);
+    pdf.setTextColor(245, 241, 229); pdf.setFont("times", "normal"); pdf.setFontSize(30); pdf.text(ticket.event_title || "Perigallo", 25, 55, { maxWidth: 120 });
+    pdf.setDrawColor(205, 177, 151); pdf.line(25, 70, 185, 70);
+    pdf.setFont("helvetica", "normal"); pdf.setFontSize(11); pdf.setTextColor(245, 241, 229);
+    pdf.text("FECHA Y HORA", 25, 85); pdf.text(fmtDate(ticket.starts_at), 25, 93, { maxWidth: 105 });
+    pdf.text("LUGAR", 25, 111); pdf.text((ticket.location || "Por confirmar") + (ticket.locality ? ", " + ticket.locality : ""), 25, 119, { maxWidth: 105 });
+    pdf.text("TIPO DE ENTRADA", 25, 137); pdf.text(ticket.ticket_type_name || "Entrada", 25, 145, { maxWidth: 105 });
+    pdf.text("TITULAR", 25, 163); pdf.text(order.name || "", 25, 171, { maxWidth: 105 });
+    pdf.addImage(qr, "PNG", 132, 82, 47, 47);
+    pdf.setFontSize(8); pdf.text(ticket.public_code, 155.5, 136, { align: "center" });
+    pdf.setDrawColor(205, 177, 151); pdf.line(25, 200, 185, 200);
+    pdf.setTextColor(226, 205, 181); pdf.setFontSize(8); pdf.text("PEDIDO " + (order.reference || "—"), 25, 213);
+    pdf.setTextColor(245, 241, 229); pdf.setFontSize(10); pdf.text("Presenta este código en la entrada. El QR será válido para un único acceso.", 25, 227, { maxWidth: 154 });
+    pdf.setTextColor(226, 205, 181); pdf.setFontSize(8); pdf.text("Perigallo · +34 691 499 985 · perigallo.com", 25, 265);
+    if (order.is_test) { pdf.setTextColor(205, 177, 151); pdf.text("ENTORNO DE PRUEBAS · SIN CARGO REAL", 25, 274); }
+  }
+
+  function savePdf(pdf, filename) {
+    var blob = new Blob([pdf.output("arraybuffer")], { type: "application/pdf" });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function pdfName(ticket) { return "perigallo-" + safeName(ticket.event_title || "entrada") + "-" + safeName(ticket.public_code) + ".pdf"; }
+
+  function safeName(value) { return String(value || "entrada").toLowerCase().replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, ""); }
 
   function escapeHtml(value) {
     return String(value || "").replace(/[&<>"']/g, function (char) {

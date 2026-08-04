@@ -7,6 +7,7 @@ const required = [
   "api/index.php",
   "api/src/Ticketing.php",
   "api/src/TicketDeliveryService.php",
+  "api/src/WhatsAppDeliveryService.php",
   "api/src/Redsys.php",
   "database/migrations/001_ticketing_schema.sql",
   "database/migrations/002_event_editor.sql",
@@ -15,6 +16,7 @@ const required = [
   "database/migrations/005_configure_la_perigalla_01_publication.sql",
   "database/migrations/006_test_checkout_sandbox.sql",
   "database/migrations/007_la_perigalla_total_white_dress_code.sql",
+  "database/migrations/008_secure_ticket_delivery_and_qr.sql",
   "eventos/index.html",
   "eventos/evento.html",
   "entradas/checkout/index.html",
@@ -27,6 +29,9 @@ const required = [
   "admin/entradas/evento/index.html",
   "admin/entradas/vista-previa/index.html",
   "admin/entradas/acceso/index.html",
+  "check-in/index.html",
+  "assets/vendor/qrcode-generator.min.js",
+  "assets/vendor/jspdf.umd.min.js",
   "solicitud-evento/index.html",
   "docs/CYBERPAC_REDSYS_PERIGALLO_COM.md",
   "docs/TICKETING_DEPLOYMENT.md",
@@ -77,6 +82,7 @@ for (const file of activeFiles) {
 
 const api = readFileSync(join(root, "api/index.php"), "utf8");
 const ticketing = readFileSync(join(root, "api/src/Ticketing.php"), "utf8");
+const whatsAppDelivery = readFileSync(join(root, "api/src/WhatsAppDeliveryService.php"), "utf8");
 for (const marker of [
   "/admin/events/([0-9]+)/preview",
   "/admin/events/([0-9]+)/public-information",
@@ -182,6 +188,21 @@ for (const [file, marker] of [[paymentSuccess, 'data-payment-result="success"'],
 const testMigration = readFileSync(join(root, "database/migrations/006_test_checkout_sandbox.sql"), "utf8");
 for (const marker of ["is_test", "environment", "payment_status", "delivery_status", "test_session_id", "ticket_delivery_logs"]) {
   if (!testMigration.includes(marker)) throw new Error(`Sandbox migration is missing ${marker}.`);
+}
+
+const secureDeliveryMigration = readFileSync(join(root, "database/migrations/008_secure_ticket_delivery_and_qr.sql"), "utf8");
+for (const marker of ["qr_token_ciphertext", "not_configured", "device_reference", "revertida"]) {
+  if (!secureDeliveryMigration.includes(marker)) throw new Error(`Secure delivery migration is missing ${marker}.`);
+}
+for (const marker of ["ticketQrUrl", "encryptQrToken", "extractQrToken", "adminEventAttendees", "reverseTicketCheckIn", "resendOrderEmail"]) {
+  if (!(api + ticketing).includes(marker)) throw new Error(`Missing secure delivery contract: ${marker}`);
+}
+if (!whatsAppDelivery.includes("WHATSAPP_PROVIDER") || !whatsAppDelivery.includes("meta_cloud")) {
+  throw new Error("Missing transactional WhatsApp provider adapter.");
+}
+
+for (const marker of ["data-download-all", "qrcode", "application/pdf", "Descargar todas las entradas"]) {
+  if (!publicJs.includes(marker)) throw new Error(`Missing ticket delivery client marker: ${marker}`);
 }
 for (const marker of ["createTestOrder", "assertConfigured", "assertSandboxConfigured", "redsysForm", "ticket_delivery_logs", "is_test = 0", "TicketDeliveryService", "Ds_SignatureVersion", "notification processed"]) {
   if (!(api + ticketing).includes(marker)) throw new Error(`Missing isolated test-order contract: ${marker}`);

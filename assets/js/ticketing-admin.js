@@ -806,8 +806,84 @@
     var form = document.querySelector("[data-ticket-scan]");
     if (!form) return;
     requireSession(function () {
-      request(api + "/admin/events").then(function (data) { form.event_id.innerHTML = '<option value="">Selecciona evento</option>' + data.events.map(function (event) { return '<option value="' + Number(event.id) + '">' + escapeHtml(event.title) + '</option>'; }).join(""); });
-      form.addEventListener("submit", function (event) { event.preventDefault(); var status = form.querySelector("[data-scan-status]"); jsonRequest(api + "/admin/tickets/scan", "POST", { event_id: Number(form.event_id.value || 0), code: form.code.value.trim() }).then(function (data) { status.textContent = "Resultado: " + data.result.replace("_", " "); form.code.select(); }).catch(function (error) { status.textContent = error.message; }); });
+      var wrap = document.querySelector("[data-ticket-scan-wrap]");
+      var status = form.querySelector("[data-scan-status]");
+      var cameraWrap = form.querySelector("[data-ticket-camera-wrap]");
+      var video = form.querySelector("[data-ticket-camera]");
+      var attendeesRoot = document.querySelector("[data-ticket-attendees]");
+      var stream = null;
+      var scanning = false;
+      var locked = false;
+      if (wrap) wrap.hidden = false;
+
+      function resultCopy(result) {
+        return ({ valida: "Entrada válida. Acceso registrado.", ya_utilizada: "Esta entrada ya se utilizó.", cancelada: "Esta entrada está cancelada.", reembolsada: "Esta entrada está reembolsada.", bloqueada: "Esta entrada está bloqueada.", otro_evento: "Esta entrada corresponde a otra experiencia.", inexistente: "No encontramos una entrada válida." })[result] || "No se pudo validar la entrada.";
+      }
+      function stopCamera() {
+        scanning = false;
+        if (stream) stream.getTracks().forEach(function (track) { track.stop(); });
+        stream = null;
+        if (video) video.srcObject = null;
+        if (cameraWrap) cameraWrap.hidden = true;
+      }
+      function attendeeStatus(value) { return ({ issued: "Pendiente", used: "Acceso realizado", cancelled: "Cancelada", refunded: "Reembolsada", blocked: "Bloqueada" })[value] || value; }
+      function loadAttendees() {
+        var eventId = Number(form.event_id.value || 0);
+        if (!eventId || !attendeesRoot) { if (attendeesRoot) attendeesRoot.hidden = true; return; }
+        request(api + "/admin/events/" + eventId + "/attendees").then(function (data) {
+          var metrics = data.metrics || {};
+          attendeesRoot.hidden = false;
+          attendeesRoot.innerHTML = '<div class="ticket-attendee-head"><div><span class="ticket-eyebrow">Asistentes</span><h2>Control de acceso</h2></div><div class="ticket-attendee-metrics"><span>' + Number(metrics.used || 0) + ' dentro</span><span>' + Number(metrics.pending || 0) + ' pendientes</span><span>' + Number(metrics.access_percent || 0) + '% acceso</span></div></div><div class="ticket-attendee-table"><div class="ticket-attendee-row ticket-attendee-labels"><span>Asistente</span><span>Entrada</span><span>Estado</span><span>Acción</span></div>' + (data.attendees || []).map(function (attendee) { return '<div class="ticket-attendee-row"><span><strong>' + escapeHtml(attendee.name) + '</strong><small>' + escapeHtml(attendee.email) + '</small></span><span><strong>' + escapeHtml(attendee.ticket_type_name) + '</strong><small>' + escapeHtml(attendee.public_code) + '</small></span><span class="attendee-status attendee-' + escapeHtml(attendee.status) + '">' + escapeHtml(attendeeStatus(attendee.status)) + (attendee.used_at ? '<small>' + escapeHtml(dateText(attendee.used_at)) + '</small>' : '') + '</span><span>' + (attendee.status === "used" ? '<button class="text-action" type="button" data-revert-ticket="' + escapeHtml(attendee.public_code) + '">Revertir</button>' : '') + '</span></div>'; }).join("") + '</div>';
+        }).catch(function (error) { attendeesRoot.hidden = false; attendeesRoot.textContent = error.message; });
+      }
+      function validate(value) {
+        if (!value || locked) return;
+        locked = true;
+        status.textContent = "Comprobando entrada...";
+        status.className = "ticket-status";
+        jsonRequest(api + "/admin/tickets/scan", "POST", {
+          event_id: Number(form.event_id.value || 0),
+          code: value,
+          device_reference: navigator.userAgent.slice(0, 190),
+        }).then(function (data) {
+          status.textContent = resultCopy(data.result);
+          status.className = "ticket-status scan-" + data.result;
+          if (navigator.vibrate) navigator.vibrate(data.result === "valida" ? [80] : [80, 60, 80]);
+          form.code.value = "";
+          form.code.focus();
+          loadAttendees();
+        }).catch(function (error) { status.textContent = error.message; status.className = "ticket-status is-error"; }).finally(function () { locked = false; });
+      }
+      function scanFrame(detector) {
+        if (!scanning || !video || locked) { if (scanning) window.requestAnimationFrame(function () { scanFrame(detector); }); return; }
+        detector.detect(video).then(function (codes) {
+          if (codes.length && codes[0].rawValue) { form.code.value = codes[0].rawValue; stopCamera(); validate(codes[0].rawValue); return; }
+          window.requestAnimationFrame(function () { scanFrame(detector); });
+        }).catch(function () { window.requestAnimationFrame(function () { scanFrame(detector); }); });
+      }
+      request(api + "/admin/events").then(function (data) {
+        form.event_id.innerHTML = '<option value="">Selecciona evento</option>' + data.events.map(function (event) { return '<option value="' + Number(event.id) + '">' + escapeHtml(event.title) + '</option>'; }).join("");
+        var ticket = q("ticket");
+        if (ticket) form.code.value = ticket;
+      });
+      form.event_id.addEventListener("change", loadAttendees);
+      form.addEventListener("submit", function (event) { event.preventDefault(); validate(form.code.value.trim()); });
+      form.querySelector("[data-open-camera]").addEventListener("click", function () {
+        if (!form.event_id.value) { status.textContent = "Selecciona primero la experiencia."; return; }
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.BarcodeDetector) { status.textContent = "Este navegador no permite abrir el lector. Introduce el código de la entrada manualmente."; return; }
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false }).then(function (media) {
+          stream = media; video.srcObject = media; cameraWrap.hidden = false; scanning = true;
+          return video.play();
+        }).then(function () { scanFrame(new window.BarcodeDetector({ formats: ["qr_code"] })); }).catch(function () { status.textContent = "No se pudo abrir la cámara. Revisa los permisos y vuelve a intentarlo."; stopCamera(); });
+      });
+      form.querySelector("[data-close-camera]").addEventListener("click", stopCamera);
+      if (attendeesRoot) attendeesRoot.addEventListener("click", function (event) {
+        var button = event.target.closest("[data-revert-ticket]");
+        if (!button || !window.confirm("¿Revertir este acceso? La entrada volverá a estar disponible y se registrará la corrección.")) return;
+        jsonRequest(api + "/admin/events/" + Number(form.event_id.value) + "/tickets/" + encodeURIComponent(button.dataset.revertTicket) + "/revert", "POST", { reason: "Corrección desde control de acceso" })
+          .then(function () { status.textContent = "Acceso revertido. La entrada vuelve a estar disponible."; status.className = "ticket-status"; loadAttendees(); })
+          .catch(function (error) { status.textContent = error.message; status.className = "ticket-status is-error"; });
+      });
     });
   }
 

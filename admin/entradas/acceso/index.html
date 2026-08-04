@@ -23,20 +23,25 @@
       <div>
         <span class="ticket-eyebrow">Acceso</span>
         <h1 class="ticket-title">Validar <em>entrada</em></h1>
-        <p class="ticket-copy">Selecciona el evento y escanea o introduce el código impreso en la entrada. El sistema marca la entrada como utilizada en una única operación.</p>
+        <p class="ticket-copy">Selecciona la experiencia, abre el lector y valida cada QR de forma individual. También puedes introducir el código de la entrada manualmente.</p>
       </div>
     </div>
   </section>
   <section class="ticket-section">
-    <div class="ticket-section-inner">
+    <div class="ticket-section-inner" data-ticket-scan-wrap hidden>
       <form class="ticket-panel ticket-form" data-ticket-scan>
         <div class="ticket-form-grid">
           <div class="ticket-field"><label>Evento</label><select name="event_id" required></select></div>
-          <div class="ticket-field"><label>Código / QR</label><input name="code" autocomplete="off" required autofocus></div>
+          <div class="ticket-field"><label>Código / QR</label><input name="code" autocomplete="off" required autofocus placeholder="Escanea o escribe el código"></div>
         </div>
-        <button class="ticket-btn primary" type="submit">Validar entrada</button>
-        <p class="ticket-status" data-scan-status></p>
+        <div class="ticket-actions"><button class="ticket-btn primary" type="button" data-open-camera>Abrir escáner</button><button class="ticket-btn" type="submit">Validar manualmente</button></div>
+        <div class="ticket-camera" data-ticket-camera-wrap hidden><video data-ticket-camera playsinline muted></video><p>Enfoca el código QR. La validación siempre se realiza en el servidor.</p><button class="ticket-btn" type="button" data-close-camera>Cerrar cámara</button></div>
+        <p class="ticket-status" data-scan-status aria-live="polite"></p>
       </form>
+      <section class="ticket-attendees" data-ticket-attendees hidden aria-live="polite"></section>
+    </div>
+    <div class="ticket-section-inner" data-admin-login-wrap hidden>
+      <div class="ticket-panel login-panel"><span class="ticket-eyebrow">Acceso privado</span><h2>Entrar al control de acceso</h2><form class="ticket-form" data-admin-login><div class="ticket-form-grid"><div class="ticket-field"><label for="username">Usuario</label><input id="username" name="username" autocomplete="username" required></div><div class="ticket-field"><label for="password">Contraseña</label><input id="password" name="password" type="password" autocomplete="current-password" required></div></div><button class="ticket-btn primary" type="submit">Entrar</button><p class="ticket-status" data-admin-status></p></form></div>
     </div>
   </section>
 </main>

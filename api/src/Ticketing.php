@@ -203,7 +203,7 @@ final class Ticketing
         $items->execute([(int) $order['id']]);
 
         $tickets = $this->pdo->prepare(
-            'SELECT t.public_code, t.status, t.issued_at, e.title AS event_title, e.starts_at, e.ends_at, e.location, e.locality, e.province, e.dress_code, toi.ticket_type_name
+            'SELECT t.id, t.public_code, t.qr_token_ciphertext, t.status, t.issued_at, t.used_at, e.title AS event_title, e.starts_at, e.ends_at, e.location, e.locality, e.province, e.dress_code, toi.ticket_type_name
              FROM tickets t
              JOIN events e ON e.id = t.event_id
              JOIN ticket_order_items toi ON toi.id = t.order_item_id
@@ -212,8 +212,24 @@ final class Ticketing
         );
         $tickets->execute([(int) $order['id']]);
 
+        $ticketRows = $tickets->fetchAll();
+        foreach ($ticketRows as &$ticket) {
+            try {
+                $ticket['qr_url'] = $this->ticketQrUrl($ticket);
+            } catch (RuntimeException $error) {
+                // El pedido sigue siendo consultable mientras se completa la clave de QR en produccion.
+                $ticket['qr_url'] = null;
+                $ticket['qr_error'] = 'El codigo QR se esta preparando.';
+            }
+            unset($ticket['qr_token_ciphertext']);
+            unset($ticket['id']);
+        }
+        unset($ticket);
+
         $delivery = $this->pdo->prepare('SELECT channel, status, recipient, payload, created_at FROM ticket_delivery_logs WHERE order_id = ? ORDER BY id DESC');
         $delivery->execute([(int) $order['id']]);
+        $emailDelivery = $this->pdo->prepare('SELECT status, created_at FROM email_deliveries WHERE order_id = ? ORDER BY id DESC LIMIT 1');
+        $emailDelivery->execute([(int) $order['id']]);
 
         return [
             'token' => $order['public_token'],
@@ -232,9 +248,41 @@ final class Ticketing
             'reservation_expires_at' => $order['reservation_expires_at'],
             'paid_at' => $order['paid_at'],
             'items' => $items->fetchAll(),
-            'tickets' => $tickets->fetchAll(),
+            'tickets' => $ticketRows,
             'deliveries' => $delivery->fetchAll(),
+            'email_delivery' => $emailDelivery->fetch() ?: null,
         ];
+    }
+
+    public function resendOrderEmail(string $token): array
+    {
+        $order = $this->getOrderRecordByToken($token);
+        if (!$order || $this->effectiveOrderStatus($order) !== 'paid') {
+            throw new RuntimeException('No se pueden reenviar entradas de este pedido.', 409);
+        }
+
+        $recent = $this->pdo->prepare(
+            'SELECT created_at FROM email_deliveries WHERE order_id = ? ORDER BY id DESC LIMIT 1'
+        );
+        $recent->execute([(int) $order['id']]);
+        $lastAttempt = $recent->fetchColumn();
+        if ($lastAttempt && strtotime((string) $lastAttempt) > time() - 300) {
+            throw new RuntimeException('Ya hemos preparado un envio recientemente. Espera unos minutos antes de solicitar otro.', 409);
+        }
+
+        $eventStmt = $this->pdo->prepare('SELECT e.* FROM events e JOIN ticket_order_items toi ON toi.event_id = e.id WHERE toi.order_id = ? LIMIT 1');
+        $eventStmt->execute([(int) $order['id']]);
+        $event = $eventStmt->fetch();
+        $quantityStmt = $this->pdo->prepare('SELECT COALESCE(SUM(quantity), 0) FROM ticket_order_items WHERE order_id = ?');
+        $quantityStmt->execute([(int) $order['id']]);
+        $quantity = (int) $quantityStmt->fetchColumn();
+        if ($event) {
+            $result = (new TicketDeliveryService($this->mailer))->sendOrder($this->pdo, $order, $event, $quantity);
+            $status = $result['email'] === 'sent' && $result['whatsapp'] === 'sent' ? 'sent' : ($result['email'] === 'sent' ? 'partially_sent' : 'failed');
+            $this->pdo->prepare('UPDATE ticket_orders SET delivery_status = ?, updated_at = NOW() WHERE id = ?')->execute([$status, $orderId]);
+        }
+
+        return ['message' => 'Hemos preparado un nuevo envio a ' . (string) $order['email'] . '.'];
     }
 
     /** Creates an admin-only sandbox order. It never reserves production capacity. */
@@ -1009,13 +1057,20 @@ final class Ticketing
 
     public function scanTicket(array $data): array
     {
-        require_fields($data, ['event_id', 'code']);
+        require_fields($data, ['event_id']);
         $eventId = (int) $data['event_id'];
-        $code = clean_string((string) $data['code'], 120);
+        $scannedValue = clean_string((string) ($data['token'] ?? $data['code'] ?? ''), 512);
+        $device = clean_string((string) ($data['device_reference'] ?? ''), 190);
+        if ($eventId < 1 || $scannedValue === '') {
+            throw new InvalidArgumentException('Selecciona un evento e introduce o escanea una entrada.');
+        }
+        $qrToken = $this->extractQrToken($scannedValue);
         $this->pdo->beginTransaction();
         try {
-            $stmt = $this->pdo->prepare('SELECT * FROM tickets WHERE public_code = ? FOR UPDATE');
-            $stmt->execute([$code]);
+            $stmt = $qrToken !== null
+                ? $this->pdo->prepare('SELECT * FROM tickets WHERE qr_token_hash = ? FOR UPDATE')
+                : $this->pdo->prepare('SELECT * FROM tickets WHERE public_code = ? FOR UPDATE');
+            $stmt->execute([$qrToken !== null ? hash('sha256', $qrToken) : $scannedValue]);
             $ticket = $stmt->fetch();
             $result = 'inexistente';
             if ($ticket) {
@@ -1023,29 +1078,101 @@ final class Ticketing
                     $result = 'otro_evento';
                 } elseif ($ticket['status'] === 'cancelled') {
                     $result = 'cancelada';
+                } elseif ($ticket['status'] === 'refunded') {
+                    $result = 'reembolsada';
+                } elseif ($ticket['status'] === 'blocked') {
+                    $result = 'bloqueada';
                 } elseif ($ticket['status'] === 'used') {
                     $result = 'ya_utilizada';
                 } elseif ($ticket['status'] === 'issued') {
                     $result = 'valida';
-                    $this->pdo->prepare('UPDATE tickets SET status = "used", used_at = NOW(), updated_at = NOW() WHERE id = ?')->execute([$ticket['id']]);
+                    $accessedAt = now_mysql();
+                    $this->pdo->prepare('UPDATE tickets SET status = "used", used_at = ?, updated_at = NOW() WHERE id = ?')->execute([$accessedAt, $ticket['id']]);
+                    $ticket['status'] = 'used';
+                    $ticket['used_at'] = $accessedAt;
                 }
             }
             $this->pdo->prepare(
-                'INSERT INTO ticket_scans (ticket_id, event_id, scanned_code, result, scanned_by, ip_address, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, NOW())'
+                'INSERT INTO ticket_scans (ticket_id, event_id, scanned_code, result, scanned_by, ip_address, device_reference, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, NOW())'
             )->execute([
                 $ticket['id'] ?? null,
                 $eventId,
-                $code,
+                $scannedValue,
                 $result,
                 $_SESSION['admin'] ?? 'admin',
                 client_ip(),
+                $device ?: null,
             ]);
             $this->pdo->commit();
-            return ['result' => $result, 'ticket' => $ticket ?: null];
+            return ['result' => $result, 'ticket' => $ticket ? [
+                'public_code' => $ticket['public_code'],
+                'status' => $ticket['status'],
+                'used_at' => $ticket['used_at'],
+            ] : null];
         } catch (\Throwable $e) {
             $this->pdo->rollBack();
             throw $e;
+        }
+    }
+
+    public function adminEventAttendees(int $eventId): array
+    {
+        $this->requireAdminEvent($eventId);
+        $rows = $this->pdo->prepare(
+            'SELECT t.id, t.public_code, t.status, t.used_at, toi.ticket_type_name,
+                    o.name, o.email, o.phone, COALESCE(o.test_reference, o.redsys_order) AS order_reference
+             FROM tickets t
+             JOIN ticket_order_items toi ON toi.id = t.order_item_id
+             JOIN ticket_orders o ON o.id = toi.order_id
+             WHERE t.event_id = ?
+             ORDER BY t.used_at DESC, o.created_at ASC, t.id ASC'
+        );
+        $rows->execute([$eventId]);
+        $tickets = $rows->fetchAll();
+        $metrics = ['issued' => 0, 'used' => 0, 'cancelled' => 0, 'refunded' => 0, 'blocked' => 0];
+        foreach ($tickets as $ticket) {
+            $status = (string) $ticket['status'];
+            $metrics[$status] = ($metrics[$status] ?? 0) + 1;
+        }
+        $metrics['total'] = count($tickets);
+        $metrics['pending'] = $metrics['issued'];
+        $metrics['access_percent'] = $metrics['total'] > 0 ? (int) round($metrics['used'] / $metrics['total'] * 100) : 0;
+        return ['metrics' => $metrics, 'attendees' => $tickets];
+    }
+
+    public function reverseTicketCheckIn(int $eventId, string $code, string $reason = ''): array
+    {
+        $this->requireAdminEvent($eventId);
+        $code = clean_string($code, 120);
+        if ($code === '') {
+            throw new InvalidArgumentException('Falta el código de la entrada.');
+        }
+        $this->pdo->beginTransaction();
+        try {
+            $stmt = $this->pdo->prepare('SELECT * FROM tickets WHERE event_id = ? AND public_code = ? FOR UPDATE');
+            $stmt->execute([$eventId, $code]);
+            $ticket = $stmt->fetch();
+            if (!$ticket) {
+                throw new InvalidArgumentException('Entrada no encontrada para esta experiencia.');
+            }
+            if ($ticket['status'] !== 'used') {
+                throw new RuntimeException('Solo se puede revertir una entrada ya utilizada.', 409);
+            }
+            $this->pdo->prepare('UPDATE tickets SET status = "issued", used_at = NULL, updated_at = NOW() WHERE id = ?')->execute([$ticket['id']]);
+            $this->pdo->prepare(
+                'INSERT INTO ticket_scans (ticket_id, event_id, scanned_code, result, scanned_by, ip_address, device_reference, created_at)
+                 VALUES (?, ?, ?, "revertida", ?, ?, ?, NOW())'
+            )->execute([
+                $ticket['id'], $eventId, $code, $_SESSION['admin'] ?? 'admin', client_ip(), clean_string($reason, 190) ?: null,
+            ]);
+            $this->pdo->commit();
+            return ['public_code' => $code, 'status' => 'issued'];
+        } catch (\Throwable $error) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $error;
         }
     }
 
@@ -1566,8 +1693,8 @@ final class Ticketing
         $items = $this->pdo->prepare('SELECT * FROM ticket_order_items WHERE order_id = ? ORDER BY id ASC');
         $items->execute([$orderId]);
         $insert = $this->pdo->prepare(
-            'INSERT INTO tickets (order_item_id, event_id, ticket_type_id, public_code, qr_token_hash, status, issued_at, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, "issued", NOW(), NOW(), NOW())'
+            'INSERT INTO tickets (order_item_id, event_id, ticket_type_id, public_code, qr_token_hash, qr_token_ciphertext, status, issued_at, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, "issued", NOW(), NOW(), NOW())'
         );
         foreach ($items->fetchAll() as $item) {
             for ($i = 0; $i < (int) $item['quantity']; $i++) {
@@ -1575,15 +1702,93 @@ final class Ticketing
                 $code = !empty($order['is_test'])
                     ? 'PG-TEST-' . strtoupper(substr(bin2hex(random_bytes(7)), 0, 10))
                     : 'PG-' . strtoupper(substr(bin2hex(random_bytes(8)), 0, 12));
+                $ciphertext = null;
+                try {
+                    $ciphertext = $this->encryptQrToken($token);
+                } catch (RuntimeException $error) {
+                    // La confirmación del banco nunca se bloquea por una clave de QR aún no configurada.
+                    // El QR se emitirá de forma segura al abrir el pedido cuando esa clave exista.
+                }
                 $insert->execute([
                     $item['id'],
                     $item['event_id'],
                     $item['ticket_type_id'],
                     $code,
                     hash('sha256', $token),
+                    $ciphertext,
                 ]);
             }
         }
+    }
+
+    private function getOrderRecordByToken(string $token): ?array
+    {
+        $stmt = $this->pdo->prepare('SELECT * FROM ticket_orders WHERE public_token = ? LIMIT 1');
+        $stmt->execute([$token]);
+        return $stmt->fetch() ?: null;
+    }
+
+    private function ticketQrUrl(array $ticket): string
+    {
+        $token = $this->decryptQrToken((string) ($ticket['qr_token_ciphertext'] ?? ''));
+        if ($token === '') {
+            $token = public_token(32);
+            $this->pdo->prepare('UPDATE tickets SET qr_token_hash = ?, qr_token_ciphertext = ?, updated_at = NOW() WHERE id = ?')
+                ->execute([hash('sha256', $token), $this->encryptQrToken($token), (int) $ticket['id']]);
+        }
+        return app_base_url() . '/check-in/?ticket=' . rawurlencode($token);
+    }
+
+    private function qrEncryptionKey(): string
+    {
+        $configured = env_value('TICKET_QR_ENCRYPTION_KEY');
+        if (!$configured || strlen($configured) < 32) {
+            throw new RuntimeException('Falta configurar la clave privada de QR.');
+        }
+        return hash('sha256', $configured, true);
+    }
+
+    private function encryptQrToken(string $token): string
+    {
+        if (!function_exists('openssl_encrypt')) {
+            throw new RuntimeException('El servidor no dispone del cifrado necesario para los codigos QR.');
+        }
+        $iv = random_bytes(12);
+        $tag = '';
+        $ciphertext = openssl_encrypt($token, 'aes-256-gcm', $this->qrEncryptionKey(), OPENSSL_RAW_DATA, $iv, $tag);
+        if ($ciphertext === false) {
+            throw new RuntimeException('No se pudo proteger el codigo QR.');
+        }
+        return rtrim(strtr(base64_encode($iv . $tag . $ciphertext), '+/', '-_'), '=');
+    }
+
+    private function decryptQrToken(string $value): string
+    {
+        if ($value === '') {
+            return '';
+        }
+        if (!function_exists('openssl_decrypt')) {
+            throw new RuntimeException('El servidor no dispone del cifrado necesario para los codigos QR.');
+        }
+        $encoded = strtr($value, '-_', '+/');
+        $encoded .= str_repeat('=', (4 - strlen($encoded) % 4) % 4);
+        $decoded = base64_decode($encoded, true);
+        if ($decoded === false || strlen($decoded) < 29) {
+            return '';
+        }
+        $iv = substr($decoded, 0, 12);
+        $tag = substr($decoded, 12, 16);
+        $ciphertext = substr($decoded, 28);
+        $token = openssl_decrypt($ciphertext, 'aes-256-gcm', $this->qrEncryptionKey(), OPENSSL_RAW_DATA, $iv, $tag);
+        return is_string($token) ? $token : '';
+    }
+
+    private function extractQrToken(string $value): ?string
+    {
+        if (preg_match('#[?&]ticket=([A-Za-z0-9_-]{32,})#', $value, $matches)) {
+            return $matches[1];
+        }
+        return preg_match('/^[A-Za-z0-9_-]{32,}$/', $value) ? $value : null;
     }
 
     private function sendConfirmation(int $orderId): void
@@ -1617,7 +1822,7 @@ final class Ticketing
         $quantityStmt->execute([$orderId]);
         $quantity = (int) $quantityStmt->fetchColumn();
         $delivery = new TicketDeliveryService($this->mailer);
-        $result = $delivery->sendTestOrder($this->pdo, $order, $event, $quantity);
+        $result = $delivery->sendOrder($this->pdo, $order, $event, $quantity);
         $status = $result['email'] === 'sent' ? 'partially_sent' : 'failed';
         $this->pdo->prepare('UPDATE ticket_orders SET delivery_status = ?, updated_at = NOW() WHERE id = ?')->execute([$status, $orderId]);
     }
