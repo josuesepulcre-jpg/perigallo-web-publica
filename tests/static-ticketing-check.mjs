@@ -8,6 +8,7 @@ const required = [
   "api/src/Ticketing.php",
   "api/src/TicketDeliveryService.php",
   "api/src/WhatsAppDeliveryService.php",
+  "api/src/DiscountCodes.php",
   "api/src/Redsys.php",
   "database/migrations/001_ticketing_schema.sql",
   "database/migrations/002_event_editor.sql",
@@ -21,6 +22,7 @@ const required = [
   "database/migrations/010_order_access_recovery.sql",
   "database/migrations/011_admin_users_and_order_operations.sql",
   "database/migrations/012_payment_methods_bizum.sql",
+  "database/migrations/013_discount_codes.sql",
   "eventos/index.html",
   "eventos/evento.html",
   "entradas/checkout/index.html",
@@ -39,6 +41,7 @@ const required = [
   "admin/eventos/index.html",
   "admin/ventas/index.html",
   "admin/usuarios/index.html",
+  "admin/descuentos/index.html",
   "check-in/index.html",
   "assets/vendor/qrcode-generator.min.js",
   "assets/vendor/jspdf.umd.min.js",
@@ -298,6 +301,18 @@ for (const marker of ["availablePaymentMethods", "REDSYS_BIZUM_ENABLED", "DS_MER
 for (const marker of ["available' => true", "'id' => 'bizum'", "'available' => $this->bizumEnabled()"]) {
   if (!redsys.includes(marker)) throw new Error(`Bizum visibility contract is missing ${marker}.`);
 }
+
+const discountCodes = readFileSync(join(root, "api/src/DiscountCodes.php"), "utf8");
+const discountMigration = readFileSync(join(root, "database/migrations/013_discount_codes.sql"), "utf8");
+for (const marker of ["discount_codes", "discount_code_events", "discount_code_ticket_types", "discount_code_usages", "discount_amount_cents", "per_ticket", "maximum_uses_per_customer"]) {
+  if (!discountMigration.includes(marker)) throw new Error(`Discount migration is missing ${marker}.`);
+}
+for (const marker of ["function quote", "function reserve", "function consumeForOrder", "function releaseForOrder", "function deleteUnused", "FOR UPDATE", "maximum_total_uses", "maximum_uses_per_customer"]) {
+  if (!discountCodes.includes(marker)) throw new Error(`Discount rule contract is missing ${marker}.`);
+}
+for (const marker of ["/discounts/validate", "/admin/discount-codes", "adminSaveDiscountCode", "adminDeleteUnusedDiscountCode", "adminDiscountCodeHistory", "validateTestDiscount"]) {
+  if (!(api + ticketing).includes(marker)) throw new Error(`Discount API contract is missing ${marker}.`);
+}
 const envExample = readFileSync(join(root, ".env.example"), "utf8");
 if (!envExample.includes("REDSYS_BIZUM_ENABLED=false")) throw new Error("Bizum feature flag is missing from .env.example.");
 
@@ -311,6 +326,20 @@ for (const marker of ["data-payment-methods", "payment_method", "Método de pago
 for (const marker of ["Próximamente", "data-unavailable", "checkout-payment-unavailable"]) {
   if (!publicJs.includes(marker)) throw new Error(`Bizum pending-activation UI is missing ${marker}.`);
 }
+for (const marker of ["Código de descuento", "data-apply-discount", "data-clear-discount", "checkout-discount"]) {
+  if (!checkout.includes(marker)) throw new Error(`Checkout discount UI is missing ${marker}.`);
+}
+for (const marker of ["clearDiscount", "discounts/validate", "discount_code", "checkout-summary-discount"]) {
+  if (!publicJs.includes(marker)) throw new Error(`Checkout discount behavior is missing ${marker}.`);
+}
+const discountsAdmin = readFileSync(join(root, "admin/descuentos/index.html"), "utf8");
+for (const marker of ["data-admin-discounts-page", "data-admin-discount-form", "maximum_uses_per_customer", "per_ticket"]) {
+  if (!discountsAdmin.includes(marker)) throw new Error(`Discount admin UI is missing ${marker}.`);
+}
+for (const marker of ["initDiscountCodes", "admin/discount-codes", "data-discount-action=\"archive\"", "data-discount-action=\"delete\""]) {
+  if (!adminBackoffice.includes(marker)) throw new Error(`Discount admin behavior is missing ${marker}.`);
+}
+if (!rootHtaccess.includes("^admin/descuentos")) throw new Error("Discount admin route is missing.");
 
 const checkoutCss = readFileSync(join(root, "assets/css/checkout.css"), "utf8");
 for (const marker of [".quantity-stepper", ":-webkit-autofill", ".checkout-check-mark", ".checkout-summary", ".checkout-submit", "@media(max-width:860px)"]) {

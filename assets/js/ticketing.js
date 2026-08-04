@@ -351,6 +351,12 @@
     var confirmation = form.querySelector("[data-checkout-preview-confirmation]");
     var paymentMethodSection = form.querySelector("[data-payment-method-section]");
     var paymentMethodsBox = form.querySelector("[data-payment-methods]");
+    var discountInput = form.querySelector("[name=\"discount_code\"]");
+    var applyDiscount = form.querySelector("[data-apply-discount]");
+    var clearDiscountButton = form.querySelector("[data-clear-discount]");
+    var discountStatus = form.querySelector("[data-discount-status]");
+    var appliedDiscount = null;
+    var discountFingerprint = "";
     var isSubmitting = false;
     if ((!preview && !slug) || (preview && !previewId)) {
       status.textContent = "Falta el evento.";
@@ -385,7 +391,7 @@
         return;
       }
       var needsCode = types.some(function (type) { return type.requires_promo; });
-      typesBox.innerHTML = (needsCode ? '<div class="checkout-field checkout-promo"><label for="promo_code">Código promocional</label><input id="promo_code" name="promo_code" autocomplete="off" placeholder="Solo si alguna entrada lo requiere"></div>' : '') + types.map(checkoutTicketMarkup).join("");
+      typesBox.innerHTML = (needsCode ? '<div class="checkout-field checkout-promo"><label for="promo_code">Código de acceso</label><input id="promo_code" name="promo_code" autocomplete="off" placeholder="Solo si alguna entrada lo requiere"></div>' : '') + types.map(checkoutTicketMarkup).join("");
       form.dataset.eventSlug = event.slug;
       form.dataset.eventTitle = event.title;
       form.dataset.previewEventId = event.id;
@@ -414,15 +420,75 @@
     });
     form.querySelectorAll(".checkout-check input").forEach(function (input) { input.addEventListener("change", refreshCheckout); });
     if (paymentMethodsBox) paymentMethodsBox.addEventListener("change", refreshCheckout);
+    if (discountInput) discountInput.addEventListener("input", function () {
+      if (appliedDiscount && String(appliedDiscount.code || "").toUpperCase() !== discountInput.value.trim().toUpperCase()) clearDiscount("El código ha cambiado. Aplícalo de nuevo para actualizar el total.");
+    });
+    if (applyDiscount) applyDiscount.addEventListener("click", function () {
+      var code = discountInput ? discountInput.value.trim() : "";
+      var selected = selectedTicketInputs();
+      if (!code) { clearDiscount("Introduce un código para comprobarlo."); return; }
+      if (!selected.length) { clearDiscount("Selecciona al menos una entrada antes de aplicar un código."); return; }
+      applyDiscount.disabled = true;
+      applyDiscount.textContent = "Comprobando…";
+      setDiscountStatus("Comprobando las condiciones del código…", false);
+      var payload = {
+        event_slug: form.dataset.eventSlug,
+        email: form.email.value.trim(),
+        phone: form.phone.value.trim(),
+        discount_code: code,
+        items: selectedItemsPayload()
+      };
+      var validator = preview
+        ? adminRequest(api + "/admin/events/" + encodeURIComponent(form.dataset.previewEventId) + "/discounts/validate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
+        : request(api + "/discounts/validate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      validator.then(function (data) {
+        appliedDiscount = data.discount;
+        discountFingerprint = selectionFingerprint();
+        if (discountInput) discountInput.value = appliedDiscount.code || code.toUpperCase();
+        setDiscountStatus((appliedDiscount.message || "Código aplicado.") + " Descuento: " + cents(appliedDiscount.discount_cents) + ".", true);
+        refreshCheckout();
+      }).catch(function (error) { clearDiscount(error.message || "No se ha podido aplicar este código."); })
+        .finally(function () { applyDiscount.disabled = false; applyDiscount.textContent = "Aplicar código"; });
+    });
+    if (clearDiscountButton) clearDiscountButton.addEventListener("click", function () {
+      if (discountInput) discountInput.value = "";
+      clearDiscount("Código eliminado.");
+    });
 
     function selectedPaymentMethod() {
       var selected = form.querySelector('input[name="payment_method"]:checked');
       return selected ? selected.value : "card";
     }
 
+    function selectedTicketInputs() {
+      return Array.from(form.querySelectorAll("[data-ticket-type]")).filter(function (input) { return Number(input.value || 0) > 0; });
+    }
+
+    function selectedItemsPayload() {
+      return selectedTicketInputs().map(function (input) { return { ticket_type_id: Number(input.dataset.ticketType), quantity: Number(input.value || 0) }; });
+    }
+
+    function selectionFingerprint() {
+      return selectedItemsPayload().map(function (item) { return item.ticket_type_id + ":" + item.quantity; }).join("|");
+    }
+
+    function setDiscountStatus(message, applied) {
+      if (!discountStatus) return;
+      discountStatus.textContent = message || "";
+      discountStatus.classList.toggle("is-applied", !!applied);
+      if (clearDiscountButton) clearDiscountButton.hidden = !applied;
+    }
+
+    function clearDiscount(message) {
+      appliedDiscount = null;
+      discountFingerprint = "";
+      setDiscountStatus(message || "", false);
+      refreshCheckout();
+    }
+
     function refreshCheckout() {
       var inputs = Array.from(form.querySelectorAll("[data-ticket-type]"));
-      var selected = inputs.filter(function (input) { return Number(input.value || 0) > 0; });
+      var selected = selectedTicketInputs();
       inputs.forEach(function (input) {
         var card = input.closest("[data-ticket-card]");
         var quantity = Number(input.value || 0);
@@ -437,8 +503,15 @@
         if (increase) increase.disabled = quantity >= max || max <= 0;
         if (subtotal) subtotal.innerHTML = quantity ? "Subtotal: <strong>" + cents(quantity * Number(input.dataset.ticketPrice || 0)) + "</strong>" : "";
       });
-      renderCheckoutSummary(summary, selected, form.dataset.eventTitle || "La experiencia");
-      var total = selected.reduce(function (sum, input) { return sum + Number(input.value || 0) * Number(input.dataset.ticketPrice || 0); }, 0);
+      var subtotal = selected.reduce(function (sum, input) { return sum + Number(input.value || 0) * Number(input.dataset.ticketPrice || 0); }, 0);
+      if (appliedDiscount && discountFingerprint !== selectionFingerprint()) {
+        appliedDiscount = null;
+        discountFingerprint = "";
+        setDiscountStatus("Has cambiado las entradas. Aplica el código de nuevo para actualizar el descuento.", false);
+      }
+      var discount = appliedDiscount && appliedDiscount.applied ? Math.min(subtotal, Number(appliedDiscount.discount_cents || 0)) : 0;
+      var total = Math.max(0, subtotal - discount);
+      renderCheckoutSummary(summary, selected, form.dataset.eventTitle || "La experiencia", { subtotal: subtotal, discount: discount, code: appliedDiscount && appliedDiscount.code, total: total });
       var validation = checkoutValidation(form, selected);
       var paymentMethod = selectedPaymentMethod();
       if (paymentMethodsBox) {
@@ -457,7 +530,7 @@
 
     form.addEventListener("submit", function (event) {
       event.preventDefault();
-      var selected = Array.from(form.querySelectorAll("[data-ticket-type]")).filter(function (input) { return Number(input.value || 0) > 0; });
+      var selected = selectedTicketInputs();
       var validation = checkoutValidation(form, selected);
       if (!validation.valid || isSubmitting) {
         form.querySelectorAll(".checkout-field input").forEach(function (input) { updateCheckoutField(input, true); });
@@ -474,12 +547,11 @@
         terms_accepted: form.terms_accepted.checked,
         payment_method: selectedPaymentMethod(),
         promo_code: form.promo_code ? form.promo_code.value : "",
-        items: Array.from(form.querySelectorAll("[data-ticket-type]")).map(function (input) {
-          return { ticket_type_id: Number(input.dataset.ticketType), quantity: Number(input.value || 0) };
-        }).filter(function (item) { return item.quantity > 0; })
+        discount_code: appliedDiscount && discountFingerprint === selectionFingerprint() ? (appliedDiscount.code || "") : "",
+        items: selectedItemsPayload()
       };
       if (preview) {
-        renderCheckoutPreview(form, payload, form.dataset.eventTitle || "Este evento", layout, confirmation);
+        renderCheckoutPreview(form, payload, form.dataset.eventTitle || "Este evento", layout, confirmation, appliedDiscount);
         return;
       }
       isSubmitting = true;
@@ -597,23 +669,27 @@
     if (error) error.textContent = valid ? "" : (input.type === "email" && input.value.trim() ? "Introduce un correo electrónico válido." : "Este campo es obligatorio.");
   }
 
-  function renderCheckoutSummary(target, selected, eventTitle) {
+  function renderCheckoutSummary(target, selected, eventTitle, totals) {
     if (!target) return;
     if (!selected.length) {
       target.innerHTML = '<p>Aún no has seleccionado entradas.</p><small>Añade al menos una entrada para continuar con la reserva.</small>';
       return;
     }
-    var total = selected.reduce(function (sum, input) { return sum + Number(input.value || 0) * Number(input.dataset.ticketPrice || 0); }, 0);
+    var subtotal = totals && Number.isFinite(totals.subtotal) ? totals.subtotal : selected.reduce(function (sum, input) { return sum + Number(input.value || 0) * Number(input.dataset.ticketPrice || 0); }, 0);
+    var discount = totals ? Number(totals.discount || 0) : 0;
+    var total = totals && Number.isFinite(totals.total) ? totals.total : subtotal - discount;
     target.innerHTML = '<p class="checkout-summary-event">' + escapeHtml(eventTitle) + '</p><ul class="checkout-summary-items">' + selected.map(function (input) {
       var quantity = Number(input.value || 0);
       var price = Number(input.dataset.ticketPrice || 0);
       return '<li class="checkout-summary-item"><span><strong>' + escapeHtml(input.dataset.ticketName) + '</strong><small>' + quantity + ' × ' + cents(price) + '</small></span><strong>' + cents(quantity * price) + '</strong></li>';
-    }).join("") + '</ul><div class="checkout-summary-total"><span>Total</span><strong>' + cents(total) + '</strong></div>';
+    }).join("") + '</ul>' + (discount ? '<div class="checkout-summary-subtotal"><span>Subtotal</span><strong>' + cents(subtotal) + '</strong></div><div class="checkout-summary-discount"><span>Descuento' + (totals.code ? ' · ' + escapeHtml(totals.code) : '') + '</span><strong>−' + cents(discount) + '</strong></div>' : '') + '<div class="checkout-summary-total"><span>Total</span><strong>' + cents(total) + '</strong></div>';
   }
 
-  function renderCheckoutPreview(form, payload, eventTitle, layout, confirmation) {
+  function renderCheckoutPreview(form, payload, eventTitle, layout, confirmation, appliedDiscount) {
     var selectedInputs = Array.from(form.querySelectorAll("[data-ticket-type]")).filter(function (input) { return Number(input.value || 0) > 0; });
-    var total = selectedInputs.reduce(function (sum, input) { return sum + Number(input.value || 0) * Number(input.dataset.ticketPrice || 0); }, 0);
+    var subtotal = selectedInputs.reduce(function (sum, input) { return sum + Number(input.value || 0) * Number(input.dataset.ticketPrice || 0); }, 0);
+    var discount = Number(payload.discount_code && appliedDiscount ? appliedDiscount.discount_cents || 0 : 0);
+    var total = Math.max(0, subtotal - discount);
     var itemRows = selectedInputs.map(function (input) {
       return '<li><span>' + Number(input.value) + ' × ' + escapeHtml(input.dataset.ticketName) + '</span><strong>' + cents(Number(input.value) * Number(input.dataset.ticketPrice || 0)) + '</strong></li>';
     }).join("");
@@ -624,7 +700,7 @@
       '<span class="ticket-eyebrow">Modo de pruebas</span>',
       '<h2>Así vería <em>tu pedido</em> la persona asistente</h2>',
       '<p class="ticket-copy">Vas a continuar al TPV seguro de <strong>Redsys TEST</strong> con <strong>' + escapeHtml(paymentLabel) + '</strong> para completar esta operación aislada. No se realizará ningún cargo real.</p>',
-      '<div class="ticket-preview-summary"><div><span>Contacto</span><strong>' + escapeHtml((payload.first_name + " " + payload.last_name).trim() || "Nombre de ejemplo") + '</strong><small>' + escapeHtml(payload.email || "correo@ejemplo.com") + '</small></div><div><span>Importe total</span><strong>' + cents(total) + '</strong><small>' + escapeHtml(paymentLabel) + ' · Las entradas y los envíos se marcarán como prueba.</small></div></div>',
+      '<div class="ticket-preview-summary"><div><span>Contacto</span><strong>' + escapeHtml((payload.first_name + " " + payload.last_name).trim() || "Nombre de ejemplo") + '</strong><small>' + escapeHtml(payload.email || "correo@ejemplo.com") + '</small></div><div><span>Importe total</span><strong>' + cents(total) + '</strong><small>' + (discount ? 'Descuento aplicado · ' : '') + escapeHtml(paymentLabel) + ' · Las entradas y los envíos se marcarán como prueba.</small></div></div>',
       '<ul class="ticket-preview-items">' + itemRows + '</ul>',
       '<div class="checkout-preview-actions"><button class="ticket-btn primary" type="button" data-start-test-payment>Pagar ' + cents(total) + ' con ' + escapeHtml(paymentLabel).toLowerCase() + ' <span aria-hidden="true">→</span></button><button class="ticket-btn" type="button" data-restart-checkout-preview>Volver a editar la compra</button><a class="checkout-preview-editor-link" href="/admin/entradas/">Volver al editor</a></div><p class="checkout-security">Pago seguro en entorno de pruebas · No se realizará ningún cargo real.</p>'
     ].join("");

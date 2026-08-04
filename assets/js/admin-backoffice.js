@@ -2,7 +2,7 @@
   "use strict";
 
   var api = "/api";
-  var state = { csrf: "", session: null, events: [], orders: [], users: [] };
+  var state = { csrf: "", session: null, events: [], orders: [], users: [], discountCodes: [], discountMeta: null };
   var money = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" });
 
   function escapeHtml(value) {
@@ -56,6 +56,7 @@
     var path = window.location.pathname;
     if (path.indexOf("/admin/eventos") === 0) return "events";
     if (path.indexOf("/admin/ventas") === 0) return "sales";
+    if (path.indexOf("/admin/descuentos") === 0) return "discounts";
     if (path.indexOf("/admin/acceso") === 0) return "access";
     if (path.indexOf("/admin/usuarios") === 0) return "users";
     return "dashboard";
@@ -80,6 +81,7 @@
             '<span class="admin-nav-label">Gestión</span>' +
             '<a href="/admin/eventos/" data-admin-nav-item="events">Eventos</a>' +
             '<a href="/admin/ventas/" data-admin-nav-item="sales">Pedidos y ventas</a>' +
+            '<a href="/admin/descuentos/" data-admin-nav-item="discounts">Códigos de descuento</a>' +
             '<span class="admin-nav-label">Operativa</span>' +
             '<a href="/admin/acceso/" data-admin-nav-item="access">Control de acceso</a>' +
             (sessionData.is_owner ? '<span class="admin-nav-label">Configuración</span><a href="/admin/usuarios/" data-admin-nav-item="users">Equipo y permisos</a>' : '') +
@@ -206,7 +208,11 @@
       var reference = order.redsys_order || order.test_reference || ("Pedido " + order.id);
       var displayStatus = order.display_status || order.payment_status || order.status;
       var paymentMethod = order.payment_method === "bizum" ? "Bizum" : "Tarjeta";
-      return '<article class="admin-order-row"><div><strong>' + escapeHtml(order.name || "Comprador sin nombre") + '</strong><small>' + escapeHtml(order.event_title || "Evento por asignar") + ' · ' + escapeHtml(reference) + ' · ' + paymentMethod + (Number(order.is_test) ? ' · Prueba' : '') + '</small></div><span>' + Number(order.ticket_quantity || 0) + ' entrada' + (Number(order.ticket_quantity || 0) === 1 ? "" : "s") + '</span><span class="status-pill status-' + escapeHtml(displayStatus) + '">' + escapeHtml(statusLabel(displayStatus)) + '</span><strong>' + formatMoney(order.total_cents) + '</strong>' + (compact ? "" : orderActions(order)) + '</article>';
+      var discount = Number(order.discount_amount_cents || 0);
+      var amount = discount
+        ? '<strong><s>' + formatMoney(order.subtotal_cents) + '</s> ' + formatMoney(order.total_cents) + '</strong><small class="admin-order-discount">Cupón ' + escapeHtml(order.discount_code || "") + ' · −' + formatMoney(discount) + '</small>'
+        : '<strong>' + formatMoney(order.total_cents) + '</strong>';
+      return '<article class="admin-order-row"><div><strong>' + escapeHtml(order.name || "Comprador sin nombre") + '</strong><small>' + escapeHtml(order.event_title || "Evento por asignar") + ' · ' + escapeHtml(reference) + ' · ' + paymentMethod + (Number(order.is_test) ? ' · Prueba' : '') + '</small></div><span>' + Number(order.ticket_quantity || 0) + ' entrada' + (Number(order.ticket_quantity || 0) === 1 ? "" : "s") + '</span><span class="status-pill status-' + escapeHtml(displayStatus) + '">' + escapeHtml(statusLabel(displayStatus)) + '</span><span class="admin-order-amount">' + amount + '</span>' + (compact ? "" : orderActions(order)) + '</article>';
     }).join("");
   }
 
@@ -378,6 +384,234 @@
     });
   }
 
+  function centsFromInput(value) {
+    var normalized = String(value || "").trim().replace(/\s/g, "").replace(/\./g, "").replace(",", ".");
+    if (!normalized) return null;
+    var amount = Number(normalized);
+    return Number.isFinite(amount) && amount > 0 ? Math.round(amount * 100) : null;
+  }
+
+  function percentToBasisPoints(value) {
+    var amount = Number(String(value || "").replace(",", "."));
+    return Number.isFinite(amount) && amount > 0 ? Math.round(amount * 100) : 0;
+  }
+
+  function inputMoney(cents) {
+    return cents == null || cents === "" ? "" : (Number(cents) / 100).toFixed(2).replace(".", ",");
+  }
+
+  function inputDate(value) {
+    return value ? String(value).replace(" ", "T").slice(0, 16) : "";
+  }
+
+  function selectedOptionValues(select) {
+    return Array.from(select.options).filter(function (option) { return option.selected; }).map(function (option) { return Number(option.value); });
+  }
+
+  function setSelectedOptions(select, values) {
+    var selected = new Set((values || []).map(Number));
+    Array.from(select.options).forEach(function (option) { option.selected = selected.has(Number(option.value)); });
+  }
+
+  function discountValueLabel(code) {
+    if (code.discount_type === "fixed") return formatMoney(code.fixed_amount_cents);
+    return (Number(code.percent_basis_points || 0) / 100).toLocaleString("es-ES", { maximumFractionDigits: 2 }) + "%";
+  }
+
+  function discountStatusLabel(code) {
+    if (Number(code.is_archived)) return "Archivado";
+    if (!Number(code.is_active)) return "Inactivo";
+    if (code.starts_at && new Date(String(code.starts_at).replace(" ", "T")) > new Date()) return "Programado";
+    if (code.expires_at && new Date(String(code.expires_at).replace(" ", "T")) < new Date()) return "Caducado";
+    if (code.maximum_total_uses != null && Number(code.consumed_uses || 0) >= Number(code.maximum_total_uses)) return "Agotado";
+    return "Activo";
+  }
+
+  function renderDiscountList(root, query) {
+    var target = root.querySelector("[data-admin-discount-list]");
+    var status = root.querySelector("[data-admin-discount-list-status]");
+    var term = String(query || "").trim().toLowerCase();
+    var selectedEvent = Number((root.querySelector("[data-discount-list-event]") || {}).value || 0);
+    var selectedType = String((root.querySelector("[data-discount-list-type]") || {}).value || "");
+    var selectedDate = String((root.querySelector("[data-discount-list-date]") || {}).value || "");
+    var rows = state.discountCodes.filter(function (code) {
+      var matchesTerm = !term || [code.code, code.internal_description, code.event_names].join(" ").toLowerCase().includes(term);
+      var eventIds = (code.event_ids || []).map(Number);
+      var matchesEvent = !selectedEvent || code.event_scope === "all" || (code.event_scope === "included" ? eventIds.includes(selectedEvent) : !eventIds.includes(selectedEvent));
+      var matchesType = !selectedType || code.discount_type === selectedType;
+      var matchesDate = !selectedDate || (!code.starts_at || String(code.starts_at).slice(0, 10) <= selectedDate) && (!code.expires_at || String(code.expires_at).slice(0, 10) >= selectedDate);
+      return matchesTerm && matchesEvent && matchesType && matchesDate;
+    });
+    if (status) status.textContent = rows.length + (rows.length === 1 ? " código mostrado" : " códigos mostrados");
+    if (!rows.length) {
+      target.innerHTML = '<div class="admin-empty"><strong>No hay códigos en este estado.</strong><span>Crea una campaña nueva o cambia los filtros.</span></div>';
+      return;
+    }
+    target.innerHTML = rows.map(function (code) {
+      var usage = Number(code.consumed_uses || 0) + (code.maximum_total_uses != null ? " / " + Number(code.maximum_total_uses) : "");
+      return '<article class="admin-discount-row" data-discount-id="' + Number(code.id) + '">' +
+        '<div><span class="ticket-eyebrow">' + escapeHtml(discountStatusLabel(code)) + '</span><strong>' + escapeHtml(code.code) + '</strong><small>' + escapeHtml(code.internal_description || "Sin descripción interna") + '</small></div>' +
+        '<div><small>Descuento</small><strong>' + escapeHtml(discountValueLabel(code)) + '</strong><small>Usos: ' + escapeHtml(String(usage)) + '</small></div>' +
+        '<div><small>Alcance</small><strong>' + escapeHtml(code.application_scope === "ticket_types" ? "Tipos seleccionados" : code.application_scope === "per_ticket" ? "Cada entrada" : "Pedido completo") + '</strong><small>' + escapeHtml(code.event_scope === "all" ? "Todas las experiencias" : (code.event_names || "Experiencias seleccionadas")) + '</small></div>' +
+        '<div class="admin-discount-actions"><button type="button" class="text-action" data-discount-action="edit">Editar</button><button type="button" class="text-action" data-discount-action="history">Historial</button><button type="button" class="text-action" data-discount-action="duplicate">Duplicar</button>' + (Number(code.total_uses || 0) === 0 ? '<button type="button" class="text-action danger" data-discount-action="delete">Eliminar</button>' : (!Number(code.is_archived) ? '<button type="button" class="text-action danger" data-discount-action="archive">Archivar</button>' : '')) + '</div>' +
+      '</article>';
+    }).join("");
+  }
+
+  function syncDiscountFormVisibility(form) {
+    var fixed = form.discount_type.value === "fixed";
+    form.querySelector("[data-discount-percent]").hidden = fixed;
+    form.querySelector("[data-discount-fixed]").hidden = !fixed;
+    form.querySelector("[data-discount-events]").hidden = form.event_scope.value === "all";
+    form.querySelector("[data-discount-ticket-types]").hidden = form.application_scope.value !== "ticket_types";
+  }
+
+  function populateDiscountOptions(form) {
+    var meta = state.discountMeta || { events: [], ticket_types: [] };
+    form.event_ids.innerHTML = (meta.events || []).map(function (event) { return '<option value="' + Number(event.id) + '">' + escapeHtml(event.title) + ' · ' + escapeHtml(formatDate(event.starts_at, false)) + '</option>'; }).join("");
+    form.ticket_type_ids.innerHTML = (meta.ticket_types || []).map(function (type) { return '<option value="' + Number(type.id) + '">' + escapeHtml(type.event_title) + ' — ' + escapeHtml(type.name) + '</option>'; }).join("");
+  }
+
+  function resetDiscountForm(form) {
+    form.reset();
+    form.discount_id.value = "";
+    form.discount_type.value = "percent";
+    form.event_scope.value = "all";
+    form.application_scope.value = "order";
+    form.is_active.checked = true;
+    form.querySelector("[data-discount-form-title]").textContent = "Nuevo código";
+    setSelectedOptions(form.event_ids, []);
+    setSelectedOptions(form.ticket_type_ids, []);
+    syncDiscountFormVisibility(form);
+  }
+
+  function fillDiscountForm(form, code) {
+    form.discount_id.value = code.id;
+    form.code.value = code.code || "";
+    form.internal_description.value = code.internal_description || "";
+    form.discount_type.value = code.discount_type || "percent";
+    form.discount_percent.value = code.percent_basis_points ? (Number(code.percent_basis_points) / 100).toFixed(2).replace(/\.00$/, "") : "";
+    form.fixed_amount.value = inputMoney(code.fixed_amount_cents);
+    form.maximum_discount.value = inputMoney(code.maximum_discount_cents);
+    form.minimum_order.value = inputMoney(code.minimum_order_cents);
+    form.minimum_ticket_quantity.value = code.minimum_ticket_quantity || "";
+    form.maximum_discounted_ticket_quantity.value = code.maximum_discounted_ticket_quantity || "";
+    form.maximum_total_uses.value = code.maximum_total_uses || "";
+    form.maximum_uses_per_customer.value = code.maximum_uses_per_customer || "";
+    form.starts_at.value = inputDate(code.starts_at);
+    form.expires_at.value = inputDate(code.expires_at);
+    form.event_scope.value = code.event_scope || "all";
+    form.application_scope.value = code.application_scope || "order";
+    form.is_active.checked = Number(code.is_active) === 1;
+    form.is_combinable.checked = Number(code.is_combinable) === 1;
+    setSelectedOptions(form.event_ids, code.event_ids || []);
+    setSelectedOptions(form.ticket_type_ids, code.ticket_type_ids || []);
+    form.querySelector("[data-discount-form-title]").textContent = "Editar " + (code.code || "código");
+    syncDiscountFormVisibility(form);
+    form.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function formDiscountPayload(form) {
+    return {
+      code: form.code.value.trim(),
+      internal_description: form.internal_description.value.trim(),
+      discount_type: form.discount_type.value,
+      percent_basis_points: percentToBasisPoints(form.discount_percent.value),
+      fixed_amount_cents: centsFromInput(form.fixed_amount.value),
+      maximum_discount_cents: centsFromInput(form.maximum_discount.value),
+      application_scope: form.application_scope.value,
+      event_scope: form.event_scope.value,
+      event_ids: selectedOptionValues(form.event_ids),
+      ticket_type_ids: selectedOptionValues(form.ticket_type_ids),
+      minimum_order_cents: centsFromInput(form.minimum_order.value),
+      minimum_ticket_quantity: form.minimum_ticket_quantity.value,
+      maximum_discounted_ticket_quantity: form.maximum_discounted_ticket_quantity.value,
+      maximum_total_uses: form.maximum_total_uses.value,
+      maximum_uses_per_customer: form.maximum_uses_per_customer.value,
+      starts_at: form.starts_at.value,
+      expires_at: form.expires_at.value,
+      is_active: form.is_active.checked,
+      is_combinable: form.is_combinable.checked
+    };
+  }
+
+  function renderDiscountHistory(root, code, usages) {
+    var target = root.querySelector("[data-admin-discount-history]");
+    target.hidden = false;
+    target.innerHTML = '<div class="admin-section-label"><div><span class="ticket-eyebrow">Trazabilidad</span><h2>Historial · ' + escapeHtml(code.code) + '</h2></div><button type="button" class="text-action" data-close-discount-history>Cerrar</button></div>' +
+      (!usages.length ? '<p class="ticket-copy">Este código aún no se ha aplicado a ningún pedido.</p>' : '<div class="admin-history-list">' + usages.map(function (usage) {
+        return '<article><div><strong>' + escapeHtml(usage.name || "Pedido") + '</strong><small>' + escapeHtml(usage.event_title || "") + ' · ' + escapeHtml(usage.redsys_order || usage.test_reference || "") + '</small></div><div><strong>' + formatMoney(usage.discount_cents) + '</strong><small>' + escapeHtml(usage.status) + ' · ' + escapeHtml(formatDate(usage.consumed_at || usage.reserved_at, true)) + '</small></div></article>';
+      }).join("") + '</div>');
+  }
+
+  function initDiscountCodes() {
+    var root = document.querySelector("[data-admin-discounts-page]");
+    if (!root) return;
+    requireSession(function (session) {
+      if (session.role !== "admin") { renderPageError("Esta sección está reservada para administración."); return; }
+      var form = root.querySelector("[data-admin-discount-form]");
+      var search = root.querySelector("[data-discount-search]");
+      var stateFilter = "active";
+      var formStatus = root.querySelector("[data-admin-discount-status]");
+      function loadCodes() {
+        return request(api + "/admin/discount-codes?state=" + encodeURIComponent(stateFilter)).then(function (data) { state.discountCodes = data.discount_codes || []; renderDiscountList(root, search.value); });
+      }
+      Promise.all([request(api + "/admin/discount-codes/meta"), loadCodes()]).then(function (result) {
+        state.discountMeta = result[0];
+        populateDiscountOptions(form);
+        var eventFilter = root.querySelector("[data-discount-list-event]");
+        eventFilter.innerHTML = '<option value="">Todas las experiencias</option>' + (state.discountMeta.events || []).map(function (event) { return '<option value="' + Number(event.id) + '">' + escapeHtml(event.title) + '</option>'; }).join("");
+        resetDiscountForm(form);
+      }).catch(function (error) { renderPageError(error.message); });
+      form.discount_type.addEventListener("change", function () { syncDiscountFormVisibility(form); });
+      form.event_scope.addEventListener("change", function () { syncDiscountFormVisibility(form); });
+      form.application_scope.addEventListener("change", function () { syncDiscountFormVisibility(form); });
+      search.addEventListener("input", function () { renderDiscountList(root, search.value); });
+      root.querySelectorAll("[data-discount-list-event], [data-discount-list-type], [data-discount-list-date]").forEach(function (filter) { filter.addEventListener("change", function () { renderDiscountList(root, search.value); }); });
+      root.querySelectorAll("[data-discount-filter]").forEach(function (button) {
+        button.addEventListener("click", function () { stateFilter = button.getAttribute("data-discount-filter") || "active"; root.querySelectorAll("[data-discount-filter]").forEach(function (item) { item.classList.toggle("is-active", item === button); }); loadCodes().catch(function (error) { renderPageError(error.message); }); });
+      });
+      root.querySelector("[data-discount-form-reset]").addEventListener("click", function () { resetDiscountForm(form); formStatus.textContent = ""; });
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        var submit = form.querySelector('[type="submit"]');
+        var id = Number(form.discount_id.value || 0);
+        submit.disabled = true;
+        formStatus.textContent = "Guardando…";
+        jsonRequest(api + "/admin/discount-codes" + (id ? "/" + id : ""), id ? "PUT" : "POST", formDiscountPayload(form))
+          .then(function (data) { formStatus.textContent = "Código " + data.discount_code.code + " guardado."; resetDiscountForm(form); return loadCodes(); })
+          .catch(function (error) { formStatus.textContent = error.message; })
+          .finally(function () { submit.disabled = false; });
+      });
+      root.addEventListener("click", function (event) {
+        if (event.target.closest("[data-close-discount-history]")) { root.querySelector("[data-admin-discount-history]").hidden = true; return; }
+        var action = event.target.closest("[data-discount-action]");
+        if (!action) return;
+        var row = action.closest("[data-discount-id]");
+        var id = Number(row.getAttribute("data-discount-id"));
+        var code = state.discountCodes.find(function (item) { return Number(item.id) === id; });
+        var actionName = action.getAttribute("data-discount-action");
+        if (!code) return;
+        if (actionName === "edit") { fillDiscountForm(form, code); return; }
+        if (actionName === "history") { request(api + "/admin/discount-codes/" + id + "/history").then(function (data) { renderDiscountHistory(root, code, data.usages || []); }).catch(function (error) { renderPageError(error.message); }); return; }
+        if (actionName === "duplicate") {
+          if (!window.confirm("Se creará una copia inactiva del código " + code.code + ".")) return;
+          jsonRequest(api + "/admin/discount-codes/" + id + "/duplicate", "POST", {}).then(function (data) { stateFilter = "inactive"; root.querySelectorAll("[data-discount-filter]").forEach(function (item) { item.classList.toggle("is-active", item.getAttribute("data-discount-filter") === "inactive"); }); return loadCodes().then(function () { fillDiscountForm(form, data.discount_code); }); }).catch(function (error) { renderPageError(error.message); });
+          return;
+        }
+        if (actionName === "archive") {
+          if (!window.confirm("Archivará " + code.code + ". Sus pedidos históricos se conservarán. ¿Continuar?")) return;
+          jsonRequest(api + "/admin/discount-codes/" + id + "/archive", "POST", {}).then(function () { if (Number(form.discount_id.value) === id) resetDiscountForm(form); return loadCodes(); }).catch(function (error) { renderPageError(error.message); });
+          return;
+        }
+        if (actionName === "delete") {
+          if (!window.confirm("Eliminará definitivamente el código " + code.code + ". Esta acción solo es posible porque no tiene usos. ¿Continuar?")) return;
+          jsonRequest(api + "/admin/discount-codes/" + id, "DELETE", {}).then(function () { if (Number(form.discount_id.value) === id) resetDiscountForm(form); return loadCodes(); }).catch(function (error) { renderPageError(error.message); });
+        }
+      });
+    });
+  }
+
   function initAdminChrome() {
     if (!document.querySelector("[data-admin-nav]") || document.querySelector("[data-admin-dashboard]")) return;
     requireSession(function () { /* The scanner shares the authenticated administrative shell. */ });
@@ -389,4 +623,5 @@
   initEvents();
   initSales();
   initUsers();
+  initDiscountCodes();
 })();

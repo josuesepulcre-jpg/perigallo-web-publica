@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Códigos de descuento | Administración Perigallo</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/ticketing.css?v=20260804-discounts-v1">
+<link rel="stylesheet" href="/assets/css/admin-orders.css?v=20260804-discounts-v1">
+</head>
+<body class="ticketing-page admin-backoffice-page">
+<div class="admin-app-shell">
+  <aside class="admin-sidebar" data-admin-nav></aside>
+  <main class="admin-workspace" data-admin-discounts-page>
+    <p class="ticket-status is-error" data-admin-page-status hidden></p>
+    <header class="admin-page-heading admin-page-heading-compact"><div><span class="ticket-eyebrow">Ventas</span><h1>Códigos de <em>descuento</em></h1><p>Define campañas y beneficios con reglas claras, límites y trazabilidad por pedido.</p></div></header>
+    <section class="admin-discount-layout">
+      <form class="admin-discount-form" data-admin-discount-form>
+        <input type="hidden" name="discount_id">
+        <div class="admin-section-label"><div><span class="ticket-eyebrow">Configuración</span><h2 data-discount-form-title>Nuevo código</h2></div><button class="text-action" type="button" data-discount-form-reset>Limpiar</button></div>
+        <div class="admin-form-grid">
+          <label><span>Código</span><input name="code" maxlength="64" required placeholder="BIENVENIDA10" autocapitalize="characters" autocomplete="off"></label>
+          <label><span>Tipo</span><select name="discount_type"><option value="percent">Porcentaje</option><option value="fixed">Importe fijo</option></select></label>
+          <label data-discount-percent><span>Descuento (%)</span><input name="discount_percent" type="number" min="0.01" max="100" step="0.01" placeholder="10"></label>
+          <label data-discount-fixed hidden><span>Descuento (€)</span><input name="fixed_amount" inputmode="decimal" placeholder="10,00"></label>
+          <label><span>Descuento máximo (€)</span><input name="maximum_discount" inputmode="decimal" placeholder="Sin límite"></label>
+          <label class="admin-form-span"><span>Descripción interna</span><input name="internal_description" maxlength="500" placeholder="Ej. cortesía de inauguración"></label>
+        </div>
+        <div class="admin-form-split">
+          <fieldset><legend>Alcance de experiencias</legend><label><select name="event_scope"><option value="all">Todas las experiencias</option><option value="included">Solo experiencias seleccionadas</option><option value="excluded">Todas excepto las seleccionadas</option></select></label><label data-discount-events><span>Experiencias</span><select name="event_ids" multiple size="5"></select></label></fieldset>
+          <fieldset><legend>Aplicación del descuento</legend><label><select name="application_scope"><option value="order">Todo el pedido</option><option value="per_ticket">Cada entrada</option><option value="ticket_types">Solo tipos de entrada seleccionados</option></select></label><label data-discount-ticket-types><span>Tipos de entrada</span><select name="ticket_type_ids" multiple size="5"></select></label></fieldset>
+        </div>
+        <div class="admin-form-grid admin-discount-rules">
+          <label><span>Importe mínimo (€)</span><input name="minimum_order" inputmode="decimal" placeholder="Sin mínimo"></label>
+          <label><span>Entradas mínimas</span><input name="minimum_ticket_quantity" type="number" min="1" placeholder="Sin mínimo"></label>
+          <label><span>Máx. entradas con descuento</span><input name="maximum_discounted_ticket_quantity" type="number" min="1" placeholder="Sin límite"></label>
+          <label><span>Máx. usos totales</span><input name="maximum_total_uses" type="number" min="1" placeholder="Sin límite"></label>
+          <label><span>Máx. usos por cliente</span><input name="maximum_uses_per_customer" type="number" min="1" placeholder="Sin límite"></label>
+          <label><span>Inicio</span><input name="starts_at" type="datetime-local"></label>
+          <label><span>Fin</span><input name="expires_at" type="datetime-local"></label>
+        </div>
+        <div class="admin-discount-toggles"><label><input name="is_active" type="checkbox" checked><span>Activo y disponible en checkout</span></label><label><input name="is_combinable" type="checkbox"><span>Combinable (preparado para futuras campañas)</span></label></div>
+        <div class="admin-inline-actions"><button class="ticket-btn primary" type="submit">Guardar código</button><p class="admin-form-status" data-admin-discount-status aria-live="polite"></p></div>
+      </form>
+      <section class="admin-discount-list-panel">
+        <div class="admin-order-toolbar"><div class="admin-filter-group" role="group" aria-label="Estado"><button type="button" data-discount-filter="active" class="is-active">Activos</button><button type="button" data-discount-filter="inactive">Inactivos</button><button type="button" data-discount-filter="archived">Archivados</button><button type="button" data-discount-filter="all">Todos</button></div><label class="admin-search"><span>Buscar código</span><input data-discount-search type="search" placeholder="Código o descripción"></label></div>
+        <div class="admin-order-toolbar admin-discount-list-filters"><label><span>Experiencia</span><select data-discount-list-event><option value="">Todas las experiencias</option></select></label><label><span>Tipo</span><select data-discount-list-type><option value="">Todos los tipos</option><option value="percent">Porcentaje</option><option value="fixed">Importe fijo</option></select></label><label><span>Válido en fecha</span><input data-discount-list-date type="date"></label></div>
+        <p class="admin-orders-status" data-admin-discount-list-status></p>
+        <div class="admin-discount-list" data-admin-discount-list></div>
+        <section class="admin-discount-history" data-admin-discount-history hidden></section>
+      </section>
+    </section>
+  </main>
+</div>
+<script src="/assets/js/admin-backoffice.js?v=20260804-discounts-v1" defer></script>
+</body>
+</html>

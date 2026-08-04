@@ -78,6 +78,7 @@ mysql -u DB_USER -p DB_NAME < database/migrations/009_ticket_access_movements.sq
 mysql -u DB_USER -p DB_NAME < database/migrations/010_order_access_recovery.sql
 mysql -u DB_USER -p DB_NAME < database/migrations/011_admin_users_and_order_operations.sql
 mysql -u DB_USER -p DB_NAME < database/migrations/012_payment_methods_bizum.sql
+mysql -u DB_USER -p DB_NAME < database/migrations/013_discount_codes.sql
 ```
 
 La segunda migración amplía eventos y entradas sin borrar pedidos, pagos, códigos ni asistentes ya existentes. La tercera conserva esos datos y añade el identificador común para la integración privada con Suite. La cuarta cambia los textos públicos a `LONGTEXT`, sin eliminar contenido existente. Ejecutarlas antes de desplegar la versión con editor integrado. Para actualizar una instalación existente, ejecutar `008_secure_ticket_delivery_and_qr.sql` **antes** de copiar el PHP nuevo: añade las columnas y estados que este código consulta.
@@ -180,6 +181,7 @@ https://perigallo.com/api/redsys/notification
 15. En `/admin/ventas/`, comprobar los filtros. La cancelación revoca las entradas sin ejecutar un abono; **Registrar devolución** solo se usa después de devolver el importe desde el TPV/Redsys. La eliminación permanente solo se muestra para pedidos marcados como prueba y la cuenta propietaria.
 16. Tras aplicar `012_payment_methods_bizum.sql`, comprobar que los pedidos muestran `Tarjeta` o `Bizum` en el backoffice.
 17. Cuando CaixaBank/Redsys confirme Bizum para el mismo FUC y terminal, establecer `REDSYS_BIZUM_ENABLED=true` y probar una compra Bizum en TEST. El teléfono, PIN y autenticación se solicitan exclusivamente en la pasarela bancaria.
+18. Tras aplicar `013_discount_codes.sql`, abrir `/admin/descuentos/`, crear un código de prueba y comprobar en checkout que el subtotal, descuento y total se recalculan. La API vuelve a validar el código justo antes de crear el pedido: el navegador nunca fija importes ni usos.
 
 ## Observaciones
 
@@ -192,6 +194,7 @@ https://perigallo.com/api/redsys/notification
 - La migración `009_ticket_access_movements.sql` debe ejecutarse antes del PHP nuevo. Separa la validez administrativa de la entrada de su presencia física, registra movimientos auditables y migra validaciones antiguas como asistentes dentro del recinto.
 - El acceso requiere HTTPS y una sesión de `admin` o `control_acceso`. El rol de control registra movimientos; solo el administrador puede revertir el último. Sin conexión no se registra ninguna operación.
 - La cuenta definida mediante `ADMIN_USERNAME` y `ADMIN_PASSWORD_HASH` sigue siendo la **cuenta propietaria** y es la única que puede crear o desactivar usuarios y eliminar pedidos de prueba. Las cuentas creadas desde `/admin/usuarios/` se guardan con hash de contraseña en `ticket_admin_users`; no sustituye ni expone la cuenta definida en `.env`.
+- Los códigos de descuento se gestionan exclusivamente desde `/admin/descuentos/`. Un código aplicado queda reservado mientras el pago está pendiente y solo se consume al confirmarse el pago. Las cancelaciones y devoluciones liberan su uso para mantener el historial y evitar que un pago fallido agote la campaña.
 - El botón **Registrar devolución** no comunica con Redsys ni inicia un reembolso bancario. Registra una devolución que ya se ha procesado externamente y revoca los accesos correspondientes. Antes de usarlo con ventas reales debe existir un procedimiento financiero y de atención al cliente aprobado.
 - El editor sube portada, tarjeta, imagen social, logotipo y galería a `assets/uploads/events/`; los vídeos promocionales se guardan en `assets/uploads/events/videos/`. El proceso PHP debe tener permiso de escritura únicamente sobre esas carpetas; los archivos subidos no se versionan en Git.
 - Formatos de imagen admitidos: JPG, PNG, WebP y AVIF, hasta 5 MB. Formatos de vídeo admitidos: MP4, WebM y MOV, hasta 50 MB. SVG no se admite para evitar servir contenido vectorial no saneado.

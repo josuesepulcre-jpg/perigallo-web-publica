@@ -11,11 +11,14 @@ use RuntimeException;
 
 final class Ticketing
 {
+    private DiscountCodes $discountCodes;
+
     public function __construct(
         private PDO $pdo,
         private Redsys $redsys,
         private Mailer $mailer
     ) {
+        $this->discountCodes = new DiscountCodes($pdo);
     }
 
     public function listEvents(): array
@@ -61,6 +64,31 @@ final class Ticketing
     public function publicPaymentMethods(): array
     {
         return $this->redsys->availablePaymentMethods();
+    }
+
+    /** Quote a discount from server-side ticket prices. The browser never decides the amount. */
+    public function validateDiscount(array $data): array
+    {
+        require_fields($data, ['event_slug', 'items']);
+        if (!is_array($data['items'])) {
+            throw new InvalidArgumentException('Selecciona al menos una entrada para comprobar el código.');
+        }
+        $event = $this->findEventForSale((string) $data['event_slug']);
+        $items = $this->pricedItemsForDiscount((int) $event['id'], $data['items']);
+        if (!$items) {
+            throw new InvalidArgumentException('Selecciona al menos una entrada para comprobar el código.');
+        }
+        return $this->discountCodes->validatePublic($data, $event, $items);
+    }
+
+    public function validateTestDiscount(int $eventId, array $data): array
+    {
+        $event = $this->requireAdminEvent($eventId);
+        $items = $this->pricedItemsForDiscount($eventId, is_array($data['items'] ?? null) ? $data['items'] : [], true);
+        if (!$items) {
+            throw new InvalidArgumentException('Selecciona al menos una entrada para comprobar el código.');
+        }
+        return $this->discountCodes->validatePublic($data, $event, $items);
     }
 
     public function createOrder(array $data): array
@@ -109,6 +137,7 @@ final class Ticketing
 
             $subtotal = 0;
             $selectedItems = 0;
+            $pricedItems = [];
             foreach ($data['items'] as $item) {
                 $typeId = (int) ($item['ticket_type_id'] ?? 0);
                 $quantity = (int) ($item['quantity'] ?? 0);
@@ -134,6 +163,7 @@ final class Ticketing
                 $lineTotal = $quantity * $unitPrice;
                 $subtotal += $lineTotal;
                 $selectedItems++;
+                $pricedItems[] = ['ticket_type_id' => $typeId, 'quantity' => $quantity, 'unit_price_cents' => $unitPrice];
                 $itemStmt = $this->pdo->prepare(
                     'INSERT INTO ticket_order_items
                      (order_id, event_id, ticket_type_id, ticket_type_name, quantity, unit_price_cents, total_cents, created_at)
@@ -146,14 +176,39 @@ final class Ticketing
                 throw new RuntimeException('El pedido no contiene entradas validas.');
             }
 
-            $this->pdo->prepare('UPDATE ticket_orders SET subtotal_cents = ?, total_cents = ?, updated_at = NOW() WHERE id = ?')
-                ->execute([$subtotal, $subtotal, $orderId]);
+            $discount = $this->discountCodes->quote(
+                (string) ($data['discount_code'] ?? ''),
+                (int) $event['id'],
+                $pricedItems,
+                $email,
+                $phone,
+                true
+            );
+            $total = (int) $discount['total_cents'];
+            $this->pdo->prepare(
+                'UPDATE ticket_orders
+                 SET subtotal_cents = ?, discount_code_id = ?, discount_code = ?, discount_type = ?, discount_value_snapshot = ?, discount_amount_cents = ?, discount_snapshot = ?, discount_applied_at = ?, total_cents = ?, updated_at = NOW()
+                 WHERE id = ?'
+            )->execute([
+                $subtotal,
+                $discount['code_id'] ?? null,
+                $discount['code'] ?? null,
+                $discount['type'] ?? null,
+                $discount['value_label'] ?? null,
+                (int) $discount['discount_cents'],
+                !empty($discount['snapshot']) ? json_encode($discount['snapshot'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
+                !empty($discount['applied']) ? now_mysql() : null,
+                $total,
+                $orderId,
+            ]);
+            $this->discountCodes->reserve($discount, $orderId, (int) $event['id'], $email, $phone, $expires);
 
             // Las invitaciones gratuitas emiten la entrada directamente: no deben pasar por Redsys.
-            if ($subtotal === 0) {
+            if ($total === 0) {
                 $this->pdo->prepare('UPDATE ticket_orders SET status = "paid", paid_at = NOW(), updated_at = NOW() WHERE id = ?')
                     ->execute([$orderId]);
                 $this->generateTicketsOnce($orderId);
+                $this->discountCodes->consumeForOrder($orderId);
                 $this->pdo->commit();
                 $this->sendConfirmation($orderId);
                 return [
@@ -174,7 +229,7 @@ final class Ticketing
                 $orderId,
                 $redsysOrder,
                 env_value('REDSYS_ENV', 'test'),
-                $subtotal,
+                $total,
                 env_value('REDSYS_CURRENCY', '978'),
                 env_value('REDSYS_SIGNATURE_VERSION', 'HMAC_SHA256_V1'),
                 $paymentMethod,
@@ -187,7 +242,7 @@ final class Ticketing
 
             return [
                 'order' => $this->getOrderByToken($publicToken),
-                'payment' => $this->redsysForm($redsysOrder, $subtotal, $event, $publicToken, $paymentMethod),
+                'payment' => $this->redsysForm($redsysOrder, $total, $event, $publicToken, $paymentMethod),
             ];
         } catch (\Throwable $e) {
             if ($this->pdo->inTransaction()) {
@@ -470,8 +525,9 @@ final class Ticketing
             $reference = 'TEST-PG' . str_pad((string) $eventId, 2, '0', STR_PAD_LEFT) . '-' . str_pad((string) $orderId, 6, '0', STR_PAD_LEFT);
             $this->pdo->prepare('UPDATE ticket_orders SET test_reference = ? WHERE id = ?')->execute([$reference, $orderId]);
 
-            $total = 0;
+            $subtotal = 0;
             $quantityTotal = 0;
+            $pricedItems = [];
             foreach ($data['items'] as $item) {
                 $typeId = (int) ($item['ticket_type_id'] ?? 0);
                 $quantity = (int) ($item['quantity'] ?? 0);
@@ -487,8 +543,9 @@ final class Ticketing
                 }
                 $unitPrice = (int) $type['price_cents'] + (int) round((int) $type['price_cents'] * (float) ($type['tax_rate'] ?? 0) / 100) + (int) ($type['fee_cents'] ?? 0);
                 $lineTotal = $quantity * $unitPrice;
-                $total += $lineTotal;
+                $subtotal += $lineTotal;
                 $quantityTotal += $quantity;
+                $pricedItems[] = ['ticket_type_id' => $typeId, 'quantity' => $quantity, 'unit_price_cents' => $unitPrice];
                 $this->pdo->prepare(
                     'INSERT INTO ticket_order_items (order_id, event_id, ticket_type_id, ticket_type_name, quantity, unit_price_cents, total_cents, created_at)
                      VALUES (?, ?, ?, ?, ?, ?, ?, NOW())'
@@ -497,7 +554,32 @@ final class Ticketing
             if ($quantityTotal === 0) {
                 throw new RuntimeException('Selecciona al menos una entrada para la prueba.');
             }
-            $this->pdo->prepare('UPDATE ticket_orders SET subtotal_cents = ?, total_cents = ?, updated_at = NOW() WHERE id = ?')->execute([$total, $total, $orderId]);
+            $discount = $this->discountCodes->quote(
+                (string) ($data['discount_code'] ?? ''),
+                $eventId,
+                $pricedItems,
+                $email,
+                $phone,
+                true
+            );
+            $total = (int) $discount['total_cents'];
+            $this->pdo->prepare(
+                'UPDATE ticket_orders
+                 SET subtotal_cents = ?, discount_code_id = ?, discount_code = ?, discount_type = ?, discount_value_snapshot = ?, discount_amount_cents = ?, discount_snapshot = ?, discount_applied_at = ?, total_cents = ?, updated_at = NOW()
+                 WHERE id = ?'
+            )->execute([
+                $subtotal,
+                $discount['code_id'] ?? null,
+                $discount['code'] ?? null,
+                $discount['type'] ?? null,
+                $discount['value_label'] ?? null,
+                (int) $discount['discount_cents'],
+                !empty($discount['snapshot']) ? json_encode($discount['snapshot'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
+                !empty($discount['applied']) ? now_mysql() : null,
+                $total,
+                $orderId,
+            ]);
+            $this->discountCodes->reserve($discount, $orderId, $eventId, $email, $phone, $expires);
             $this->pdo->prepare(
                 'INSERT INTO payment_attempts (order_id, redsys_order, environment, amount_cents, currency, signature_version, payment_method, status, created_at, updated_at)
                  VALUES (?, ?, "test", ?, ?, ?, ?, "created", NOW(), NOW())'
@@ -603,6 +685,9 @@ final class Ticketing
                     ->execute([$orderStatus, $commercialStatus, $paymentStatus, $deliveryStatus, $orderStatus, $order['id']]);
                 if ($accepted) {
                     $this->generateTicketsOnce((int) $order['id']);
+                    $this->discountCodes->consumeForOrder((int) $order['id']);
+                } else {
+                    $this->discountCodes->releaseForOrder((int) $order['id'], 'cancelled');
                 }
             }
 
@@ -630,13 +715,63 @@ final class Ticketing
         return ['orders' => $orders, 'events' => $events, 'latest_orders' => $latestOrders];
     }
 
+    public function adminDiscountCodes(array $filters = []): array
+    {
+        return $this->discountCodes->list($filters);
+    }
+
+    public function adminDiscountCode(int $id): array
+    {
+        return $this->discountCodes->get($id);
+    }
+
+    public function adminSaveDiscountCode(array $data, string $operator, ?int $id = null): array
+    {
+        $code = $this->discountCodes->save($data, $operator, $id);
+        $this->auditDiscountOperation($operator, $id === null ? 'discount_code_created' : 'discount_code_updated', (int) $code['id'], ['code' => $code['code']]);
+        return $code;
+    }
+
+    public function adminDuplicateDiscountCode(int $id, string $operator): array
+    {
+        $code = $this->discountCodes->duplicate($id, $operator);
+        $this->auditDiscountOperation($operator, 'discount_code_duplicated', (int) $code['id'], ['source_id' => $id, 'code' => $code['code']]);
+        return $code;
+    }
+
+    public function adminArchiveDiscountCode(int $id, string $operator): array
+    {
+        $code = $this->discountCodes->archive($id, $operator);
+        $this->auditDiscountOperation($operator, 'discount_code_archived', (int) $code['id'], ['code' => $code['code']]);
+        return $code;
+    }
+
+    public function adminDeleteUnusedDiscountCode(int $id, string $operator): array
+    {
+        $result = $this->discountCodes->deleteUnused($id);
+        $this->auditDiscountOperation($operator, 'discount_code_deleted', $id, ['code' => $result['code']]);
+        return $result;
+    }
+
+    public function adminDiscountCodeHistory(int $id): array
+    {
+        return $this->discountCodes->usageHistory($id);
+    }
+
+    public function adminDiscountCodeMeta(): array
+    {
+        $events = $this->pdo->query('SELECT id, title, starts_at, status FROM events WHERE status <> "archived" ORDER BY starts_at DESC, id DESC')->fetchAll();
+        $types = $this->pdo->query('SELECT tt.id, tt.event_id, tt.name, e.title AS event_title FROM ticket_types tt JOIN events e ON e.id = tt.event_id WHERE tt.status <> "archived" AND e.status <> "archived" ORDER BY e.starts_at DESC, tt.sort_order ASC, tt.id ASC')->fetchAll();
+        return ['events' => $events, 'ticket_types' => $types];
+    }
+
     public function adminOrders(int $limit = 200): array
     {
         $limit = max(1, min(200, $limit));
         return $this->pdo->query(
             'SELECT o.id, o.public_token, o.redsys_order, o.test_reference, o.is_test, o.environment,
                     o.order_status, o.payment_status, o.delivery_status, o.name, o.email, o.phone,
-                    o.total_cents, o.status, o.reservation_expires_at, o.paid_at, o.created_at,
+                    o.subtotal_cents, o.discount_code, o.discount_amount_cents, o.total_cents, o.status, o.reservation_expires_at, o.paid_at, o.created_at,
                     CASE WHEN o.status IN ("cancelled", "refunded") THEN o.status ELSE COALESCE(o.payment_status, o.status) END AS display_status,
                     COALESCE((SELECT pa.payment_method FROM payment_attempts pa WHERE pa.order_id = o.id ORDER BY pa.id DESC LIMIT 1), "card") AS payment_method,
                     COALESCE(items.ticket_quantity, 0) AS ticket_quantity,
@@ -689,6 +824,7 @@ final class Ticketing
                 $this->pdo->prepare('DELETE FROM tickets WHERE id IN (' . $marks . ')')->execute($ticketIds);
             }
             $this->pdo->prepare('DELETE FROM email_deliveries WHERE order_id = ?')->execute([$orderId]);
+            $this->pdo->prepare('DELETE FROM discount_code_usages WHERE order_id = ?')->execute([$orderId]);
             $this->pdo->prepare('DELETE FROM payment_attempts WHERE order_id = ?')->execute([$orderId]);
             $this->pdo->prepare('DELETE FROM ticket_order_items WHERE order_id = ?')->execute([$orderId]);
             $this->pdo->prepare('DELETE FROM ticket_orders WHERE id = ?')->execute([$orderId]);
@@ -720,6 +856,7 @@ final class Ticketing
             $ticketStatus = $targetStatus === 'refunded' ? 'refunded' : 'cancelled';
             $this->pdo->prepare('UPDATE tickets t JOIN ticket_order_items oi ON oi.id = t.order_item_id SET t.status = ?, t.updated_at = NOW() WHERE oi.order_id = ?')
                 ->execute([$ticketStatus, $orderId]);
+            $this->discountCodes->releaseForOrder($orderId, $targetStatus);
             $this->auditAdminOperation($operator, $targetStatus === 'refunded' ? 'order_refund_recorded' : 'order_cancelled', $orderId, [
                 'reason' => clean_string($reason, 500),
                 'payment_status_preserved' => $targetStatus === 'cancelled' ? $paymentStatus : null,
@@ -779,6 +916,16 @@ final class Ticketing
             $statement->execute([$operator, $action, $orderId, json_encode($context, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)]);
         } catch (\Throwable $error) {
             // La auditoría será activa tras ejecutar la migración 011. No bloquea una operación ya validada.
+        }
+    }
+
+    private function auditDiscountOperation(string $operator, string $action, int $discountCodeId, array $context): void
+    {
+        try {
+            $statement = $this->pdo->prepare('INSERT INTO ticket_admin_audit_logs (actor, action, entity_type, entity_id, context_json, created_at) VALUES (?, ?, "discount_code", ?, ?, NOW())');
+            $statement->execute([$operator, $action, $discountCodeId, json_encode($context, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)]);
+        } catch (\Throwable $error) {
+            // La trazabilidad no debe impedir guardar una campaña válida.
         }
     }
 
@@ -2046,6 +2193,36 @@ final class Ticketing
             throw new RuntimeException('El código promocional es demasiado largo.');
         }
         return password_hash($code, PASSWORD_DEFAULT);
+    }
+
+    /** Returns trusted prices for a public discount preview without reserving capacity. */
+    private function pricedItemsForDiscount(int $eventId, array $requestedItems, bool $testMode = false): array
+    {
+        $items = [];
+        $statement = $this->pdo->prepare(
+            'SELECT id, price_cents, tax_rate, fee_cents, min_quantity, max_per_order
+             FROM ticket_types
+             WHERE id = ? AND event_id = ? AND ' . ($testMode ? 'status <> "archived"' : 'active = 1 AND visible = 1 AND status IN ("on_sale", "upcoming")') . '
+             LIMIT 1'
+        );
+        foreach ($requestedItems as $requested) {
+            $typeId = (int) ($requested['ticket_type_id'] ?? 0);
+            $quantity = (int) ($requested['quantity'] ?? 0);
+            if ($typeId <= 0 || $quantity <= 0) continue;
+            $statement->execute([$typeId, $eventId]);
+            $type = $statement->fetch();
+            if (!$type) continue;
+            if ($quantity < (int) $type['min_quantity'] || $quantity > (int) $type['max_per_order']) {
+                throw new InvalidArgumentException('Cantidad no permitida para esta entrada.');
+            }
+            $taxCents = (int) round((int) $type['price_cents'] * (float) ($type['tax_rate'] ?? 0) / 100);
+            $items[] = [
+                'ticket_type_id' => $typeId,
+                'quantity' => $quantity,
+                'unit_price_cents' => (int) $type['price_cents'] + $taxCents + (int) ($type['fee_cents'] ?? 0),
+            ];
+        }
+        return $items;
     }
 
     private function availableForType(int $typeId, int $capacity): int

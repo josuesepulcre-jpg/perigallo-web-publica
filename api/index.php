@@ -41,6 +41,11 @@ try {
         return;
     }
 
+    if ($method === 'POST' && $path === '/discounts/validate') {
+        json_response(['ok' => true, 'discount' => $ticketing->validateDiscount(read_json_body())]);
+        return;
+    }
+
     if ($method === 'POST' && $path === '/orders') {
         $result = $ticketing->createOrder(read_json_body());
         json_response(['ok' => true] + $result, 201);
@@ -194,6 +199,60 @@ try {
         return;
     }
 
+    if ($method === 'GET' && $path === '/admin/discount-codes/meta') {
+        AdminAuth::require();
+        json_response(['ok' => true] + $ticketing->adminDiscountCodeMeta());
+        return;
+    }
+
+    if ($method === 'GET' && $path === '/admin/discount-codes') {
+        AdminAuth::require();
+        json_response(['ok' => true, 'discount_codes' => $ticketing->adminDiscountCodes($_GET)]);
+        return;
+    }
+
+    if ($method === 'POST' && $path === '/admin/discount-codes') {
+        AdminAuth::requireCsrf();
+        json_response(['ok' => true, 'discount_code' => $ticketing->adminSaveDiscountCode(read_json_body(), AdminAuth::operatorName())], 201);
+        return;
+    }
+
+    if ($method === 'GET' && preg_match('#^/admin/discount-codes/([0-9]+)$#', $path, $m)) {
+        AdminAuth::require();
+        json_response(['ok' => true, 'discount_code' => $ticketing->adminDiscountCode((int) $m[1])]);
+        return;
+    }
+
+    if ($method === 'PUT' && preg_match('#^/admin/discount-codes/([0-9]+)$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        json_response(['ok' => true, 'discount_code' => $ticketing->adminSaveDiscountCode(read_json_body(), AdminAuth::operatorName(), (int) $m[1])]);
+        return;
+    }
+
+    if ($method === 'POST' && preg_match('#^/admin/discount-codes/([0-9]+)/duplicate$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        json_response(['ok' => true, 'discount_code' => $ticketing->adminDuplicateDiscountCode((int) $m[1], AdminAuth::operatorName())], 201);
+        return;
+    }
+
+    if ($method === 'POST' && preg_match('#^/admin/discount-codes/([0-9]+)/archive$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        json_response(['ok' => true, 'discount_code' => $ticketing->adminArchiveDiscountCode((int) $m[1], AdminAuth::operatorName())]);
+        return;
+    }
+
+    if ($method === 'DELETE' && preg_match('#^/admin/discount-codes/([0-9]+)$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        json_response(['ok' => true] + $ticketing->adminDeleteUnusedDiscountCode((int) $m[1], AdminAuth::operatorName()));
+        return;
+    }
+
+    if ($method === 'GET' && preg_match('#^/admin/discount-codes/([0-9]+)/history$#', $path, $m)) {
+        AdminAuth::require();
+        json_response(['ok' => true, 'usages' => $ticketing->adminDiscountCodeHistory((int) $m[1])]);
+        return;
+    }
+
     if ($method === 'POST' && preg_match('#^/admin/orders/([0-9]+)/cancel$#', $path, $m)) {
         AdminAuth::requireCsrf();
         $data = read_json_body();
@@ -247,6 +306,12 @@ try {
     if ($method === 'POST' && preg_match('#^/admin/events/([0-9]+)/test-orders$#', $path, $m)) {
         AdminAuth::requireCsrf();
         json_response(['ok' => true] + $ticketing->createTestOrder((int) $m[1], read_json_body()), 201);
+        return;
+    }
+
+    if ($method === 'POST' && preg_match('#^/admin/events/([0-9]+)/discounts/validate$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        json_response(['ok' => true, 'discount' => $ticketing->validateTestDiscount((int) $m[1], read_json_body()));
         return;
     }
 
