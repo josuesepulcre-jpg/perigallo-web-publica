@@ -462,6 +462,7 @@
   function ticketPayload(form) {
     var data = formData(form);
     data.price_cents = Math.round(Number(data.price || 0) * 100);
+    data.reference_price_cents = data.reference_price === "" ? null : Math.round(Number(data.reference_price || 0) * 100);
     data.fee_cents = Math.round(Number(data.fee || 0) * 100);
     data.capacity = Number(data.capacity || 0);
     data.min_quantity = Number(data.min_quantity || 1);
@@ -478,7 +479,9 @@
     if (!types.length) { target.innerHTML = '<div class="admin-empty"><strong>Aún no hay entradas.</strong><span>Crea al menos una antes de publicar el evento.</span></div>'; return; }
     target.innerHTML = types.map(function (type, index) {
       var salePeriod = type.sale_starts_at || type.sale_ends_at ? '<p class="ticket-sale-period">Venta: ' + escapeHtml(type.sale_starts_at ? dateText(type.sale_starts_at) : "inmediata") + ' · ' + escapeHtml(type.sale_ends_at ? dateText(type.sale_ends_at) : "sin fecha de cierre") + '</p>' : '';
-      return '<article class="admin-ticket-card" data-ticket-id="' + Number(type.id) + '"><div class="ticket-card-content"><span class="status-pill status-' + escapeHtml(type.effective_status) + '">' + escapeHtml(statusLabel(type.effective_status)) + '</span><h3>' + escapeHtml(type.name) + '</h3><p class="ticket-card-description">' + escapeHtml(type.description || "Sin descripción") + '</p>' + salePeriod + '<dl class="ticket-metrics"><div><dt>Precio final</dt><dd>' + cents(type.final_price_cents) + '</dd></div><div><dt>Vendidas</dt><dd>' + Number(type.sold) + '</dd></div><div><dt>Reservadas</dt><dd>' + Number(type.reserved) + '</dd></div><div><dt>Restantes</dt><dd>' + Number(type.available) + '</dd></div><div><dt>Cupo total</dt><dd>' + Number(type.capacity) + '</dd></div></dl></div><details class="ticket-action-menu"><summary aria-label="Acciones para ' + escapeHtml(type.name) + '">•••</summary><div><button type="button" data-ticket-action="edit">Editar</button><button type="button" data-ticket-action="duplicate">Duplicar</button><button type="button" data-ticket-action="up" ' + (index ? "" : "disabled") + '>Subir</button><button type="button" data-ticket-action="down" ' + (index === types.length - 1 ? "disabled" : "") + '>Bajar</button><button class="danger" type="button" data-ticket-action="delete">Archivar</button></div></details></article>';
+      var hasReference = !!type.has_reference_price && Number(type.reference_price_cents || 0) > Number(type.final_price_cents || 0);
+      var commercialPrice = hasReference ? '<div><dt>Valor</dt><dd><del>' + cents(type.reference_price_cents) + '</del></dd></div><div><dt>Precio especial</dt><dd>' + cents(type.final_price_cents) + '</dd><small>' + escapeHtml(type.promotional_label || 'Precio especial de lanzamiento') + '</small></div>' : '<div><dt>Precio final</dt><dd>' + cents(type.final_price_cents) + '</dd></div>';
+      return '<article class="admin-ticket-card" data-ticket-id="' + Number(type.id) + '"><div class="ticket-card-content"><span class="status-pill status-' + escapeHtml(type.effective_status) + '">' + escapeHtml(statusLabel(type.effective_status)) + '</span><h3>' + escapeHtml(type.name) + '</h3><p class="ticket-card-description">' + escapeHtml(type.description || "Sin descripción") + '</p>' + salePeriod + '<dl class="ticket-metrics">' + commercialPrice + '<div><dt>Vendidas</dt><dd>' + Number(type.sold) + '</dd></div><div><dt>Reservadas</dt><dd>' + Number(type.reserved) + '</dd></div><div><dt>Restantes</dt><dd>' + Number(type.available) + '</dd></div><div><dt>Cupo total</dt><dd>' + Number(type.capacity) + '</dd></div></dl></div><details class="ticket-action-menu"><summary aria-label="Acciones para ' + escapeHtml(type.name) + '">•••</summary><div><button type="button" data-ticket-action="edit">Editar</button><button type="button" data-ticket-action="duplicate">Duplicar</button><button type="button" data-ticket-action="up" ' + (index ? "" : "disabled") + '>Subir</button><button type="button" data-ticket-action="down" ' + (index === types.length - 1 ? "disabled" : "") + '>Bajar</button><button class="danger" type="button" data-ticket-action="delete">Archivar</button></div></details></article>';
     }).join("");
   }
 
@@ -503,6 +506,7 @@
       else field.value = ticket[key] == null ? "" : ticket[key];
     });
     input(form, "price").value = ticket ? (Number(ticket.price_cents || 0) / 100).toFixed(2) : "";
+    input(form, "reference_price").value = ticket && ticket.reference_price_cents != null ? (Number(ticket.reference_price_cents) / 100).toFixed(2) : "";
     input(form, "fee").value = ticket ? (Number(ticket.fee_cents || 0) / 100).toFixed(2) : "0";
     input(form, "ticket_type_id").value = ticket ? ticket.id : "";
     document.querySelector("[data-ticket-form-title]").textContent = ticket ? "Editar entrada" : "Nueva entrada";
@@ -535,12 +539,16 @@
     var maximum = Number(input(form, "max_per_order").value || 1);
     var capacity = Number(input(form, "capacity").value || 0);
     var tax = Number(input(form, "tax_rate").value || 0);
+    var price = Math.max(0, Number(input(form, "price").value || 0));
+    var fee = Math.max(0, Number(input(form, "fee").value || 0));
+    var reference = Math.max(0, Number(input(form, "reference_price").value || 0));
     var start = input(form, "sale_starts_at").value;
     var end = input(form, "sale_ends_at").value;
     var ticketId = Number(input(form, "ticket_type_id").value || 0);
     var existing = (state.event && state.event.ticket_types || []).find(function (type) { return Number(type.id) === ticketId; });
     if (maximum < minimum) return "El máximo por compra no puede ser inferior al mínimo.";
     if (tax < 0 || tax > 100) return "El IVA debe estar entre 0 % y 100 %.";
+    if (input(form, "show_reference_price").checked && reference && reference <= price + Math.round(price * tax) / 100 + fee) return "El valor de la experiencia debe ser superior al precio final de venta.";
     if (existing && capacity < Number(existing.sold || 0) + Number(existing.reserved || 0)) return "El cupo no puede ser inferior a las entradas vendidas o reservadas.";
     if (start && end && end < start) return "El fin de venta no puede ser anterior al inicio de venta.";
     return "";

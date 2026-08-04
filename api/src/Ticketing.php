@@ -36,6 +36,13 @@ final class Ticketing
                     (SELECT MIN(tt.price_cents)
                      FROM ticket_types tt
                      WHERE tt.event_id = e.id AND tt.active = 1 AND tt.visible = 1) AS price_from_cents
+                    ,(SELECT MIN(tt.reference_price_cents)
+                      FROM ticket_types tt
+                      WHERE tt.event_id = e.id
+                        AND tt.active = 1
+                        AND tt.visible = 1
+                        AND tt.show_reference_price = 1
+                        AND tt.reference_price_cents > tt.price_cents + ROUND(tt.price_cents * tt.tax_rate / 100) + tt.fee_cents) AS reference_price_from_cents
              FROM events e
              WHERE e.visible = 1 AND e.unlisted = 0 AND e.link_only = 0
                AND (
@@ -171,13 +178,14 @@ final class Ticketing
                 $lineTotal = $quantity * $unitPrice;
                 $subtotal += $lineTotal;
                 $selectedItems++;
+                $referenceUnitPrice = $this->visibleReferencePrice($type, $unitPrice);
                 $pricedItems[] = ['ticket_type_id' => $typeId, 'quantity' => $quantity, 'unit_price_cents' => $unitPrice];
                 $itemStmt = $this->pdo->prepare(
                     'INSERT INTO ticket_order_items
-                     (order_id, event_id, ticket_type_id, ticket_type_name, quantity, unit_price_cents, total_cents, created_at)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, NOW())'
+                     (order_id, event_id, ticket_type_id, ticket_type_name, quantity, unit_price_cents, reference_unit_price_cents, reference_total_cents, promotional_label, show_reference_price, total_cents, created_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
                 );
-                $itemStmt->execute([$orderId, $event['id'], $typeId, $type['name'], $quantity, $unitPrice, $lineTotal]);
+                $itemStmt->execute([$orderId, $event['id'], $typeId, $type['name'], $quantity, $unitPrice, $referenceUnitPrice, $referenceUnitPrice ? $quantity * $referenceUnitPrice : null, $this->promotionalLabel($type), $referenceUnitPrice ? 1 : 0, $lineTotal]);
             }
 
             if ($selectedItems === 0) {
@@ -282,6 +290,7 @@ final class Ticketing
 
         $items = $this->pdo->prepare('SELECT * FROM ticket_order_items WHERE order_id = ? ORDER BY id ASC');
         $items->execute([(int) $order['id']]);
+        $orderItems = $this->orderItemsWithReference($items->fetchAll());
 
         $tickets = $this->pdo->prepare(
             'SELECT t.id, t.public_code, t.qr_token_ciphertext, t.status, t.issued_at, t.used_at, e.title AS event_title, e.subtitle AS event_subtitle, e.starts_at, e.ends_at, e.doors_open_at, e.location, e.address, e.locality, e.province, e.dress_code, toi.ticket_type_name
@@ -326,10 +335,11 @@ final class Ticketing
             'email' => $order['email'],
             'phone' => $order['phone'],
             'total_cents' => (int) $order['total_cents'],
+            'reference_total_cents' => $this->orderReferenceTotal($orderItems),
             'currency' => $order['currency'],
             'reservation_expires_at' => $order['reservation_expires_at'],
             'paid_at' => $order['paid_at'],
-            'items' => $items->fetchAll(),
+            'items' => $orderItems,
             'tickets' => $ticketRows,
             'deliveries' => $delivery->fetchAll(),
             'email_delivery' => $emailDelivery->fetch() ?: null,
@@ -553,11 +563,12 @@ final class Ticketing
                 $lineTotal = $quantity * $unitPrice;
                 $subtotal += $lineTotal;
                 $quantityTotal += $quantity;
+                $referenceUnitPrice = $this->visibleReferencePrice($type, $unitPrice);
                 $pricedItems[] = ['ticket_type_id' => $typeId, 'quantity' => $quantity, 'unit_price_cents' => $unitPrice];
                 $this->pdo->prepare(
-                    'INSERT INTO ticket_order_items (order_id, event_id, ticket_type_id, ticket_type_name, quantity, unit_price_cents, total_cents, created_at)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, NOW())'
-                )->execute([$orderId, $eventId, $typeId, $type['name'], $quantity, $unitPrice, $lineTotal]);
+                    'INSERT INTO ticket_order_items (order_id, event_id, ticket_type_id, ticket_type_name, quantity, unit_price_cents, reference_unit_price_cents, reference_total_cents, promotional_label, show_reference_price, total_cents, created_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+                )->execute([$orderId, $eventId, $typeId, $type['name'], $quantity, $unitPrice, $referenceUnitPrice, $referenceUnitPrice ? $quantity * $referenceUnitPrice : null, $this->promotionalLabel($type), $referenceUnitPrice ? 1 : 0, $lineTotal]);
             }
             if ($quantityTotal === 0) {
                 throw new RuntimeException('Selecciona al menos una entrada para la prueba.');
@@ -981,14 +992,17 @@ final class Ticketing
         $this->validateTicketType($data);
         $stmt = $this->pdo->prepare(
             'INSERT INTO ticket_types
-             (event_id, name, description, price_cents, capacity, min_quantity, max_per_order, active, sort_order, tax_rate, fee_cents, sale_starts_at, sale_ends_at, status, visible, requires_promo, promo_code_hash, waitlist_enabled, refundable, terms_text, label_color, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())'
+             (event_id, name, description, price_cents, reference_price_cents, promotional_label, show_reference_price, capacity, min_quantity, max_per_order, active, sort_order, tax_rate, fee_cents, sale_starts_at, sale_ends_at, status, visible, requires_promo, promo_code_hash, waitlist_enabled, refundable, terms_text, label_color, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())'
         );
         $stmt->execute([
             $eventId,
             clean_string((string) $data['name'], 160),
             trim((string) ($data['description'] ?? '')),
             (int) $data['price_cents'],
+            $this->referencePrice($data),
+            $this->promotionalLabel($data),
+            $this->shouldShowReferencePrice($data) ? 1 : 0,
             (int) $data['capacity'],
             max(1, (int) ($data['min_quantity'] ?? 1)),
             max(1, (int) ($data['max_per_order'] ?? 10)),
@@ -1390,11 +1404,11 @@ final class Ticketing
             throw new RuntimeException('No puedes reducir el cupo por debajo de las entradas vendidas o reservadas.');
         }
         $stmt = $this->pdo->prepare(
-            'UPDATE ticket_types SET name=?, description=?, price_cents=?, capacity=?, min_quantity=?, max_per_order=?, active=?, sort_order=?, tax_rate=?, fee_cents=?, sale_starts_at=?, sale_ends_at=?, status=?, visible=?, requires_promo=?, promo_code_hash=?, waitlist_enabled=?, refundable=?, terms_text=?, label_color=?, archived_at=?, updated_at=NOW() WHERE id=? AND event_id=?'
+            'UPDATE ticket_types SET name=?, description=?, price_cents=?, reference_price_cents=?, promotional_label=?, show_reference_price=?, capacity=?, min_quantity=?, max_per_order=?, active=?, sort_order=?, tax_rate=?, fee_cents=?, sale_starts_at=?, sale_ends_at=?, status=?, visible=?, requires_promo=?, promo_code_hash=?, waitlist_enabled=?, refundable=?, terms_text=?, label_color=?, archived_at=?, updated_at=NOW() WHERE id=? AND event_id=?'
         );
         $status = $this->ticketStatus($merged);
         $stmt->execute([
-            clean_string((string) $merged['name'], 160), trim((string) ($merged['description'] ?? '')), max(0, (int) $merged['price_cents']), $capacity,
+            clean_string((string) $merged['name'], 160), trim((string) ($merged['description'] ?? '')), max(0, (int) $merged['price_cents']), $this->referencePrice($merged), $this->promotionalLabel($merged), $this->shouldShowReferencePrice($merged) ? 1 : 0, $capacity,
             max(1, (int) $merged['min_quantity']), max(1, (int) $merged['max_per_order']), $this->ticketActive($merged) ? 1 : 0,
             (int) ($merged['sort_order'] ?? 100), max(0, (float) ($merged['tax_rate'] ?? 0)), max(0, (int) ($merged['fee_cents'] ?? 0)),
             $this->dateValue((string) ($merged['sale_starts_at'] ?? ''), now_mysql()), $this->dateValue((string) ($merged['sale_ends_at'] ?? ''), '2036-12-31 23:59:59'),
@@ -1860,13 +1874,14 @@ final class Ticketing
         $type['id'] = (int) $type['id'];
         $type['event_id'] = (int) $type['event_id'];
         $type['price_cents'] = (int) $type['price_cents'];
+        $type['reference_price_cents'] = isset($type['reference_price_cents']) && $type['reference_price_cents'] !== null ? (int) $type['reference_price_cents'] : null;
         $type['fee_cents'] = (int) ($type['fee_cents'] ?? 0);
         $type['tax_rate'] = (float) ($type['tax_rate'] ?? 0);
         $type['capacity'] = (int) $type['capacity'];
         $type['min_quantity'] = (int) $type['min_quantity'];
         $type['max_per_order'] = (int) $type['max_per_order'];
         $type['sort_order'] = (int) $type['sort_order'];
-        foreach (['active', 'visible', 'requires_promo', 'waitlist_enabled', 'refundable'] as $field) {
+        foreach (['active', 'visible', 'requires_promo', 'waitlist_enabled', 'refundable', 'show_reference_price'] as $field) {
             $type[$field] = (bool) ($type[$field] ?? false);
         }
         $type['has_promo_code'] = !empty($type['promo_code_hash']);
@@ -1875,6 +1890,8 @@ final class Ticketing
         $type['reserved'] = $committed['reserved'];
         $type['available'] = max(0, $type['capacity'] - $committed['sold'] - $committed['reserved']);
         $type['final_price_cents'] = $type['price_cents'] + (int) round($type['price_cents'] * $type['tax_rate'] / 100) + $type['fee_cents'];
+        $type['has_reference_price'] = $this->visibleReferencePrice($type, $type['final_price_cents']) !== null;
+        $type['promotional_label'] = $this->promotionalLabel($type);
         $type['effective_status'] = $this->ticketEffectiveStatus($type, $type['available']);
         return $type;
     }
@@ -1965,11 +1982,69 @@ final class Ticketing
         if ((int) ($data['price_cents'] ?? -1) < 0 || (int) ($data['capacity'] ?? -1) < 0) {
             throw new RuntimeException('Precio y cupo deben ser validos.');
         }
+        if ((int) ($data['reference_price_cents'] ?? 0) < 0) {
+            throw new RuntimeException('El valor de referencia no puede ser negativo.');
+        }
+        $salePrice = (int) ($data['price_cents'] ?? 0) + (int) round((int) ($data['price_cents'] ?? 0) * (float) ($data['tax_rate'] ?? 0) / 100) + (int) ($data['fee_cents'] ?? 0);
+        if ($this->shouldShowReferencePrice($data) && $this->referencePrice($data) !== null && $this->referencePrice($data) <= $salePrice) {
+            throw new RuntimeException('El valor de la experiencia debe ser superior al precio final de venta.');
+        }
         $min = max(1, (int) ($data['min_quantity'] ?? 1));
         $max = max(1, (int) ($data['max_per_order'] ?? 1));
         if ($max < $min) {
             throw new RuntimeException('El maximo por pedido debe ser igual o mayor que el minimo.');
         }
+    }
+
+    /** Reference prices are display-only and never take part in payment maths. */
+    private function referencePrice(array $type): ?int
+    {
+        $value = $type['reference_price_cents'] ?? null;
+        if ($value === null || $value === '' || (int) $value <= 0) {
+            return null;
+        }
+        return (int) $value;
+    }
+
+    private function shouldShowReferencePrice(array $type): bool
+    {
+        return !empty($type['show_reference_price']);
+    }
+
+    private function visibleReferencePrice(array $type, int $salePrice): ?int
+    {
+        $reference = $this->referencePrice($type);
+        return $this->shouldShowReferencePrice($type) && $reference !== null && $reference > $salePrice ? $reference : null;
+    }
+
+    private function promotionalLabel(array $type): string
+    {
+        $label = clean_string((string) ($type['promotional_label'] ?? ''), 190);
+        return $label !== '' ? $label : 'Precio especial de lanzamiento';
+    }
+
+    private function orderItemsWithReference(array $items): array
+    {
+        return array_map(function (array $item): array {
+            $item['reference_unit_price_cents'] = isset($item['reference_unit_price_cents']) && $item['reference_unit_price_cents'] !== null ? (int) $item['reference_unit_price_cents'] : null;
+            $item['reference_total_cents'] = isset($item['reference_total_cents']) && $item['reference_total_cents'] !== null ? (int) $item['reference_total_cents'] : null;
+            $item['show_reference_price'] = !empty($item['show_reference_price']);
+            $item['promotional_label'] = $item['promotional_label'] ?: null;
+            return $item;
+        }, $items);
+    }
+
+    private function orderReferenceTotal(array $items): ?int
+    {
+        $total = 0;
+        $hasReference = false;
+        foreach ($items as $item) {
+            if (!empty($item['show_reference_price']) && isset($item['reference_total_cents']) && $item['reference_total_cents'] !== null) {
+                $total += (int) $item['reference_total_cents'];
+                $hasReference = true;
+            }
+        }
+        return $hasReference ? $total : null;
     }
 
     private function uniqueSlug(string $value, ?int $excludeId = null): string
@@ -2084,6 +2159,9 @@ final class Ticketing
                 'name' => $type['name'],
                 'description' => $type['description'],
                 'price_cents' => (int) $type['price_cents'],
+                'reference_price_cents' => $this->visibleReferencePrice($type, (int) $type['price_cents'] + (int) round((int) $type['price_cents'] * (float) ($type['tax_rate'] ?? 0) / 100) + (int) ($type['fee_cents'] ?? 0)),
+                'promotional_label' => $this->promotionalLabel($type),
+                'show_reference_price' => !empty($type['show_reference_price']),
                 'capacity' => (int) $type['capacity'],
                 'available' => $available,
                 'min_quantity' => (int) $type['min_quantity'],
@@ -2131,6 +2209,7 @@ final class Ticketing
             'sale_ends_at' => $event['sale_ends_at'],
             'status' => $event['status'],
             'price_from_cents' => isset($event['price_from_cents']) ? (int) $event['price_from_cents'] : null,
+            'reference_price_from_cents' => isset($event['reference_price_from_cents']) && $event['reference_price_from_cents'] !== null ? (int) $event['reference_price_from_cents'] : null,
             'promoter' => $event['promoter'],
             'included_text' => $event['included_text'] ?? null,
             'access_conditions' => $event['access_conditions'] ?? null,

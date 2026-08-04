@@ -27,7 +27,7 @@ body.ticketing-page{margin:0;background:var(--pg-bg);color:var(--pg-cream);font-
 .event-card-body{padding:24px;display:flex;flex-direction:column;gap:14px;flex:1}
 .event-card h3{font-family:"Cormorant Garamond",serif;font-size:2rem;font-weight:300;line-height:1;margin:0;color:var(--pg-cream)}
 .event-meta{display:flex;flex-direction:column;gap:6px;color:var(--pg-muted);font-size:.78rem;line-height:1.6}
-.event-price{color:var(--pg-gold-l);font-size:.75rem;text-transform:uppercase;letter-spacing:.22em;margin-top:auto}
+.event-price{color:var(--pg-gold-l);font-size:.75rem;text-transform:uppercase;letter-spacing:.22em;margin-top:auto}.event-price span{font-size:.56rem;color:var(--pg-muted);margin-right:6px}.event-price del{margin-right:8px;color:var(--pg-muted);font-size:.82rem}.event-price strong{font-weight:500;color:var(--pg-gold-l)}
 .ticket-panel{border:1px solid var(--pg-border);background:rgba(245,241,229,.04);padding:clamp(22px,4vw,44px)}
 .ticket-detail{display:grid;grid-template-columns:.95fr 1.05fr;gap:46px;align-items:start}
 .ticket-detail-media{min-height:520px;background:linear-gradient(135deg,rgba(205,177,151,.24),rgba(245,241,229,.04));background-size:cover;background-position:center;border:1px solid var(--pg-border)}
@@ -36,6 +36,7 @@ body.ticketing-page{margin:0;background:var(--pg-bg);color:var(--pg-cream);font-
 .ticket-type h3{font-family:"Cormorant Garamond",serif;font-size:1.55rem;margin:0 0 6px;font-weight:300}
 .ticket-type p{margin:0;color:var(--pg-muted);line-height:1.65;font-size:.82rem}
 .ticket-type-price{color:var(--pg-gold-l);white-space:nowrap}
+.ticket-type-price>strong{display:block;font:400 2.1rem/1 "Cormorant Garamond",serif}.ticket-type-price>span:last-child{display:block;margin-top:4px;color:var(--pg-muted);font:500 .56rem/1.45 Montserrat,Arial,sans-serif;letter-spacing:.13em;text-transform:uppercase}.ticket-type-price .ticket-reference-price{display:flex;align-items:baseline;justify-content:flex-end;gap:7px;margin:0 0 6px;color:var(--pg-muted);font:400 .65rem/1.2 Montserrat,Arial,sans-serif;white-space:normal}.ticket-type-price .ticket-reference-price span{font-size:.54rem;letter-spacing:.1em;text-transform:uppercase}.ticket-type-price .ticket-reference-price del{color:var(--pg-gold-l);font:400 1.06rem/1 "Cormorant Garamond",serif}.ticket-type-price .ticket-promo-label{display:block;margin:7px 0 0;color:var(--pg-gold);font:500 .54rem/1.35 Montserrat,Arial,sans-serif;letter-spacing:.14em;text-transform:uppercase}
 .ticket-form{display:grid;gap:16px}
 .ticket-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .ticket-field{display:flex;flex-direction:column;gap:8px}

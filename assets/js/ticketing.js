@@ -32,6 +32,24 @@
     return money.format((Number(value || 0) / 100));
   }
 
+  function referencePrice(value, salePrice, enabled) {
+    var reference = Number(value || 0);
+    return enabled !== false && reference > Number(salePrice || 0) ? reference : 0;
+  }
+
+  function promotionalLabel(value) {
+    return String(value || "Precio especial de lanzamiento");
+  }
+
+  function commercialPriceMarkup(type, salePrice, className) {
+    var reference = referencePrice(type.reference_price_cents, salePrice, type.show_reference_price);
+    return '<div class="' + className + '">' +
+      (reference ? '<span class="ticket-reference-price"><span>Valor de la experiencia</span><del>' + cents(reference) + '</del></span>' : '') +
+      '<strong>' + cents(salePrice) + '</strong>' +
+      (reference ? '<span class="ticket-promo-label">' + escapeHtml(promotionalLabel(type.promotional_label)) + '</span>' : '') +
+      '<span>por persona</span></div>';
+  }
+
   function request(url, options) {
     return fetch(url, options).then(function (response) {
       return response.json().then(function (data) {
@@ -48,6 +66,11 @@
 
   function eventCard(event) {
     var href = "/eventos/" + encodeURIComponent(event.slug) + "/";
+    var salePrice = Number(event.price_from_cents || 0);
+    var reference = referencePrice(event.reference_price_from_cents, salePrice, true);
+    var eventPrice = event.show_price_from !== false && salePrice
+      ? (reference ? '<span>Valor</span><del>' + cents(reference) + '</del><strong>Desde ' + cents(salePrice) + '</strong>' : 'Desde ' + cents(salePrice))
+      : 'Precio por anunciar';
     return [
       '<article class="event-card">',
       '<a class="event-card-media" aria-label="' + escapeHtml(event.title) + '" href="' + href + '" style="background-image:url(' + escapeAttr(event.card_image_url || event.image_url || "/assets/images/finca-la-llaguna-principal.jpg") + ')"></a>',
@@ -55,7 +78,7 @@
       '<span class="ticket-eyebrow">' + escapeHtml(event.location || "Perigallo") + '</span>',
       '<h3>' + escapeHtml(event.title) + '</h3>',
       '<div class="event-meta"><span>' + escapeHtml(fmtDate(event.starts_at)) + '</span><span>' + escapeHtml(event.subtitle || "") + '</span></div>',
-      '<span class="event-price">' + (event.show_price_from !== false && event.price_from_cents != null ? "Desde " + cents(event.price_from_cents) : "Precio por anunciar") + '</span>',
+      '<span class="event-price">' + eventPrice + '</span>',
       '<a class="ticket-btn primary" href="' + href + '">Comprar entradas</a>',
       '</div>',
       '</article>'
@@ -321,7 +344,7 @@
       type.description ? '<p>' + escapeHtml(type.description) + '</p>' : '',
       includesLink,
       '</div>',
-      '<div class="ticket-access-decision"><div class="ticket-type-price"><strong>' + cents(type.final_price_cents != null ? type.final_price_cents : type.price_cents) + '</strong><span>por persona</span></div>' + ticketPurchaseAction(type, event, preview) + '</div>',
+      '<div class="ticket-access-decision">' + commercialPriceMarkup(type, type.final_price_cents != null ? type.final_price_cents : type.price_cents, 'ticket-type-price') + ticketPurchaseAction(type, event, preview) + '</div>',
       '</div>',
       facts ? '<ul class="ticket-access-facts">' + facts + '</ul>' : '',
       '<div class="ticket-access-secondary">',
@@ -501,7 +524,11 @@
         if (output) output.textContent = quantity;
         if (decrease) decrease.disabled = quantity <= 0;
         if (increase) increase.disabled = quantity >= max || max <= 0;
-        if (subtotal) subtotal.innerHTML = quantity ? "Subtotal: <strong>" + cents(quantity * Number(input.dataset.ticketPrice || 0)) + "</strong>" : "";
+        if (subtotal) {
+          var lineTotal = quantity * Number(input.dataset.ticketPrice || 0);
+          var lineReference = quantity * Number(input.dataset.ticketReferencePrice || 0);
+          subtotal.innerHTML = quantity ? 'Subtotal especial: <strong>' + cents(lineTotal) + '</strong>' + (lineReference > lineTotal ? ' <span>Valor <del>' + cents(lineReference) + '</del></span>' : '') : '';
+        }
       });
       var subtotal = selected.reduce(function (sum, input) { return sum + Number(input.value || 0) * Number(input.dataset.ticketPrice || 0); }, 0);
       if (appliedDiscount && discountFingerprint !== selectionFingerprint()) {
@@ -630,6 +657,7 @@
 
   function checkoutTicketMarkup(type) {
     var price = Number(type.final_price_cents != null ? type.final_price_cents : type.price_cents || 0);
+    var reference = referencePrice(type.reference_price_cents, price, type.show_reference_price);
     var available = Math.max(0, Number(type.available || 0));
     var max = Math.max(0, Math.min(available, Number(type.max_per_order || available)));
     var unavailable = max === 0;
@@ -639,9 +667,9 @@
       '<div class="checkout-ticket-copy"><h3>' + escapeHtml(type.name) + '</h3>',
       type.description ? '<p>' + escapeHtml(type.description) + '</p>' : '',
       '<div class="checkout-ticket-meta"><span>' + escapeHtml(availability) + '</span>' + (type.requires_promo ? '<span>Código necesario</span>' : '') + '</div></div>',
-      '<div class="checkout-ticket-controls"><div class="checkout-ticket-price">' + cents(price) + '<small>por persona</small></div>',
+      '<div class="checkout-ticket-controls">' + commercialPriceMarkup(type, price, 'checkout-ticket-price'),
       '<div class="quantity-stepper"><output data-quantity-output aria-live="polite">0</output><div class="quantity-stepper-actions"><button type="button" data-quantity-action="increase" aria-label="Añadir una entrada de ' + escapeAttr(type.name) + '"' + (unavailable ? ' disabled' : '') + '>+</button><button type="button" data-quantity-action="decrease" aria-label="Restar una entrada de ' + escapeAttr(type.name) + '" disabled>−</button></div></div>',
-      '<input class="checkout-quantity-input" min="0" max="' + max + '" value="0" type="number" name="ticket_' + type.id + '" data-ticket-type="' + type.id + '" data-ticket-name="' + escapeAttr(type.name) + '" data-ticket-price="' + price + '">',
+      '<input class="checkout-quantity-input" min="0" max="' + max + '" value="0" type="number" name="ticket_' + type.id + '" data-ticket-type="' + type.id + '" data-ticket-name="' + escapeAttr(type.name) + '" data-ticket-price="' + price + '" data-ticket-reference-price="' + reference + '">',
       '<div class="checkout-ticket-subtotal" data-ticket-subtotal></div></div></article>'
     ].join("");
   }
@@ -678,11 +706,14 @@
     var subtotal = totals && Number.isFinite(totals.subtotal) ? totals.subtotal : selected.reduce(function (sum, input) { return sum + Number(input.value || 0) * Number(input.dataset.ticketPrice || 0); }, 0);
     var discount = totals ? Number(totals.discount || 0) : 0;
     var total = totals && Number.isFinite(totals.total) ? totals.total : subtotal - discount;
+    var referenceTotal = selected.reduce(function (sum, input) { return sum + Number(input.value || 0) * Number(input.dataset.ticketReferencePrice || 0); }, 0);
+    var savings = referenceTotal > total ? referenceTotal - total : 0;
     target.innerHTML = '<p class="checkout-summary-event">' + escapeHtml(eventTitle) + '</p><ul class="checkout-summary-items">' + selected.map(function (input) {
       var quantity = Number(input.value || 0);
       var price = Number(input.dataset.ticketPrice || 0);
-      return '<li class="checkout-summary-item"><span><strong>' + escapeHtml(input.dataset.ticketName) + '</strong><small>' + quantity + ' × ' + cents(price) + '</small></span><strong>' + cents(quantity * price) + '</strong></li>';
-    }).join("") + '</ul>' + (discount ? '<div class="checkout-summary-subtotal"><span>Subtotal</span><strong>' + cents(subtotal) + '</strong></div><div class="checkout-summary-discount"><span>Descuento' + (totals.code ? ' · ' + escapeHtml(totals.code) : '') + '</span><strong>−' + cents(discount) + '</strong></div>' : '') + '<div class="checkout-summary-total"><span>Total</span><strong>' + cents(total) + '</strong></div>';
+      var reference = Number(input.dataset.ticketReferencePrice || 0);
+      return '<li class="checkout-summary-item"><span><strong>' + escapeHtml(input.dataset.ticketName) + '</strong><small>' + quantity + ' × ' + cents(price) + '</small>' + (reference ? '<small class="checkout-summary-reference">Valor: <del>' + cents(reference) + '</del></small>' : '') + '</span><strong>' + cents(quantity * price) + '</strong></li>';
+    }).join("") + '</ul>' + (referenceTotal ? '<div class="checkout-summary-reference-total"><span>Valor de la experiencia</span><del>' + cents(referenceTotal) + '</del></div>' : '') + (discount ? '<div class="checkout-summary-subtotal"><span>Subtotal especial</span><strong>' + cents(subtotal) + '</strong></div><div class="checkout-summary-discount"><span>Descuento' + (totals.code ? ' · ' + escapeHtml(totals.code) : '') + '</span><strong>−' + cents(discount) + '</strong></div>' : '') + '<div class="checkout-summary-total"><span>Total a pagar</span><strong>' + cents(total) + '</strong></div>' + (savings ? '<div class="checkout-summary-saving">Ahorro en esta reserva: <strong>' + cents(savings) + '</strong></div>' : '');
   }
 
   function renderCheckoutPreview(form, payload, eventTitle, layout, confirmation, appliedDiscount) {
@@ -690,8 +721,10 @@
     var subtotal = selectedInputs.reduce(function (sum, input) { return sum + Number(input.value || 0) * Number(input.dataset.ticketPrice || 0); }, 0);
     var discount = Number(payload.discount_code && appliedDiscount ? appliedDiscount.discount_cents || 0 : 0);
     var total = Math.max(0, subtotal - discount);
+    var referenceTotal = selectedInputs.reduce(function (sum, input) { return sum + Number(input.value || 0) * Number(input.dataset.ticketReferencePrice || 0); }, 0);
     var itemRows = selectedInputs.map(function (input) {
-      return '<li><span>' + Number(input.value) + ' × ' + escapeHtml(input.dataset.ticketName) + '</span><strong>' + cents(Number(input.value) * Number(input.dataset.ticketPrice || 0)) + '</strong></li>';
+      var reference = Number(input.dataset.ticketReferencePrice || 0) * Number(input.value || 0);
+      return '<li><span>' + Number(input.value) + ' × ' + escapeHtml(input.dataset.ticketName) + (reference ? '<small>Valor: <del>' + cents(reference) + '</del></small>' : '') + '</span><strong>' + cents(Number(input.value) * Number(input.dataset.ticketPrice || 0)) + '</strong></li>';
     }).join("");
     var paymentLabel = paymentMethodLabel(payload.payment_method);
     layout.hidden = true;
@@ -700,7 +733,7 @@
       '<span class="ticket-eyebrow">Modo de pruebas</span>',
       '<h2>Así vería <em>tu pedido</em> la persona asistente</h2>',
       '<p class="ticket-copy">Vas a continuar al TPV seguro de <strong>Redsys TEST</strong> con <strong>' + escapeHtml(paymentLabel) + '</strong> para completar esta operación aislada. No se realizará ningún cargo real.</p>',
-      '<div class="ticket-preview-summary"><div><span>Contacto</span><strong>' + escapeHtml((payload.first_name + " " + payload.last_name).trim() || "Nombre de ejemplo") + '</strong><small>' + escapeHtml(payload.email || "correo@ejemplo.com") + '</small></div><div><span>Importe total</span><strong>' + cents(total) + '</strong><small>' + (discount ? 'Descuento aplicado · ' : '') + escapeHtml(paymentLabel) + ' · Las entradas y los envíos se marcarán como prueba.</small></div></div>',
+      '<div class="ticket-preview-summary"><div><span>Contacto</span><strong>' + escapeHtml((payload.first_name + " " + payload.last_name).trim() || "Nombre de ejemplo") + '</strong><small>' + escapeHtml(payload.email || "correo@ejemplo.com") + '</small></div><div><span>Importe total</span>' + (referenceTotal ? '<del class="ticket-preview-reference">' + cents(referenceTotal) + '</del>' : '') + '<strong>' + cents(total) + '</strong><small>' + (referenceTotal > total ? 'Ahorro: ' + cents(referenceTotal - total) + ' · ' : '') + (discount ? 'Descuento aplicado · ' : '') + escapeHtml(paymentLabel) + ' · Las entradas y los envíos se marcarán como prueba.</small></div></div>',
       '<ul class="ticket-preview-items">' + itemRows + '</ul>',
       '<div class="checkout-preview-actions"><button class="ticket-btn primary" type="button" data-start-test-payment>Pagar ' + cents(total) + ' con ' + escapeHtml(paymentLabel).toLowerCase() + ' <span aria-hidden="true">→</span></button><button class="ticket-btn" type="button" data-restart-checkout-preview>Volver a editar la compra</button><a class="checkout-preview-editor-link" href="/admin/entradas/">Volver al editor</a></div><p class="checkout-security">Pago seguro en entorno de pruebas · No se realizará ningún cargo real.</p>'
     ].join("");
@@ -770,7 +803,7 @@
         '<span class="ticket-eyebrow">Pedido ' + escapeHtml(order.reference || order.status) + '</span>',
         '<h1 class="ticket-title">Tus entradas están <em>listas</em></h1>',
         '<p class="ticket-copy">' + escapeHtml(order.name) + ', hemos preparado ' + tickets.length + ' ' + (tickets.length === 1 ? 'entrada' : 'entradas') + ' para tu experiencia. Guárdalas en tu teléfono o descárgalas ahora.</p>',
-        '<dl class="ticket-order-summary"><div><dt>Pedido</dt><dd>' + escapeHtml(order.reference || '—') + '</dd></div><div><dt>Importe pagado</dt><dd>' + cents(order.total_cents) + '</dd></div><div><dt>Correo</dt><dd>' + escapeHtml(deliveryLabel(order, "email")) + '</dd></div><div><dt>WhatsApp</dt><dd>' + escapeHtml(deliveryLabel(order, "whatsapp")) + '</dd></div></dl>',
+        '<dl class="ticket-order-summary"><div><dt>Pedido</dt><dd>' + escapeHtml(order.reference || '—') + '</dd></div>' + (Number(order.reference_total_cents || 0) > Number(order.total_cents || 0) ? '<div><dt>Valor de la experiencia</dt><dd><del>' + cents(order.reference_total_cents) + '</del></dd></div>' : '') + '<div><dt>Importe pagado</dt><dd>' + cents(order.total_cents) + '</dd></div><div><dt>Correo</dt><dd>' + escapeHtml(deliveryLabel(order, "email")) + '</dd></div><div><dt>WhatsApp</dt><dd>' + escapeHtml(deliveryLabel(order, "whatsapp")) + '</dd></div></dl>',
         '<div class="ticket-actions ticket-delivery-actions"><button class="ticket-btn primary" type="button" data-download-all>Descargar todas las entradas</button>' + (allowResend ? '<button class="ticket-btn" type="button" data-resend-email>Enviar de nuevo por correo</button><button class="ticket-btn" type="button" data-resend-whatsapp>Enviar por WhatsApp</button>' : '') + '<a class="ticket-btn" href="#entradas">Ver detalles del pedido</a></div>',
         '<p class="ticket-delivery-note">Las entradas se han preparado para <strong>' + escapeHtml(order.email) + '</strong>. Presenta el QR en el acceso: cada código es válido para una sola entrada.</p>',
         '<div class="ticket-list" id="entradas">' + tickets.map(function (ticket, index) { return ticketPass(ticket, order.is_test, index + 1); }).join("") + '</div>',

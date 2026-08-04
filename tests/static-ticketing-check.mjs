@@ -23,6 +23,7 @@ const required = [
   "database/migrations/011_admin_users_and_order_operations.sql",
   "database/migrations/012_payment_methods_bizum.sql",
   "database/migrations/013_discount_codes.sql",
+  "database/migrations/014_reference_ticket_price.sql",
   "eventos/index.html",
   "eventos/evento.html",
   "entradas/checkout/index.html",
@@ -228,6 +229,19 @@ for (const marker of ["is_test", "environment", "payment_status", "delivery_stat
 const secureDeliveryMigration = readFileSync(join(root, "database/migrations/008_secure_ticket_delivery_and_qr.sql"), "utf8");
 for (const marker of ["qr_token_ciphertext", "not_configured", "device_reference", "revertida"]) {
   if (!secureDeliveryMigration.includes(marker)) throw new Error(`Secure delivery migration is missing ${marker}.`);
+}
+const referencePriceMigration = readFileSync(join(root, "database/migrations/014_reference_ticket_price.sql"), "utf8");
+for (const marker of ["reference_price_cents", "promotional_label", "show_reference_price", "reference_unit_price_cents", "La Perigalla 01", "9000"]) {
+  if (!referencePriceMigration.includes(marker)) throw new Error(`Reference price migration is missing ${marker}.`);
+}
+for (const marker of ["visibleReferencePrice", "reference_unit_price_cents", "reference_total_cents", "orderReferenceTotal"]) {
+  if (!ticketing.includes(marker)) throw new Error(`Ticketing reference-price contract is missing ${marker}.`);
+}
+for (const marker of ["reference_price", "promotional_label", "show_reference_price"]) {
+  if (!adminJs.includes(marker)) throw new Error(`Admin reference-price editor is missing ${marker}.`);
+}
+for (const marker of ["Valor de la experiencia", "Ahorro en esta reserva", "ticket-reference-price"]) {
+  if (!publicJs.includes(marker)) throw new Error(`Public reference-price rendering is missing ${marker}.`);
 }
 const accessMovementMigration = readFileSync(join(root, "database/migrations/009_ticket_access_movements.sql"), "utf8");
 for (const marker of ["ticket_access_movements", "access_status", "allow_reentry", "maximum_reentries", "reentry_until", "reversal_of_id"]) {
