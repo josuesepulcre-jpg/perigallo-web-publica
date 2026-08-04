@@ -36,6 +36,7 @@ final class TicketDeliveryService
         $location = $this->escape((string) ($event['location'] ?? ''));
         $date = $this->eventDate((string) ($event['starts_at'] ?? ''));
         $safeLink = $this->escape($link);
+        $brandLogo = $this->escape(app_base_url() . '/assets/images/perigallo-logo-original.png');
         $ticketLabel = $quantity === 1 ? '1 entrada confirmada' : $quantity . ' entradas confirmadas';
         $image = $this->imageUrl((string) (($event['card_image_url'] ?? '') ?: ($event['image_url'] ?? '')));
         $preview = $isTest ? 'MODO DE PRUEBAS · No corresponde a una compra real.' : 'Tu compra se ha confirmado. Guarda este correo para tener el acceso siempre a mano.';
@@ -49,7 +50,7 @@ final class TicketDeliveryService
             . '<span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden">' . $this->escape($preview) . '</span>'
             . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#eef0ed"><tr><td align="center" style="padding:32px 16px">'
             . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#173236;color:#f5f0e5;font-family:Arial,sans-serif">'
-            . '<tr><td style="padding:30px 34px 24px;text-align:center;border-bottom:1px solid #6f7668"><div style="color:#d8bd96;font-family:Georgia,serif;font-size:28px;line-height:1">PG</div><div style="margin-top:12px;color:#f5f0e5;font-size:11px;letter-spacing:4px">PERIGALLO</div><div style="margin-top:7px;color:#cdb197;font-size:9px;letter-spacing:3px">FINCA LA LLAGUNA</div></td></tr>'
+            . '<tr><td style="padding:26px 34px 24px;text-align:center;border-bottom:1px solid #6f7668"><img src="' . $brandLogo . '" width="84" alt="Perigallo" style="display:inline-block;width:84px;height:auto;border:0"><div style="margin-top:12px;color:#cdb197;font-size:9px;letter-spacing:3px">FINCA LA LLAGUNA</div></td></tr>'
             . $imageBlock . $testBlock
             . '<tr><td style="padding:36px 34px 12px"><div style="color:#cdb197;font-size:10px;letter-spacing:2.3px;text-transform:uppercase">Tu experiencia está confirmada</div><h1 style="margin:14px 0 10px;color:#f5f0e5;font-family:Georgia,serif;font-size:37px;font-weight:normal;line-height:1.08">' . $title . '</h1>'
             . ($subtitle === '' ? '' : '<p style="margin:0;color:#e3c9a7;font-family:Georgia,serif;font-size:19px;line-height:1.35">' . $subtitle . '</p>')

@@ -74,12 +74,13 @@ final class Mailer
         $copy = $link === '' ? $body : trim(str_replace($link, '', $body));
         $escapedBody = nl2br(htmlspecialchars($copy, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
         $safeSubject = htmlspecialchars($subject, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $brandLogo = htmlspecialchars(app_base_url() . '/assets/images/perigallo-logo-original.png', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $button = $link === '' ? '' : '<p style="margin:26px 0 0"><a href="' . htmlspecialchars($link, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '" style="display:inline-block;background:#cdb197;color:#173236;padding:15px 20px;font-size:12px;font-weight:bold;letter-spacing:1px;text-decoration:none;text-transform:uppercase">Descargar mis entradas →</a></p>';
 
         return '<!doctype html><html lang="es"><body style="margin:0;padding:0;background:#eef0ed">'
             . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#eef0ed"><tr><td align="center" style="padding:32px 16px">'
             . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#173236;color:#f5f0e5;font-family:Arial,sans-serif">'
-            . '<tr><td style="padding:30px 34px 22px;border-bottom:1px solid #7f725d;text-align:center"><div style="color:#cdb197;font-size:11px;letter-spacing:4px">PERIGALLO</div><div style="color:#d7c3a2;font-size:9px;letter-spacing:3px;margin-top:8px">FINCA LA LLAGUNA</div></td></tr>'
+            . '<tr><td style="padding:26px 34px 22px;border-bottom:1px solid #7f725d;text-align:center"><img src="' . $brandLogo . '" width="76" alt="Perigallo" style="display:inline-block;width:76px;height:auto;border:0"><div style="color:#d7c3a2;font-size:9px;letter-spacing:3px;margin-top:12px">FINCA LA LLAGUNA</div></td></tr>'
             . '<tr><td style="padding:34px"><h1 style="margin:0 0 20px;color:#f5f0e5;font-family:Georgia,serif;font-size:32px;font-weight:normal;line-height:1.12">' . $safeSubject . '</h1><div style="color:#d7d4cb;font-size:16px;line-height:1.7">' . $escapedBody . '</div>' . $button . '</td></tr>'
             . '<tr><td style="padding:20px 34px;background:#11282b;color:#b9beb9;font-size:12px;line-height:1.6">Este correo ha sido enviado por Perigallo.</td></tr>'
             . '</table></td></tr></table></body></html>';
