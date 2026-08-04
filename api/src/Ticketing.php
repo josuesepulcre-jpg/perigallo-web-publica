@@ -11,14 +11,22 @@ use RuntimeException;
 
 final class Ticketing
 {
-    private DiscountCodes $discountCodes;
+    private ?DiscountCodes $discountCodes = null;
 
     public function __construct(
         private PDO $pdo,
         private Redsys $redsys,
         private Mailer $mailer
     ) {
-        $this->discountCodes = new DiscountCodes($pdo);
+    }
+
+    /**
+     * Carga el módulo de campañas únicamente cuando se necesita. Así el panel
+     * básico no queda inutilizado durante un despliegue parcial del módulo.
+     */
+    private function discounts(): DiscountCodes
+    {
+        return $this->discountCodes ??= new DiscountCodes($this->pdo);
     }
 
     public function listEvents(): array
@@ -78,7 +86,7 @@ final class Ticketing
         if (!$items) {
             throw new InvalidArgumentException('Selecciona al menos una entrada para comprobar el código.');
         }
-        return $this->discountCodes->validatePublic($data, $event, $items);
+        return $this->discounts()->validatePublic($data, $event, $items);
     }
 
     public function validateTestDiscount(int $eventId, array $data): array
@@ -88,7 +96,7 @@ final class Ticketing
         if (!$items) {
             throw new InvalidArgumentException('Selecciona al menos una entrada para comprobar el código.');
         }
-        return $this->discountCodes->validatePublic($data, $event, $items);
+        return $this->discounts()->validatePublic($data, $event, $items);
     }
 
     public function createOrder(array $data): array
@@ -176,7 +184,7 @@ final class Ticketing
                 throw new RuntimeException('El pedido no contiene entradas validas.');
             }
 
-            $discount = $this->discountCodes->quote(
+            $discount = $this->discounts()->quote(
                 (string) ($data['discount_code'] ?? ''),
                 (int) $event['id'],
                 $pricedItems,
@@ -201,14 +209,14 @@ final class Ticketing
                 $total,
                 $orderId,
             ]);
-            $this->discountCodes->reserve($discount, $orderId, (int) $event['id'], $email, $phone, $expires);
+            $this->discounts()->reserve($discount, $orderId, (int) $event['id'], $email, $phone, $expires);
 
             // Las invitaciones gratuitas emiten la entrada directamente: no deben pasar por Redsys.
             if ($total === 0) {
                 $this->pdo->prepare('UPDATE ticket_orders SET status = "paid", paid_at = NOW(), updated_at = NOW() WHERE id = ?')
                     ->execute([$orderId]);
                 $this->generateTicketsOnce($orderId);
-                $this->discountCodes->consumeForOrder($orderId);
+                $this->discounts()->consumeForOrder($orderId);
                 $this->pdo->commit();
                 $this->sendConfirmation($orderId);
                 return [
@@ -554,7 +562,7 @@ final class Ticketing
             if ($quantityTotal === 0) {
                 throw new RuntimeException('Selecciona al menos una entrada para la prueba.');
             }
-            $discount = $this->discountCodes->quote(
+            $discount = $this->discounts()->quote(
                 (string) ($data['discount_code'] ?? ''),
                 $eventId,
                 $pricedItems,
@@ -579,7 +587,7 @@ final class Ticketing
                 $total,
                 $orderId,
             ]);
-            $this->discountCodes->reserve($discount, $orderId, $eventId, $email, $phone, $expires);
+            $this->discounts()->reserve($discount, $orderId, $eventId, $email, $phone, $expires);
             $this->pdo->prepare(
                 'INSERT INTO payment_attempts (order_id, redsys_order, environment, amount_cents, currency, signature_version, payment_method, status, created_at, updated_at)
                  VALUES (?, ?, "test", ?, ?, ?, ?, "created", NOW(), NOW())'
@@ -685,9 +693,9 @@ final class Ticketing
                     ->execute([$orderStatus, $commercialStatus, $paymentStatus, $deliveryStatus, $orderStatus, $order['id']]);
                 if ($accepted) {
                     $this->generateTicketsOnce((int) $order['id']);
-                    $this->discountCodes->consumeForOrder((int) $order['id']);
+                    $this->discounts()->consumeForOrder((int) $order['id']);
                 } else {
-                    $this->discountCodes->releaseForOrder((int) $order['id'], 'cancelled');
+                    $this->discounts()->releaseForOrder((int) $order['id'], 'cancelled');
                 }
             }
 
@@ -717,45 +725,45 @@ final class Ticketing
 
     public function adminDiscountCodes(array $filters = []): array
     {
-        return $this->discountCodes->list($filters);
+        return $this->discounts()->list($filters);
     }
 
     public function adminDiscountCode(int $id): array
     {
-        return $this->discountCodes->get($id);
+        return $this->discounts()->get($id);
     }
 
     public function adminSaveDiscountCode(array $data, string $operator, ?int $id = null): array
     {
-        $code = $this->discountCodes->save($data, $operator, $id);
+        $code = $this->discounts()->save($data, $operator, $id);
         $this->auditDiscountOperation($operator, $id === null ? 'discount_code_created' : 'discount_code_updated', (int) $code['id'], ['code' => $code['code']]);
         return $code;
     }
 
     public function adminDuplicateDiscountCode(int $id, string $operator): array
     {
-        $code = $this->discountCodes->duplicate($id, $operator);
+        $code = $this->discounts()->duplicate($id, $operator);
         $this->auditDiscountOperation($operator, 'discount_code_duplicated', (int) $code['id'], ['source_id' => $id, 'code' => $code['code']]);
         return $code;
     }
 
     public function adminArchiveDiscountCode(int $id, string $operator): array
     {
-        $code = $this->discountCodes->archive($id, $operator);
+        $code = $this->discounts()->archive($id, $operator);
         $this->auditDiscountOperation($operator, 'discount_code_archived', (int) $code['id'], ['code' => $code['code']]);
         return $code;
     }
 
     public function adminDeleteUnusedDiscountCode(int $id, string $operator): array
     {
-        $result = $this->discountCodes->deleteUnused($id);
+        $result = $this->discounts()->deleteUnused($id);
         $this->auditDiscountOperation($operator, 'discount_code_deleted', $id, ['code' => $result['code']]);
         return $result;
     }
 
     public function adminDiscountCodeHistory(int $id): array
     {
-        return $this->discountCodes->usageHistory($id);
+        return $this->discounts()->usageHistory($id);
     }
 
     public function adminDiscountCodeMeta(): array
@@ -856,7 +864,7 @@ final class Ticketing
             $ticketStatus = $targetStatus === 'refunded' ? 'refunded' : 'cancelled';
             $this->pdo->prepare('UPDATE tickets t JOIN ticket_order_items oi ON oi.id = t.order_item_id SET t.status = ?, t.updated_at = NOW() WHERE oi.order_id = ?')
                 ->execute([$ticketStatus, $orderId]);
-            $this->discountCodes->releaseForOrder($orderId, $targetStatus);
+            $this->discounts()->releaseForOrder($orderId, $targetStatus);
             $this->auditAdminOperation($operator, $targetStatus === 'refunded' ? 'order_refund_recorded' : 'order_cancelled', $orderId, [
                 'reason' => clean_string($reason, 500),
                 'payment_status_preserved' => $targetStatus === 'cancelled' ? $paymentStatus : null,
