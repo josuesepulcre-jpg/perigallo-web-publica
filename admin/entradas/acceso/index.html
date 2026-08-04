@@ -7,7 +7,7 @@
 <title>Control de acceso | Perigallo</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/css/ticketing.css?v=20260804-access-control-v3">
+<link rel="stylesheet" href="/assets/css/ticketing.css?v=20260804-access-control-mobile-v4">
 </head>
 <body class="ticketing-page">
 <header class="ticketing-nav">
@@ -28,17 +28,22 @@
     </div>
   </section>
   <section class="ticket-section">
-    <div class="ticket-section-inner" data-ticket-scan-wrap hidden>
+    <div class="ticket-section-inner ticket-access-workspace" data-ticket-scan-wrap hidden>
+      <div class="ticket-access-mobile-header" aria-label="Resumen de control de acceso">
+        <div><span class="ticket-eyebrow">Control de acceso</span><strong data-mobile-event-title>Selecciona una experiencia</strong></div>
+        <span class="ticket-access-connection" data-connection-status>Comprobando conexión...</span>
+      </div>
       <form class="ticket-panel ticket-form" data-ticket-scan>
         <div class="ticket-form-grid">
           <div class="ticket-field"><label>Evento</label><select name="event_id" required></select></div>
-          <div class="ticket-field"><label>Modo de acceso</label><select name="access_mode"><option value="automatic">Automático</option><option value="entry">Solo entradas</option><option value="exit">Solo salidas</option></select></div>
+          <div class="ticket-field ticket-access-mode-select"><label>Modo de acceso</label><select name="access_mode"><option value="automatic">Automático</option><option value="entry">Solo entradas</option><option value="exit">Solo salidas</option></select></div>
           <div class="ticket-field"><label>Punto de acceso</label><input name="access_point" autocomplete="organization" placeholder="Ej. puerta principal"></div>
           <div class="ticket-field"><label>Código / QR</label><input name="code" autocomplete="off" required autofocus placeholder="Escanea o escribe el código"></div>
         </div>
-        <div class="ticket-scanner-meta"><span data-connection-status>Comprobando conexión...</span><span>La cámara solo propone el movimiento; el equipo lo confirma.</span></div>
-        <div class="ticket-actions"><button class="ticket-btn primary" type="button" data-open-camera>Abrir escáner</button><button class="ticket-btn" type="submit">Comprobar entrada</button></div>
-        <div class="ticket-camera" data-ticket-camera-wrap hidden><video data-ticket-camera playsinline muted></video><p>Enfoca el código QR. La validación siempre se realiza en el servidor.</p><button class="ticket-btn" type="button" data-close-camera>Cerrar cámara</button></div>
+        <div class="ticket-access-mode-segmented" role="group" aria-label="Modo de acceso"><button type="button" data-access-mode="entry">Entradas</button><button type="button" data-access-mode="exit">Salidas</button><button type="button" data-access-mode="automatic">Automático</button></div>
+        <div class="ticket-scanner-meta"><span class="ticket-access-connection" data-connection-status>Comprobando conexión...</span><span>El equipo confirma cada movimiento antes de registrarlo.</span></div>
+        <div class="ticket-actions ticket-access-primary-actions"><button class="ticket-btn primary" type="button" data-open-camera>Abrir cámara</button><button class="ticket-btn" type="button" data-open-manual>Introducir código</button></div>
+        <div class="ticket-camera" data-ticket-camera-wrap hidden><video data-ticket-camera playsinline muted></video><div class="ticket-qr-guide" aria-hidden="true"></div><div class="ticket-camera-copy"><strong>Enfoca el QR dentro del marco</strong><span>La entrada se comprueba en el servidor antes de confirmar.</span></div><div class="ticket-camera-tools"><button class="ticket-btn" type="button" data-toggle-flash hidden>Linterna</button><button class="ticket-btn" type="button" data-switch-camera>Cambiar cámara</button><button class="ticket-btn" type="button" data-close-camera>Detener</button></div></div>
         <p class="ticket-status" data-scan-status aria-live="polite"></p>
       </form>
       <section class="ticket-attendees" data-ticket-attendees hidden aria-live="polite"></section>
@@ -49,6 +54,6 @@
   </section>
 </main>
 <div class="ticket-access-modal" data-access-modal hidden role="dialog" aria-modal="true" aria-labelledby="access-modal-title"><section class="ticket-access-modal-card" data-access-modal-content></section></div>
-<script src="/assets/js/ticketing-admin.js?v=20260804-access-control-v3" defer></script>
+<script src="/assets/js/ticketing-admin.js?v=20260804-access-control-mobile-v4" defer></script>
 </body>
 </html>

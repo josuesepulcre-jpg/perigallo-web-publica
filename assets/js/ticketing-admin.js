@@ -834,18 +834,26 @@
       var connection = form.querySelector("[data-connection-status]");
       var cameraWrap = form.querySelector("[data-ticket-camera-wrap]");
       var video = form.querySelector("[data-ticket-camera]");
+      var flashButton = form.querySelector("[data-toggle-flash]");
+      var switchCameraButton = form.querySelector("[data-switch-camera]");
+      var mobileEventTitle = document.querySelector("[data-mobile-event-title]");
       var attendeesRoot = document.querySelector("[data-ticket-attendees]");
       var stream = null;
       var scanning = false;
       var locked = false;
       var proposal = null;
       var resumeCamera = false;
+      var facingMode = "environment";
+      var torchOn = false;
+      var wakeLock = null;
+      document.body.classList.add("has-ticket-access-control");
       if (wrap) wrap.hidden = false;
 
       function updateConnection() {
-        if (!connection) return;
-        connection.textContent = navigator.onLine ? "Conectado al control en tiempo real" : "Sin conexión: no se pueden registrar accesos";
-        connection.className = navigator.onLine ? "is-online" : "is-offline";
+        document.querySelectorAll("[data-connection-status]").forEach(function (item) {
+          item.textContent = navigator.onLine ? "Conectado" : "Sin conexión";
+          item.className = "ticket-access-connection " + (navigator.onLine ? "is-online" : "is-offline");
+        });
       }
       updateConnection();
       window.addEventListener("online", updateConnection);
@@ -872,8 +880,34 @@
         scanning = false;
         if (stream) stream.getTracks().forEach(function (track) { track.stop(); });
         stream = null;
+        torchOn = false;
+        if (flashButton) { flashButton.hidden = true; flashButton.textContent = "Linterna"; }
         if (video) video.srcObject = null;
         if (cameraWrap) cameraWrap.hidden = true;
+      }
+      function releaseWakeLock() {
+        if (wakeLock && wakeLock.release) wakeLock.release().catch(function () {});
+        wakeLock = null;
+      }
+      function requestWakeLock() {
+        if (!navigator.wakeLock || !navigator.wakeLock.request) return;
+        navigator.wakeLock.request("screen").then(function (lock) { wakeLock = lock; }).catch(function () {});
+      }
+      function setMode(value) {
+        if (!form.access_mode) return;
+        form.access_mode.value = value;
+        window.localStorage.setItem("perigallo-access-mode", value);
+        form.querySelectorAll("[data-access-mode]").forEach(function (button) {
+          var active = button.dataset.accessMode === value;
+          button.classList.toggle("is-active", active);
+          button.setAttribute("aria-pressed", active ? "true" : "false");
+        });
+        clearProposal();
+      }
+      function updateEventTitle() {
+        if (!mobileEventTitle || !form.event_id) return;
+        var selected = form.event_id.options[form.event_id.selectedIndex];
+        mobileEventTitle.textContent = selected && selected.value ? selected.textContent : "Selecciona una experiencia";
       }
       function attendeeAction(attendee) {
         if (attendee.status !== "issued") return "";
@@ -888,7 +922,7 @@
           attendeesRoot.hidden = false;
           var attendees = data.attendees || [];
           var history = data.history || [];
-          attendeesRoot.innerHTML = '<div class="ticket-attendee-head"><div><span class="ticket-eyebrow">Estado en directo</span><h2>Control de acceso</h2></div><div class="ticket-attendee-metrics"><span>' + Number(metrics.not_entered || 0) + ' sin acceder</span><span>' + Number(metrics.inside || 0) + ' dentro</span><span>' + Number(metrics.outside || 0) + ' fuera</span><span>' + Number(metrics.entries || 0) + ' entradas</span><span>' + Number(metrics.exits || 0) + ' salidas</span></div></div><div class="ticket-attendee-filters"><label>Buscar<input type="search" data-attendee-search placeholder="Nombre, teléfono, pedido o código"></label><label>Presencia<select data-attendee-filter><option value="all">Todas</option><option value="not_entered">Sin acceder</option><option value="inside">Dentro</option><option value="outside">Fuera</option><option value="incidents">Incidencias</option></select></label></div><div class="ticket-attendee-table" data-attendee-table></div><details class="ticket-access-history"><summary>Historial de movimientos</summary><div data-access-history></div></details>';
+          attendeesRoot.innerHTML = '<div class="ticket-attendee-head"><div><span class="ticket-eyebrow">Estado en directo</span><h2>Control de acceso</h2></div><div class="ticket-attendee-metrics"><span>' + Number(metrics.not_entered || 0) + ' sin acceder</span><span class="is-inside">' + Number(metrics.inside || 0) + ' dentro</span><span>' + Number(metrics.outside || 0) + ' fuera</span><span>' + Number(metrics.entries || 0) + ' entradas</span><span>' + Number(metrics.exits || 0) + ' salidas</span></div></div><div class="ticket-attendee-filters"><label>Buscar<input type="search" data-attendee-search placeholder="Nombre, teléfono, pedido o código"></label><label>Presencia<select data-attendee-filter><option value="all">Todas</option><option value="not_entered">Sin acceder</option><option value="inside">Dentro</option><option value="outside">Fuera</option><option value="incidents">Incidencias</option></select></label></div><div class="ticket-attendee-table" data-attendee-table></div><details class="ticket-access-history"><summary>Historial de movimientos</summary><div data-access-history></div></details>';
           function drawAttendees() {
             var search = (attendeesRoot.querySelector("[data-attendee-search]").value || "").toLowerCase().trim();
             var filter = attendeesRoot.querySelector("[data-attendee-filter]").value;
@@ -897,7 +931,7 @@
               var isIncident = attendee.status !== "issued";
               return (!search || searchable.includes(search)) && (filter === "all" || (filter === "incidents" ? isIncident : attendee.access_status === filter));
             });
-            attendeesRoot.querySelector("[data-attendee-table]").innerHTML = '<div class="ticket-attendee-row ticket-attendee-labels"><span>Asistente</span><span>Entrada</span><span>Presencia</span><span>Acción</span></div>' + rows.map(function (attendee) { return '<div class="ticket-attendee-row"><span><strong>' + escapeHtml(attendee.name) + '</strong><small>' + escapeHtml(attendee.email) + ' · ' + escapeHtml(attendee.phone || "sin teléfono") + '</small></span><span><strong>' + escapeHtml(attendee.ticket_type_name) + '</strong><small>' + escapeHtml(attendee.public_code) + ' · ' + escapeHtml(attendee.order_reference || "") + '</small></span><span class="attendee-status attendee-' + escapeHtml(attendee.access_status || attendee.status) + '"><strong>' + escapeHtml(attendee.status === "issued" ? accessStatus(attendee.access_status) : administrativeStatus(attendee.status)) + '</strong><small>' + (attendee.last_entry_at ? 'Última entrada: ' + escapeHtml(dateText(attendee.last_entry_at)) : 'Sin movimientos') + '</small></span><span>' + attendeeAction(attendee) + (state.role === "admin" && attendee.last_access_action && attendee.last_access_action !== "reversal" ? '<button class="text-action danger" type="button" data-revert-ticket="' + escapeHtml(attendee.public_code) + '">Revertir último</button>' : '') + '</span></div>'; }).join("") + (rows.length ? "" : '<p class="ticket-status">No hay asistentes que coincidan con ese filtro.</p>');
+            attendeesRoot.querySelector("[data-attendee-table]").innerHTML = '<div class="ticket-attendee-row ticket-attendee-labels"><span>Asistente</span><span>Entrada</span><span>Presencia</span><span>Acción</span></div>' + rows.map(function (attendee) { return '<div class="ticket-attendee-row"><span><strong>' + escapeHtml(attendee.name) + '</strong><small>' + escapeHtml(attendee.email) + ' · ' + escapeHtml(attendee.phone || "sin teléfono") + '</small></span><span><strong>' + escapeHtml(attendee.ticket_type_name) + '</strong><small>' + escapeHtml(attendee.public_code) + ' · ' + escapeHtml(attendee.order_reference || "") + '</small></span><span class="attendee-status attendee-' + escapeHtml(attendee.access_status || attendee.status) + '"><strong>' + escapeHtml(attendee.status === "issued" ? accessStatus(attendee.access_status) : administrativeStatus(attendee.status)) + '</strong><small>' + (attendee.last_entry_at ? 'Último movimiento: ' + escapeHtml(dateText(attendee.last_entry_at)) : 'Sin movimientos') + '</small></span><span>' + attendeeAction(attendee) + (state.role === "admin" && attendee.last_access_action && attendee.last_access_action !== "reversal" ? '<button class="text-action danger" type="button" data-revert-ticket="' + escapeHtml(attendee.public_code) + '">Revertir último</button>' : '') + '</span></div>'; }).join("") + (rows.length ? "" : '<p class="ticket-status">No hay asistentes que coincidan con ese filtro.</p>');
           }
           attendeesRoot.querySelector("[data-access-history]").innerHTML = history.length ? history.map(function (movement) { return '<div class="ticket-access-history-row"><strong>' + escapeHtml(({ entry: "Entrada", exit: "Salida", reentry: "Reentrada", reversal: "Corrección" })[movement.action] || movement.action) + '</strong><span>' + escapeHtml(movement.name || "Entrada") + ' · ' + escapeHtml(dateText(movement.created_at)) + '</span><small>' + escapeHtml(movement.performed_by || "Equipo Perigallo") + (movement.notes ? ' · ' + escapeHtml(movement.notes) : "") + '</small></div>'; }).join("") : '<p class="ticket-status">Todavía no hay movimientos registrados.</p>';
           attendeesRoot.querySelector("[data-attendee-search]").addEventListener("input", drawAttendees);
@@ -980,11 +1014,25 @@
       function startCamera() {
         if (!form.event_id.value) { status.textContent = "Selecciona primero la experiencia."; return; }
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.BarcodeDetector) { status.textContent = "Este navegador no permite abrir el lector. Introduce el código de la entrada manualmente."; return; }
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false }).then(function (media) {
-          stream = media; video.srcObject = media; cameraWrap.hidden = false; scanning = true;
+        status.textContent = "Preparando cámara...";
+        status.className = "ticket-status is-ready";
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: facingMode }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }).then(function (media) {
+          stream = media; video.srcObject = media; cameraWrap.hidden = false; scanning = true; requestWakeLock();
+          var track = media.getVideoTracks()[0];
+          var capabilities = track && track.getCapabilities ? track.getCapabilities() : {};
+          if (flashButton) flashButton.hidden = !capabilities.torch;
           return video.play();
-        }).then(function () { scanFrame(new window.BarcodeDetector({ formats: ["qr_code"] })); }).catch(function () { status.textContent = "No se pudo abrir la cámara. Revisa los permisos y vuelve a intentarlo."; stopCamera(); });
+        }).then(function () { status.textContent = "Cámara lista. Enfoca el código QR."; status.className = "ticket-status is-ready"; scanFrame(new window.BarcodeDetector({ formats: ["qr_code"] })); }).catch(function (error) { status.textContent = error && error.name === "NotAllowedError" ? "Necesitamos permiso para usar la cámara. Puedes permitirlo en el navegador o introducir el código manualmente." : "No se pudo abrir la cámara. Revisa los permisos y vuelve a intentarlo."; status.className = "ticket-status is-error"; stopCamera(); });
       }
+      function toggleFlash() {
+        var track = stream && stream.getVideoTracks ? stream.getVideoTracks()[0] : null;
+        if (!track || !track.applyConstraints) return;
+        torchOn = !torchOn;
+        track.applyConstraints({ advanced: [{ torch: torchOn }] }).then(function () {
+          if (flashButton) flashButton.textContent = torchOn ? "Apagar linterna" : "Linterna";
+        }).catch(function () { torchOn = false; if (flashButton) flashButton.hidden = true; status.textContent = "La linterna no está disponible en esta cámara."; });
+      }
+      function switchCamera() { facingMode = facingMode === "environment" ? "user" : "environment"; stopCamera(); startCamera(); }
       function cancelProposal() {
         if (locked) return;
         clearProposal();
@@ -1006,15 +1054,20 @@
       request(api + "/admin/events").then(function (data) {
         form.event_id.innerHTML = '<option value="">Selecciona evento</option>' + data.events.map(function (event) { return '<option value="' + Number(event.id) + '">' + escapeHtml(event.title) + '</option>'; }).join("");
         var storedMode = window.localStorage.getItem("perigallo-access-mode");
-        if (storedMode && form.access_mode) form.access_mode.value = storedMode;
+        if (storedMode && form.access_mode) setMode(storedMode); else setMode(form.access_mode ? form.access_mode.value : "automatic");
         var ticket = q("ticket");
         if (ticket) form.code.value = ticket;
       });
-      form.event_id.addEventListener("change", function () { clearProposal(); loadAttendees(); });
-      if (form.access_mode) form.access_mode.addEventListener("change", function () { window.localStorage.setItem("perigallo-access-mode", form.access_mode.value); clearProposal(); });
+      form.event_id.addEventListener("change", function () { clearProposal(); updateEventTitle(); loadAttendees(); });
+      if (form.access_mode) form.access_mode.addEventListener("change", function () { setMode(form.access_mode.value); });
       form.addEventListener("submit", function (event) { event.preventDefault(); inspect(form.code.value.trim(), "manual"); });
       form.querySelector("[data-open-camera]").addEventListener("click", startCamera);
-      form.querySelector("[data-close-camera]").addEventListener("click", function () { resumeCamera = false; stopCamera(); });
+      form.querySelectorAll("[data-access-mode]").forEach(function (button) { button.addEventListener("click", function () { setMode(button.dataset.accessMode); }); });
+      var manualButton = form.querySelector("[data-open-manual]");
+      if (manualButton) manualButton.addEventListener("click", function () { stopCamera(); form.code.focus(); status.textContent = "Introduce el código de la entrada y pulsa Comprobar entrada."; status.className = "ticket-status is-ready"; });
+      form.querySelector("[data-close-camera]").addEventListener("click", function () { resumeCamera = false; stopCamera(); releaseWakeLock(); });
+      if (flashButton) flashButton.addEventListener("click", toggleFlash);
+      if (switchCameraButton) switchCameraButton.addEventListener("click", switchCamera);
       if (modal) modal.addEventListener("click", function (event) {
         if (event.target === modal) { if (proposal) cancelProposal(); else scanNext(); return; }
         if (event.target.closest("[data-cancel-access]")) { cancelProposal(); return; }
@@ -1022,6 +1075,8 @@
         if (event.target.closest("[data-scan-next]")) { scanNext(); }
       });
       document.addEventListener("keydown", function (event) { if (event.key === "Escape" && modal && !modal.hidden) { if (proposal) cancelProposal(); else scanNext(); } });
+      document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible" && stream) requestWakeLock(); });
+      window.addEventListener("beforeunload", releaseWakeLock);
       if (attendeesRoot) attendeesRoot.addEventListener("click", function (event) {
         var propose = event.target.closest("[data-propose-ticket]");
         if (propose) { form.code.value = propose.dataset.proposeTicket; inspect(propose.dataset.proposeTicket, "manual"); return; }
