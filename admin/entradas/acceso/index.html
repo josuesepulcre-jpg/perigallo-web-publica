@@ -8,6 +8,7 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/ticketing.css?v=20260804-admin-access-shell-v1">
+<link rel="stylesheet" href="/assets/css/access-scanner.css?v=20260804-simplified-v1">
 </head>
 <body class="ticketing-page has-ticket-access-control admin-backoffice-page admin-access-page">
 <div class="admin-app-shell">
@@ -18,7 +19,7 @@
       <div>
         <span class="ticket-eyebrow">Acceso</span>
         <h1 class="ticket-title">Validar <em>entrada</em></h1>
-        <p class="ticket-copy">Selecciona la experiencia, abre el lector y valida cada QR de forma individual. También puedes introducir el código de la entrada manualmente.</p>
+        <p class="ticket-copy">Selecciona la experiencia y lee cada QR. El sistema consulta el estado real de la entrada antes de proponer el siguiente movimiento.</p>
       </div>
     </div>
   </section>
@@ -29,15 +30,13 @@
         <span class="ticket-access-connection" data-connection-status>Comprobando conexión...</span>
       </div>
       <form class="ticket-panel ticket-form" data-ticket-scan>
-        <div class="ticket-form-grid">
-          <div class="ticket-field"><label>Evento</label><select name="event_id" required></select></div>
-          <div class="ticket-field ticket-access-mode-select"><label>Modo de acceso</label><select name="access_mode"><option value="automatic">Automático</option><option value="entry">Solo entradas</option><option value="exit">Solo salidas</option></select></div>
-          <div class="ticket-field"><label>Punto de acceso</label><input name="access_point" autocomplete="organization" placeholder="Ej. puerta principal"></div>
-          <div class="ticket-field"><label>Código / QR</label><input name="code" autocomplete="off" required autofocus placeholder="Escanea o escribe el código"></div>
+        <div class="ticket-form-grid ticket-access-setup">
+          <div class="ticket-field"><label>Experiencia</label><select name="event_id" required></select><small>El sistema comprobará cada entrada contra esta experiencia.</small></div>
+          <input name="access_mode" type="hidden" value="automatic">
         </div>
-        <div class="ticket-access-mode-segmented" role="group" aria-label="Modo de acceso"><button type="button" data-access-mode="entry">Entradas</button><button type="button" data-access-mode="exit">Salidas</button><button type="button" data-access-mode="automatic">Automático</button></div>
-        <div class="ticket-scanner-meta"><span class="ticket-access-connection" data-connection-status>Comprobando conexión...</span><span>El equipo confirma cada movimiento antes de registrarlo.</span></div>
-        <div class="ticket-actions ticket-access-primary-actions"><button class="ticket-btn primary" type="button" data-open-camera>Abrir cámara</button><button class="ticket-btn" type="button" data-open-manual>Introducir código</button></div>
+        <div class="ticket-scanner-meta"><span class="ticket-access-connection" data-connection-status>Comprobando conexión...</span><span>El sistema detecta si corresponde entrada, salida o reentrada.</span></div>
+        <div class="ticket-actions ticket-access-primary-actions"><button class="ticket-btn primary" type="button" data-open-camera>Leer QR</button><button class="ticket-btn" type="button" data-open-manual>Introducir código</button></div>
+        <div class="ticket-manual-code" data-manual-code-panel hidden><div class="ticket-field"><label for="ticket-manual-code">Código de entrada</label><input id="ticket-manual-code" name="code" autocomplete="off" placeholder="Escribe el código de la entrada"></div><button class="ticket-btn" type="submit">Comprobar código</button></div>
         <div class="ticket-camera" data-ticket-camera-wrap hidden><video data-ticket-camera playsinline muted></video><div class="ticket-qr-guide" aria-hidden="true"></div><div class="ticket-camera-copy"><strong>Enfoca el QR dentro del marco</strong><span>La entrada se comprueba en el servidor antes de confirmar.</span></div><div class="ticket-camera-tools"><button class="ticket-btn" type="button" data-toggle-flash hidden>Linterna</button><button class="ticket-btn" type="button" data-switch-camera>Cambiar cámara</button><button class="ticket-btn" type="button" data-close-camera>Detener</button></div></div>
         <p class="ticket-status" data-scan-status aria-live="polite"></p>
       </form>

@@ -238,11 +238,14 @@ for (const marker of ["/admin/tickets/access-preview", "/admin/tickets/access-mo
 }
 for (const file of ["check-in/index.html", "admin/entradas/acceso/index.html"]) {
   const page = readFileSync(join(root, file), "utf8");
-  for (const marker of ["name=\"access_mode\"", "data-access-modal", "data-connection-status", "data-access-mode", "data-open-manual", "data-toggle-flash"]) {
+  for (const marker of ["name=\"access_mode\"", "data-access-modal", "data-connection-status", "data-open-manual", "data-toggle-flash", "data-manual-code-panel", "Leer QR"]) {
     if (!page.includes(marker)) throw new Error(`Missing access scanner UI marker ${marker} in ${file}`);
   }
+  for (const forbidden of ["Punto de acceso", "data-access-mode"]) {
+    if (page.includes(forbidden)) throw new Error(`Access scanner should not expose ${forbidden} in ${file}.`);
+  }
 }
-for (const marker of ["access-preview", "Validar entrada", "ticket-access-modal", "perigallo-access-mode", "toggleFlash", "requestWakeLock", "getUserMedia"]) {
+for (const marker of ["access-preview", "Validar entrada", "ticket-access-modal", "toggleFlash", "requestWakeLock", "getUserMedia", "data-manual-code-panel"]) {
   if (!adminJs.includes(marker)) throw new Error(`Missing access scanner behavior: ${marker}`);
 }
 const adminAuth = readFileSync(join(root, "api/src/AdminAuth.php"), "utf8");

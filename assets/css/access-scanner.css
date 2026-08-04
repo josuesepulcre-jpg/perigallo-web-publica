@@ -1,0 +1,20 @@
+/* Keeps the operational scanner focused on its two real actions: scan or type. */
+.ticket-manual-code {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+  margin-top: 14px;
+  padding: 16px;
+  border: 1px solid var(--pg-border);
+  background: rgba(245, 241, 229, .03);
+}
+
+.ticket-manual-code .ticket-btn { min-height: 48px; }
+.ticket-access-setup .ticket-field { grid-column: 1 / -1; }
+.ticket-access-setup small { display: block; margin-top: 8px; color: var(--pg-muted); font-size: .72rem; line-height: 1.45; }
+
+@media (max-width: 760px) {
+  .ticket-manual-code { grid-template-columns: 1fr; }
+  .ticket-manual-code .ticket-btn { width: 100%; }
+}

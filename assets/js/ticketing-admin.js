@@ -847,7 +847,7 @@
         modal.appendChild(modalContent);
         document.body.appendChild(modal);
       }
-      var connection = form.querySelector("[data-connection-status]");
+      var manualCodePanel = form.querySelector("[data-manual-code-panel]");
       var cameraWrap = form.querySelector("[data-ticket-camera-wrap]");
       var video = form.querySelector("[data-ticket-camera]");
       var flashButton = form.querySelector("[data-toggle-flash]");
@@ -909,15 +909,9 @@
         if (!navigator.wakeLock || !navigator.wakeLock.request) return;
         navigator.wakeLock.request("screen").then(function (lock) { wakeLock = lock; }).catch(function () {});
       }
-      function setMode(value) {
+      function setMode() {
         if (!form.access_mode) return;
-        form.access_mode.value = value;
-        window.localStorage.setItem("perigallo-access-mode", value);
-        form.querySelectorAll("[data-access-mode]").forEach(function (button) {
-          var active = button.dataset.accessMode === value;
-          button.classList.toggle("is-active", active);
-          button.setAttribute("aria-pressed", active ? "true" : "false");
-        });
+        form.access_mode.value = "automatic";
         clearProposal();
       }
       function updateEventTitle() {
@@ -988,12 +982,11 @@
           mode: form.access_mode ? form.access_mode.value : "automatic",
           method: method || "manual",
           device_reference: navigator.userAgent.slice(0, 190),
-          access_point: form.access_point ? form.access_point.value.trim() : "",
         }).then(function (data) {
           data.method = method || "manual";
           renderProposal(data, value);
           form.code.value = "";
-          form.code.focus();
+          if (manualCodePanel && !manualCodePanel.hidden) form.code.focus();
           loadAttendees();
         }).catch(function (error) { status.textContent = error.message; status.className = "ticket-status is-error"; }).finally(function () { locked = false; });
       }
@@ -1006,7 +999,7 @@
         if (modalContent) modalContent.querySelectorAll("button").forEach(function (button) { button.disabled = true; });
         jsonRequest(api + "/admin/tickets/access-movement", "POST", {
           event_id: Number(form.event_id.value || 0), token: proposal.value, action: proposal.action,
-          method: proposal.method, device_reference: navigator.userAgent.slice(0, 190), access_point: form.access_point ? form.access_point.value.trim() : "",
+          method: proposal.method, device_reference: navigator.userAgent.slice(0, 190),
         }).then(function (data) {
           var ticket = data.ticket || proposal.ticket;
           status.textContent = data.message || "Movimiento registrado.";
@@ -1029,6 +1022,7 @@
       }
       function startCamera() {
         if (!form.event_id.value) { status.textContent = "Selecciona primero la experiencia."; return; }
+        if (manualCodePanel) manualCodePanel.hidden = true;
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.BarcodeDetector) { status.textContent = "Este navegador no permite abrir el lector. Introduce el código de la entrada manualmente."; return; }
         status.textContent = "Preparando cámara...";
         status.className = "ticket-status is-ready";
@@ -1055,7 +1049,7 @@
         status.textContent = "Movimiento cancelado. No se ha modificado la entrada.";
         status.className = "ticket-status";
         form.code.value = "";
-        form.code.focus();
+        if (manualCodePanel && !manualCodePanel.hidden) form.code.focus();
         if (resumeCamera) { resumeCamera = false; startCamera(); }
       }
       function scanNext() {
@@ -1064,23 +1058,26 @@
         status.textContent = "Escáner listo para la siguiente entrada.";
         status.className = "ticket-status is-success";
         form.code.value = "";
-        form.code.focus();
+        if (manualCodePanel && !manualCodePanel.hidden) form.code.focus();
         if (resumeCamera) { resumeCamera = false; startCamera(); }
       }
       request(api + "/admin/events").then(function (data) {
         form.event_id.innerHTML = '<option value="">Selecciona evento</option>' + data.events.map(function (event) { return '<option value="' + Number(event.id) + '">' + escapeHtml(event.title) + '</option>'; }).join("");
-        var storedMode = window.localStorage.getItem("perigallo-access-mode");
-        if (storedMode && form.access_mode) setMode(storedMode); else setMode(form.access_mode ? form.access_mode.value : "automatic");
+        setMode();
+        var selectedEvent = Number(q("event") || 0);
+        if (selectedEvent && Array.prototype.some.call(form.event_id.options, function (option) { return Number(option.value) === selectedEvent; })) {
+          form.event_id.value = String(selectedEvent);
+          updateEventTitle();
+          loadAttendees();
+        }
         var ticket = q("ticket");
-        if (ticket) form.code.value = ticket;
+        if (ticket) { if (manualCodePanel) manualCodePanel.hidden = false; form.code.value = ticket; }
       });
       form.event_id.addEventListener("change", function () { clearProposal(); updateEventTitle(); loadAttendees(); });
-      if (form.access_mode) form.access_mode.addEventListener("change", function () { setMode(form.access_mode.value); });
       form.addEventListener("submit", function (event) { event.preventDefault(); inspect(form.code.value.trim(), "manual"); });
       form.querySelector("[data-open-camera]").addEventListener("click", startCamera);
-      form.querySelectorAll("[data-access-mode]").forEach(function (button) { button.addEventListener("click", function () { setMode(button.dataset.accessMode); }); });
       var manualButton = form.querySelector("[data-open-manual]");
-      if (manualButton) manualButton.addEventListener("click", function () { stopCamera(); form.code.focus(); status.textContent = "Introduce el código de la entrada y pulsa Comprobar entrada."; status.className = "ticket-status is-ready"; });
+      if (manualButton) manualButton.addEventListener("click", function () { stopCamera(); if (manualCodePanel) manualCodePanel.hidden = false; form.code.focus(); status.textContent = "Introduce el código de la entrada y pulsa Comprobar código."; status.className = "ticket-status is-ready"; });
       form.querySelector("[data-close-camera]").addEventListener("click", function () { resumeCamera = false; stopCamera(); releaseWakeLock(); });
       if (flashButton) flashButton.addEventListener("click", toggleFlash);
       if (switchCameraButton) switchCameraButton.addEventListener("click", switchCamera);
