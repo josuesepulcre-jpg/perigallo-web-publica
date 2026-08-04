@@ -17,8 +17,8 @@ La validez administrativa permanece en `tickets.status` (`issued`, `cancelled`, 
 1. Abrir `https://perigallo.com/check-in/` desde un móvil con HTTPS.
 2. Iniciar sesión con un usuario `control_acceso` o `admin`.
 3. Elegir evento y modo: **Automático**, **Solo entradas** o **Solo salidas**.
-4. Escanear el QR. El escáner solo propone la operación.
-5. Confirmar el movimiento mostrado. Para salida y reentrada se pide confirmación explícita.
+4. Escanear el QR. `POST /api/admin/tickets/access-preview` solo consulta la entrada y abre una confirmación; no crea movimientos ni modifica contadores.
+5. Confirmar el movimiento mostrado. Solo `POST /api/admin/tickets/access-movement` registra la operación. Para primera entrada, salida y reentrada se exige el mismo gesto de confirmación.
 6. Consultar las listas de Sin acceder, Dentro, Fuera e Historial desde la misma pantalla.
 
 No se guardan movimientos sin conexión. Si dos dispositivos intentan operar sobre el mismo QR a la vez, la actualización condicional del servidor permite que solo uno complete el cambio; el otro debe volver a consultar la entrada.

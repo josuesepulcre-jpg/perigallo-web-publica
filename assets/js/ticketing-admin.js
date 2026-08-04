@@ -813,7 +813,8 @@
     requireSession(function () {
       var wrap = document.querySelector("[data-ticket-scan-wrap]");
       var status = form.querySelector("[data-scan-status]");
-      var decision = form.querySelector("[data-scan-decision]");
+      var modal = document.querySelector("[data-access-modal]");
+      var modalContent = document.querySelector("[data-access-modal-content]");
       var connection = form.querySelector("[data-connection-status]");
       var cameraWrap = form.querySelector("[data-ticket-camera-wrap]");
       var video = form.querySelector("[data-ticket-camera]");
@@ -822,6 +823,7 @@
       var scanning = false;
       var locked = false;
       var proposal = null;
+      var resumeCamera = false;
       if (wrap) wrap.hidden = false;
 
       function updateConnection() {
@@ -847,7 +849,8 @@
       }
       function clearProposal() {
         proposal = null;
-        if (decision) decision.innerHTML = "";
+        if (modalContent) modalContent.innerHTML = "";
+        if (modal) modal.hidden = true;
       }
       function stopCamera() {
         scanning = false;
@@ -888,16 +891,22 @@
       }
       function renderProposal(data, value) {
         if (!data.ticket || !data.action) {
-          clearProposal();
           status.textContent = data.message || "No se puede registrar ningún movimiento.";
           status.className = "ticket-status is-error";
+          if (modalContent && modal) {
+            modalContent.innerHTML = '<section class="ticket-access-decision is-error"><button class="ticket-access-modal-close" type="button" data-cancel-access aria-label="Cerrar">×</button><span class="ticket-eyebrow">Acceso no autorizado</span><h2 id="access-modal-title">No se puede continuar</h2><p>' + escapeHtml(data.message || "No se puede registrar ningún movimiento.") + '</p><div class="ticket-actions"><button class="ticket-btn" type="button" data-cancel-access>Cerrar</button></div></section>';
+            modal.hidden = false;
+          }
           if (navigator.vibrate) navigator.vibrate([80, 60, 80]);
           return;
         }
         proposal = { value: value, action: data.action, ticket: data.ticket, method: data.method || "qr" };
         status.textContent = "Entrada identificada. Revisa y confirma el movimiento.";
         status.className = "ticket-status is-ready";
-        decision.innerHTML = '<section class="ticket-access-decision is-' + escapeHtml(data.action) + '"><span class="ticket-eyebrow">Movimiento propuesto</span><h2>' + escapeHtml(actionLabel(data.action).replace("Confirmar ", "")) + '</h2><p><strong>' + escapeHtml(data.ticket.attendee_name) + '</strong> · ' + escapeHtml(data.ticket.ticket_type_name) + '</p><p>' + escapeHtml(actionDetail(data.action)) + '</p><div class="ticket-access-decision-meta"><span>' + escapeHtml(accessStatus(data.ticket.access_status)) + '</span><span>' + Number(data.ticket.entry_count || 0) + ' entradas · ' + Number(data.ticket.exit_count || 0) + ' salidas</span></div><div class="ticket-actions"><button class="ticket-btn primary" type="button" data-confirm-access>' + escapeHtml(actionLabel(data.action)) + '</button><button class="ticket-btn" type="button" data-cancel-access>Cancelar</button></div></section>';
+        var heading = ({ entry: "Confirmar entrada", exit: "Confirmar salida", reentry: "Confirmar reentrada" })[data.action] || "Confirmar movimiento";
+        var button = ({ entry: "Validar entrada", exit: "Registrar salida", reentry: "Validar reentrada" })[data.action] || actionLabel(data.action);
+        modalContent.innerHTML = '<section class="ticket-access-decision is-' + escapeHtml(data.action) + '"><button class="ticket-access-modal-close" type="button" data-cancel-access aria-label="Cancelar">×</button><span class="ticket-eyebrow">' + escapeHtml(heading) + '</span><h2 id="access-modal-title" class="ticket-holder-name">' + escapeHtml(data.ticket.attendee_name) + '</h2><p>' + escapeHtml(actionDetail(data.action)) + '</p><div class="ticket-access-ticket-data"><strong>' + escapeHtml(data.ticket.ticket_type_name) + '</strong><span>Código de entrada: ' + escapeHtml(data.ticket.public_code) + '</span><span>Pedido: ' + escapeHtml(data.ticket.order_reference || "No disponible") + '</span><span>Estado actual: ' + escapeHtml(accessStatus(data.ticket.access_status)) + '</span>' + (data.ticket.last_entry_at ? '<span>Última entrada: ' + escapeHtml(dateText(data.ticket.last_entry_at)) + '</span>' : '') + (data.ticket.last_exit_at ? '<span>Última salida: ' + escapeHtml(dateText(data.ticket.last_exit_at)) + '</span>' : '') + (data.ticket.last_access_by ? '<span>Registrado por: ' + escapeHtml(data.ticket.last_access_by) + '</span>' : '') + '</div><div class="ticket-access-decision-meta"><span>' + Number(data.ticket.entry_count || 0) + ' entradas</span><span>' + Number(data.ticket.exit_count || 0) + ' salidas</span></div><div class="ticket-actions"><button class="ticket-btn primary" type="button" data-confirm-access>' + escapeHtml(button) + '</button><button class="ticket-btn" type="button" data-cancel-access>Cancelar</button></div></section>';
+        modal.hidden = false;
         if (navigator.vibrate) navigator.vibrate(60);
       }
       function inspect(value, method) {
@@ -905,9 +914,9 @@
         if (!navigator.onLine) { status.textContent = "No hay conexión. Por seguridad no se ha registrado ningún acceso."; status.className = "ticket-status is-error"; return; }
         locked = true;
         clearProposal();
-        status.textContent = "Comprobando entrada...";
+        status.textContent = "Consultando entrada...";
         status.className = "ticket-status";
-        jsonRequest(api + "/admin/tickets/scan", "POST", {
+        jsonRequest(api + "/admin/tickets/access-preview", "POST", {
           event_id: Number(form.event_id.value || 0),
           code: value,
           mode: form.access_mode ? form.access_mode.value : "automatic",
@@ -925,28 +934,58 @@
       function confirmProposal() {
         if (!proposal || locked) return;
         if (!navigator.onLine) { status.textContent = "No hay conexión. El movimiento no se ha registrado."; status.className = "ticket-status is-error"; return; }
-        if ((proposal.action === "exit" || proposal.action === "reentry") && !window.confirm(proposal.action === "exit" ? "¿Confirmar que esta persona sale del recinto?" : "¿Autorizar la reentrada de esta persona?")) return;
         locked = true;
-        status.textContent = "Registrando movimiento...";
+        status.textContent = proposal.action === "entry" ? "Validando acceso..." : "Registrando movimiento...";
         status.className = "ticket-status";
+        if (modalContent) modalContent.querySelectorAll("button").forEach(function (button) { button.disabled = true; });
         jsonRequest(api + "/admin/tickets/access-movement", "POST", {
           event_id: Number(form.event_id.value || 0), token: proposal.value, action: proposal.action,
           method: proposal.method, device_reference: navigator.userAgent.slice(0, 190), access_point: form.access_point ? form.access_point.value.trim() : "",
         }).then(function (data) {
+          var ticket = data.ticket || proposal.ticket;
           status.textContent = data.message || "Movimiento registrado.";
           status.className = "ticket-status is-success";
-          clearProposal();
+          proposal = null;
+          if (modalContent && modal) {
+            modalContent.innerHTML = '<section class="ticket-access-decision is-success"><span class="ticket-eyebrow">' + escapeHtml(data.action === "entry" ? "Acceso validado" : data.action === "exit" ? "Salida registrada" : "Reentrada validada") + '</span><h2 id="access-modal-title" class="ticket-holder-name">' + escapeHtml(ticket.attendee_name) + '</h2><p><strong>' + escapeHtml(ticket.ticket_type_name) + '</strong></p><div class="ticket-access-ticket-data"><span>Código de entrada: ' + escapeHtml(ticket.public_code) + '</span><span>Estado actual: ' + escapeHtml(accessStatus(ticket.access_status)) + '</span><span>Hora: ' + escapeHtml(dateText(data.action === "exit" ? ticket.last_exit_at : ticket.last_entry_at)) + '</span></div><div class="ticket-actions"><button class="ticket-btn primary" type="button" data-scan-next>Escanear siguiente</button></div></section>';
+            modal.hidden = false;
+          }
           if (navigator.vibrate) navigator.vibrate([80, 45, 120]);
           loadAttendees();
-          form.code.focus();
-        }).catch(function (error) { status.textContent = error.message; status.className = "ticket-status is-error"; }).finally(function () { locked = false; });
+        }).catch(function (error) { status.textContent = error.message; status.className = "ticket-status is-error"; if (modalContent) { var errorTarget = modalContent.querySelector(".ticket-access-decision p"); if (errorTarget) errorTarget.textContent = error.message; modalContent.querySelectorAll("button").forEach(function (button) { button.disabled = false; }); } }).finally(function () { locked = false; });
       }
       function scanFrame(detector) {
         if (!scanning || !video || locked) { if (scanning) window.requestAnimationFrame(function () { scanFrame(detector); }); return; }
         detector.detect(video).then(function (codes) {
-          if (codes.length && codes[0].rawValue) { form.code.value = codes[0].rawValue; stopCamera(); inspect(codes[0].rawValue, "qr"); return; }
+          if (codes.length && codes[0].rawValue) { form.code.value = codes[0].rawValue; resumeCamera = true; stopCamera(); inspect(codes[0].rawValue, "qr"); return; }
           window.requestAnimationFrame(function () { scanFrame(detector); });
         }).catch(function () { window.requestAnimationFrame(function () { scanFrame(detector); }); });
+      }
+      function startCamera() {
+        if (!form.event_id.value) { status.textContent = "Selecciona primero la experiencia."; return; }
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.BarcodeDetector) { status.textContent = "Este navegador no permite abrir el lector. Introduce el código de la entrada manualmente."; return; }
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false }).then(function (media) {
+          stream = media; video.srcObject = media; cameraWrap.hidden = false; scanning = true;
+          return video.play();
+        }).then(function () { scanFrame(new window.BarcodeDetector({ formats: ["qr_code"] })); }).catch(function () { status.textContent = "No se pudo abrir la cámara. Revisa los permisos y vuelve a intentarlo."; stopCamera(); });
+      }
+      function cancelProposal() {
+        if (locked) return;
+        clearProposal();
+        status.textContent = "Movimiento cancelado. No se ha modificado la entrada.";
+        status.className = "ticket-status";
+        form.code.value = "";
+        form.code.focus();
+        if (resumeCamera) { resumeCamera = false; startCamera(); }
+      }
+      function scanNext() {
+        if (locked) return;
+        clearProposal();
+        status.textContent = "Escáner listo para la siguiente entrada.";
+        status.className = "ticket-status is-success";
+        form.code.value = "";
+        form.code.focus();
+        if (resumeCamera) { resumeCamera = false; startCamera(); }
       }
       request(api + "/admin/events").then(function (data) {
         form.event_id.innerHTML = '<option value="">Selecciona evento</option>' + data.events.map(function (event) { return '<option value="' + Number(event.id) + '">' + escapeHtml(event.title) + '</option>'; }).join("");
@@ -958,19 +997,15 @@
       form.event_id.addEventListener("change", function () { clearProposal(); loadAttendees(); });
       if (form.access_mode) form.access_mode.addEventListener("change", function () { window.localStorage.setItem("perigallo-access-mode", form.access_mode.value); clearProposal(); });
       form.addEventListener("submit", function (event) { event.preventDefault(); inspect(form.code.value.trim(), "manual"); });
-      form.querySelector("[data-open-camera]").addEventListener("click", function () {
-        if (!form.event_id.value) { status.textContent = "Selecciona primero la experiencia."; return; }
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.BarcodeDetector) { status.textContent = "Este navegador no permite abrir el lector. Introduce el código de la entrada manualmente."; return; }
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false }).then(function (media) {
-          stream = media; video.srcObject = media; cameraWrap.hidden = false; scanning = true;
-          return video.play();
-        }).then(function () { scanFrame(new window.BarcodeDetector({ formats: ["qr_code"] })); }).catch(function () { status.textContent = "No se pudo abrir la cámara. Revisa los permisos y vuelve a intentarlo."; stopCamera(); });
-      });
-      form.querySelector("[data-close-camera]").addEventListener("click", stopCamera);
-      if (decision) decision.addEventListener("click", function (event) {
+      form.querySelector("[data-open-camera]").addEventListener("click", startCamera);
+      form.querySelector("[data-close-camera]").addEventListener("click", function () { resumeCamera = false; stopCamera(); });
+      if (modal) modal.addEventListener("click", function (event) {
+        if (event.target === modal) { if (proposal) cancelProposal(); else scanNext(); return; }
+        if (event.target.closest("[data-cancel-access]")) { cancelProposal(); return; }
         if (event.target.closest("[data-confirm-access]")) { confirmProposal(); return; }
-        if (event.target.closest("[data-cancel-access]")) { clearProposal(); status.textContent = "Movimiento cancelado. No se ha modificado la entrada."; status.className = "ticket-status"; form.code.focus(); }
+        if (event.target.closest("[data-scan-next]")) { scanNext(); }
       });
+      document.addEventListener("keydown", function (event) { if (event.key === "Escape" && modal && !modal.hidden) { if (proposal) cancelProposal(); else scanNext(); } });
       if (attendeesRoot) attendeesRoot.addEventListener("click", function (event) {
         var propose = event.target.closest("[data-propose-ticket]");
         if (propose) { form.code.value = propose.dataset.proposeTicket; inspect(propose.dataset.proposeTicket, "manual"); return; }

@@ -1087,12 +1087,11 @@ final class Ticketing
         ];
     }
 
-    public function scanTicket(array $data): array
+    public function previewTicketAccess(array $data): array
     {
         require_fields($data, ['event_id']);
         $eventId = (int) $data['event_id'];
         $scannedValue = clean_string((string) ($data['token'] ?? $data['code'] ?? ''), 512);
-        $device = clean_string((string) ($data['device_reference'] ?? ''), 190);
         if ($eventId < 1 || $scannedValue === '') {
             throw new InvalidArgumentException('Selecciona un evento e introduce o escanea una entrada.');
         }
@@ -1100,7 +1099,6 @@ final class Ticketing
         $ticket = $this->findTicketForAccess($scannedValue);
         $mode = in_array((string) ($data['mode'] ?? 'automatic'), ['entry', 'exit', 'automatic'], true) ? (string) $data['mode'] : 'automatic';
         $result = $this->accessPreview($ticket, $event, $eventId, $mode);
-        $this->recordScanAttempt($ticket, $eventId, $scannedValue, $result['audit_result'], $device, $data, $this->extractQrToken($scannedValue) !== null);
         return [
             'result' => $result['result'],
             'action' => $result['action'],
@@ -1108,6 +1106,13 @@ final class Ticketing
             'mode' => $mode,
             'ticket' => $ticket ? $this->ticketAccessPayload($ticket) : null,
         ];
+    }
+
+    // Compatibilidad con instalaciones que llamaban al endpoint histórico de escaneo.
+    // La operación ahora es una consulta estrictamente de solo lectura.
+    public function scanTicket(array $data): array
+    {
+        return $this->previewTicketAccess($data);
     }
 
     public function registerAccessMovement(array $data): array
@@ -1261,7 +1266,7 @@ final class Ticketing
     {
         $qrToken = $this->extractQrToken($scannedValue);
         $stmt = $this->pdo->prepare(
-            'SELECT t.*, o.name AS attendee_name, toi.ticket_type_name
+            'SELECT t.*, o.name AS attendee_name, COALESCE(o.test_reference, o.redsys_order) AS order_reference, toi.ticket_type_name
              FROM tickets t
              JOIN ticket_order_items toi ON toi.id = t.order_item_id
              JOIN ticket_orders o ON o.id = toi.order_id
@@ -1283,13 +1288,6 @@ final class Ticketing
         $action = $presence === 'not_entered' ? 'entry' : ($presence === 'inside' ? 'exit' : 'reentry');
         if ($action === 'reentry' && empty($event['allow_reentry'])) return ['result' => 'reentry_not_allowed', 'action' => null, 'message' => 'La reentrada no está permitida para este evento.', 'audit_result' => 'reentrada_no_permitida'];
         return ['result' => 'ready', 'action' => $action, 'message' => $this->accessMovementPrompt($action), 'audit_result' => $presence === 'inside' ? 'dentro' : ($presence === 'outside' ? 'fuera' : 'sin_acceder')];
-    }
-
-    private function recordScanAttempt(?array $ticket, int $eventId, string $scannedValue, string $result, string $device, array $data, bool $isQr): void
-    {
-        $storedCode = $ticket['public_code'] ?? ('token:' . substr(hash('sha256', $scannedValue), 0, 24));
-        $this->pdo->prepare('INSERT INTO ticket_scans (ticket_id, event_id, scanned_code, result, scanned_by, ip_address, device_reference, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())')
-            ->execute([$ticket['id'] ?? null, $eventId, $storedCode, $result, AdminAuth::operatorName(), client_ip(), $device ?: null, json_encode(['source' => $isQr ? 'qr' : 'manual', 'access_point' => clean_string((string) ($data['access_point'] ?? ''), 120) ?: null], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)]);
     }
 
     private function insertAccessMovement(int $ticketId, int $eventId, string $action, string $previous, string $next, string $method, string $device, string $notes, ?int $reversalOfId = null): void
@@ -1320,7 +1318,7 @@ final class Ticketing
 
     private function ticketAccessPayload(array $ticket): array
     {
-        return ['public_code' => $ticket['public_code'], 'status' => $ticket['status'], 'access_status' => $ticket['access_status'] ?? 'not_entered', 'first_entry_at' => $ticket['first_entry_at'] ?? null, 'last_entry_at' => $ticket['last_entry_at'] ?? null, 'last_exit_at' => $ticket['last_exit_at'] ?? null, 'entry_count' => (int) ($ticket['entry_count'] ?? 0), 'exit_count' => (int) ($ticket['exit_count'] ?? 0), 'last_access_by' => $ticket['last_access_by'] ?? null, 'attendee_name' => $ticket['attendee_name'], 'ticket_type_name' => $ticket['ticket_type_name']];
+        return ['id' => (int) $ticket['id'], 'public_code' => $ticket['public_code'], 'status' => $ticket['status'], 'access_status' => $ticket['access_status'] ?? 'not_entered', 'first_entry_at' => $ticket['first_entry_at'] ?? null, 'last_entry_at' => $ticket['last_entry_at'] ?? null, 'last_exit_at' => $ticket['last_exit_at'] ?? null, 'entry_count' => (int) ($ticket['entry_count'] ?? 0), 'exit_count' => (int) ($ticket['exit_count'] ?? 0), 'last_access_by' => $ticket['last_access_by'] ?? null, 'attendee_name' => $ticket['attendee_name'], 'ticket_type_name' => $ticket['ticket_type_name'], 'order_reference' => $ticket['order_reference'] ?? null];
     }
 
     private function administrativeAccessMessage(string $status): string

@@ -202,16 +202,16 @@ for (const marker of ["ticket_access_movements", "access_status", "allow_reentry
 for (const marker of ["ticketQrUrl", "encryptQrToken", "extractQrToken", "adminEventAttendees", "reverseTicketCheckIn", "registerAccessMovement", "ticket_access_movements", "resendOrderEmail"]) {
   if (!(api + ticketing).includes(marker)) throw new Error(`Missing secure delivery contract: ${marker}`);
 }
-for (const marker of ["/admin/tickets/access-movement", "requireAccessCsrf"]) {
+for (const marker of ["/admin/tickets/access-preview", "/admin/tickets/access-movement", "requireAccessCsrf"]) {
   if (!api.includes(marker)) throw new Error(`Missing access movement endpoint contract: ${marker}`);
 }
 for (const file of ["check-in/index.html", "admin/entradas/acceso/index.html"]) {
   const page = readFileSync(join(root, file), "utf8");
-  for (const marker of ["name=\"access_mode\"", "data-scan-decision", "data-connection-status"]) {
+  for (const marker of ["name=\"access_mode\"", "data-access-modal", "data-connection-status"]) {
     if (!page.includes(marker)) throw new Error(`Missing access scanner UI marker ${marker} in ${file}`);
   }
 }
-for (const marker of ["access-movement", "Confirmar primera entrada", "ticket-access-decision", "perigallo-access-mode"]) {
+for (const marker of ["access-preview", "Validar entrada", "ticket-access-modal", "perigallo-access-mode"]) {
   if (!adminJs.includes(marker)) throw new Error(`Missing access scanner behavior: ${marker}`);
 }
 const adminAuth = readFileSync(join(root, "api/src/AdminAuth.php"), "utf8");

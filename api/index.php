@@ -304,6 +304,12 @@ try {
         return;
     }
 
+    if ($method === 'POST' && $path === '/admin/tickets/access-preview') {
+        AdminAuth::requireAccessCsrf();
+        json_response(['ok' => true] + $ticketing->previewTicketAccess(read_json_body()));
+        return;
+    }
+
     if ($method === 'POST' && $path === '/admin/tickets/access-movement') {
         AdminAuth::requireAccessCsrf();
         json_response(['ok' => true] + $ticketing->registerAccessMovement(read_json_body()));
