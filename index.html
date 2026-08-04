@@ -3,17 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Perigallo | Gastronomía pop-up y celebraciones en Alicante</title>
-<meta name="description" content="Perigallo diseña gastronomía pop-up, bodas y celebraciones privadas en Alicante con cocina, servicio y puesta en escena cuidados.">
+<title>Perigallo | Bodas, celebraciones y experiencias gastronómicas en Alicante</title>
+<meta name="description" content="Perigallo diseña experiencias gastronómicas para bodas, celebraciones privadas y eventos pop-up en Alicante y Finca La Llaguna.">
 <link rel="canonical" href="https://perigallo.com/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preload" as="image" href="/assets/images/perigallo-hero-original-01.jpg">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Perigallo | Gastronomía pop-up y celebraciones en Alicante">
-<meta property="og:description" content="Experiencias gastronómicas singulares: pop-ups, bodas y celebraciones privadas con una mirada mediterránea, editorial y contemporánea.">
+<meta property="og:title" content="Perigallo | Bodas, celebraciones y experiencias gastronómicas en Alicante">
+<meta property="og:description" content="Cocina, servicio y puesta en escena para bodas, celebraciones y experiencias pop-up.">
 <meta property="og:image" content="https://perigallo.com/assets/images/perigallo-hero-original-01.jpg">
 <meta property="og:url" content="https://perigallo.com/">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Perigallo | Gastronomía pop-up y celebraciones en Alicante">
-<meta name="twitter:description" content="Experiencias gastronómicas singulares: pop-ups, bodas y celebraciones privadas con una mirada mediterránea.">
+<meta name="twitter:title" content="Perigallo | Bodas, celebraciones y experiencias gastronómicas en Alicante">
+<meta name="twitter:description" content="Cocina, servicio y puesta en escena para bodas, celebraciones y experiencias pop-up.">
 <meta name="twitter:image" content="https://perigallo.com/assets/images/perigallo-hero-original-01.jpg">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Montserrat:wght@200;300;400;500&family=Dancing+Script:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -32,7 +34,7 @@
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--cream);font-family:'Montserrat',sans-serif;font-weight:300;overflow-x:hidden;cursor:none}
+body{background:var(--bg);color:var(--cream);font-family:'Montserrat',sans-serif;font-weight:300;overflow-x:hidden}
 
 /* CURSOR */
 .cursor{width:7px;height:7px;background:var(--gold);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:transform .1s}
@@ -65,7 +67,7 @@ nav.scrolled .nav-logo-img{width:46px;height:46px}
 .hero-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(39,66,73,.55) 0%,rgba(39,66,73,.25) 35%,rgba(39,66,73,.65) 75%,rgba(30,51,56,.95) 100%)}
 .hero-content{position:relative;z-index:2;text-align:center;max-width:920px;padding:0 40px}
 .hero-eyebrow{font-size:.6rem;letter-spacing:.4em;text-transform:uppercase;color:var(--gold);margin-bottom:28px;opacity:1;animation:heroSettle .9s ease .12s both;display:block}
-.hero-title{font-family:'Cormorant Garamond',serif;font-size:clamp(4rem,11vw,9rem);font-weight:300;line-height:.9;letter-spacing:-.025em;margin-bottom:30px;opacity:1;animation:heroSettle 1s ease .18s both}
+.hero-title{font-family:'Cormorant Garamond',serif;font-size:clamp(3.2rem,6.5vw,6.5rem);font-weight:300;line-height:.94;letter-spacing:-.025em;margin-bottom:22px;opacity:1;animation:heroSettle 1s ease .18s both}
 .hero-title em{font-style:italic;color:var(--gold-l)}
 .hero-tagline{font-family:'Cormorant Garamond',serif;font-size:clamp(1.2rem,2vw,1.7rem);font-style:italic;font-weight:300;color:var(--muted-2);margin-bottom:18px;opacity:1;animation:heroSettle 1s ease .24s both;display:block}
 .hero-subtitle{font-size:.85rem;line-height:1.85;color:var(--muted);margin-bottom:48px;opacity:1;animation:heroSettle 1s ease .3s both;display:block;max-width:560px;margin-left:auto;margin-right:auto;font-weight:300}
@@ -77,17 +79,17 @@ nav.scrolled .nav-logo-img{width:46px;height:46px}
 .hero-path span{font-size:.56rem;line-height:1.55;letter-spacing:.12em;text-transform:uppercase;color:rgba(245,241,229,.62)}
 .hero-path:hover{background:rgba(205,177,151,.12);color:var(--gold-l)}
 .hero-path:focus-visible{outline:1px solid var(--gold);outline-offset:4px}
-.btn-primary{font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:var(--bg2);background:var(--gold);text-decoration:none;padding:15px 36px;transition:all .35s;display:inline-block;border:none;cursor:none;font-family:inherit;font-weight:500}
+.btn-primary{font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:var(--bg2);background:var(--gold);text-decoration:none;padding:15px 36px;transition:all .35s;display:inline-block;border:none;cursor:pointer;font-family:inherit;font-weight:500}
 .btn-primary:hover{background:var(--gold-l)}
 .btn-primary:disabled{opacity:.55;cursor:not-allowed;filter:saturate(.8)}
-.btn-ghost{font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:var(--cream);text-decoration:none;padding:15px 36px;border:1px solid rgba(245,241,229,.28);transition:all .35s;display:inline-block;background:transparent;cursor:none;font-family:inherit}
+.btn-ghost{font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:var(--cream);text-decoration:none;padding:15px 36px;border:1px solid rgba(245,241,229,.28);transition:all .35s;display:inline-block;background:transparent;cursor:pointer;font-family:inherit}
 .btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
 .btn-primary:focus-visible,.btn-ghost:focus-visible,.form-input:focus-visible,.form-select:focus-visible,.form-textarea:focus-visible{outline:1px solid var(--gold);outline-offset:4px}
 .scroll-indicator{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);z-index:2;display:flex;flex-direction:column;align-items:center;gap:10px;opacity:0;animation:fadeUp 1s ease 2.3s forwards}
 .scroll-indicator span{font-size:.56rem;letter-spacing:.32em;text-transform:uppercase;color:var(--muted)}
 .scroll-line{width:1px;height:42px;background:linear-gradient(to bottom,var(--gold),transparent);animation:scrollPulse 2s ease-in-out infinite}
 .hero-dots{position:absolute;right:34px;top:50%;transform:translateY(-50%);z-index:3;display:flex;flex-direction:column;gap:10px}
-.hero-dot{width:5px;height:5px;border-radius:50%;background:rgba(205,177,151,.3);cursor:none;transition:all .3s;border:none;padding:0}
+.hero-dot{width:5px;height:5px;border-radius:50%;background:rgba(205,177,151,.3);cursor:pointer;transition:all .3s;border:none;padding:0}
 .hero-dot.active{background:var(--gold);transform:scale(1.6)}
 
 /* REVEAL */
@@ -113,7 +115,7 @@ section{position:relative}
 /* QUÉ HACEMOS */
 .services{padding:120px 0;background:var(--bg2)}
 .services-header{text-align:center;max-width:680px;margin:0 auto 80px;padding:0 40px}
-.services-grid{display:grid;grid-template-columns:repeat(2,1fr);max-width:1200px;margin:0 auto;padding:0 60px;gap:1px}
+.services-grid{display:grid;grid-template-columns:repeat(3,1fr);max-width:1200px;margin:0 auto;padding:0 60px;gap:1px}
 .service-card{position:relative;padding:64px 56px;background:var(--bg);overflow:hidden;transition:background .4s;display:flex;flex-direction:column;min-height:340px}
 .service-card:hover{background:var(--bg3)}
 .service-card::after{content:'';position:absolute;bottom:0;left:0;width:0;height:1px;background:var(--gold);transition:width .6s}
@@ -225,7 +227,7 @@ section{position:relative}
 .form-row-full{grid-column:span 2}
 .form-field{position:relative}
 .form-label{font-size:.55rem;letter-spacing:.26em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:8px}
-.form-input,.form-select,.form-textarea{width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:1rem;padding:8px 0;transition:border-color .3s;font-weight:300;cursor:none}
+.form-input,.form-select,.form-textarea{width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:1rem;padding:8px 0;transition:border-color .3s;font-weight:300}
 .form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-bottom-color:var(--gold)}
 .form-textarea{resize:vertical;min-height:80px;font-family:'Cormorant Garamond',serif}
 .form-select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--gold) 50%),linear-gradient(135deg,var(--gold) 50%,transparent 50%);background-position:calc(100% - 12px) 18px,calc(100% - 6px) 18px;background-size:6px 6px,6px 6px;background-repeat:no-repeat;padding-right:24px}
@@ -320,7 +322,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 .booking-frame-placeholder .btn-ghost:hover{color:#8E7653;border-color:#8E7653}
 .booking-frame-note{margin-top:20px;font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:#8E7653}
 .booking-fallback{padding:20px 34px;border-top:1px solid rgba(205,177,151,.16);display:flex;justify-content:space-between;gap:18px;align-items:center;background:rgba(13,26,30,.5);color:rgba(245,241,229,.66);font-size:.68rem;line-height:1.7;position:relative;z-index:1}
-.booking-fallback button,.booking-fallback a{font-family:'Montserrat',sans-serif;font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);text-decoration:none;font-weight:500;background:transparent;border:0;padding:0;cursor:none}
+.booking-fallback button,.booking-fallback a{font-family:'Montserrat',sans-serif;font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);text-decoration:none;font-weight:500;background:transparent;border:0;padding:0;cursor:pointer}
 .booking-fallback button:hover,.booking-fallback a:hover{color:var(--gold-l)}
 .booking-fallback a:focus-visible{outline:1px solid var(--gold);outline-offset:4px}
 
@@ -407,6 +409,9 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
   .footer-bottom{flex-direction:column;text-align:center}
 }
 </style>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"Perigallo","url":"https://perigallo.com/","logo":"https://perigallo.com/assets/images/perigallo-logo-original.png"},{"@type":"WebSite","name":"Perigallo","url":"https://perigallo.com/"}]}
+</script>
 </head>
 <body>
 <div class="cursor" id="cursor"></div>
@@ -414,24 +419,25 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 
 <nav id="navbar">
   <ul class="nav-links-left">
-    <li><a href="#popup">Pop-ups</a></li>
-    <li><a href="#celebrate">Celebraciones</a></li>
+    <li><a href="/bodas-alicante/">Bodas</a></li>
+    <li><a href="/celebraciones-familiares-alicante/">Celebraciones</a></li>
   </ul>
   <a href="#hero" class="nav-logo">
     <img class="nav-logo-img" src="assets/images/perigallo-logo-original.png" alt="Perigallo">
   </a>
   <ul class="nav-links-right">
-    <li><a href="#finca">La Finca</a></li>
-    <li><a href="#contact">Contacto</a></li>
+    <li><a href="/experiencias/">Experiencias</a></li>
+    <li><a href="/finca-la-llaguna/">La Finca</a></li>
+    <li><a href="/contacto/">Contacto</a></li>
   </ul>
 </nav>
 
 <div class="mobile-quick-nav" aria-label="Navegación rápida">
-  <a href="#reservas">Reservar</a>
-  <a href="#popup">Pop-ups</a>
-  <a href="#celebrate">Celebraciones</a>
-  <a href="#finca">Finca</a>
-  <a href="#contact">Contacto</a>
+  <a href="/solicitud-evento/">Propuesta</a>
+  <a href="/experiencias/">Experiencias</a>
+  <a href="/bodas-alicante/">Bodas</a>
+  <a href="/finca-la-llaguna/">Finca</a>
+  <a href="/contacto/">Contacto</a>
 </div>
 
 <!-- HERO -->
@@ -443,13 +449,13 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
   </div>
   <div class="hero-overlay"></div>
   <div class="hero-content">
-    <span class="hero-eyebrow">Experiencias gastronómicas · Alicante</span>
-    <h1 class="hero-title">Perigallo</h1>
-    <span class="hero-subtitle">Gastronomía pop-up, bodas y celebraciones privadas en Alicante. Reserva una experiencia efímera o cuéntanos qué quieres celebrar.</span>
+    <span class="hero-eyebrow">Para celebrar lo irrepetible · Alicante</span>
+    <h1 class="hero-title">Experiencias gastronómicas para <em>bodas, celebraciones y eventos pop-up</em></h1>
+    <span class="hero-subtitle">Diseñamos la cocina, el servicio y la puesta en escena de cada celebración para convertirla en una experiencia irrepetible.</span>
     <div class="hero-divider"></div>
     <div class="hero-actions">
-      <a href="#reservas" class="btn-primary">Reservar pop-up</a>
-      <a href="https://suite.perigallo.com/solicitud?origen=web-perigallo" target="_blank" rel="noopener noreferrer" class="btn-ghost">Solicitar evento</a>
+      <a href="/solicitud-evento/" class="btn-primary">Quiero celebrar una boda o evento</a>
+      <a href="/experiencias/" class="btn-ghost">Quiero vivir una experiencia Perigallo</a>
     </div>
   </div>
   <div class="hero-dots">
@@ -476,20 +482,26 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 <section class="services" id="services">
   <div class="services-header">
     <span class="section-eyebrow reveal">Elige tu camino</span>
-    <h2 class="section-title reveal reveal-delay-1">Dos entradas claras,<br>varias formas de vivir <em>Perigallo</em></h2>
+    <h2 class="section-title reveal reveal-delay-1">Formas de vivir <em>Perigallo</em></h2>
   </div>
   <div class="services-grid">
     <div class="service-card reveal">
       <span class="service-num">— 01</span>
-      <h3 class="service-name">Restaurante <em>pop-up</em></h3>
-      <p class="service-desc">Fechas concretas, menús especiales y experiencias gastronómicas abiertas al público. Una forma distinta de vivir la cocina de Perigallo.</p>
-      <a href="#reservas" class="service-link">Reservar pop-up</a>
+      <h3 class="service-name">Bodas <em>gastronómicas</em></h3>
+      <p class="service-desc">Gastronomía personalizada, producción y servicio para una boda que habla de vuestra historia y del lugar en el que queréis celebrar.</p>
+      <a href="/bodas-alicante/" class="service-link">Descubrir bodas Perigallo</a>
     </div>
     <div class="service-card reveal reveal-delay-1">
       <span class="service-num">— 02</span>
-      <h3 class="service-name">Celebraciones <em>privadas</em></h3>
-      <p class="service-desc">Bodas, comuniones, bautizos y eventos familiares con una propuesta gastronómica personalizada y un servicio cuidado.</p>
-      <a href="https://suite.perigallo.com/solicitud?origen=web-perigallo" target="_blank" rel="noopener noreferrer" class="service-link">Solicitar propuesta</a>
+      <h3 class="service-name">Celebraciones y <em>eventos</em></h3>
+      <p class="service-desc">Comuniones, bautizos, aniversarios, eventos privados y encuentros de empresa con una propuesta hecha para compartir.</p>
+      <a href="/celebraciones-familiares-alicante/" class="service-link">Ver celebraciones y eventos</a>
+    </div>
+    <div class="service-card reveal reveal-delay-2">
+      <span class="service-num">— 03</span>
+      <h3 class="service-name">Experiencias <em>pop-up</em></h3>
+      <p class="service-desc">Fechas concretas, menús especiales y experiencias gastronómicas abiertas al público. Una forma distinta de vivir la cocina de Perigallo.</p>
+      <a href="/experiencias/" class="service-link">Ver próximas experiencias</a>
     </div>
   </div>
 </section>
@@ -515,7 +527,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
       <p class="popup-desc">Nueva experiencia próximamente. Cada pop-up nace para una fecha concreta: un menú, una atmósfera y una forma distinta de vivir la cocina de Perigallo. Cuando abramos la próxima fecha, la reserva se confirmará directamente en Perigallo Reservas.</p>
       <div class="popup-actions">
         <div class="popup-price">Nueva fecha <small>por anunciar</small></div>
-        <a href="#reservas" class="btn-primary">Ver reservas</a>
+        <a href="/experiencias/" class="btn-primary">Ver próximas experiencias</a>
       </div>
     </div>
   </div>
@@ -634,7 +646,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
         <span class="celebrate-tag">Eventos familiares</span>
         <span class="celebrate-tag">Cenas privadas</span>
       </div>
-      <a href="https://suite.perigallo.com/solicitud?origen=web-perigallo" target="_blank" rel="noopener noreferrer" class="btn-primary reveal reveal-delay-4">Solicitar propuesta</a>
+      <a href="/solicitud-evento/" class="btn-primary reveal reveal-delay-4">Solicitar disponibilidad y propuesta</a>
     </div>
   </div>
 </section>
@@ -648,8 +660,8 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
       <blockquote class="finca-quote reveal reveal-delay-2">Finca La Llaguna es uno de los espacios donde Perigallo desarrolla parte de sus experiencias gastronómicas, pop-ups y celebraciones privadas.</blockquote>
       <p class="section-body reveal reveal-delay-3">Una finca mediterránea donde el entorno, la luz y el silencio se vuelven parte del menú. Allí celebramos bodas, eventos privados y abrimos el restaurante pop-up a quien quiera vivir la gastronomía de Perigallo en un escenario poco habitual.</p>
       <div style="display:flex;gap:18px;margin-top:36px;flex-wrap:wrap" class="reveal reveal-delay-4">
-        <a href="#popup" class="btn-primary">Ver pop-ups en la finca</a>
-        <a href="https://suite.perigallo.com/solicitud?origen=web-perigallo" target="_blank" rel="noopener noreferrer" class="btn-ghost">Solicitar celebración</a>
+        <a href="/experiencias/" class="btn-primary">Ver experiencias en la finca</a>
+        <a href="/solicitud-evento/" class="btn-ghost">Solicitar celebración</a>
         <a href="https://fincalallaguna.com/" class="btn-ghost" target="_blank" rel="noopener noreferrer">Ver web de la finca</a>
       </div>
     </div>
@@ -682,7 +694,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
           <li><span>Destino</span><strong>Equipo Perigallo</strong></li>
         </ul>
         <div class="proposal-actions">
-          <a href="https://suite.perigallo.com/solicitud?origen=web-perigallo" target="_blank" rel="noopener noreferrer" class="btn-primary">Abrir solicitud</a>
+          <a href="/solicitud-evento/" class="btn-primary">Solicitar disponibilidad y propuesta</a>
           </div>
       </div>
     </div>
@@ -704,17 +716,18 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
     <div>
       <span class="footer-col-title">Servicios</span>
       <ul class="footer-col-list">
-        <li><a href="#popup">Restaurante pop-up</a></li>
-        <li><a href="#celebrate">Celebraciones</a></li>
-        <li><a href="#finca">En Finca La Llaguna</a></li>
+        <li><a href="/bodas-alicante/">Bodas gastronómicas</a></li>
+        <li><a href="/celebraciones-familiares-alicante/">Celebraciones familiares</a></li>
+        <li><a href="/eventos-empresa-alicante/">Eventos de empresa</a></li>
       </ul>
     </div>
     <div>
       <span class="footer-col-title">Empresa</span>
       <ul class="footer-col-list">
-        <li><a href="#about">Quiénes somos</a></li>
-        <li><a href="#services">Qué hacemos</a></li>
-        <li><a href="#contact">Contacto</a></li>
+        <li><a href="/experiencias/">Próximas experiencias</a></li>
+        <li><a href="/finca-la-llaguna/">Finca La Llaguna</a></li>
+        <li><a href="/sobre-perigallo/">Sobre Perigallo</a></li>
+        <li><a href="/contacto/">Contacto</a></li>
         <li><a href="/politica-privacidad/">Política de privacidad</a></li>
         <li><a href="/aviso-legal/">Aviso legal</a></li>
         <li><a href="/cookies/">Cookies</a></li>

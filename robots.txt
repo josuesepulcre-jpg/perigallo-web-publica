@@ -3,5 +3,10 @@ Allow: /
 Disallow: /api/
 Disallow: /admin/
 Disallow: /entradas/pedido/
+Disallow: /entradas/checkout/
+Disallow: /entradas/pago/
+Disallow: /mis-entradas/
+Disallow: /check-in/
+Disallow: /solicitud-evento/
 
 Sitemap: https://perigallo.com/sitemap.xml

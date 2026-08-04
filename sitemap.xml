@@ -4,10 +4,16 @@
     <loc>https://perigallo.com/</loc>
     <priority>1.0</priority>
   </url>
-  <url>
-    <loc>https://perigallo.com/eventos/</loc>
-    <priority>0.8</priority>
-  </url>
+  <url><loc>https://perigallo.com/experiencias/</loc><priority>0.9</priority></url>
+  <url><loc>https://perigallo.com/bodas-alicante/</loc><priority>0.9</priority></url>
+  <url><loc>https://perigallo.com/celebraciones-familiares-alicante/</loc><priority>0.8</priority></url>
+  <url><loc>https://perigallo.com/comuniones-alicante/</loc><priority>0.7</priority></url>
+  <url><loc>https://perigallo.com/bautizos-alicante/</loc><priority>0.7</priority></url>
+  <url><loc>https://perigallo.com/eventos-privados-alicante/</loc><priority>0.8</priority></url>
+  <url><loc>https://perigallo.com/eventos-empresa-alicante/</loc><priority>0.8</priority></url>
+  <url><loc>https://perigallo.com/finca-la-llaguna/</loc><priority>0.8</priority></url>
+  <url><loc>https://perigallo.com/sobre-perigallo/</loc><priority>0.6</priority></url>
+  <url><loc>https://perigallo.com/contacto/</loc><priority>0.7</priority></url>
   <url>
     <loc>https://perigallo.com/politica-privacidad/</loc>
     <priority>0.2</priority>

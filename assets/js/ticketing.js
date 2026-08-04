@@ -65,7 +65,7 @@
   }
 
   function eventCard(event) {
-    var href = "/eventos/" + encodeURIComponent(event.slug) + "/";
+    var href = "/experiencias/" + encodeURIComponent(event.slug) + "/";
     var salePrice = Number(event.price_from_cents || 0);
     var reference = referencePrice(event.reference_price_from_cents, salePrice, true);
     var eventPrice = event.show_price_from !== false && salePrice
@@ -88,15 +88,24 @@
   function initEventsList() {
     var target = document.querySelector("[data-events-list]");
     if (!target) return;
-    request(api + "/events").then(function (data) {
-      if (!data.events.length) {
-        target.innerHTML = '<div class="ticket-panel"><h2>Próximas fechas por anunciar</h2><p class="ticket-copy">Estamos preparando nuevas experiencias. Vuelve pronto o escríbenos por WhatsApp.</p></div>';
-        return;
-      }
-      target.innerHTML = data.events.map(eventCard).join("");
-    }).catch(function (error) {
-      target.innerHTML = '<div class="ticket-panel"><p class="ticket-status">' + escapeHtml(error.message) + '</p></div>';
+    function loadEvents() {
+      target.setAttribute("aria-busy", "true");
+      request(api + "/events").then(function (data) {
+        if (!data.events.length) {
+          target.innerHTML = '<div class="ticket-panel"><h2>Próximas fechas por anunciar</h2><p class="ticket-copy">Estamos preparando nuevas experiencias. Vuelve pronto o escríbenos por WhatsApp.</p></div>';
+          return;
+        }
+        target.innerHTML = data.events.map(eventCard).join("");
+      }).catch(function (error) {
+        target.innerHTML = '<div class="ticket-panel"><p class="ticket-status">' + escapeHtml(error.message) + '</p><button class="ticket-btn" type="button" data-retry-events>Reintentar</button></div>';
+      }).finally(function () {
+        target.removeAttribute("aria-busy");
+      });
+    }
+    target.addEventListener("click", function (event) {
+      if (event.target.closest("[data-retry-events]")) loadEvents();
     });
+    loadEvents();
   }
 
   function initEventDetail() {
@@ -116,13 +125,52 @@
     var endpoint = preview ? api + "/admin/events/" + encodeURIComponent(previewId) + "/preview" : api + "/events/" + encodeURIComponent(slug);
     request(endpoint, preview ? { cache: "no-store" } : undefined).then(function (data) {
       var event = data.event;
-      if (!preview) document.title = (event.seo_title || event.title) + " | Entradas Perigallo";
+      if (!preview) {
+        var publicUrl = window.location.origin + "/experiencias/" + encodeURIComponent(event.slug) + "/";
+        document.title = (event.seo_title || event.title) + " | Experiencias Perigallo";
+        var canonical = document.querySelector('link[rel="canonical"]');
+        if (canonical) canonical.href = publicUrl;
+        var ogUrl = document.querySelector('meta[property="og:url"]');
+        if (ogUrl) ogUrl.content = publicUrl;
+        setEventSchema(event, publicUrl);
+      }
       root.innerHTML = renderEventDetail(event, preview);
       initExperienceAccordions(root);
       initIncludedInformationLink(root);
     }).catch(function (error) {
       root.innerHTML = '<p class="ticket-status">' + escapeHtml(error.message) + '</p>';
     });
+  }
+
+  function setEventSchema(event, publicUrl) {
+    var existing = document.getElementById("event-structured-data");
+    if (existing) existing.remove();
+    var firstType = (event.ticket_types || [])[0] || null;
+    var schema = {
+      "@context": "https://schema.org",
+      "@type": "Event",
+      name: event.title,
+      description: event.seo_description || event.short_description || event.description || "",
+      url: publicUrl,
+      image: event.image_url ? [new URL(event.image_url, window.location.origin).href] : undefined,
+      startDate: event.starts_at ? event.starts_at.replace(" ", "T") : undefined,
+      endDate: event.ends_at ? event.ends_at.replace(" ", "T") : undefined,
+      location: event.location ? { "@type": "Place", name: event.location, address: event.address || undefined } : undefined,
+      organizer: { "@type": "Organization", name: "Perigallo", url: window.location.origin },
+      offers: firstType ? {
+        "@type": "Offer",
+        priceCurrency: "EUR",
+        price: (Number(firstType.price_cents || firstType.price_final_cents || 0) / 100).toFixed(2),
+        url: publicUrl,
+        availability: "https://schema.org/InStock"
+      } : undefined
+    };
+    Object.keys(schema).forEach(function (key) { if (schema[key] === undefined || schema[key] === "") delete schema[key]; });
+    var script = document.createElement("script");
+    script.id = "event-structured-data";
+    script.type = "application/ld+json";
+    script.textContent = JSON.stringify(schema);
+    document.head.appendChild(script);
   }
 
   function renderEventDetail(event, preview) {

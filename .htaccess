@@ -1,4 +1,5 @@
 Options -Indexes
+ErrorDocument 404 /404.html
 
 <Files ".env">
   Require all denied
@@ -10,10 +11,22 @@ Options -Indexes
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
+  RewriteRule ^bodas/?$ /bodas-alicante/ [R=301,L]
+  RewriteRule ^celebraciones/?$ /celebraciones-familiares-alicante/ [R=301,L]
+  RewriteRule ^pop-up/?$ /experiencias/ [R=301,L]
+  RewriteRule ^reservar/?$ /experiencias/ [R=301,L]
+  RewriteRule ^la-finca/?$ /finca-la-llaguna/ [R=301,L]
+  RewriteRule ^eventos/?$ /experiencias/ [R=301,L]
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteRule ^api(?:/.*)?$ api/index.php [QSA,END]
   RewriteRule ^admin/acceso/?$ admin/entradas/acceso/index.html [QSA,L]
   RewriteRule ^admin/descuentos/?$ admin/descuentos/index.html [QSA,L]
   RewriteRule ^admin/eventos/([0-9]+)/editar/?$ admin/entradas/evento/index.html?id=$1 [QSA,L]
+  RewriteRule ^experiencias/([a-z0-9-]+)/?$ eventos/evento.html?slug=$1 [QSA,L]
   RewriteRule ^eventos/([a-z0-9-]+)/?$ eventos/evento.html?slug=$1 [QSA,L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
