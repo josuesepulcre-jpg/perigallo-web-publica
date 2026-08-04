@@ -825,70 +825,76 @@
     var place = [ticket.location, ticket.address, ticket.locality].filter(Boolean).join(", ") || "Por confirmar";
 
     pdf.setFillColor.apply(pdf, deepTeal); pdf.rect(0, 0, 210, 297, "F");
-    pdf.setDrawColor.apply(pdf, champagne); pdf.setLineWidth(0.25); pdf.rect(10, 10, 190, 277);
+    pdf.setDrawColor.apply(pdf, champagne); pdf.setLineWidth(0.25); pdf.rect(8, 7, 194, 283);
 
     if (logo) {
-      pdf.addImage(logo, "PNG", 93, 18, 24, 22);
+      pdf.addImage(logo, "PNG", 94, 15, 22, 20);
     } else {
-      pdf.setTextColor.apply(pdf, ivory); pdf.setFont("times", "normal"); pdf.setFontSize(17); pdf.text("Perigallo", 105, 31, { align: "center" });
+      pdf.setTextColor.apply(pdf, ivory); pdf.setFont("times", "normal"); pdf.setFontSize(19); pdf.text("Perigallo", 105, 29, { align: "center" });
     }
 
-    pdf.setTextColor.apply(pdf, champagne); pdf.setFont("helvetica", "normal"); pdf.setFontSize(7); pdf.setCharSpace(0.8);
-    pdf.text("ENTRADA OFICIAL · EXPERIENCIA PERIGALLO", 105, 48, { align: "center" }); pdf.setCharSpace(0);
+    pdf.setDrawColor.apply(pdf, champagne); pdf.setLineWidth(0.3); pdf.line(98, 41, 112, 41);
+    pdf.setTextColor.apply(pdf, champagne); pdf.setFont("helvetica", "normal"); pdf.setFontSize(8); pdf.setCharSpace(0.45);
+    pdf.text("ENTRADA OFICIAL", 105, 49, { align: "center" });
+    pdf.setFontSize(6.8); pdf.setCharSpace(0.38); pdf.text("EXPERIENCIA PERIGALLO", 105, 55, { align: "center" }); pdf.setCharSpace(0);
 
-    pdf.setTextColor.apply(pdf, ivory); pdf.setFont("times", "normal"); pdf.setFontSize(27);
+    pdf.setTextColor.apply(pdf, ivory); pdf.setFont("times", "normal"); pdf.setFontSize(30);
     var titleLines = pdf.splitTextToSize(title, 158).slice(0, 2);
-    pdf.text(titleLines, 105, 61, { align: "center", lineHeightFactor: 1.02 });
-    var titleBottom = 61 + ((titleLines.length - 1) * 9.5);
+    pdf.text(titleLines, 105, 72, { align: "center", lineHeightFactor: 1.02 });
+    var titleBottom = 72 + ((titleLines.length - 1) * 10.5);
 
-    pdf.setFont("helvetica", "normal"); pdf.setFontSize(9); pdf.setTextColor.apply(pdf, muted);
+    pdf.setFont("helvetica", "normal"); pdf.setFontSize(11.5); pdf.setTextColor.apply(pdf, muted);
     var subtitleLines = pdf.splitTextToSize(subtitle, 148).slice(0, 2);
-    pdf.text(subtitleLines, 105, titleBottom + 10, { align: "center", lineHeightFactor: 1.25 });
-    var qrY = titleBottom + 10 + ((subtitleLines.length - 1) * 4.5) + 12;
-    pdf.setFillColor.apply(pdf, ivory); pdf.roundedRect(67, qrY, 76, 76, 3, 3, "F");
-    pdf.addImage(qr, "PNG", 73, qrY + 6, 64, 64);
-    pdf.setTextColor.apply(pdf, champagne); pdf.setFont("helvetica", "normal"); pdf.setFontSize(7); pdf.setCharSpace(0.7);
-    pdf.text("PRESENTA ESTE CÓDIGO EN EL ACCESO", 105, qrY + 84, { align: "center" }); pdf.setCharSpace(0);
-    pdf.setTextColor.apply(pdf, muted); pdf.setFontSize(8); pdf.text("Código válido para un único acceso", 105, qrY + 90, { align: "center" });
-    pdf.setFont("courier", "normal"); pdf.setFontSize(8); pdf.setTextColor.apply(pdf, ivory); pdf.text(ticket.public_code || "—", 105, qrY + 97, { align: "center" });
+    pdf.text(subtitleLines, 105, titleBottom + 12, { align: "center", lineHeightFactor: 1.2 });
+    var qrY = Math.max(96, titleBottom + 12 + ((subtitleLines.length - 1) * 5) + 12);
+    pdf.setFillColor.apply(pdf, ivory); pdf.roundedRect(66, qrY, 78, 78, 3, 3, "F");
+    pdf.setDrawColor.apply(pdf, champagne); pdf.setLineWidth(0.15); pdf.roundedRect(66, qrY, 78, 78, 3, 3, "S");
+    pdf.addImage(qr, "PNG", 73, qrY + 7, 64, 64);
+    pdf.setTextColor.apply(pdf, champagne); pdf.setFont("helvetica", "normal"); pdf.setFontSize(8.5); pdf.setCharSpace(0.32);
+    pdf.text("PRESENTA ESTE CÓDIGO", 105, qrY + 87, { align: "center" });
+    pdf.text("EN EL ACCESO", 105, qrY + 93, { align: "center" }); pdf.setCharSpace(0);
+    pdf.setTextColor.apply(pdf, muted); pdf.setFontSize(9.2); pdf.text("Código válido para un único acceso", 105, qrY + 100, { align: "center" });
+    pdf.setFont("courier", "normal"); pdf.setFontSize(8.8); pdf.setTextColor.apply(pdf, ivory); pdf.text(ticket.public_code || "—", 105, qrY + 107, { align: "center" });
 
-    var infoY = qrY + 107;
-    ticketPdfField(pdf, "calendar", "FECHA Y HORA", date || "Por confirmar", 25, infoY, 76, champagne, ivory);
-    ticketPdfField(pdf, "ticket", "TIPO DE ENTRADA", ticket.ticket_type_name || "Entrada", 109, infoY, 76, champagne, ivory);
-    ticketPdfField(pdf, "pin", "LUGAR", place, 25, infoY + 20, 160, champagne, ivory);
-    ticketPdfField(pdf, "person", "TITULAR", order.name || "Por confirmar", 25, infoY + 40, 76, champagne, ivory);
-    ticketPdfField(pdf, "entry", "NÚMERO DE ENTRADA", "Entrada " + String(index).padStart(2, "0") + " de " + String(total).padStart(2, "0"), 109, infoY + 40, 76, champagne, ivory);
+    var infoY = qrY + 106;
+    ticketPdfField(pdf, "calendar", "FECHA Y HORA", date || "Por confirmar", 25, infoY, 76, 20, champagne, ivory);
+    ticketPdfField(pdf, "ticket", "TIPO DE ENTRADA", ticket.ticket_type_name || "Entrada", 109, infoY, 76, 20, champagne, ivory);
+    ticketPdfField(pdf, "pin", "LUGAR", place, 25, infoY + 23, 160, 22, champagne, ivory);
+    ticketPdfField(pdf, "person", "TITULAR", order.name || "Por confirmar", 25, infoY + 48, 76, 20, champagne, ivory);
+    ticketPdfField(pdf, "entry", "NÚMERO DE ENTRADA", "Entrada " + String(index).padStart(2, "0") + " de " + String(total).padStart(2, "0"), 109, infoY + 48, 76, 20, champagne, ivory);
 
-    pdf.setDrawColor.apply(pdf, champagne); pdf.line(25, 270, 185, 270);
-    pdf.setTextColor.apply(pdf, muted); pdf.setFont("helvetica", "normal"); pdf.setFontSize(7);
+    pdf.setDrawColor.apply(pdf, champagne); pdf.line(25, 274, 185, 274);
+    pdf.setTextColor.apply(pdf, muted); pdf.setFont("helvetica", "normal"); pdf.setFontSize(8);
     pdf.text("PEDIDO " + (order.reference || "—"), 105, 278, { align: "center" });
-    pdf.text("Perigallo · +34 691 499 985 · perigallo.com", 105, 284, { align: "center" });
+    pdf.setFontSize(7.5); pdf.text("Perigallo · +34 691 499 985 · perigallo.com", 105, 283, { align: "center" });
     if (order.is_test) {
-      pdf.setTextColor.apply(pdf, champagne); pdf.setFontSize(6.5); pdf.text("ENTORNO DE PRUEBAS · SIN CARGO REAL", 105, 290, { align: "center" });
+      pdf.setTextColor.apply(pdf, champagne); pdf.setFontSize(7); pdf.text("ENTORNO DE PRUEBAS · SIN CARGO REAL", 105, 287, { align: "center" });
     }
   }
 
-  function ticketPdfField(pdf, icon, label, value, x, y, width, labelColor, valueColor) {
-    pdf.setDrawColor.apply(pdf, labelColor); pdf.setLineWidth(0.3); pdf.roundedRect(x, y - 6, width, 16, 1.5, 1.5, "S");
-    ticketPdfIcon(pdf, icon, x + 5, y - 1, labelColor);
-    pdf.setTextColor.apply(pdf, labelColor); pdf.setFont("helvetica", "normal"); pdf.setFontSize(6.3); pdf.setCharSpace(0.55);
-    pdf.text(label, x + 13, y - 0.5); pdf.setCharSpace(0);
-    pdf.setTextColor.apply(pdf, valueColor); pdf.setFontSize(9.5);
-    pdf.text(pdf.splitTextToSize(String(value || "—"), width - 10), x + 5, y + 6, { lineHeightFactor: 1.15 });
+  function ticketPdfField(pdf, icon, label, value, x, y, width, height, labelColor, valueColor) {
+    pdf.setFillColor(31, 57, 62); pdf.setDrawColor.apply(pdf, labelColor); pdf.setLineWidth(0.35); pdf.roundedRect(x, y, width, height, 1.8, 1.8, "FD");
+    pdf.setDrawColor.apply(pdf, labelColor); pdf.setLineWidth(0.22); pdf.line(x + 16, y + 4, x + 16, y + height - 4);
+    ticketPdfIcon(pdf, icon, x + 4, y + (height / 2) - 4.5, labelColor);
+    pdf.setTextColor.apply(pdf, labelColor); pdf.setFont("helvetica", "normal"); pdf.setFontSize(7.1); pdf.setCharSpace(0.32);
+    pdf.text(label, x + 20, y + 7); pdf.setCharSpace(0);
+    pdf.setTextColor.apply(pdf, valueColor); pdf.setFont("helvetica", "normal"); pdf.setFontSize(10.5);
+    var lines = pdf.splitTextToSize(String(value || "—"), width - 25).slice(0, 2);
+    pdf.text(lines, x + 20, y + 14, { lineHeightFactor: 1.1 });
   }
 
   function ticketPdfIcon(pdf, icon, x, y, color) {
-    pdf.setDrawColor.apply(pdf, color); pdf.setLineWidth(0.45);
+    pdf.setDrawColor.apply(pdf, color); pdf.setLineWidth(0.55);
     if (icon === "calendar") {
-      pdf.roundedRect(x, y - 4, 7, 7, 0.7, 0.7, "S"); pdf.line(x, y - 1.5, x + 7, y - 1.5); pdf.line(x + 2, y - 5, x + 2, y - 3); pdf.line(x + 5, y - 5, x + 5, y - 3);
+      pdf.roundedRect(x, y, 9, 9, 0.9, 0.9, "S"); pdf.line(x, y + 3, x + 9, y + 3); pdf.line(x + 2.3, y - 1.3, x + 2.3, y + 1.4); pdf.line(x + 6.7, y - 1.3, x + 6.7, y + 1.4);
     } else if (icon === "ticket") {
-      pdf.roundedRect(x, y - 4, 8, 7, 0.7, 0.7, "S"); pdf.line(x + 2, y - 4, x + 2, y + 3); pdf.line(x + 4.5, y - 1, x + 6.5, y - 1); pdf.line(x + 4.5, y + 1, x + 6.5, y + 1);
+      pdf.roundedRect(x, y + 1, 10, 7, 0.9, 0.9, "S"); pdf.line(x + 3, y + 1, x + 3, y + 8); pdf.line(x + 5.2, y + 3.5, x + 8, y + 3.5); pdf.line(x + 5.2, y + 5.7, x + 8, y + 5.7);
     } else if (icon === "pin") {
-      pdf.circle(x + 3.5, y - 1, 2.5, "S"); pdf.circle(x + 3.5, y - 1, 0.7, "S"); pdf.line(x + 1.7, y + 0.8, x + 3.5, y + 4); pdf.line(x + 5.3, y + 0.8, x + 3.5, y + 4);
+      pdf.circle(x + 4.5, y + 3.3, 3.2, "S"); pdf.circle(x + 4.5, y + 3.3, 0.8, "S"); pdf.line(x + 2.2, y + 5.4, x + 4.5, y + 9); pdf.line(x + 6.8, y + 5.4, x + 4.5, y + 9);
     } else if (icon === "person") {
-      pdf.circle(x + 3.5, y - 2, 2, "S"); pdf.line(x, y + 4, x + 7, y + 4); pdf.line(x, y + 4, x + 1.5, y + 1); pdf.line(x + 7, y + 4, x + 5.5, y + 1);
+      pdf.circle(x + 4.5, y + 2.5, 2.2, "S"); pdf.line(x, y + 9, x + 9, y + 9); pdf.line(x, y + 9, x + 2.1, y + 5.8); pdf.line(x + 9, y + 9, x + 6.9, y + 5.8);
     } else if (icon === "entry") {
-      pdf.rect(x, y - 4, 7, 7, "S"); pdf.line(x + 2, y - 1, x + 5.5, y - 1); pdf.line(x + 2, y + 1, x + 5.5, y + 1);
+      pdf.roundedRect(x, y + 1, 10, 7, 0.9, 0.9, "S"); pdf.line(x + 3, y + 1, x + 3, y + 8); pdf.line(x + 5.2, y + 3.5, x + 8, y + 3.5); pdf.line(x + 5.2, y + 5.7, x + 8, y + 5.7);
     }
   }
 
