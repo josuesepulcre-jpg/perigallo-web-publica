@@ -768,13 +768,34 @@
     });
   }
 
+  function imageDataUrl(source) {
+    return new Promise(function (resolve, reject) {
+      var image = new Image();
+      image.onload = function () {
+        var canvas = document.createElement("canvas");
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
+        canvas.getContext("2d").drawImage(image, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      };
+      image.onerror = function () { reject(new Error("No se pudo cargar el logotipo.")); };
+      image.src = source;
+    });
+  }
+
+  function ticketLogo() {
+    return imageDataUrl("/assets/images/perigallo-logo-original.png").catch(function () { return null; });
+  }
+
   function downloadTicketPdf(order, index, button) {
     var ticket = (order.tickets || [])[index];
     if (!ticket || !ticket.qr_url || !window.jspdf) return;
     if (button) { button.disabled = true; button.textContent = "Generando PDF..."; }
-    qrPng(ticket.qr_url).then(function (qr) {
+    Promise.all([qrPng(ticket.qr_url), ticketLogo()]).then(function (assets) {
+      var qr = assets[0];
+      var logo = assets[1];
       var pdf = new window.jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      drawTicketPdf(pdf, order, ticket, qr, 1, 1);
+      drawTicketPdf(pdf, order, ticket, qr, 1, 1, logo);
       savePdf(pdf, pdfName(ticket));
     }).catch(function (error) { window.alert(error.message); }).finally(function () { if (button) { button.disabled = false; button.textContent = "Descargar entrada"; } });
   }
@@ -784,31 +805,82 @@
     if (!tickets.length || !window.jspdf) return;
     button.disabled = true;
     button.textContent = "Generando PDF...";
-    Promise.all(tickets.map(function (ticket) { return qrPng(ticket.qr_url); })).then(function (qrs) {
+    Promise.all([Promise.all(tickets.map(function (ticket) { return qrPng(ticket.qr_url); })), ticketLogo()]).then(function (assets) {
+      var qrs = assets[0];
+      var logo = assets[1];
       var pdf = new window.jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      tickets.forEach(function (ticket, index) { if (index) pdf.addPage(); drawTicketPdf(pdf, order, ticket, qrs[index], index + 1, tickets.length); });
+      tickets.forEach(function (ticket, index) { if (index) pdf.addPage(); drawTicketPdf(pdf, order, ticket, qrs[index], index + 1, tickets.length, logo); });
       savePdf(pdf, "perigallo-pedido-" + safeName(order.reference || "entradas") + ".pdf");
     }).catch(function (error) { window.alert(error.message); }).finally(function () { button.disabled = false; button.textContent = "Descargar todas las entradas"; });
   }
 
-  function drawTicketPdf(pdf, order, ticket, qr, index, total) {
-    pdf.setFillColor(30, 51, 56); pdf.rect(0, 0, 210, 297, "F");
-    pdf.setDrawColor(205, 177, 151); pdf.rect(15, 15, 180, 267);
-    pdf.setTextColor(226, 205, 181); pdf.setFont("helvetica", "normal"); pdf.setFontSize(8); pdf.text("PERIGALLO · ENTRADA " + String(index).padStart(2, "0") + " / " + String(total).padStart(2, "0"), 25, 33);
-    pdf.setTextColor(245, 241, 229); pdf.setFont("times", "normal"); pdf.setFontSize(30); pdf.text(ticket.event_title || "Perigallo", 25, 55, { maxWidth: 120 });
-    pdf.setDrawColor(205, 177, 151); pdf.line(25, 70, 185, 70);
-    pdf.setFont("helvetica", "normal"); pdf.setFontSize(11); pdf.setTextColor(245, 241, 229);
-    pdf.text("FECHA Y HORA", 25, 85); pdf.text(fmtDate(ticket.starts_at), 25, 93, { maxWidth: 105 });
-    pdf.text("LUGAR", 25, 111); pdf.text([ticket.location, ticket.address, ticket.locality].filter(Boolean).join(", ") || "Por confirmar", 25, 119, { maxWidth: 105 });
-    pdf.text("TIPO DE ENTRADA", 25, 137); pdf.text(ticket.ticket_type_name || "Entrada", 25, 145, { maxWidth: 105 });
-    pdf.text("TITULAR", 25, 163); pdf.text(order.name || "", 25, 171, { maxWidth: 105 });
-    pdf.addImage(qr, "PNG", 132, 82, 47, 47);
-    pdf.setFontSize(8); pdf.text(ticket.public_code, 155.5, 136, { align: "center" });
-    pdf.setDrawColor(205, 177, 151); pdf.line(25, 200, 185, 200);
-    pdf.setTextColor(226, 205, 181); pdf.setFontSize(8); pdf.text("PEDIDO " + (order.reference || "—"), 25, 213);
-    pdf.setTextColor(245, 241, 229); pdf.setFontSize(10); pdf.text("Presenta este código en la entrada. El QR será válido para un único acceso.", 25, 227, { maxWidth: 154 });
-    pdf.setTextColor(226, 205, 181); pdf.setFontSize(8); pdf.text("Perigallo · +34 691 499 985 · perigallo.com", 25, 265);
-    if (order.is_test) { pdf.setTextColor(205, 177, 151); pdf.text("ENTORNO DE PRUEBAS · SIN CARGO REAL", 25, 274); }
+  function drawTicketPdf(pdf, order, ticket, qr, index, total, logo) {
+    var deepTeal = [27, 50, 55];
+    var ivory = [246, 242, 230];
+    var champagne = [210, 181, 150];
+    var muted = [222, 212, 194];
+    var title = ticket.event_title || "Perigallo";
+    var subtitle = ticket.event_subtitle || "Una experiencia gastronómica de Perigallo.";
+    var date = fmtDate(ticket.starts_at);
+    var place = [ticket.location, ticket.address, ticket.locality].filter(Boolean).join(", ") || "Por confirmar";
+
+    pdf.setFillColor.apply(pdf, deepTeal); pdf.rect(0, 0, 210, 297, "F");
+    pdf.setDrawColor.apply(pdf, champagne); pdf.setLineWidth(0.25); pdf.rect(10, 10, 190, 277);
+
+    if (logo) {
+      pdf.addImage(logo, "PNG", 93, 18, 24, 22);
+    } else {
+      pdf.setTextColor.apply(pdf, ivory); pdf.setFont("times", "normal"); pdf.setFontSize(17); pdf.text("Perigallo", 105, 31, { align: "center" });
+    }
+
+    pdf.setTextColor.apply(pdf, champagne); pdf.setFont("helvetica", "normal"); pdf.setFontSize(7); pdf.setCharSpace(0.8);
+    pdf.text("ENTRADA OFICIAL · EXPERIENCIA PERIGALLO", 105, 48, { align: "center" }); pdf.setCharSpace(0);
+
+    pdf.setTextColor.apply(pdf, ivory); pdf.setFont("times", "normal"); pdf.setFontSize(27);
+    var titleLines = pdf.splitTextToSize(title, 158).slice(0, 2);
+    pdf.text(titleLines, 105, 61, { align: "center", lineHeightFactor: 1.02 });
+    var titleBottom = 61 + ((titleLines.length - 1) * 9.5);
+
+    pdf.setFont("helvetica", "normal"); pdf.setFontSize(9); pdf.setTextColor.apply(pdf, muted);
+    var subtitleLines = pdf.splitTextToSize(subtitle, 148).slice(0, 2);
+    pdf.text(subtitleLines, 105, titleBottom + 10, { align: "center", lineHeightFactor: 1.25 });
+    var dateY = titleBottom + 10 + ((subtitleLines.length - 1) * 4.5) + 10;
+
+    pdf.setDrawColor.apply(pdf, champagne); pdf.setLineWidth(0.2); pdf.roundedRect(44, dateY - 6, 122, 13, 2, 2, "S");
+    pdf.setTextColor.apply(pdf, champagne); pdf.setFont("helvetica", "normal"); pdf.setFontSize(6.5); pdf.setCharSpace(0.7);
+    pdf.text("FECHA Y HORA", 105, dateY - 0.5, { align: "center" }); pdf.setCharSpace(0);
+    pdf.setTextColor.apply(pdf, ivory); pdf.setFontSize(9); pdf.text(date || "Fecha por confirmar", 105, dateY + 4, { align: "center" });
+
+    var qrY = dateY + 16;
+    pdf.setFillColor.apply(pdf, ivory); pdf.roundedRect(68, qrY, 74, 74, 3, 3, "F");
+    pdf.addImage(qr, "PNG", 74, qrY + 6, 62, 62);
+    pdf.setTextColor.apply(pdf, champagne); pdf.setFont("helvetica", "normal"); pdf.setFontSize(7); pdf.setCharSpace(0.7);
+    pdf.text("PRESENTA ESTE CÓDIGO EN EL ACCESO", 105, qrY + 82, { align: "center" }); pdf.setCharSpace(0);
+    pdf.setTextColor.apply(pdf, muted); pdf.setFontSize(8); pdf.text("Código válido para un único acceso", 105, qrY + 88, { align: "center" });
+    pdf.setFont("courier", "normal"); pdf.setFontSize(8); pdf.setTextColor.apply(pdf, ivory); pdf.text(ticket.public_code || "—", 105, qrY + 95, { align: "center" });
+
+    var infoY = qrY + 102;
+    pdf.setDrawColor.apply(pdf, champagne); pdf.setLineWidth(0.15); pdf.line(25, infoY - 6, 185, infoY - 6);
+    ticketPdfField(pdf, "FECHA Y HORA", date || "Por confirmar", 25, infoY, 72, champagne, ivory);
+    ticketPdfField(pdf, "TIPO DE ENTRADA", ticket.ticket_type_name || "Entrada", 111, infoY, 74, champagne, ivory);
+    ticketPdfField(pdf, "LUGAR", place, 25, infoY + 18, 160, champagne, ivory);
+    ticketPdfField(pdf, "TITULAR", order.name || "Por confirmar", 25, infoY + 36, 72, champagne, ivory);
+    ticketPdfField(pdf, "NÚMERO DE ENTRADA", "Entrada " + String(index).padStart(2, "0") + " de " + String(total).padStart(2, "0"), 111, infoY + 36, 74, champagne, ivory);
+
+    pdf.setDrawColor.apply(pdf, champagne); pdf.line(25, 270, 185, 270);
+    pdf.setTextColor.apply(pdf, muted); pdf.setFont("helvetica", "normal"); pdf.setFontSize(7);
+    pdf.text("PEDIDO " + (order.reference || "—"), 25, 278);
+    pdf.text("Perigallo · +34 691 499 985 · perigallo.com", 25, 284);
+    if (order.is_test) {
+      pdf.setTextColor.apply(pdf, champagne); pdf.setFontSize(6.5); pdf.text("ENTORNO DE PRUEBAS · SIN CARGO REAL", 185, 284, { align: "right" });
+    }
+  }
+
+  function ticketPdfField(pdf, label, value, x, y, width, labelColor, valueColor) {
+    pdf.setTextColor.apply(pdf, labelColor); pdf.setFont("helvetica", "normal"); pdf.setFontSize(6.5); pdf.setCharSpace(0.65);
+    pdf.text(label, x, y); pdf.setCharSpace(0);
+    pdf.setTextColor.apply(pdf, valueColor); pdf.setFontSize(9.5);
+    pdf.text(pdf.splitTextToSize(String(value || "—"), width), x, y + 6, { lineHeightFactor: 1.2 });
   }
 
   function savePdf(pdf, filename) {

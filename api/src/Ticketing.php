@@ -203,7 +203,7 @@ final class Ticketing
         $items->execute([(int) $order['id']]);
 
         $tickets = $this->pdo->prepare(
-            'SELECT t.id, t.public_code, t.qr_token_ciphertext, t.status, t.issued_at, t.used_at, e.title AS event_title, e.starts_at, e.ends_at, e.doors_open_at, e.location, e.address, e.locality, e.province, e.dress_code, toi.ticket_type_name
+            'SELECT t.id, t.public_code, t.qr_token_ciphertext, t.status, t.issued_at, t.used_at, e.title AS event_title, e.subtitle AS event_subtitle, e.starts_at, e.ends_at, e.doors_open_at, e.location, e.address, e.locality, e.province, e.dress_code, toi.ticket_type_name
              FROM tickets t
              JOIN events e ON e.id = t.event_id
              JOIN ticket_order_items toi ON toi.id = t.order_item_id
