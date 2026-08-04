@@ -847,16 +847,16 @@
     var subtitleLines = pdf.splitTextToSize(subtitle, 148).slice(0, 2);
     pdf.text(subtitleLines, 105, titleBottom + 12, { align: "center", lineHeightFactor: 1.2 });
     var qrY = Math.max(96, titleBottom + 12 + ((subtitleLines.length - 1) * 5) + 12);
-    pdf.setFillColor.apply(pdf, ivory); pdf.roundedRect(66, qrY, 78, 78, 3, 3, "F");
-    pdf.setDrawColor.apply(pdf, champagne); pdf.setLineWidth(0.15); pdf.roundedRect(66, qrY, 78, 78, 3, 3, "S");
-    pdf.addImage(qr, "PNG", 73, qrY + 7, 64, 64);
+    pdf.setFillColor.apply(pdf, ivory); pdf.roundedRect(68, qrY, 74, 74, 3, 3, "F");
+    pdf.setDrawColor.apply(pdf, champagne); pdf.setLineWidth(0.15); pdf.roundedRect(68, qrY, 74, 74, 3, 3, "S");
+    pdf.addImage(qr, "PNG", 74, qrY + 6, 62, 62);
     pdf.setTextColor.apply(pdf, champagne); pdf.setFont("helvetica", "normal"); pdf.setFontSize(8.5); pdf.setCharSpace(0.32);
-    pdf.text("PRESENTA ESTE CÓDIGO", 105, qrY + 87, { align: "center" });
-    pdf.text("EN EL ACCESO", 105, qrY + 93, { align: "center" }); pdf.setCharSpace(0);
-    pdf.setTextColor.apply(pdf, muted); pdf.setFontSize(9.2); pdf.text("Código válido para un único acceso", 105, qrY + 100, { align: "center" });
-    pdf.setFont("courier", "normal"); pdf.setFontSize(8.8); pdf.setTextColor.apply(pdf, ivory); pdf.text(ticket.public_code || "—", 105, qrY + 107, { align: "center" });
+    pdf.text("PRESENTA ESTE CÓDIGO", 105, qrY + 80, { align: "center" });
+    pdf.text("EN EL ACCESO", 105, qrY + 86, { align: "center" }); pdf.setCharSpace(0);
+    pdf.setTextColor.apply(pdf, muted); pdf.setFontSize(9.2); pdf.text("Código válido para un único acceso", 105, qrY + 93, { align: "center" });
+    pdf.setFont("courier", "normal"); pdf.setFontSize(9.5); pdf.setTextColor.apply(pdf, ivory); pdf.text(ticket.public_code || "—", 105, qrY + 101, { align: "center" });
 
-    var infoY = qrY + 106;
+    var infoY = qrY + 109;
     ticketPdfField(pdf, "calendar", "FECHA Y HORA", date || "Por confirmar", 25, infoY, 76, 20, champagne, ivory);
     ticketPdfField(pdf, "ticket", "TIPO DE ENTRADA", ticket.ticket_type_name || "Entrada", 109, infoY, 76, 20, champagne, ivory);
     ticketPdfField(pdf, "pin", "LUGAR", place, 25, infoY + 23, 160, 22, champagne, ivory);
