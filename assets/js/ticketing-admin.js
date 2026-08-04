@@ -37,6 +37,12 @@
 
   function cents(value) { return money.format(Number(value || 0) / 100); }
   function q(name) { return new URLSearchParams(window.location.search).get(name); }
+  function editorEventId() {
+    var legacyId = Number(q("id") || 0);
+    if (legacyId) return legacyId;
+    var match = window.location.pathname.match(/^\/admin\/eventos\/(\d+)\/editar\/?$/);
+    return match ? Number(match[1]) : 0;
+  }
   function dateInput(value) { return value ? String(value).replace(" ", "T").slice(0, 16) : ""; }
   function dateText(value) { return value ? new Intl.DateTimeFormat("es-ES", { dateStyle: "medium", timeStyle: "short" }).format(new Date(String(value).replace(" ", "T"))) : "Por definir"; }
 
@@ -553,7 +559,7 @@
   function initEditor() {
     var root = document.querySelector("[data-event-editor]");
     if (!root) return;
-    var id = Number(q("id") || 0);
+    var id = editorEventId();
     if (!id) { editorNotice("Falta el identificador del evento.", true); return; }
     if (/^\/admin\/entradas\/evento\/?$/.test(window.location.pathname)) {
       window.location.replace("/admin/eventos/" + id + "/editar/");

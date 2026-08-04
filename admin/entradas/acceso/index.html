@@ -7,17 +7,12 @@
 <title>Control de acceso | Perigallo</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/css/ticketing.css?v=20260804-access-control-mobile-v5">
+<link rel="stylesheet" href="/assets/css/ticketing.css?v=20260804-admin-access-shell-v1">
 </head>
-<body class="ticketing-page has-ticket-access-control">
-<header class="ticketing-nav">
-  <a href="/admin/entradas/" aria-label="Volver al panel"><img class="ticketing-logo" src="/assets/images/perigallo-logo-original.png" alt="Perigallo"></a>
-  <nav>
-    <a href="/admin/entradas/">Panel</a>
-    <a href="/eventos/">Eventos</a>
-  </nav>
-</header>
-<main class="ticketing-main">
+<body class="ticketing-page has-ticket-access-control admin-backoffice-page admin-access-page">
+<div class="admin-app-shell">
+  <aside class="admin-sidebar" data-admin-nav></aside>
+  <main class="admin-workspace admin-access-workspace">
   <section class="ticket-hero">
     <div class="ticket-hero-inner">
       <div>
@@ -53,7 +48,9 @@
     </div>
   </section>
 </main>
+</div>
 <div class="ticket-access-modal" data-access-modal hidden role="dialog" aria-modal="true" aria-labelledby="access-modal-title"><section class="ticket-access-modal-card" data-access-modal-content></section></div>
-<script src="/assets/js/ticketing-admin.js?v=20260804-access-control-mobile-v5" defer></script>
+<script src="/assets/js/admin-backoffice.js?v=20260804-admin-access-shell-v1" defer></script>
+<script src="/assets/js/ticketing-admin.js?v=20260804-admin-access-shell-v1" defer></script>
 </body>
 </html>

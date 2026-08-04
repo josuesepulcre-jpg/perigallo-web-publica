@@ -267,7 +267,13 @@
     });
   }
 
+  function initAdminChrome() {
+    if (!document.querySelector("[data-admin-nav]") || document.querySelector("[data-admin-dashboard]")) return;
+    requireSession(function () { /* The scanner shares the authenticated administrative shell. */ });
+  }
+
   initLogin();
+  initAdminChrome();
   initDashboard();
   initEvents();
   initSales();
