@@ -273,6 +273,14 @@ for (const marker of ["data-download-all", "qrcode", "application/pdf", "Descarg
 for (const marker of ["createTestOrder", "assertConfigured", "assertSandboxConfigured", "redsysForm", "ticket_delivery_logs", "is_test = 0", "TicketDeliveryService", "Ds_SignatureVersion", "notification processed"]) {
   if (!(api + ticketing).includes(marker)) throw new Error(`Missing isolated test-order contract: ${marker}`);
 }
+const mailer = readFileSync(join(root, "api/src/Mailer.php"), "utf8");
+const ticketDelivery = readFileSync(join(root, "api/src/TicketDeliveryService.php"), "utf8");
+for (const marker of ["multipart/alternative", "Content-Type: text/html", "basicOrderHtml"]) {
+  if (!mailer.includes(marker)) throw new Error(`Missing HTML email delivery support: ${marker}.`);
+}
+for (const marker of ["Descargar mis entradas", "Tu experiencia está confirmada", "orderEmailHtml", "El enlace abre tu pedido"]) {
+  if (!ticketDelivery.includes(marker)) throw new Error(`Missing premium ticket email marker: ${marker}.`);
+}
 const redsys = readFileSync(join(root, "api/src/Redsys.php"), "utf8");
 for (const marker of ["function terminal", "str_pad", "str_replace(' ', '+', $value)"]) {
   if (!redsys.includes(marker)) throw new Error(`Missing Redsys terminal or Base64 normalization: ${marker}`);
