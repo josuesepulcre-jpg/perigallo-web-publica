@@ -844,43 +844,52 @@
     pdf.setFont("helvetica", "normal"); pdf.setFontSize(9); pdf.setTextColor.apply(pdf, muted);
     var subtitleLines = pdf.splitTextToSize(subtitle, 148).slice(0, 2);
     pdf.text(subtitleLines, 105, titleBottom + 10, { align: "center", lineHeightFactor: 1.25 });
-    var dateY = titleBottom + 10 + ((subtitleLines.length - 1) * 4.5) + 10;
-
-    pdf.setDrawColor.apply(pdf, champagne); pdf.setLineWidth(0.2); pdf.roundedRect(44, dateY - 6, 122, 13, 2, 2, "S");
-    pdf.setTextColor.apply(pdf, champagne); pdf.setFont("helvetica", "normal"); pdf.setFontSize(6.5); pdf.setCharSpace(0.7);
-    pdf.text("FECHA Y HORA", 105, dateY - 0.5, { align: "center" }); pdf.setCharSpace(0);
-    pdf.setTextColor.apply(pdf, ivory); pdf.setFontSize(9); pdf.text(date || "Fecha por confirmar", 105, dateY + 4, { align: "center" });
-
-    var qrY = dateY + 16;
-    pdf.setFillColor.apply(pdf, ivory); pdf.roundedRect(68, qrY, 74, 74, 3, 3, "F");
-    pdf.addImage(qr, "PNG", 74, qrY + 6, 62, 62);
+    var qrY = titleBottom + 10 + ((subtitleLines.length - 1) * 4.5) + 12;
+    pdf.setFillColor.apply(pdf, ivory); pdf.roundedRect(67, qrY, 76, 76, 3, 3, "F");
+    pdf.addImage(qr, "PNG", 73, qrY + 6, 64, 64);
     pdf.setTextColor.apply(pdf, champagne); pdf.setFont("helvetica", "normal"); pdf.setFontSize(7); pdf.setCharSpace(0.7);
-    pdf.text("PRESENTA ESTE CÓDIGO EN EL ACCESO", 105, qrY + 82, { align: "center" }); pdf.setCharSpace(0);
-    pdf.setTextColor.apply(pdf, muted); pdf.setFontSize(8); pdf.text("Código válido para un único acceso", 105, qrY + 88, { align: "center" });
-    pdf.setFont("courier", "normal"); pdf.setFontSize(8); pdf.setTextColor.apply(pdf, ivory); pdf.text(ticket.public_code || "—", 105, qrY + 95, { align: "center" });
+    pdf.text("PRESENTA ESTE CÓDIGO EN EL ACCESO", 105, qrY + 84, { align: "center" }); pdf.setCharSpace(0);
+    pdf.setTextColor.apply(pdf, muted); pdf.setFontSize(8); pdf.text("Código válido para un único acceso", 105, qrY + 90, { align: "center" });
+    pdf.setFont("courier", "normal"); pdf.setFontSize(8); pdf.setTextColor.apply(pdf, ivory); pdf.text(ticket.public_code || "—", 105, qrY + 97, { align: "center" });
 
-    var infoY = qrY + 102;
-    pdf.setDrawColor.apply(pdf, champagne); pdf.setLineWidth(0.15); pdf.line(25, infoY - 6, 185, infoY - 6);
-    ticketPdfField(pdf, "FECHA Y HORA", date || "Por confirmar", 25, infoY, 72, champagne, ivory);
-    ticketPdfField(pdf, "TIPO DE ENTRADA", ticket.ticket_type_name || "Entrada", 111, infoY, 74, champagne, ivory);
-    ticketPdfField(pdf, "LUGAR", place, 25, infoY + 18, 160, champagne, ivory);
-    ticketPdfField(pdf, "TITULAR", order.name || "Por confirmar", 25, infoY + 36, 72, champagne, ivory);
-    ticketPdfField(pdf, "NÚMERO DE ENTRADA", "Entrada " + String(index).padStart(2, "0") + " de " + String(total).padStart(2, "0"), 111, infoY + 36, 74, champagne, ivory);
+    var infoY = qrY + 107;
+    ticketPdfField(pdf, "calendar", "FECHA Y HORA", date || "Por confirmar", 25, infoY, 76, champagne, ivory);
+    ticketPdfField(pdf, "ticket", "TIPO DE ENTRADA", ticket.ticket_type_name || "Entrada", 109, infoY, 76, champagne, ivory);
+    ticketPdfField(pdf, "pin", "LUGAR", place, 25, infoY + 20, 160, champagne, ivory);
+    ticketPdfField(pdf, "person", "TITULAR", order.name || "Por confirmar", 25, infoY + 40, 76, champagne, ivory);
+    ticketPdfField(pdf, "entry", "NÚMERO DE ENTRADA", "Entrada " + String(index).padStart(2, "0") + " de " + String(total).padStart(2, "0"), 109, infoY + 40, 76, champagne, ivory);
 
     pdf.setDrawColor.apply(pdf, champagne); pdf.line(25, 270, 185, 270);
     pdf.setTextColor.apply(pdf, muted); pdf.setFont("helvetica", "normal"); pdf.setFontSize(7);
-    pdf.text("PEDIDO " + (order.reference || "—"), 25, 278);
-    pdf.text("Perigallo · +34 691 499 985 · perigallo.com", 25, 284);
+    pdf.text("PEDIDO " + (order.reference || "—"), 105, 278, { align: "center" });
+    pdf.text("Perigallo · +34 691 499 985 · perigallo.com", 105, 284, { align: "center" });
     if (order.is_test) {
-      pdf.setTextColor.apply(pdf, champagne); pdf.setFontSize(6.5); pdf.text("ENTORNO DE PRUEBAS · SIN CARGO REAL", 185, 284, { align: "right" });
+      pdf.setTextColor.apply(pdf, champagne); pdf.setFontSize(6.5); pdf.text("ENTORNO DE PRUEBAS · SIN CARGO REAL", 105, 290, { align: "center" });
     }
   }
 
-  function ticketPdfField(pdf, label, value, x, y, width, labelColor, valueColor) {
-    pdf.setTextColor.apply(pdf, labelColor); pdf.setFont("helvetica", "normal"); pdf.setFontSize(6.5); pdf.setCharSpace(0.65);
-    pdf.text(label, x, y); pdf.setCharSpace(0);
+  function ticketPdfField(pdf, icon, label, value, x, y, width, labelColor, valueColor) {
+    pdf.setDrawColor.apply(pdf, labelColor); pdf.setLineWidth(0.3); pdf.roundedRect(x, y - 6, width, 16, 1.5, 1.5, "S");
+    ticketPdfIcon(pdf, icon, x + 5, y - 1, labelColor);
+    pdf.setTextColor.apply(pdf, labelColor); pdf.setFont("helvetica", "normal"); pdf.setFontSize(6.3); pdf.setCharSpace(0.55);
+    pdf.text(label, x + 13, y - 0.5); pdf.setCharSpace(0);
     pdf.setTextColor.apply(pdf, valueColor); pdf.setFontSize(9.5);
-    pdf.text(pdf.splitTextToSize(String(value || "—"), width), x, y + 6, { lineHeightFactor: 1.2 });
+    pdf.text(pdf.splitTextToSize(String(value || "—"), width - 10), x + 5, y + 6, { lineHeightFactor: 1.15 });
+  }
+
+  function ticketPdfIcon(pdf, icon, x, y, color) {
+    pdf.setDrawColor.apply(pdf, color); pdf.setLineWidth(0.45);
+    if (icon === "calendar") {
+      pdf.roundedRect(x, y - 4, 7, 7, 0.7, 0.7, "S"); pdf.line(x, y - 1.5, x + 7, y - 1.5); pdf.line(x + 2, y - 5, x + 2, y - 3); pdf.line(x + 5, y - 5, x + 5, y - 3);
+    } else if (icon === "ticket") {
+      pdf.roundedRect(x, y - 4, 8, 7, 0.7, 0.7, "S"); pdf.line(x + 2, y - 4, x + 2, y + 3); pdf.line(x + 4.5, y - 1, x + 6.5, y - 1); pdf.line(x + 4.5, y + 1, x + 6.5, y + 1);
+    } else if (icon === "pin") {
+      pdf.circle(x + 3.5, y - 1, 2.5, "S"); pdf.circle(x + 3.5, y - 1, 0.7, "S"); pdf.line(x + 1.7, y + 0.8, x + 3.5, y + 4); pdf.line(x + 5.3, y + 0.8, x + 3.5, y + 4);
+    } else if (icon === "person") {
+      pdf.circle(x + 3.5, y - 2, 2, "S"); pdf.line(x, y + 4, x + 7, y + 4); pdf.line(x, y + 4, x + 1.5, y + 1); pdf.line(x + 7, y + 4, x + 5.5, y + 1);
+    } else if (icon === "entry") {
+      pdf.rect(x, y - 4, 7, 7, "S"); pdf.line(x + 2, y - 1, x + 5.5, y - 1); pdf.line(x + 2, y + 1, x + 5.5, y + 1);
+    }
   }
 
   function savePdf(pdf, filename) {
