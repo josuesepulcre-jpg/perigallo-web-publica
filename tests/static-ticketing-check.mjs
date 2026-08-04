@@ -275,8 +275,11 @@ for (const marker of ["createTestOrder", "assertConfigured", "assertSandboxConfi
 }
 const mailer = readFileSync(join(root, "api/src/Mailer.php"), "utf8");
 const ticketDelivery = readFileSync(join(root, "api/src/TicketDeliveryService.php"), "utf8");
-for (const marker of ["multipart/alternative", "Content-Type: text/html", "basicOrderHtml", "perigallo-logo-original.png"]) {
+for (const marker of ["multipart/alternative", "Content-Type: text/html", "basicOrderHtml", "recoveryOrderHtml", "perigallo-logo-original.png"]) {
   if (!mailer.includes(marker)) throw new Error(`Missing HTML email delivery support: ${marker}.`);
+}
+for (const marker of ["Accede de nuevo a tus entradas", "Abrir mis entradas", "Tus entradas siguen aquí"]) {
+  if (!mailer.includes(marker)) throw new Error(`Missing premium recovery email marker: ${marker}.`);
 }
 for (const marker of ["Descargar mis entradas", "Tu experiencia está confirmada", "orderEmailHtml", "El enlace abre tu pedido", "perigallo-logo-original.png"]) {
   if (!ticketDelivery.includes(marker)) throw new Error(`Missing premium ticket email marker: ${marker}.`);

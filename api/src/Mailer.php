@@ -15,12 +15,14 @@ final class Mailer
 
     public function queueOrderRecoveryEmail(PDO $pdo, int $orderId, string $email, string $name, string $link): void
     {
+        $body = "Hola {$name},\n\nHemos recibido una solicitud para acceder a tus entradas. Puedes abrirlas desde este enlace seguro:\n{$link}\n\nSi no has solicitado este acceso, puedes ignorar este mensaje.\n\nEquipo Perigallo\n";
         $this->queue(
             $pdo,
             $orderId,
             $email,
             'Accede de nuevo a tus entradas Perigallo',
-            "Hola {$name},\n\nHemos recibido una solicitud para acceder a tus entradas. Puedes abrirlas desde este enlace seguro:\n{$link}\n\nSi no has solicitado este acceso, puedes ignorar este mensaje.\n\nEquipo Perigallo\n"
+            $body,
+            $this->recoveryOrderHtml($name, $link)
         );
     }
 
@@ -80,9 +82,27 @@ final class Mailer
         return '<!doctype html><html lang="es"><body style="margin:0;padding:0;background:#eef0ed">'
             . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#eef0ed"><tr><td align="center" style="padding:32px 16px">'
             . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#173236;color:#f5f0e5;font-family:Arial,sans-serif">'
-            . '<tr><td style="padding:26px 34px 22px;border-bottom:1px solid #7f725d;text-align:center"><img src="' . $brandLogo . '" width="76" alt="Perigallo" style="display:inline-block;width:76px;height:auto;border:0"><div style="color:#d7c3a2;font-size:9px;letter-spacing:3px;margin-top:12px">FINCA LA LLAGUNA</div></td></tr>'
-            . '<tr><td style="padding:34px"><h1 style="margin:0 0 20px;color:#f5f0e5;font-family:Georgia,serif;font-size:32px;font-weight:normal;line-height:1.12">' . $safeSubject . '</h1><div style="color:#d7d4cb;font-size:16px;line-height:1.7">' . $escapedBody . '</div>' . $button . '</td></tr>'
-            . '<tr><td style="padding:20px 34px;background:#11282b;color:#b9beb9;font-size:12px;line-height:1.6">Este correo ha sido enviado por Perigallo.</td></tr>'
+            . '<tr><td style="padding:26px 34px 24px;border-bottom:1px solid #6f7668;text-align:center"><img src="' . $brandLogo . '" width="76" alt="Perigallo" style="display:inline-block;width:76px;height:auto;border:0"><div style="color:#d7c3a2;font-size:9px;letter-spacing:3px;margin-top:12px">FINCA LA LLAGUNA</div></td></tr>'
+            . '<tr><td style="padding:34px"><div style="color:#cdb197;font-size:10px;letter-spacing:2.2px;text-transform:uppercase">Tus entradas Perigallo</div><h1 style="margin:14px 0 18px;color:#f5f0e5;font-family:Georgia,serif;font-size:34px;font-weight:normal;line-height:1.12">' . $safeSubject . '</h1><div style="color:#d7d4cb;font-size:16px;line-height:1.7">' . $escapedBody . '</div>' . $button . '</td></tr>'
+            . '<tr><td style="padding:22px 34px;background:#102629;border-top:1px solid #43585a;color:#aeb7b3;font-size:11px;line-height:1.7;text-align:center">Perigallo · Finca La Llaguna<br>Si necesitas ayuda, responde a este correo.</td></tr>'
+            . '</table></td></tr></table></body></html>';
+    }
+
+    private function recoveryOrderHtml(string $name, string $link): string
+    {
+        $safeName = htmlspecialchars($name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $safeLink = htmlspecialchars($link, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $brandLogo = htmlspecialchars(app_base_url() . '/assets/images/perigallo-logo-original.png', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $greeting = $safeName === '' ? 'Hola,' : 'Hola ' . $safeName . ',';
+
+        return '<!doctype html><html lang="es"><body style="margin:0;padding:0;background:#eef0ed">'
+            . '<span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden">Tu acceso seguro a las entradas de Perigallo.</span>'
+            . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#eef0ed"><tr><td align="center" style="padding:32px 16px">'
+            . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#173236;color:#f5f0e5;font-family:Arial,sans-serif">'
+            . '<tr><td style="padding:26px 34px 24px;text-align:center;border-bottom:1px solid #6f7668"><img src="' . $brandLogo . '" width="84" alt="Perigallo" style="display:inline-block;width:84px;height:auto;border:0"><div style="margin-top:12px;color:#cdb197;font-size:9px;letter-spacing:3px">FINCA LA LLAGUNA</div></td></tr>'
+            . '<tr><td style="padding:38px 34px 12px"><div style="color:#cdb197;font-size:10px;letter-spacing:2.3px;text-transform:uppercase">Tus entradas siguen aquí</div><h1 style="margin:14px 0 18px;color:#f5f0e5;font-family:Georgia,serif;font-size:37px;font-weight:normal;line-height:1.08">Accede de nuevo a tus entradas</h1><p style="margin:0;color:#d7d4cb;font-size:15px;line-height:1.7">' . $greeting . '<br>Hemos recibido una solicitud para acceder a tu pedido. Utiliza este enlace seguro para abrir y descargar tus entradas.</p></td></tr>'
+            . '<tr><td style="padding:24px 34px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #7f725d;background:#203e42"><tr><td style="padding:20px 22px"><span style="display:block;color:#cdb197;font-size:10px;letter-spacing:1.9px;text-transform:uppercase;margin-bottom:7px">Acceso seguro</span><strong style="display:block;color:#f5f0e5;font-family:Georgia,serif;font-size:24px;font-weight:normal">Tus entradas Perigallo</strong></td><td align="right" style="padding:20px 22px;color:#d8bd96;font-size:20px">→</td></tr></table><div style="padding-top:24px;text-align:center"><a href="' . $safeLink . '" style="display:inline-block;background:#d8bd96;color:#173236;padding:17px 26px;font-size:12px;font-weight:bold;letter-spacing:1.4px;text-decoration:none;text-transform:uppercase">Abrir mis entradas&nbsp;&nbsp;→</a></div><p style="margin:16px 0 0;color:#aeb7b3;font-size:12px;line-height:1.6;text-align:center">Si no has solicitado este acceso, puedes ignorar este correo con tranquilidad.</p></td></tr>'
+            . '<tr><td style="padding:22px 34px;background:#102629;border-top:1px solid #43585a;color:#aeb7b3;font-size:11px;line-height:1.7;text-align:center">Perigallo · Finca La Llaguna<br>Si necesitas ayuda, responde a este correo.</td></tr>'
             . '</table></td></tr></table></body></html>';
     }
 }
