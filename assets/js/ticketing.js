@@ -618,7 +618,14 @@
       return;
     }
     request(api + "/orders/" + encodeURIComponent(token)).then(function (data) {
-      var order = data.order;
+      renderOrderStatus(root, data.order, token, true);
+    }).catch(function (error) {
+      root.innerHTML = '<p class="ticket-status">' + escapeHtml(error.message) + '</p>';
+    });
+  }
+
+  function renderOrderStatus(root, order, token, allowResend) {
+      allowResend = allowResend !== false;
       var tickets = order.tickets || [];
       root.innerHTML = [
         '<div class="ticket-panel">',
@@ -627,14 +634,46 @@
         '<h1 class="ticket-title">Tus entradas están <em>listas</em></h1>',
         '<p class="ticket-copy">' + escapeHtml(order.name) + ', hemos preparado ' + tickets.length + ' ' + (tickets.length === 1 ? 'entrada' : 'entradas') + ' para tu experiencia. Guárdalas en tu teléfono o descárgalas ahora.</p>',
         '<dl class="ticket-order-summary"><div><dt>Pedido</dt><dd>' + escapeHtml(order.reference || '—') + '</dd></div><div><dt>Importe pagado</dt><dd>' + cents(order.total_cents) + '</dd></div><div><dt>Correo</dt><dd>' + escapeHtml(deliveryLabel(order, "email")) + '</dd></div><div><dt>WhatsApp</dt><dd>' + escapeHtml(deliveryLabel(order, "whatsapp")) + '</dd></div></dl>',
-        '<div class="ticket-actions ticket-delivery-actions"><button class="ticket-btn primary" type="button" data-download-all>Descargar todas las entradas</button><button class="ticket-btn" type="button" data-resend-email>Enviar de nuevo por correo</button><button class="ticket-btn" type="button" data-resend-whatsapp>Enviar por WhatsApp</button><a class="ticket-btn" href="#entradas">Ver detalles del pedido</a></div>',
+        '<div class="ticket-actions ticket-delivery-actions"><button class="ticket-btn primary" type="button" data-download-all>Descargar todas las entradas</button>' + (allowResend ? '<button class="ticket-btn" type="button" data-resend-email>Enviar de nuevo por correo</button><button class="ticket-btn" type="button" data-resend-whatsapp>Enviar por WhatsApp</button>' : '') + '<a class="ticket-btn" href="#entradas">Ver detalles del pedido</a></div>',
         '<p class="ticket-delivery-note">Las entradas se han preparado para <strong>' + escapeHtml(order.email) + '</strong>. Presenta el QR en el acceso: cada código es válido para una sola entrada.</p>',
         '<div class="ticket-list" id="entradas">' + tickets.map(function (ticket, index) { return ticketPass(ticket, order.is_test, index + 1); }).join("") + '</div>',
         '</div>'
       ].join("");
-      bindOrderActions(root, order, token);
-    }).catch(function (error) {
-      root.innerHTML = '<p class="ticket-status">' + escapeHtml(error.message) + '</p>';
+      bindOrderActions(root, order, token, allowResend);
+  }
+
+  function initMyTickets() {
+    var recovery = document.querySelector("[data-order-recovery]");
+    var root = document.querySelector("[data-order-status]");
+    if (!recovery || !root) return;
+    var token = qs("token");
+    if (token) {
+      recovery.hidden = true;
+      root.hidden = false;
+      root.innerHTML = '<div class="ticket-panel">Abriendo tus entradas...</div>';
+      request(api + "/orders/access/" + encodeURIComponent(token)).then(function (data) {
+        renderOrderStatus(root, data.order, null, false);
+      }).catch(function (error) {
+        root.innerHTML = '<div class="ticket-panel"><span class="ticket-eyebrow">Enlace no disponible</span><h1 class="ticket-title">Solicita un <em>nuevo acceso</em></h1><p class="ticket-copy">' + escapeHtml(error.message) + '</p><a class="ticket-btn primary" href="/mis-entradas/">Recuperar mis entradas</a></div>';
+      });
+      return;
+    }
+    var form = recovery.querySelector("[data-order-recovery-form]");
+    var status = recovery.querySelector("[data-order-recovery-status]");
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      var email = form.email.value.trim();
+      var phone = form.phone.value.trim();
+      if (!email && !phone) {
+        status.textContent = "Introduce el correo electrónico o teléfono usado en la compra.";
+        return;
+      }
+      var button = form.querySelector('button[type="submit"]');
+      button.disabled = true;
+      button.textContent = "Comprobando…";
+      request(api + "/orders/recover", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: email, phone: phone, reference: form.reference.value.trim() }) })
+        .then(function (data) { form.reset(); status.textContent = data.message; button.textContent = "Enlace solicitado"; })
+        .catch(function (error) { status.textContent = error.message; button.disabled = false; button.textContent = "Enviar enlace seguro"; });
     });
   }
 
@@ -713,10 +752,10 @@
     return ({ sent: "Enviado", delivered: "Entregado", read: "Leído", queued: "Pendiente de envío", pending: "Pendiente de envío", failed: "No se pudo enviar", not_configured: "No configurado" })[delivery.status] || "Pendiente";
   }
 
-  function bindOrderActions(root, order, token) {
+  function bindOrderActions(root, order, token, allowResend) {
     var all = root.querySelector("[data-download-all]");
     if (all) all.addEventListener("click", function () { downloadOrderPdf(order, all); });
-    var resend = root.querySelector("[data-resend-email]");
+    var resend = allowResend === false ? null : root.querySelector("[data-resend-email]");
     if (resend) resend.addEventListener("click", function () {
       resend.disabled = true;
       resend.textContent = "Preparando envío...";
@@ -724,7 +763,7 @@
         .then(function (data) { resend.textContent = "Correo solicitado"; root.querySelector(".ticket-delivery-note").textContent = data.message; })
         .catch(function (error) { resend.disabled = false; resend.textContent = "Enviar de nuevo por correo"; root.querySelector(".ticket-delivery-note").textContent = error.message; });
     });
-    var whatsapp = root.querySelector("[data-resend-whatsapp]");
+    var whatsapp = allowResend === false ? null : root.querySelector("[data-resend-whatsapp]");
     if (whatsapp) whatsapp.addEventListener("click", function () {
       whatsapp.disabled = true;
       whatsapp.textContent = "Comprobando envío...";
@@ -953,5 +992,6 @@
   initEventDetail();
   initCheckout();
   initOrderStatus();
+  initMyTickets();
   initPaymentResult();
 })();

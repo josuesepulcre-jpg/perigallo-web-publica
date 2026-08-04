@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mis entradas | Perigallo</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="canonical" href="https://perigallo.com/mis-entradas/">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/ticketing.css?v=20260804-order-recovery-v1">
+  <link rel="stylesheet" href="/assets/css/checkout.css?v=20260804-order-recovery-v1">
+</head>
+<body class="ticketing-page">
+  <header class="ticketing-nav"><a href="/" aria-label="Volver a Perigallo"><img class="ticketing-logo" src="/assets/images/perigallo-logo-original.png" alt="Perigallo"></a><nav><a href="/eventos/">Eventos</a></nav></header>
+  <main class="ticketing-main">
+    <section class="ticket-section"><div class="ticket-section-inner">
+      <section class="ticket-panel" data-order-recovery>
+        <span class="ticket-eyebrow">Acceso a tu compra</span>
+        <h1 class="ticket-title">Recupera tus <em>entradas</em></h1>
+        <p class="ticket-copy">Introduce el correo o teléfono usado en la compra. Si encontramos una compra asociada a esos datos, recibirás un enlace para acceder a tus entradas.</p>
+        <form class="checkout-fields" data-order-recovery-form novalidate>
+          <div class="checkout-field"><label for="recovery-email">Correo electrónico</label><input id="recovery-email" name="email" type="email" autocomplete="email" inputmode="email"></div>
+          <div class="checkout-field"><label for="recovery-phone">Teléfono o WhatsApp</label><input id="recovery-phone" name="phone" autocomplete="tel" inputmode="tel"></div>
+          <div class="checkout-field full"><label for="recovery-reference">Número de pedido <small>(opcional)</small></label><input id="recovery-reference" name="reference" autocomplete="off"></div>
+          <div class="checkout-field full"><button class="ticket-btn primary" type="submit">Enviar enlace seguro</button><p class="ticket-status" data-order-recovery-status aria-live="polite"></p></div>
+        </form>
+      </section>
+      <section data-order-status hidden aria-live="polite"></section>
+    </div></section>
+  </main>
+  <script src="/assets/vendor/qrcode-generator.min.js?v=20260804-ticket-pdf-v6" defer></script>
+  <script src="/assets/vendor/jspdf.umd.min.js?v=20260804-ticket-pdf-v6" defer></script>
+  <script src="/assets/js/ticketing.js?v=20260804-order-recovery-v1" defer></script>
+</body>
+</html>

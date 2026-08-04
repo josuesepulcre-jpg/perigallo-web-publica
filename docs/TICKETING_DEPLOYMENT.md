@@ -75,6 +75,7 @@ mysql -u DB_USER -p DB_NAME < database/migrations/006_test_checkout_sandbox.sql
 mysql -u DB_USER -p DB_NAME < database/migrations/007_la_perigalla_total_white_dress_code.sql
 mysql -u DB_USER -p DB_NAME < database/migrations/008_secure_ticket_delivery_and_qr.sql
 mysql -u DB_USER -p DB_NAME < database/migrations/009_ticket_access_movements.sql
+mysql -u DB_USER -p DB_NAME < database/migrations/010_order_access_recovery.sql
 ```
 
 La segunda migración amplía eventos y entradas sin borrar pedidos, pagos, códigos ni asistentes ya existentes. La tercera conserva esos datos y añade el identificador común para la integración privada con Suite. La cuarta cambia los textos públicos a `LONGTEXT`, sin eliminar contenido existente. Ejecutarlas antes de desplegar la versión con editor integrado. Para actualizar una instalación existente, ejecutar `008_secure_ticket_delivery_and_qr.sql` **antes** de copiar el PHP nuevo: añade las columnas y estados que este código consulta.
@@ -171,6 +172,7 @@ https://perigallo.com/api/redsys/notification
 10. Abrir el control móvil en `/check-in/`, iniciar sesión y escanear el QR de la entrada.
 11. Confirmar una primera entrada, una salida y una reentrada. El mismo QR identifica la entrada durante todo el evento y cada movimiento se confirma contra el servidor.
 12. Como administrador, verificar que solo se puede revertir el último movimiento y que la corrección aparece en el historial.
+13. Ejecutar `010_order_access_recovery.sql`, abrir `/mis-entradas/` y solicitar un enlace con un pedido de prueba. La respuesta debe ser neutra tanto si existe como si no existe una compra; el enlace recibido debe abrir las entradas y caducar a los 30 días.
 
 ## Observaciones
 

@@ -18,10 +18,12 @@ const required = [
   "database/migrations/007_la_perigalla_total_white_dress_code.sql",
   "database/migrations/008_secure_ticket_delivery_and_qr.sql",
   "database/migrations/009_ticket_access_movements.sql",
+  "database/migrations/010_order_access_recovery.sql",
   "eventos/index.html",
   "eventos/evento.html",
   "entradas/checkout/index.html",
   "entradas/pedido/index.html",
+  "mis-entradas/index.html",
   "entradas/pago/correcto/index.html",
   "entradas/pago/error/index.html",
   "entradas/pago/correcto/index.html",
@@ -198,6 +200,17 @@ for (const marker of ["qr_token_ciphertext", "not_configured", "device_reference
 const accessMovementMigration = readFileSync(join(root, "database/migrations/009_ticket_access_movements.sql"), "utf8");
 for (const marker of ["ticket_access_movements", "access_status", "allow_reentry", "maximum_reentries", "reentry_until", "reversal_of_id"]) {
   if (!accessMovementMigration.includes(marker)) throw new Error(`Access movement migration is missing ${marker}.`);
+}
+const orderRecoveryMigration = readFileSync(join(root, "database/migrations/010_order_access_recovery.sql"), "utf8");
+for (const marker of ["ticket_order_access_links", "token_hash", "expires_at", "ticket_access_recovery_requests", "identifier_hash", "ip_hash"]) {
+  if (!orderRecoveryMigration.includes(marker)) throw new Error(`Order recovery migration is missing ${marker}.`);
+}
+const myTickets = readFileSync(join(root, "mis-entradas/index.html"), "utf8");
+for (const marker of ["data-order-recovery", "data-order-recovery-form", "data-order-status", "Enviar enlace seguro"]) {
+  if (!myTickets.includes(marker)) throw new Error(`My tickets page is missing ${marker}.`);
+}
+for (const marker of ["/orders/recover", "/orders/access/", "requestOrderAccessRecovery", "getOrderByAccessLink", "initMyTickets", "queueOrderRecoveryEmail"]) {
+  if (!(api + ticketing + publicJs).includes(marker)) throw new Error(`Missing secure recovery contract: ${marker}`);
 }
 for (const marker of ["ticketQrUrl", "encryptQrToken", "extractQrToken", "adminEventAttendees", "reverseTicketCheckIn", "registerAccessMovement", "ticket_access_movements", "resendOrderEmail"]) {
   if (!(api + ticketing).includes(marker)) throw new Error(`Missing secure delivery contract: ${marker}`);

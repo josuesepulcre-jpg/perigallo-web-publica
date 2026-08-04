@@ -254,6 +254,97 @@ final class Ticketing
         ];
     }
 
+    /**
+     * A recovery link is separate from the permanent order token so it can expire
+     * or be revoked without invalidating historic URLs sent after a purchase.
+     */
+    public function getOrderByAccessLink(string $token): ?array
+    {
+        if (!preg_match('/^[A-Za-z0-9_-]{32,}$/', $token)) {
+            return null;
+        }
+        $stmt = $this->pdo->prepare(
+            'SELECT l.id, o.public_token
+             FROM ticket_order_access_links l
+             JOIN ticket_orders o ON o.id = l.order_id
+             WHERE l.token_hash = ? AND l.revoked_at IS NULL AND l.expires_at > NOW()
+               AND (o.status = "paid" OR o.payment_status = "paid")
+             LIMIT 1'
+        );
+        $stmt->execute([hash('sha256', $token)]);
+        $link = $stmt->fetch();
+        if (!$link) {
+            return null;
+        }
+        $this->pdo->prepare('UPDATE ticket_order_access_links SET access_count = access_count + 1, last_access_at = NOW() WHERE id = ?')
+            ->execute([(int) $link['id']]);
+        $order = $this->getOrderByToken((string) $link['public_token']);
+        // El enlace de recuperación no revela ni convierte en permanente el token
+        // histórico del pedido. Las acciones de reenvío se habilitarán mediante
+        // endpoints específicos para enlaces temporales en una fase posterior.
+        if ($order) {
+            unset($order['token']);
+        }
+        return $order;
+    }
+
+    /** Always returns the same response to avoid revealing whether a purchase exists. */
+    public function requestOrderAccessRecovery(array $data): array
+    {
+        $email = mb_strtolower(clean_string((string) ($data['email'] ?? ''), 190));
+        $phone = preg_replace('/[^0-9+]/', '', clean_string((string) ($data['phone'] ?? ''), 60)) ?: '';
+        $reference = strtoupper(clean_string((string) ($data['reference'] ?? ''), 64));
+        if ($email === '' && $phone === '') {
+            throw new InvalidArgumentException('Introduce el correo electrónico o teléfono usado en la compra.');
+        }
+
+        $identifierHash = hash('sha256', $email . '|' . $phone . '|' . $reference);
+        $ipHash = hash_hmac('sha256', client_ip(), (string) env_value('APP_SECRET', 'perigallo-recovery-rate-limit'));
+        $this->pdo->prepare('INSERT INTO ticket_access_recovery_requests (identifier_hash, ip_hash, requested_at) VALUES (?, ?, NOW())')
+            ->execute([$identifierHash, $ipHash]);
+
+        $identifierAttempts = $this->pdo->prepare('SELECT COUNT(*) FROM ticket_access_recovery_requests WHERE identifier_hash = ? AND requested_at >= DATE_SUB(NOW(), INTERVAL 30 MINUTE)');
+        $identifierAttempts->execute([$identifierHash]);
+        $ipAttempts = $this->pdo->prepare('SELECT COUNT(*) FROM ticket_access_recovery_requests WHERE ip_hash = ? AND requested_at >= DATE_SUB(NOW(), INTERVAL 30 MINUTE)');
+        $ipAttempts->execute([$ipHash]);
+        if ((int) $identifierAttempts->fetchColumn() > 3 || (int) $ipAttempts->fetchColumn() > 12) {
+            return ['message' => 'Si encontramos una compra asociada a esos datos, recibirás un enlace para acceder a tus entradas.'];
+        }
+
+        $where = [];
+        $params = [];
+        if ($email !== '') {
+            $where[] = 'email = ?';
+            $params[] = $email;
+        }
+        if ($phone !== '') {
+            $where[] = 'phone = ?';
+            $params[] = $phone;
+        }
+        $match = '(' . implode(' OR ', $where) . ')';
+        $sql = 'SELECT * FROM ticket_orders WHERE ' . $match . ' AND (status = "paid" OR payment_status = "paid")';
+        if ($reference !== '') {
+            $sql .= ' AND (redsys_order = ? OR test_reference = ?)';
+            $params[] = $reference;
+            $params[] = $reference;
+        }
+        $sql .= ' ORDER BY paid_at DESC, id DESC LIMIT 1';
+        $orderStmt = $this->pdo->prepare($sql);
+        $orderStmt->execute($params);
+        $order = $orderStmt->fetch();
+        if ($order) {
+            $token = public_token(32);
+            $this->pdo->prepare(
+                'INSERT INTO ticket_order_access_links (order_id, token_hash, purpose, expires_at, created_at)
+                 VALUES (?, ?, "recovery", DATE_ADD(NOW(), INTERVAL 30 DAY), NOW())'
+            )->execute([(int) $order['id'], hash('sha256', $token)]);
+            $link = app_base_url() . '/mis-entradas/?token=' . rawurlencode($token);
+            $this->mailer->queueOrderRecoveryEmail($this->pdo, (int) $order['id'], (string) $order['email'], (string) $order['name'], $link);
+        }
+
+        return ['message' => 'Si encontramos una compra asociada a esos datos, recibirás un enlace para acceder a tus entradas.'];
+    }
+
     public function resendOrderEmail(string $token): array
     {
         $order = $this->getOrderRecordByToken($token);

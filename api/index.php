@@ -42,6 +42,21 @@ try {
         return;
     }
 
+    if ($method === 'POST' && $path === '/orders/recover') {
+        json_response(['ok' => true] + $ticketing->requestOrderAccessRecovery(read_json_body()));
+        return;
+    }
+
+    if ($method === 'GET' && preg_match('#^/orders/access/([A-Za-z0-9_-]+)$#', $path, $m)) {
+        $order = $ticketing->getOrderByAccessLink($m[1]);
+        if (!$order) {
+            json_response(['ok' => false, 'error' => 'Este enlace ya no está disponible. Solicita uno nuevo para acceder a tus entradas.'], 404);
+            return;
+        }
+        json_response(['ok' => true, 'order' => $order]);
+        return;
+    }
+
     if ($method === 'GET' && preg_match('#^/orders/([A-Za-z0-9_-]+)$#', $path, $m)) {
         $order = $ticketing->getOrderByToken($m[1]);
         if (!$order) {

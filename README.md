@@ -30,6 +30,7 @@ Las solicitudes y reservas externas se abren fuera de la pagina principal para e
 | `/eventos/{slug}/` | Detalle publico de un evento. |
 | `/entradas/checkout/?event=slug` | Checkout de entradas. |
 | `/entradas/pedido/?token=...` | Resumen de pedido y entradas emitidas. |
+| `/mis-entradas/` | Recuperación neutral por correo/teléfono y acceso mediante enlace temporal revocable. |
 | `/entradas/pago/correcto/` | Retorno informativo de pago correcto. |
 | `/entradas/pago/error/` | Retorno informativo de pago fallido/cancelado. |
 | `/admin/entradas/` | Listado privado de eventos, ventas y entradas. |
@@ -55,6 +56,8 @@ Endpoints principales:
 - `GET /api/events/{slug}`
 - `POST /api/orders`
 - `GET /api/orders/{token}`
+- `POST /api/orders/recover`
+- `GET /api/orders/access/{temporaryToken}`
 - `POST /api/redsys/notification`
 - `GET /api/admin/session`
 - `POST /api/admin/login`
@@ -120,6 +123,7 @@ mysql -u USER -p DB_NAME < database/migrations/001_ticketing_schema.sql
 mysql -u USER -p DB_NAME < database/migrations/002_event_editor.sql
 mysql -u USER -p DB_NAME < database/migrations/003_suite_experience_integration.sql
 mysql -u USER -p DB_NAME < database/migrations/004_long_public_event_information.sql
+mysql -u USER -p DB_NAME < database/migrations/010_order_access_recovery.sql
 ```
 
 La primera migración crea las tablas aisladas para eventos, tipos de entrada, pedidos, intentos de pago, tickets, escaneos y entregas de email. La segunda amplía los eventos y entradas sin alterar los pedidos o tickets emitidos. La tercera añade el identificador canónico y el registro idempotente de sincronización privada con Suite. La cuarta habilita contenido público extenso mediante columnas `LONGTEXT`.

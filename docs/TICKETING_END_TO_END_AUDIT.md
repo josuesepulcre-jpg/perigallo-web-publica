@@ -59,7 +59,7 @@ ticket_orders
 
 1. **No hay programador de tareas ni reintentos diferidos.** El envío se ejecuta tras la confirmación de pago; si el proceso termina después del pago, el pedido queda pagado, pero las entregas requieren intervención manual.
 2. **No existe conciliación programada de pagos pendientes.** La notificación de Redsys es la fuente de verdad, pero no hay tarea que revise intentos pendientes/expirados.
-3. **No hay recuperación segura de entradas.** Existe el enlace privado del pedido y reenvío desde él, pero no un flujo neutral por correo/teléfono con limitación de intentos.
+3. **Recuperación de entradas implementada en esta fase.** Requiere ejecutar `010_order_access_recovery.sql`: la página pública responde de forma neutral, limita intentos por identificador/IP hash y emite enlaces de 30 días revocables sin invalidar enlaces históricos.
 4. **El correo usa `mail()` y no registra IDs ni webhooks de proveedor.** No permite confirmar entrega/apertura y depende de la configuración de Plesk.
 
 ### P1: producto de cliente
@@ -98,6 +98,13 @@ ticket_orders
 5. Automatizaciones del evento, configuración y panel de comunicaciones.
 6. Cierre de evento, valoración, reseñas de Google sin filtrado y alertas internas.
 7. Wallet, analítica agregada y QA de regresión completo.
+
+## Avance de implementación
+
+- `010_order_access_recovery.sql` añade enlaces temporales revocables y el registro mínimo de solicitudes para rate limiting.
+- `/mis-entradas/` permite recuperar accesos mediante correo o teléfono y usa el nuevo enlace temporal para abrir las entradas.
+- `POST /api/orders/recover` y `GET /api/orders/access/{token}` no revelan si una compra existe. El enlace temporal no devuelve el token histórico del pedido.
+- El correo de recuperación queda registrado mediante la infraestructura existente de `email_deliveries`. La entrega real depende de que Plesk/SMTP esté configurado correctamente.
 
 ## Pruebas necesarias antes de producción comercial
 
