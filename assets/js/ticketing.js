@@ -184,7 +184,7 @@
       var edition = editionMatch ? " · Edición " + String(editionMatch[1]).padStart(2, "0") : "";
       return [
         '<div class="event-detail-layout">',
-        '<section class="ticket-detail event-hero">',
+        '<section class="ticket-detail event-hero" id="experiencia">',
         '<figure class="ticket-detail-media event-hero-media"><img src="' + escapeAttr(imageUrl) + '" alt="Cartel de ' + escapeHtml(event.title) + '" width="1086" height="1448" loading="eager" fetchpriority="high" decoding="async"></figure>',
         '<section class="event-hero-summary">',
         '<div class="event-hero-introduction">',
@@ -192,16 +192,16 @@
         '<h1 class="ticket-title">' + escapeHtml(event.title) + '</h1>',
         event.subtitle ? '<p class="event-subtitle">' + escapeHtml(event.subtitle) + '</p>' : '',
         '</div>',
-        '<p class="ticket-copy event-intro event-hero-description">' + escapeHtml(event.short_description || event.description) + '</p>',
-        '<ul class="ticket-access-facts event-hero-facts" aria-label="Datos principales de la experiencia">' + accessFacts(event) + '</ul>',
+        '<div class="ticket-copy event-intro event-hero-description">' + textParagraphs(event.short_description || event.description) + '</div>',
+        '<ul class="ticket-access-facts event-hero-facts" id="detalles" aria-label="Datos principales de la experiencia">' + accessFacts(event) + '</ul>',
         '</section>',
-        '<section class="event-access">',
+        '<section class="event-access" id="reservar">',
         '<div class="ticket-types">' + ticketCards + '</div>',
         '</section>',
         '</section>',
-        '<section class="' + storyClass + '"><div class="event-story-copy"><span class="ticket-eyebrow">La experiencia</span><h2>' + escapeHtml(event.title) + '</h2><div class="ticket-copy event-story-text">' + textParagraphs(event.description || "") + '</div></div>' + video + '</section>',
-        gallery ? '<section class="event-gallery">' + gallery + '</section>' : '',
-        experienceAccordions(event) ? '<section class="event-public-information event-public-information-accordions"><div class="experience-accordions">' + experienceAccordions(event) + '</div></section>' : '',
+        '<section class="' + storyClass + '" id="finca"><div class="event-story-copy"><span class="ticket-eyebrow">La experiencia</span><h2>' + escapeHtml(event.title) + '</h2><div class="ticket-copy event-story-text">' + textParagraphs(event.description || "") + '</div></div>' + video + '</section>',
+        gallery ? '<section class="event-gallery" id="galeria">' + gallery + '</section>' : '',
+        experienceAccordions(event) ? '<section class="event-public-information event-public-information-accordions" id="faq"><div class="experience-accordions">' + experienceAccordions(event) + '</div></section>' : '',
         '</div>'
       ].join("");
   }
