@@ -185,7 +185,7 @@
       return [
         '<div class="event-detail-layout">',
         '<section class="ticket-detail event-hero">',
-        '<figure class="ticket-detail-media event-hero-media"><img src="' + escapeAttr(imageUrl) + '" alt="Cartel de ' + escapeHtml(event.title) + '"></figure>',
+        '<figure class="ticket-detail-media event-hero-media"><img src="' + escapeAttr(imageUrl) + '" alt="Cartel de ' + escapeHtml(event.title) + '" width="1086" height="1448" loading="eager" fetchpriority="high" decoding="async"></figure>',
         '<section class="event-hero-summary">',
         '<div class="event-hero-introduction">',
         '<span class="ticket-eyebrow">Experiencia Perigallo' + edition + '</span>',
