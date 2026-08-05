@@ -13,7 +13,7 @@
 .ticket-detail.event-hero{width:100%;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"media summary" "access access";align-items:start;gap:0}
 .ticket-detail.event-hero .event-hero-media{position:relative;z-index:0;grid-area:media;display:block;justify-self:stretch;width:100%;height:auto;min-height:0;margin:0;padding:0;overflow:hidden;aspect-ratio:3 / 4;border:0;background:#07181b;box-shadow:none}
 .ticket-detail.event-hero .event-hero-media::before{display:none}
-.ticket-detail.event-hero .event-hero-media img{display:block;width:100%;height:100%;max-height:none;object-fit:contain;object-position:center;filter:saturate(.98) contrast(1.04);transition:transform 900ms ease}
+.ticket-detail.event-hero .event-hero-media img{display:block;width:100%;height:100%;max-height:none;object-fit:contain;object-position:center top;filter:saturate(.98) contrast(1.04);transition:transform 900ms ease}
 .ticket-detail.event-hero .event-hero-media:hover img{transform:none}
 
 .ticket-detail.event-hero .event-hero-summary{grid-area:summary;display:block;min-width:0;padding:clamp(70px,5.2vw,96px) clamp(42px,6.5vw,110px) clamp(58px,8vw,120px);border:0;background:transparent;box-shadow:none}
