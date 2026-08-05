@@ -135,6 +135,8 @@
         setEventSchema(event, publicUrl);
       }
       root.innerHTML = renderEventDetail(event, preview);
+      initEventPurchaseControls(root);
+      initEventSectionNavigation(root);
       initExperienceAccordions(root);
       initIncludedInformationLink(root);
     }).catch(function (error) {
@@ -177,9 +179,15 @@
       var types = event.ticket_types || [];
       var gallery = (event.gallery || []).filter(Boolean).map(function (url) { return '<img loading="lazy" src="' + escapeAttr(previewAssetUrl(url, preview)) + '" alt="Detalle de ' + escapeHtml(event.title) + '">'; }).join("");
       var imageUrl = previewAssetUrl(event.image_url || "/assets/images/finca-la-llaguna-principal.jpg", preview);
-      var video = event.video_url ? '<div class="event-story-media"><section class="event-video"><video controls playsinline preload="metadata" poster="' + escapeAttr(imageUrl) + '" src="' + escapeAttr(previewAssetUrl(event.video_url, preview)) + '">Tu navegador no puede reproducir este vídeo.</video></section></div>' : '';
+      var isPerigalla01 = /la\s+perigalla\s*0?1/i.test(String(event.title || ""));
+      var experienceName = isPerigalla01 ? "La Perigalla 01" : event.title;
+      var experienceUrl = "/experiencias/" + encodeURIComponent(event.slug) + "/";
+      var storyImageUrl = previewAssetUrl(event.card_image_url || event.image_url || "/assets/images/finca-la-llaguna-principal.jpg", preview);
+      var storyText = isPerigalla01
+        ? '<p>La Perigalla 01 inaugura una nueva forma de celebrar en Finca La Llaguna.</p><p>Una boda ficticia de inspiración ibicenca que presenta el universo de Perigallo a través de la gastronomía, la música, la puesta en escena y una historia protagonizada por Sofía y Carlos.</p><p>Una noche en formato cóctel, bajo las estrellas y con un protocolo de vestimenta completamente blanca.</p>'
+        : textParagraphs(event.short_description || event.description || "");
+      var storyVisual = '<a class="event-story-poster" href="' + escapeAttr(experienceUrl) + '" aria-label="Descubrir la experiencia completa de ' + escapeHtml(experienceName) + '"><img loading="lazy" src="' + escapeAttr(storyImageUrl) + '" alt="Cartel de ' + escapeHtml(experienceName) + '"><span class="event-story-poster-cta">Descubrir la experiencia <span aria-hidden="true">→</span></span></a>';
       var ticketCards = types.length ? types.map(function (type) { return ticketTypeRow(type, event, preview); }).join("") : '<p class="ticket-status event-access-empty">Próximamente anunciaremos las entradas.</p>';
-      var storyClass = video ? "event-story event-story-layout event-story-has-media" : "event-story event-story-layout";
       var editionMatch = String(event.title || "").match(/(?:\s|^)0*(\d+)\s*$/);
       var edition = editionMatch ? " · Edición " + String(editionMatch[1]).padStart(2, "0") : "";
       return [
@@ -199,7 +207,8 @@
         '<div class="ticket-types">' + ticketCards + '</div>',
         '</section>',
         '</section>',
-        '<section class="' + storyClass + '" id="finca"><div class="event-story-copy"><span class="ticket-eyebrow">La experiencia</span><h2>' + escapeHtml(event.title) + '</h2><div class="ticket-copy event-story-text">' + textParagraphs(event.description || "") + '</div></div>' + video + '</section>',
+        '<div class="event-section-advance"><button type="button" data-scroll-next data-scroll-target="historia" aria-label="Ir a la siguiente sección"><span aria-hidden="true">⌄</span></button></div>',
+        '<section class="event-story event-story-layout event-story-editorial" id="historia"><div class="event-story-copy"><span class="ticket-eyebrow">La experiencia</span><h2>' + escapeHtml(experienceName) + '</h2><div class="ticket-copy event-story-text">' + storyText + '</div></div>' + storyVisual + '</section>',
         gallery ? '<section class="event-gallery" id="galeria">' + gallery + '</section>' : '',
         experienceAccordions(event) ? '<section class="event-public-information event-public-information-accordions" id="faq"><div class="experience-accordions">' + experienceAccordions(event) + '</div></section>' : '',
         '</div>'
@@ -370,19 +379,41 @@
   }
 
   function ticketPurchaseAction(type, event, preview) {
+    var destination = preview
+      ? "/entradas/checkout/?preview=1&id=" + encodeURIComponent(event.id)
+      : "/entradas/checkout/?event=" + encodeURIComponent(event.slug);
+    var attributes = ' data-ticket-checkout-link data-ticket-type-id="' + escapeAttr(type.id) + '"';
     if (preview) {
-      return '<div class="ticket-access-action"><a class="ticket-btn primary" href="/entradas/checkout/?preview=1&amp;id=' + encodeURIComponent(event.id) + '">Probar recorrido de compra <span aria-hidden="true">→</span></a><p class="ticket-preview-note"><span aria-hidden="true">◦</span> Vista privada: el pedido y el pago se ejecutan en modo de pruebas, sin cargos ni aforo real.</p></div>';
+      return '<div class="ticket-access-action"><a class="ticket-btn primary"' + attributes + ' href="' + escapeAttr(destination) + '">Probar recorrido de compra <span aria-hidden="true">→</span></a><p class="ticket-preview-note"><span aria-hidden="true">◦</span> Vista privada: el pedido y el pago se ejecutan en modo de pruebas, sin cargos ni aforo real.</p></div>';
     }
     if ((type.effective_status || type.status) === "on_sale") {
-      return '<div class="ticket-access-action"><a class="ticket-btn primary" href="/entradas/checkout/?event=' + encodeURIComponent(event.slug) + '">Seleccionar entradas <span aria-hidden="true">→</span></a></div>';
+      return '<div class="ticket-access-action"><a class="ticket-btn primary"' + attributes + ' href="' + escapeAttr(destination) + '">Comprar entradas <span aria-hidden="true">→</span></a></div>';
     }
     return '<p class="ticket-access-unavailable">' + escapeHtml(availabilityText(type)) + '</p>';
+  }
+
+  function eventQuantityPicker(type, salePrice) {
+    var available = Math.max(0, Number(type.available || 0));
+    var maximum = Math.max(0, Math.min(available, Number(type.max_per_order || available)));
+    var unavailable = maximum === 0;
+    return [
+      '<div class="event-quantity-picker" data-event-quantity-picker data-ticket-price="' + salePrice + '" data-ticket-maximum="' + maximum + '">',
+      '<span class="event-quantity-label">Cantidad</span>',
+      '<div class="event-quantity-controls">',
+      '<button type="button" data-event-quantity-action="decrease" aria-label="Restar una entrada de ' + escapeAttr(type.name) + '" disabled>−</button>',
+      '<output data-event-quantity-output aria-live="polite">' + (unavailable ? '0' : '1') + '</output>',
+      '<button type="button" data-event-quantity-action="increase" aria-label="Añadir una entrada de ' + escapeAttr(type.name) + '"' + (unavailable ? ' disabled' : '') + '>+</button>',
+      '</div>',
+      '<span class="event-quantity-total">Total <strong data-event-quantity-total>' + cents(unavailable ? 0 : salePrice) + '</strong></span>',
+      '</div>'
+    ].join('');
   }
 
   function ticketTypeRow(type, event, preview) {
     var availability = availabilityText(type);
     var includesLink = event.included_text ? '<button class="ticket-access-includes" type="button" data-open-included-information>Ver todo lo que incluye<span aria-hidden="true">→</span></button>' : "";
     var dress = shortDetail(event.dress_code);
+    var salePrice = Number(type.final_price_cents != null ? type.final_price_cents : type.price_cents || 0);
     return [
       '<article class="ticket-type ticket-access-card">',
       '<div class="ticket-access-heading">',
@@ -392,7 +423,7 @@
       type.description ? '<p>' + escapeHtml(type.description) + '</p>' : '',
       includesLink,
       '</div>',
-      '<div class="ticket-access-decision">' + commercialPriceMarkup(type, type.final_price_cents != null ? type.final_price_cents : type.price_cents, 'ticket-type-price') + ticketPurchaseAction(type, event, preview) + '</div>',
+      '<div class="ticket-access-decision">' + commercialPriceMarkup(type, salePrice, 'ticket-type-price') + eventQuantityPicker(type, salePrice) + ticketPurchaseAction(type, event, preview) + '</div>',
       '</div>',
       '<div class="ticket-access-secondary">',
       dress ? '<p class="ticket-access-dress"><span class="ticket-access-icon" aria-hidden="true">' + accessIcon("dress") + '</span><span><small>Código de vestimenta</small><strong>' + escapeHtml(dress) + '</strong></span></p>' : '',
@@ -402,12 +433,61 @@
     ].join("");
   }
 
+  function initEventPurchaseControls(root) {
+    function updatePicker(picker, quantity) {
+      var maximum = Math.max(0, Number(picker.dataset.ticketMaximum || 0));
+      var safeQuantity = Math.max(0, Math.min(maximum, quantity));
+      var output = picker.querySelector("[data-event-quantity-output]");
+      var price = Number(picker.dataset.ticketPrice || 0);
+      if (output) output.textContent = safeQuantity;
+      var total = picker.querySelector("[data-event-quantity-total]");
+      if (total) total.textContent = cents(safeQuantity * price);
+      var decrease = picker.querySelector('[data-event-quantity-action="decrease"]');
+      var increase = picker.querySelector('[data-event-quantity-action="increase"]');
+      if (decrease) decrease.disabled = safeQuantity <= 1;
+      if (increase) increase.disabled = safeQuantity >= maximum || maximum === 0;
+      var card = picker.closest(".ticket-access-card");
+      var checkoutLink = card && card.querySelector("[data-ticket-checkout-link]");
+      if (checkoutLink) {
+        var url = new URL(checkoutLink.href, window.location.origin);
+        url.searchParams.set("quantity", String(safeQuantity));
+        url.searchParams.set("ticketType", checkoutLink.dataset.ticketTypeId || "");
+        checkoutLink.href = url.pathname + url.search;
+      }
+    }
+
+    root.querySelectorAll("[data-event-quantity-picker]").forEach(function (picker) {
+      var output = picker.querySelector("[data-event-quantity-output]");
+      updatePicker(picker, Number(output ? output.textContent : 0));
+    });
+    root.addEventListener("click", function (event) {
+      var button = event.target.closest("[data-event-quantity-action]");
+      if (!button || button.disabled || !root.contains(button)) return;
+      var picker = button.closest("[data-event-quantity-picker]");
+      if (!picker) return;
+      var output = picker.querySelector("[data-event-quantity-output]");
+      var current = Math.max(0, Number(output ? output.textContent : 0));
+      updatePicker(picker, current + (button.dataset.eventQuantityAction === "increase" ? 1 : -1));
+    });
+  }
+
+  function initEventSectionNavigation(root) {
+    root.addEventListener("click", function (event) {
+      var button = event.target.closest("[data-scroll-next]");
+      if (!button || !root.contains(button)) return;
+      var target = document.getElementById(button.dataset.scrollTarget || "");
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
   function initCheckout() {
     var form = document.querySelector("[data-ticket-checkout]");
     if (!form) return;
     var preview = qs("preview") === "1";
     var slug = qs("event");
     var previewId = qs("id");
+    var requestedQuantity = Math.max(0, Number(qs("quantity") || 0));
+    var requestedTicketType = qs("ticketType");
     var typesBox = form.querySelector("[data-ticket-types]");
     var status = form.querySelector("[data-ticket-status]");
     var eventTitle = document.querySelector("[data-checkout-event-title]");
@@ -462,6 +542,12 @@
       }
       var needsCode = types.some(function (type) { return type.requires_promo; });
       typesBox.innerHTML = (needsCode ? '<div class="checkout-field checkout-promo"><label for="promo_code">Código de acceso</label><input id="promo_code" name="promo_code" autocomplete="off" placeholder="Solo si alguna entrada lo requiere"></div>' : '') + types.map(checkoutTicketMarkup).join("");
+      if (requestedQuantity) {
+        var selectedInput = Array.prototype.find.call(typesBox.querySelectorAll("[data-ticket-type]"), function (input) {
+          return String(input.dataset.ticketType) === String(requestedTicketType);
+        }) || (types.length === 1 ? typesBox.querySelector("[data-ticket-type]") : null);
+        if (selectedInput) selectedInput.value = Math.min(Number(selectedInput.max || 0), requestedQuantity);
+      }
       form.dataset.eventSlug = event.slug;
       form.dataset.eventTitle = event.title;
       form.dataset.previewEventId = event.id;
