@@ -176,27 +176,26 @@
   function renderEventDetail(event, preview) {
       var types = event.ticket_types || [];
       var gallery = (event.gallery || []).filter(Boolean).map(function (url) { return '<img loading="lazy" src="' + escapeAttr(previewAssetUrl(url, preview)) + '" alt="Detalle de ' + escapeHtml(event.title) + '">'; }).join("");
-      var brand = event.logo_url ? '<div class="event-brand-signature"><img class="event-logo" src="' + escapeAttr(previewAssetUrl(event.logo_url, preview)) + '" alt="Logotipo de ' + escapeHtml(event.title) + '"></div>' : '';
       var imageUrl = previewAssetUrl(event.image_url || "/assets/images/finca-la-llaguna-principal.jpg", preview);
       var video = event.video_url ? '<div class="event-story-media"><section class="event-video"><video controls playsinline preload="metadata" poster="' + escapeAttr(imageUrl) + '" src="' + escapeAttr(previewAssetUrl(event.video_url, preview)) + '">Tu navegador no puede reproducir este vídeo.</video></section></div>' : '';
       var ticketCards = types.length ? types.map(function (type) { return ticketTypeRow(type, event, preview); }).join("") : '<p class="ticket-status event-access-empty">Próximamente anunciaremos las entradas.</p>';
       var storyClass = video ? "event-story event-story-layout event-story-has-media" : "event-story event-story-layout";
+      var editionMatch = String(event.title || "").match(/(?:\s|^)0*(\d+)\s*$/);
+      var edition = editionMatch ? " · Edición " + String(editionMatch[1]).padStart(2, "0") : "";
       return [
         '<div class="event-detail-layout">',
         '<section class="ticket-detail event-hero">',
-        brand,
-        '<figure class="ticket-detail-media event-hero-media"><img src="' + escapeAttr(imageUrl) + '" alt="Cartel de ' + escapeHtml(event.title) + '"></figure>',
-        '<div class="event-hero-copy">',
         '<div class="event-hero-introduction">',
-        '<span class="ticket-eyebrow">Experiencia Perigallo</span>',
+        '<span class="ticket-eyebrow">Experiencia Perigallo' + edition + '</span>',
         '<h1 class="ticket-title">' + escapeHtml(event.title) + '</h1>',
         event.subtitle ? '<p class="event-subtitle">' + escapeHtml(event.subtitle) + '</p>' : '',
-        '<p class="ticket-copy event-intro">' + escapeHtml(event.short_description || event.description) + '</p>',
         '</div>',
+        '<figure class="ticket-detail-media event-hero-media"><img src="' + escapeAttr(imageUrl) + '" alt="Cartel de ' + escapeHtml(event.title) + '"></figure>',
+        '<p class="ticket-copy event-intro event-hero-description">' + escapeHtml(event.short_description || event.description) + '</p>',
+        '<ul class="ticket-access-facts event-hero-facts" aria-label="Datos principales de la experiencia">' + accessFacts(event) + '</ul>',
         '<section class="event-access">',
         '<div class="ticket-types">' + ticketCards + '</div>',
         '</section>',
-        '</div>',
         '</section>',
         '<section class="' + storyClass + '"><div class="event-story-copy"><span class="ticket-eyebrow">La experiencia</span><h2>' + escapeHtml(event.title) + '</h2><div class="ticket-copy event-story-text">' + textParagraphs(event.description || "") + '</div></div>' + video + '</section>',
         gallery ? '<section class="event-gallery">' + gallery + '</section>' : '',
@@ -380,7 +379,6 @@
 
   function ticketTypeRow(type, event, preview) {
     var availability = availabilityText(type);
-    var facts = accessFacts(event);
     var includesLink = event.included_text ? '<button class="ticket-access-includes" type="button" data-open-included-information>Ver todo lo que incluye<span aria-hidden="true">→</span></button>' : "";
     var dress = shortDetail(event.dress_code);
     return [
@@ -392,11 +390,11 @@
       type.description ? '<p>' + escapeHtml(type.description) + '</p>' : '',
       includesLink,
       '</div>',
-      '<div class="ticket-access-decision">' + commercialPriceMarkup(type, type.final_price_cents != null ? type.final_price_cents : type.price_cents, 'ticket-type-price') + ticketPurchaseAction(type, event, preview) + '</div>',
+      '<div class="ticket-access-decision">' + commercialPriceMarkup(type, type.final_price_cents != null ? type.final_price_cents : type.price_cents, 'ticket-type-price') + '</div>',
       '</div>',
-      facts ? '<ul class="ticket-access-facts">' + facts + '</ul>' : '',
+      ticketPurchaseAction(type, event, preview),
       '<div class="ticket-access-secondary">',
-      dress ? '<p class="ticket-access-dress"><span class="ticket-access-icon" aria-hidden="true">' + accessIcon("dress") + '</span><span><small>Vestimenta</small><strong>' + escapeHtml(dress) + '</strong></span></p>' : '',
+      dress ? '<p class="ticket-access-dress"><span class="ticket-access-icon" aria-hidden="true">' + accessIcon("dress") + '</span><span><small>Código de vestimenta</small><strong>' + escapeHtml(dress) + '</strong></span></p>' : '',
       '<p class="ticket-access-status"><span class="ticket-access-status-dot" aria-hidden="true"></span><span>' + escapeHtml(availability) + (type.requires_promo ? ' · Código necesario' : '') + '</span></p>',
       '</div>',
       '</article>'

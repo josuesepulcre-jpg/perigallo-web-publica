@@ -1,0 +1,8 @@
+/* Explicit grid areas keep the editorial reading order intact on every viewport. */
+.ticket-detail.event-hero{grid-template-areas:"media intro" "media description" "media facts" "media access";column-gap:clamp(40px,6vw,96px);row-gap:clamp(18px,2.1vw,30px)}
+.ticket-detail.event-hero .event-hero-media{grid-area:media}.ticket-detail.event-hero .event-hero-introduction{grid-area:intro}.ticket-detail.event-hero .event-hero-description{grid-area:description}.ticket-detail.event-hero .event-hero-facts{grid-area:facts}.ticket-detail.event-hero .event-access{grid-area:access}
+.event-access .ticket-access-heading{padding:0}.event-access .ticket-access-secondary{padding:18px 0 0}
+.event-detail-section{padding-top:clamp(28px,3.2vw,48px)}
+@media(max-width:1060px){.ticket-detail.event-hero{column-gap:40px;row-gap:24px}}
+@media(max-width:880px){.ticket-detail.event-hero{grid-template-areas:"intro" "media" "description" "facts" "access";grid-template-columns:1fr;gap:28px}.event-hero-copy{display:block}.ticket-detail.event-hero .event-hero-media,.event-hero-introduction,.event-hero-facts,.event-access{order:initial}.ticket-detail.event-hero .event-hero-media{min-height:min(120vw,650px)}}
+@media(max-width:640px){.ticket-detail.event-hero{gap:24px}.event-hero .event-intro{margin:0}.ticket-detail.event-hero .event-hero-media{min-height:0}}
