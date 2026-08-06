@@ -1,0 +1,317 @@
+{
+  "provider": "Microsoft Edge Neural TTS",
+  "model": "Edge Read Aloud Neural",
+  "beats": [
+    {
+      "sceneId": "final-celebration",
+      "speaker": "narradora",
+      "text": "Cuando parecía que la historia ya había encontrado su final…",
+      "rate": "-17%",
+      "pitch": "-2Hz",
+      "volume": "+0%",
+      "pauseBeforeMs": 0,
+      "pauseAfterMs": 360,
+      "emphasisWords": [
+        "historia"
+      ],
+      "id": "00-narradora",
+      "locale": "es-ES",
+      "voiceId": "es-ES-ElviraNeural",
+      "file": "final-celebration/00-narradora.mp3"
+    },
+    {
+      "sceneId": "final-celebration",
+      "speaker": "narradora",
+      "text": "la finca comenzó a transformarse.",
+      "rate": "-7%",
+      "pitch": "-3Hz",
+      "volume": "+0%",
+      "pauseBeforeMs": 0,
+      "pauseAfterMs": 260,
+      "emphasisWords": [],
+      "id": "01-narradora",
+      "locale": "es-ES",
+      "voiceId": "es-ES-ElviraNeural",
+      "file": "final-celebration/01-narradora.mp3"
+    },
+    {
+      "sceneId": "final-celebration",
+      "speaker": "narradora",
+      "text": "Una a una, las luces fueron encendiéndose entre los árboles.",
+      "rate": "-7%",
+      "pitch": "-3Hz",
+      "volume": "+0%",
+      "pauseBeforeMs": 0,
+      "pauseAfterMs": 80,
+      "emphasisWords": [
+        "luces"
+      ],
+      "id": "02-narradora",
+      "locale": "es-ES",
+      "voiceId": "es-ES-ElviraNeural",
+      "file": "final-celebration/02-narradora.mp3"
+    },
+    {
+      "sceneId": "final-celebration",
+      "speaker": "narradora",
+      "text": "La música se abrió paso por los jardines.",
+      "rate": "-7%",
+      "pitch": "-3Hz",
+      "volume": "+0%",
+      "pauseBeforeMs": 0,
+      "pauseAfterMs": 80,
+      "emphasisWords": [
+        "música"
+      ],
+      "id": "03-narradora",
+      "locale": "es-ES",
+      "voiceId": "es-ES-ElviraNeural",
+      "file": "final-celebration/03-narradora.mp3"
+    },
+    {
+      "sceneId": "final-celebration",
+      "speaker": "narradora",
+      "text": "Las copas se elevaron.",
+      "rate": "-7%",
+      "pitch": "-3Hz",
+      "volume": "+0%",
+      "pauseBeforeMs": 0,
+      "pauseAfterMs": 260,
+      "emphasisWords": [],
+      "id": "04-narradora",
+      "locale": "es-ES",
+      "voiceId": "es-ES-ElviraNeural",
+      "file": "final-celebration/04-narradora.mp3"
+    },
+    {
+      "sceneId": "final-celebration",
+      "speaker": "narradora",
+      "text": "Las primeras risas se mezclaron con el sonido de la noche…",
+      "rate": "-7%",
+      "pitch": "-3Hz",
+      "volume": "+0%",
+      "pauseBeforeMs": 0,
+      "pauseAfterMs": 360,
+      "emphasisWords": [
+        "noche"
+      ],
+      "id": "05-narradora",
+      "locale": "es-ES",
+      "voiceId": "es-ES-ElviraNeural",
+      "file": "final-celebration/05-narradora.mp3"
+    },
+    {
+      "sceneId": "final-celebration",
+      "speaker": "narradora",
+      "text": "y, de pronto, todo empezó a suceder.",
+      "rate": "-2%",
+      "pitch": "+2Hz",
+      "volume": "+7%",
+      "pauseBeforeMs": 0,
+      "pauseAfterMs": 80,
+      "emphasisWords": [],
+      "id": "06-narradora",
+      "locale": "es-ES",
+      "voiceId": "es-ES-ElviraNeural",
+      "file": "final-celebration/06-narradora.mp3"
+    },
+    {
+      "sceneId": "final-celebration",
+      "speaker": "narradora",
+      "text": "Llegaron las sorpresas.",
+      "rate": "-2%",
+      "pitch": "+2Hz",
+      "volume": "+7%",
+      "pauseBeforeMs": 0,
+      "pauseAfterMs": 260,
+      "emphasisWords": [
+        "sorpresas"
+      ],
+      "id": "07-narradora",
+      "locale": "es-ES",
+      "voiceId": "es-ES-ElviraNeural",
+      "file": "final-celebration/07-narradora.mp3"
+    },
+    {
+      "sceneId": "final-celebration",
+      "speaker": "narradora",
+      "text": "Los brindis inesperados.",
+      "rate": "+0%",
+      "pitch": "+2Hz",
+      "volume": "+7%",
+      "pauseBeforeMs": 0,
+      "pauseAfterMs": 260,
+      "emphasisWords": [
+        "brindis"
+      ],
+      "id": "08-narradora",
+      "locale": "es-ES",
+      "voiceId": "es-ES-ElviraNeural",
+      "file": "final-celebration/08-narradora.mp3"
+    },
+    {
+      "sceneId": "final-celebration",
+      "speaker": "narradora",
+      "text": "Las canciones que nadie quería dejar de bailar.",
+      "rate": "+0%",
+      "pitch": "+2Hz",
+      "volume": "+7%",
+      "pauseBeforeMs": 0,
+      "pauseAfterMs": 80,
+      "emphasisWords": [
+        "canciones"
+      ],
+      "id": "09-narradora",
+      "locale": "es-ES",
+      "voiceId": "es-ES-ElviraNeural",
+      "file": "final-celebration/09-narradora.mp3"
+    },
+    {
+      "sceneId": "final-celebration",
+      "speaker": "narradora",
+      "text": "Los abrazos que no necesitaban palabras.",
+      "rate": "+0%",
+      "pitch": "+2Hz",
+      "volume": "+7%",
+      "pauseBeforeMs": 0,
+      "pauseAfterMs": 80,
+      "emphasisWords": [
+        "abrazos"
+      ],
+      "id": "10-narradora",
+      "locale": "es-ES",
+      "voiceId": "es-ES-ElviraNeural",
+      "file": "final-celebration/10-narradora.mp3"
+    },
+    {
+      "sceneId": "final-celebration",
+      "speaker": "narradora",
+      "text": "Y esa extraña sensación de estar viviendo algo que, incluso antes de terminar, ya se había convertido en un recuerdo.",
+      "rate": "-5%",
+      "pitch": "-3Hz",
+      "volume": "+0%",
+      "pauseBeforeMs": 0,
+      "pauseAfterMs": 80,
+      "emphasisWords": [],
+      "id": "11-narradora",
+      "locale": "es-ES",
+      "voiceId": "es-ES-ElviraNeural",
+      "file": "final-celebration/11-narradora.mp3"
+    },
+    {
+      "sceneId": "final-celebration",
+      "speaker": "narradora",
+      "text": "Sofía y Carlos se miraron una vez más.",
+      "rate": "-5%",
+      "pitch": "-3Hz",
+      "volume": "+0%",
+      "pauseBeforeMs": 0,
+      "pauseAfterMs": 80,
+      "emphasisWords": [],
+      "id": "12-narradora",
+      "locale": "es-ES",
+      "voiceId": "es-ES-ElviraNeural",
+      "file": "final-celebration/12-narradora.mp3"
+    },
+    {
+      "sceneId": "final-celebration",
+      "speaker": "narradora",
+      "text": "Pero ahora ya no estaban solos.",
+      "rate": "-3%",
+      "pitch": "+1Hz",
+      "volume": "+7%",
+      "pauseBeforeMs": 0,
+      "pauseAfterMs": 260,
+      "emphasisWords": [
+        "solos"
+      ],
+      "id": "13-narradora",
+      "locale": "es-ES",
+      "voiceId": "es-ES-ElviraNeural",
+      "file": "final-celebration/13-narradora.mp3"
+    },
+    {
+      "sceneId": "final-celebration",
+      "speaker": "narradora",
+      "text": "A su alrededor, cada invitado formaba parte de aquella historia.",
+      "rate": "-7%",
+      "pitch": "-3Hz",
+      "volume": "+0%",
+      "pauseBeforeMs": 0,
+      "pauseAfterMs": 80,
+      "emphasisWords": [
+        "historia"
+      ],
+      "id": "14-narradora",
+      "locale": "es-ES",
+      "voiceId": "es-ES-ElviraNeural",
+      "file": "final-celebration/14-narradora.mp3"
+    },
+    {
+      "sceneId": "final-celebration",
+      "speaker": "narradora",
+      "text": "Porque algunas noches no terminan cuando se apagan las luces.",
+      "rate": "-12%",
+      "pitch": "-5Hz",
+      "volume": "+4%",
+      "pauseBeforeMs": 0,
+      "pauseAfterMs": 760,
+      "emphasisWords": [
+        "luces"
+      ],
+      "id": "15-narradora",
+      "locale": "es-ES",
+      "voiceId": "es-ES-ElviraNeural",
+      "file": "final-celebration/15-narradora.mp3"
+    },
+    {
+      "sceneId": "final-celebration",
+      "speaker": "narradora",
+      "text": "Algunas noches permanecen.",
+      "rate": "-12%",
+      "pitch": "-5Hz",
+      "volume": "+4%",
+      "pauseBeforeMs": 0,
+      "pauseAfterMs": 760,
+      "emphasisWords": [
+        "permanecen"
+      ],
+      "id": "16-narradora",
+      "locale": "es-ES",
+      "voiceId": "es-ES-ElviraNeural",
+      "file": "final-celebration/16-narradora.mp3"
+    },
+    {
+      "sceneId": "final-celebration",
+      "speaker": "narradora",
+      "text": "Y aquella…",
+      "rate": "-7%",
+      "pitch": "-3Hz",
+      "volume": "+0%",
+      "pauseBeforeMs": 0,
+      "pauseAfterMs": 360,
+      "emphasisWords": [],
+      "id": "17-narradora",
+      "locale": "es-ES",
+      "voiceId": "es-ES-ElviraNeural",
+      "file": "final-celebration/17-narradora.mp3"
+    },
+    {
+      "sceneId": "final-celebration",
+      "speaker": "narradora",
+      "text": "aquella apenas acababa de comenzar.",
+      "rate": "-17%",
+      "pitch": "-6Hz",
+      "volume": "+4%",
+      "pauseBeforeMs": 0,
+      "pauseAfterMs": 760,
+      "emphasisWords": [
+        "comenzar"
+      ],
+      "id": "18-narradora",
+      "locale": "es-ES",
+      "voiceId": "es-ES-ElviraNeural",
+      "file": "final-celebration/18-narradora.mp3"
+    }
+  ]
+}
