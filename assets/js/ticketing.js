@@ -233,7 +233,7 @@
         '<div class="event-hero-introduction">',
         '<span class="ticket-eyebrow">Experiencia Perigallo' + edition + '</span>',
         '<h1 class="ticket-title">' + escapeHtml(event.title) + '</h1>',
-        event.subtitle ? '<p class="event-subtitle">' + escapeHtml(event.subtitle) + '</p>' : '',
+        event.subtitle ? '<p class="event-hero-subtitle">' + escapeHtml(event.subtitle) + '</p>' : '',
         '</div>',
         '<div class="ticket-copy event-intro event-hero-description">' + textParagraphs(event.short_description || event.description) + '</div>',
         '<ul class="ticket-access-facts event-hero-facts' + (isPerigalla01 ? ' event-hero-facts--with-dress-code' : '') + '" id="datos-rapidos" aria-label="Datos principales de la experiencia">' + accessFacts(event) + '</ul>',
@@ -415,27 +415,12 @@
     root.addEventListener("click", function (event) {
       var link = event.target.closest("[data-open-included-information]");
       if (!link || !root.contains(link)) return;
-      var guideTrigger = root.querySelector("[data-experience-guide-trigger]");
-      if (guideTrigger && window.innerWidth > 980) {
-        event.preventDefault();
-        guideTrigger.click();
-        var details = root.querySelector("#detalles");
-        if (details) details.scrollIntoView({ behavior: "smooth", block: "start" });
-        return;
-      }
-      var accordion = Array.prototype.find.call(root.querySelectorAll("[data-experience-accordion]"), function (item) {
-        var title = item.querySelector(".experience-accordion-title");
-        return title && title.textContent.trim() === "Información de la experiencia";
-      });
-      if (!accordion) return;
-      var trigger = accordion.querySelector("[data-experience-accordion-trigger]");
-      if (trigger && trigger.getAttribute("aria-expanded") !== "true") {
-        trigger.click();
-        return;
-      }
-      var offset = window.innerWidth <= 760 ? 82 : 116;
-      var top = window.scrollY + accordion.getBoundingClientRect().top - offset;
-      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+      var panel = root.querySelector("#" + link.getAttribute("aria-controls"));
+      if (!panel) return;
+      var expanded = link.getAttribute("aria-expanded") === "true";
+      link.setAttribute("aria-expanded", String(!expanded));
+      link.classList.toggle("is-open", !expanded);
+      panel.hidden = expanded;
     });
   }
 
@@ -479,7 +464,7 @@
       '<li class="ticket-access-fact ticket-access-fact--dress-code">',
       '<span class="ticket-access-icon" aria-hidden="true">' + accessIcon("dress") + '</span>',
       '<span class="ticket-access-dress-fact-copy">',
-      '<small>Código de vestimenta obligatorio <b>· Total White</b></small>',
+      '<small>Código de vestimenta obligatorio <b>· Total White</b><span class="ticket-access-age" aria-label="Acceso exclusivo para mayores de 18 años">+18</span></small>',
       '<strong>Es obligatorio acudir vestido íntegramente de blanco. <b>No se permitirá el acceso</b> a quienes no cumplan este código de vestimenta.</strong>',
       '</span>',
       '</li>'
@@ -545,7 +530,10 @@
 
   function ticketTypeRow(type, event, preview) {
     var availability = availabilityText(type);
-    var includesLink = event.included_text ? '<button class="ticket-access-includes" type="button" data-open-included-information>Ver todo lo que incluye<span aria-hidden="true">→</span></button>' : "";
+    var includes = ticketIncludedHighlights(event);
+    var includesLink = event.included_text
+      ? '<button class="ticket-access-includes" type="button" data-open-included-information aria-expanded="false" aria-controls="ticket-included-' + escapeAttr(type.id) + '"><span>Ver todo lo que incluye</span><b aria-hidden="true">+</b></button><div class="ticket-access-included-panel" id="ticket-included-' + escapeAttr(type.id) + '" hidden>' + textParagraphs(event.included_text) + '</div>'
+      : "";
     var dress = shortDetail(event.dress_code);
     var salePrice = Number(type.final_price_cents != null ? type.final_price_cents : type.price_cents || 0);
     return [
@@ -555,16 +543,32 @@
       '<span class="ticket-access-eyebrow">Tu acceso a la experiencia</span>',
       '<h3>' + escapeHtml(type.name) + '</h3>',
       type.description ? '<p>' + escapeHtml(type.description) + '</p>' : '',
+      includes,
       includesLink,
       '</div>',
       '<div class="ticket-access-decision">' + commercialPriceMarkup(type, salePrice, 'ticket-type-price') + eventQuantityPicker(type, salePrice) + ticketPurchaseAction(type, event, preview) + '</div>',
       '</div>',
       '<div class="ticket-access-secondary">',
       dress ? dressCodeNotice(event, dress) : '',
+      eventIsAdultsOnly(event) ? '<p class="ticket-access-minor"><span>+18</span><small>Acceso exclusivo para mayores de edad</small></p>' : '',
       '<p class="ticket-access-status"><span class="ticket-access-status-dot" aria-hidden="true"></span><span>' + escapeHtml(availability) + (type.requires_promo ? ' · Código necesario' : '') + '</span></p>',
       '</div>',
       '</article>'
     ].join("");
+  }
+
+  function eventIsAdultsOnly(event) {
+    return /(?:mayores?\s+de\s+18|exclusivamente\s+a\s+personas\s+mayores)/i.test(String(event.minor_policy || ""));
+  }
+
+  function ticketIncludedHighlights(event) {
+    if (!/la\s+perigalla\s*0?1/i.test(String(event.title || "")) || !event.included_text) return "";
+    return '<section class="ticket-access-includes-summary" aria-label="Qué incluye tu entrada">' +
+      '<span>Qué incluye tu entrada</span><ul>' +
+      '<li>Acceso completo a La Perigalla 01</li>' +
+      '<li>Experiencia gastronómica en formato cóctel</li>' +
+      '<li>Puesta en escena, música y programación de la noche</li>' +
+      '</ul></section>';
   }
 
   function dressCodeNotice(event, dress) {
