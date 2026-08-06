@@ -210,14 +210,15 @@
       var storyVenue = isPerigalla01
         ? '<aside class="event-story-venue" aria-label="Ubicación de la experiencia"><span>El escenario</span><strong>Finca La Llaguna</strong><p>Crevillent · Alicante</p><a href="https://fincalallaguna.com/" target="_blank" rel="noopener noreferrer">Descubrir la finca <b aria-hidden="true">↗</b></a></aside><p class="event-story-microdata">29 AGO 2026 <span>·</span> NOCHE <span>·</span> TOTAL WHITE</p>'
         : '';
-      var storyVisual = '<figure class="event-story-poster-wrap"><a class="event-story-poster" href="' + escapeAttr(experienceUrl) + '" aria-label="Descubrir la experiencia completa de ' + escapeHtml(experienceName) + '"><img loading="lazy" src="' + escapeAttr(storyImageUrl) + '" alt="Cartel de ' + escapeHtml(experienceName) + '"><span class="event-story-poster-cta">Descubrir la experiencia <span aria-hidden="true">→</span></span></a><figcaption><strong>' + escapeHtml(experienceName) + '</strong><span>Primera experiencia Perigallo</span><a href="' + escapeAttr(experienceUrl) + '">Descubrir la historia <b aria-hidden="true">→</b></a></figcaption></figure>';
+      var storyVisual = '<figure class="event-story-poster-wrap"><a class="event-story-poster" href="' + escapeAttr(experienceUrl) + '" aria-label="Descubrir la experiencia completa de ' + escapeHtml(experienceName) + '"><img loading="lazy" src="' + escapeAttr(storyImageUrl) + '" alt="Cartel de ' + escapeHtml(experienceName) + '"></a><figcaption><strong>' + escapeHtml(experienceName) + '</strong><span>Primera experiencia Perigallo</span><a href="' + escapeAttr(experienceUrl) + '">Descubrir la historia <b aria-hidden="true">→</b></a></figcaption></figure>';
       var ticketCards = types.length ? types.map(function (type) { return ticketTypeRow(type, event, preview); }).join("") : '<p class="ticket-status event-access-empty">Próximamente anunciaremos las entradas.</p>';
       var editionMatch = String(event.title || "").match(/(?:\s|^)0*(\d+)\s*$/);
       var edition = editionMatch ? " · Edición " + String(editionMatch[1]).padStart(2, "0") : "";
       var information = experienceInformation(event);
       return [
         '<div class="event-detail-layout event-experience-chapters">',
-        '<section class="ticket-detail event-hero event-chapter event-chapter-entry" id="entrada">',
+        '<section class="event-chapter event-chapter-entry" id="entrada">',
+        '<div class="ticket-detail event-hero">',
         '<figure class="ticket-detail-media event-hero-media"><img src="' + escapeAttr(imageUrl) + '" alt="Cartel de ' + escapeHtml(event.title) + '" width="1086" height="1448" loading="eager" fetchpriority="high" decoding="async"></figure>',
         '<section class="event-hero-summary">',
         '<div class="event-hero-introduction">',
@@ -227,15 +228,16 @@
         '</div>',
         '<div class="ticket-copy event-intro event-hero-description">' + textParagraphs(event.short_description || event.description) + '</div>',
         '<ul class="ticket-access-facts event-hero-facts' + (isPerigalla01 ? ' event-hero-facts--with-dress-code' : '') + '" id="datos-rapidos" aria-label="Datos principales de la experiencia">' + accessFacts(event) + '</ul>',
-        '<a class="event-chapter-next event-chapter-next-entry" href="#experiencia"><span class="event-chapter-next-index">01 / 03</span><span>Descubrir la experiencia</span><b aria-hidden="true">↓</b></a>',
         '</section>',
         '<section class="event-access" id="reservar">',
         '<div class="ticket-types">' + ticketCards + '</div>',
         '</section>',
+        '</div>',
+        '<div class="event-chapter-inner event-chapter-entry-progress"><a class="event-chapter-next event-chapter-next-entry" href="#experiencia"><span class="event-chapter-next-index">01 / 03</span><span>Descubrir la experiencia</span><b aria-hidden="true">↓</b></a></div>',
         '</section>',
-        '<section class="event-story event-story-layout event-story-editorial event-chapter event-chapter-story" id="experiencia"><span class="event-anchor" id="historia" aria-hidden="true"></span><div class="event-story-copy"><span class="ticket-eyebrow">02 · La experiencia</span><h2>' + escapeHtml(experienceName) + '</h2><p class="event-story-lede">Una noche donde gastronomía, música y puesta en escena cuentan una misma historia.</p><div class="ticket-copy event-story-text">' + storyText + '</div>' + storyVenue + '<a class="event-chapter-next event-chapter-next-story" href="#detalles"><span class="event-chapter-next-index">02 / 03</span><span>Todos los detalles</span><b aria-hidden="true">↓</b></a></div>' + storyVisual + '</section>',
+        '<section class="event-story event-story-layout event-chapter event-chapter-story" id="experiencia"><span class="event-anchor" id="historia" aria-hidden="true"></span><div class="event-chapter-inner event-story-editorial">' + storyVisual + '<div class="event-story-copy"><span class="ticket-eyebrow">02 · La experiencia</span><h2>' + escapeHtml(experienceName) + '</h2><p class="event-story-lede">Una noche donde gastronomía, música y puesta en escena cuentan una misma historia.</p><div class="ticket-copy event-story-text">' + storyText + '</div>' + storyVenue + '</div><a class="event-chapter-next event-chapter-next-story" href="#detalles"><span class="event-chapter-next-index">02 / 03</span><span>Todos los detalles</span><b aria-hidden="true">↓</b></a></div></section>',
         gallery ? '<section class="event-gallery" id="galeria">' + gallery + '</section>' : '',
-        information ? '<section class="event-public-information event-public-information-accordions event-chapter event-chapter-details" id="detalles"><span class="event-anchor" id="faq" aria-hidden="true"></span><header class="experience-information-heading"><span class="ticket-eyebrow">03 · Detalles</span><h2>Todo lo que necesitas saber</h2><p>Los detalles de la experiencia.</p></header>' + information + '</section>' : '',
+        information ? '<section class="event-public-information event-public-information-accordions event-chapter event-chapter-details" id="detalles"><span class="event-anchor" id="faq" aria-hidden="true"></span><div class="event-chapter-inner event-details-layout"><header class="experience-information-heading"><span class="ticket-eyebrow">03 · Detalles</span><h2>Todo lo que necesitas saber</h2><p>Los detalles de la experiencia.</p></header><div class="event-details-body">' + information + '</div></div></section>' : '',
         '</div>'
       ].join("");
   }

@@ -128,3 +128,13 @@
   from { opacity: 0.2; transform: translateY(5px); }
   to { opacity: 1; transform: none; }
 }
+
+/* The details chapter shares the page grid instead of owning a separate canvas. */
+.event-details-layout{display:grid;gap:clamp(42px,6vw,92px)}
+.event-details-body{min-width:0}
+@media(min-width:981px){
+  .event-details-layout{grid-template-columns:minmax(250px,.38fr) minmax(0,.62fr);align-items:start}
+  .event-details-layout .experience-information-heading{max-width:29rem;margin:0}
+  .event-details-layout .experience-guide{margin:0;grid-template-columns:minmax(190px,.34fr) minmax(0,.66fr)}
+  .event-details-layout .experience-guide-panel{min-height:0}
+}
