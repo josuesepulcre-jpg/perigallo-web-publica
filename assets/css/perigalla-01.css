@@ -112,6 +112,8 @@ h1 em, h2 em { color: var(--coral); font-style: italic; font-weight: 400; }
 .intro-poster { position: relative; min-width: 0; margin: 0; overflow: hidden; aspect-ratio: 5 / 4; background: var(--night); }
 .intro-poster picture, .intro-poster img { width: 100%; height: 100%; }
 .intro-poster img { object-fit: cover; object-position: right center; }
+.intro-hosts-poster { background: #06161d; }
+.intro-hosts-poster img { object-fit: contain; object-position: center bottom; }
 .intro-poster::after { position: absolute; inset: 0; content: ""; background: linear-gradient(0deg, rgba(0, 0, 0, 0.6), transparent 55%); pointer-events: none; }
 .intro-poster figcaption { position: absolute; z-index: 1; right: var(--page-gutter); bottom: 1.1rem; left: var(--page-gutter); margin: 0; color: var(--cream); font-size: 0.66rem; letter-spacing: 0.18em; text-transform: uppercase; }
 
@@ -192,7 +194,7 @@ h1 em, h2 em { color: var(--coral); font-style: italic; font-weight: 400; }
   .perigalla-nav nav .nav-reserve { margin: 0; padding: 0.65rem 1rem; }
   .perigalla-intro { min-height: calc(100dvh - var(--nav-height)); grid-template-columns: minmax(0, 0.96fr) minmax(0, 1.04fr); }
   .intro-copy { max-width: none; padding: clamp(2.5rem, 6vh, 5.25rem) clamp(2.5rem, 6vw, 7.75rem); display: flex; flex-direction: column; justify-content: center; }
-  h1 { margin-block: 0.75rem 1rem; max-width: 9.5ch; font-size: clamp(4rem, 6.5vw, 7.6rem); }
+  h1 { margin-block: 0.75rem 1rem; max-width: none; font-size: clamp(4rem, 6.5vw, 7.6rem); }
   .intro-copy .intro-lead { margin-bottom: 0.95rem; font-size: clamp(1.25rem, 1.7vw, 1.7rem); }
   .intro-copy p:not(.eyebrow) { max-width: 34rem; margin-bottom: 0.7rem; font-size: clamp(0.94rem, 1.1vw, 1.08rem); }
   .intro-poster { min-height: 0; aspect-ratio: auto; }
