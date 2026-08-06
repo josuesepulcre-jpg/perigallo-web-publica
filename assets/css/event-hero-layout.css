@@ -112,6 +112,15 @@
   .event-access .ticket-type-price{gap:10px}
   .event-access .ticket-type-price .ticket-promo-label{white-space:nowrap}
   .event-access .ticket-access-action{margin-top:2px}
-  .event-access .ticket-access-secondary{left:calc(clamp(26px,3.9vw,58px) + clamp(32px,2.2vw,40px))}
-  .event-access .ticket-access-dress-notice{padding-right:32px}
+  .event-access .ticket-type-price strong{margin-bottom:12px}
+  .event-access .ticket-access-secondary{
+    left:clamp(26px,3.9vw,58px);
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    column-gap:clamp(24px,3vw,48px);
+    align-items:start
+  }
+  .event-access .ticket-access-dress-notice{width:100%;min-width:0;padding-right:0}
+  .event-access .ticket-access-dress-content{min-width:0}
+  .event-access .ticket-access-status{justify-self:end;align-self:start;margin:0}
 }
