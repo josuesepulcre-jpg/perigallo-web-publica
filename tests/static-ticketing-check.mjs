@@ -208,6 +208,11 @@ for (const marker of ["Información de la experiencia", "Código de vestimenta",
 for (const marker of ["dressCodeNotice", "Código de vestimenta obligatorio", "No se permitirá el acceso"]) {
   if (!publicJs.includes(marker)) throw new Error(`Missing clear public dress-code notice: ${marker}`);
 }
+
+const homeExperiences = readFileSync(join(root, "assets/js/home-experiences.js"), "utf8");
+for (const marker of ["reference_price_from_cents", "Precio cerrado por persona", "Código de vestimenta obligatorio", "No se permitirá el acceso"]) {
+  if (!homeExperiences.includes(marker)) throw new Error(`Missing clear home experience card marker: ${marker}`);
+}
 for (const marker of ["adminRequest", "data-start-test-payment", "submitPaymentForm", "Redsys TEST", "MODO DE PRUEBAS", "initPaymentResult", "data-payment-result"]) {
   if (!publicJs.includes(marker)) throw new Error(`Missing sandbox checkout marker: ${marker}`);
 }

@@ -71,6 +71,35 @@
     return event.card_image_url || event.image_url || fallbackImage;
   }
 
+  function isPerigalla01(event) {
+    return /la\s+perigalla\s*0?1/i.test(String(event.title || ""));
+  }
+
+  function priceMarkup(event, price) {
+    var reference = formatPrice(event.reference_price_from_cents);
+    var hasReferencePrice = Number(event.reference_price_from_cents) > Number(event.price_from_cents || 0);
+    return [
+      '<div class="experience-carousel-price">',
+      hasReferencePrice ? '<span class="experience-carousel-price-reference">Valor de la experiencia <del>' + escapeHtml(reference) + '</del></span>' : '<span class="experience-carousel-price-reference">Precio de la experiencia</span>',
+      '<strong>' + escapeHtml(price) + '</strong>',
+      '<small>' + (isPerigalla01(event) ? 'Precio cerrado por persona' : 'Precio por persona') + '</small>',
+      '</div>'
+    ].join("");
+  }
+
+  function dressCodeMarkup(event) {
+    if (!event.dress_code) return "";
+    if (isPerigalla01(event)) {
+      return [
+        '<aside class="experience-carousel-dress-code" aria-label="Código de vestimenta obligatorio: Total White">',
+        '<span class="experience-carousel-dress-kicker">Código de vestimenta obligatorio <b>· Total White</b></span>',
+        '<p>Es obligatorio acudir vestido íntegramente de blanco. <strong>No se permitirá el acceso</strong> a quienes no cumplan este código de vestimenta.</p>',
+        '</aside>'
+      ].join("");
+    }
+    return '<aside class="experience-carousel-dress-code"><span class="experience-carousel-dress-kicker">Código de vestimenta</span><p>' + escapeHtml(event.dress_code) + '</p></aside>';
+  }
+
   function renderEmpty() {
     root.className = "experience-carousel experience-carousel-empty";
     root.removeAttribute("aria-busy");
@@ -130,9 +159,10 @@
       '<div class="experience-carousel-meta">',
       meta.map(function (item) { return '<div class="experience-carousel-meta-item"><span class="experience-carousel-meta-label">' + item[0] + '</span><span class="experience-carousel-meta-value">' + escapeHtml(item[1]) + '</span></div>'; }).join(""),
       '</div>',
+      dressCodeMarkup(event),
       '<p class="experience-carousel-desc">' + escapeHtml(eventDescription(event)) + '</p>',
       '<div class="experience-carousel-footer">',
-      price ? '<div class="experience-carousel-price">Desde ' + escapeHtml(price) + '<small>por persona</small></div>' : '<span class="experience-carousel-meta-value">Precio por anunciar</span>',
+      price ? priceMarkup(event, price) : '<span class="experience-carousel-meta-value">Precio por anunciar</span>',
       '<div class="experience-carousel-actions"><a class="btn-ghost" href="/experiencias/">Ver todas</a><a class="btn-primary" href="' + eventLink(event) + '">Ver experiencia</a></div>',
       '</div>',
       '</div>',
