@@ -128,27 +128,46 @@ section{position:relative}
 .service-link:hover{gap:16px}
 .service-link::after{content:'→'}
 
-/* POP-UP detail */
+/* EXPERIENCIAS: carrusel editorial conectado al calendario público */
 .popup-section{background:var(--bg);position:relative;overflow:hidden}
-.popup-inner{display:grid;grid-template-columns:1fr 1fr;min-height:660px}
-.popup-visual{position:relative;overflow:hidden}
-.popup-visual-img{width:100%;height:100%;background-size:cover;background-position:center;transition:transform 10s ease;transform:scale(1.08)}
-.popup-section:hover .popup-visual-img{transform:scale(1)}
-.popup-visual-overlay{position:absolute;inset:0;background:linear-gradient(to right,rgba(39,66,73,.1) 40%,var(--bg) 100%)}
-.popup-badge{position:absolute;top:34px;left:34px;background:var(--gold);color:var(--bg2);font-size:.55rem;letter-spacing:.26em;text-transform:uppercase;padding:7px 16px;font-weight:500}
-.popup-content{padding:90px 80px 90px 60px;display:flex;flex-direction:column;justify-content:center;position:relative}
-.popup-content::before{content:'';position:absolute;left:0;top:14%;bottom:14%;width:1px;background:linear-gradient(to bottom,transparent,var(--gold),transparent);opacity:.25}
-.popup-tag{font-size:.56rem;letter-spacing:.4em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;display:block}
-.popup-title{font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,3.6vw,3.4rem);font-weight:300;line-height:1.04;margin-bottom:10px}
-.popup-title em{font-style:italic;color:var(--gold-l)}
-.popup-subtitle{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-style:italic;color:var(--muted-2);margin-bottom:32px}
-.popup-meta{display:flex;gap:32px;margin-bottom:28px;padding-bottom:28px;border-bottom:1px solid var(--border);flex-wrap:wrap}
-.popup-meta-label{font-size:.55rem;letter-spacing:.26em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:5px}
-.popup-meta-value{font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--cream)}
-.popup-desc{font-size:.81rem;line-height:1.95;color:var(--muted-2);margin-bottom:28px;max-width:430px}
-.popup-actions{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-top:8px}
-.popup-price{font-family:'Cormorant Garamond',serif;font-size:1.85rem;color:var(--gold)}
-.popup-price small{font-size:.58rem;font-family:'Montserrat',sans-serif;color:var(--muted);letter-spacing:.1em;margin-left:5px;vertical-align:middle}
+.experience-carousel{position:relative;min-height:660px;outline:none}
+.experience-carousel:focus-visible{outline:1px solid var(--gold);outline-offset:-8px}
+.experience-carousel-track{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(420px,.95fr);min-height:660px}
+.experience-carousel-visual{position:relative;overflow:hidden;background:var(--bg4)}
+.experience-carousel-image{position:absolute;inset:0;background-size:cover;background-position:center;transform:scale(1.035);transition:opacity .45s ease,transform 1.1s ease;opacity:1}
+.experience-carousel.is-changing .experience-carousel-image{opacity:.12;transform:scale(1.075)}
+.experience-carousel-visual::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(20,42,48,.08),rgba(20,42,48,.4)),linear-gradient(0deg,rgba(20,42,48,.38),transparent 55%)}
+.experience-carousel-badge{position:absolute;z-index:1;top:34px;left:34px;background:var(--gold);color:var(--bg2);font-size:.55rem;letter-spacing:.26em;text-transform:uppercase;padding:7px 16px;font-weight:500}
+.experience-carousel-content{padding:76px 80px 72px 62px;display:flex;flex-direction:column;justify-content:center;position:relative;min-width:0}
+.experience-carousel-content::before{content:'';position:absolute;left:0;top:13%;bottom:13%;width:1px;background:linear-gradient(to bottom,transparent,var(--gold),transparent);opacity:.25}
+.experience-carousel-kicker{font-size:.56rem;letter-spacing:.4em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;display:block}
+.experience-carousel-title{font-family:'Cormorant Garamond',serif;font-size:clamp(2.25rem,3.6vw,3.55rem);font-weight:300;line-height:1.02;margin-bottom:10px;color:var(--cream)}
+.experience-carousel-title em{font-style:italic;color:var(--gold-l)}
+.experience-carousel-subtitle{font-family:'Cormorant Garamond',serif;font-size:1.08rem;font-style:italic;color:var(--muted-2);margin-bottom:30px}
+.experience-carousel-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 28px;margin-bottom:26px;padding-bottom:26px;border-bottom:1px solid var(--border)}
+.experience-carousel-meta-item{min-width:0}
+.experience-carousel-meta-label{font-size:.53rem;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:6px}
+.experience-carousel-meta-value{font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--cream);line-height:1.2;overflow-wrap:anywhere}
+.experience-carousel-desc{font-size:.8rem;line-height:1.95;color:var(--muted-2);margin-bottom:26px;max-width:500px}
+.experience-carousel-footer{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.experience-carousel-price{font-family:'Cormorant Garamond',serif;font-size:1.85rem;color:var(--gold);line-height:1}
+.experience-carousel-price small{font-size:.55rem;font-family:'Montserrat',sans-serif;color:var(--muted);letter-spacing:.12em;margin-top:8px;display:block;text-transform:uppercase}
+.experience-carousel-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.experience-carousel-control{width:42px;height:42px;border:1px solid rgba(205,177,151,.45);background:rgba(26,44,49,.34);color:var(--cream);cursor:pointer;display:grid;place-items:center;font-size:1.2rem;line-height:1;transition:background .25s,color .25s,border-color .25s}
+.experience-carousel-control:hover{background:var(--gold);color:var(--bg2);border-color:var(--gold)}
+.experience-carousel-control:focus-visible,.experience-carousel-dot:focus-visible{outline:1px solid var(--cream);outline-offset:4px}
+.experience-carousel-navigation{position:absolute;left:34px;bottom:34px;z-index:2;display:flex;align-items:center;gap:12px}
+.experience-carousel-dots{display:flex;gap:7px;align-items:center;margin-left:5px}
+.experience-carousel-dot{width:7px;height:7px;padding:0;border:0;border-radius:50%;background:rgba(245,241,229,.38);cursor:pointer;transition:transform .2s,background .2s}
+.experience-carousel-dot[aria-current="true"]{background:var(--gold);transform:scale(1.35)}
+.experience-carousel.is-single .experience-carousel-navigation{display:none}
+.experience-carousel-empty{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(420px,.95fr);min-height:660px}
+.experience-carousel-empty .experience-carousel-visual{background:radial-gradient(circle at 48% 48%,rgba(205,177,151,.18),transparent 12%),linear-gradient(145deg,rgba(245,241,229,.05),rgba(0,0,0,.16));}
+.experience-carousel-empty .experience-carousel-visual::before{content:'P';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-family:'Cormorant Garamond',serif;font-size:13rem;font-style:italic;font-weight:300;color:rgba(205,177,151,.22)}
+.experience-carousel-empty .experience-carousel-content{max-width:650px}
+.experience-carousel-loading{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(420px,.95fr);min-height:660px}
+.experience-carousel-loading .experience-carousel-visual,.experience-carousel-loading .experience-carousel-content{background:linear-gradient(90deg,rgba(245,241,229,.025),rgba(245,241,229,.08),rgba(245,241,229,.025));background-size:220% 100%;animation:experienceLoading 1.4s ease-in-out infinite}
+@keyframes experienceLoading{to{background-position:-220% 0}}
 
 /* MENÚ COMO RELATO */
 .coctel-menu{padding:132px 0 140px;background:linear-gradient(180deg,var(--bg2) 0%,var(--bg4) 100%);overflow:hidden}
@@ -351,12 +370,15 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
   .hero-path{padding:15px 16px}
   .services-grid{grid-template-columns:1fr;padding:0 20px}
   .service-card{padding:48px 36px;min-height:auto}
-  .popup-inner,.celebrate-inner,.finca-inner{grid-template-columns:1fr}
+  .experience-carousel-track,.experience-carousel-empty,.experience-carousel-loading,.celebrate-inner,.finca-inner{grid-template-columns:1fr}
   .celebrate-inner,.finca-inner{padding:0 24px;gap:48px}
-  .popup-visual{height:280px}
-  .popup-visual-overlay{background:linear-gradient(to bottom,rgba(39,66,73,.1) 30%,var(--bg) 100%)}
-  .popup-content{padding:40px 24px}
-  .popup-meta{gap:18px}
+  .experience-carousel{min-height:0}
+  .experience-carousel-track,.experience-carousel-empty,.experience-carousel-loading{min-height:0}
+  .experience-carousel-visual{height:340px}
+  .experience-carousel-content{padding:46px 24px 82px}
+  .experience-carousel-content::before{display:none}
+  .experience-carousel-meta{gap:18px}
+  .experience-carousel-navigation{left:24px;bottom:24px}
   .story-wrap{padding:0 24px}
   .story-wrap::before{left:24px;right:24px}
   .story-hero{grid-template-columns:1fr;gap:42px;margin-bottom:54px}
@@ -506,29 +528,13 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
   </div>
 </section>
 
-<!-- POP-UP DETAIL -->
-<section class="popup-section" id="popup">
-  <div class="popup-inner">
-    <div class="popup-visual">
-      <div class="popup-visual-img" style="background-image:url('assets/images/perigallo-hero-original-03.jpg');background-size:cover;background-position:center"></div>
-      <div class="popup-visual-overlay"></div>
-      <span class="popup-badge">&#9670; Plazas limitadas</span>
-    </div>
-    <div class="popup-content reveal">
-      <span class="popup-tag">Restaurante pop-up · Próximamente</span>
-      <h2 class="popup-title">Nueva experiencia<br><em>pop-up</em></h2>
-      <p class="popup-subtitle">Fechas puntuales, plazas limitadas y cocina de Perigallo por tiempo limitado.</p>
-      <div class="popup-meta">
-        <div><span class="popup-meta-label">Estado</span><span class="popup-meta-value">Próximas fechas por anunciar</span></div>
-        <div><span class="popup-meta-label">Reservas</span><span class="popup-meta-value">Apertura próximamente</span></div>
-        <div><span class="popup-meta-label">Formato</span><span class="popup-meta-value">Mesa única · plazas limitadas</span></div>
-        <div><span class="popup-meta-label">Lugar</span><span class="popup-meta-value">Finca La Llaguna</span></div>
-      </div>
-      <p class="popup-desc">Nueva experiencia próximamente. Cada pop-up nace para una fecha concreta: un menú, una atmósfera y una forma distinta de vivir la cocina de Perigallo. Cuando abramos la próxima fecha, la reserva se confirmará directamente en Perigallo Reservas.</p>
-      <div class="popup-actions">
-        <div class="popup-price">Nueva fecha <small>por anunciar</small></div>
-        <a href="/experiencias/" class="btn-primary">Ver próximas experiencias</a>
-      </div>
+<!-- EXPERIENCIAS PUBLICADAS -->
+<section class="popup-section" id="popup" aria-labelledby="experiences-carousel-heading">
+  <div class="experience-carousel experience-carousel-loading" data-experience-carousel aria-busy="true" tabindex="0">
+    <div class="experience-carousel-visual" aria-hidden="true"></div>
+    <div class="experience-carousel-content">
+      <span class="experience-carousel-kicker">Experiencias Perigallo</span>
+      <h2 class="experience-carousel-title" id="experiences-carousel-heading">Cargando <em>experiencias</em></h2>
     </div>
   </div>
 </section>
@@ -748,6 +754,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
   </div>
 </footer>
 
+<script src="assets/js/home-experiences.js?v=20260806-carousel-v1" defer></script>
 <script>
 var cursor = document.getElementById('cursor');
 var ring = document.getElementById('cursorRing');
