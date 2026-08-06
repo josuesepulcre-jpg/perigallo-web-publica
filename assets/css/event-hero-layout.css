@@ -1159,7 +1159,7 @@ body.ticketing-page .experience-guide-trigger {
 
 body.ticketing-page .experience-guide-trigger > span {
   color: var(--event-gold);
-  font-size: 0.59rem;
+  font-size: 0.64rem;
   font-weight: 700;
   letter-spacing: 0.14em;
 }
@@ -1167,8 +1167,8 @@ body.ticketing-page .experience-guide-trigger > span {
 body.ticketing-page .experience-guide-trigger strong {
   overflow: hidden;
   color: inherit;
-  font-size: clamp(0.69rem, 0.78vw, 0.8rem);
-  font-weight: 500;
+  font-size: clamp(0.78rem, 0.86vw, 0.92rem);
+  font-weight: 600;
   line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1263,6 +1263,37 @@ body.ticketing-page .experience-guide-content p {
 
 body.ticketing-page .experience-guide-content p:last-child {
   margin-bottom: 0;
+}
+
+/* The final chapter needs enough scrollable depth for its anchor to align at
+ * the top of the viewport instead of being limited by the end of the page. */
+@media (min-width: 1041px) {
+  body.ticketing-page .event-chapter-details {
+    --event-details-inset: clamp(1.5rem, 2.5vw, 3rem);
+    min-height: 100svh;
+    padding-top: var(--event-details-inset);
+    padding-bottom: var(--event-details-inset);
+  }
+
+  body.ticketing-page .event-details-layout {
+    grid-template-rows: auto minmax(0, 1fr);
+    min-height: calc(100svh - var(--event-details-inset) - var(--event-details-inset));
+  }
+
+  body.ticketing-page .experience-guide-index {
+    align-self: stretch;
+    grid-template-rows: repeat(11, minmax(0, 1fr));
+  }
+
+  body.ticketing-page .experience-guide-trigger {
+    min-height: 0;
+    height: 100%;
+    padding-block: 0.3rem;
+  }
+
+  body.ticketing-page .experience-guide-panels {
+    height: 100%;
+  }
 }
 
 body.ticketing-page .event-details-body .experience-accordions {
