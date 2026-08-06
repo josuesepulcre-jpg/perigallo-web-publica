@@ -93,3 +93,15 @@
 .event-access .ticket-type-price>span:last-child{margin-top:-1px;color:#173638;font-size:.55rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
 .event-access .ticket-access-dress-copy{color:#284448}
 @media(max-width:640px){.event-hero-facts .ticket-access-fact--dress-code strong{font-size:.84rem}.event-hero-facts .ticket-access-fact--dress-code small{font-size:.56rem}.event-access .ticket-type-price>span:last-child{font-size:.53rem}}
+
+/* Keep the mandatory dress code legible without turning it into a second hero. */
+.ticket-detail.event-hero .event-hero-facts--with-dress-code{flex:0 0 auto;grid-template-rows:auto auto auto}
+.event-hero-facts .ticket-access-fact--dress-code{height:auto;min-height:0;padding-block:14px}
+.event-hero-facts .ticket-access-fact--dress-code .ticket-access-dress-fact-copy{width:100%;min-width:0;max-width:none;gap:6px}
+.event-hero-facts .ticket-access-fact--dress-code strong{max-width:none;font-size:clamp(.8rem,.92vw,.98rem);line-height:1.42}
+.event-access .ticket-access-dress-notice{padding-right:0}
+.event-access .ticket-access-dress-content{width:100%;max-width:none}
+.event-access .ticket-access-dress-title{font-size:.59rem;line-height:1.35}
+.event-access .ticket-access-dress-copy{max-width:none;font-size:.69rem;line-height:1.4}
+.event-access .ticket-type-price .ticket-promo-label{min-height:0;color:#173638;font-size:.56rem;font-weight:600;letter-spacing:.1em;line-height:1.3;white-space:nowrap}
+@media(max-width:640px){.event-hero-facts .ticket-access-fact--dress-code{padding-block:16px}.event-access .ticket-type-price .ticket-promo-label{font-size:.51rem;white-space:normal}}

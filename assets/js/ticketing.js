@@ -61,8 +61,9 @@
     return '<div class="' + className + '">' +
       (reference ? '<span class="ticket-reference-price"><span>Valor de la experiencia</span><del>' + cents(reference) + '</del></span>' : '') +
       '<strong>' + cents(salePrice) + '</strong>' +
-      (reference ? '<span class="ticket-promo-label">' + escapeHtml(promotionalLabel(type.promotional_label)) + '</span>' : '') +
-      '<span>por persona</span></div>';
+      '<span class="ticket-promo-label">' +
+        escapeHtml(reference ? promotionalLabel(type.promotional_label) : 'Precio por persona') + ' por persona</span>' +
+    '</div>';
   }
 
   function request(url, options) {
