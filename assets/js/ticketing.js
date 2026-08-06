@@ -550,7 +550,7 @@
       includes,
       includesLink,
       '</div>',
-      '<div class="ticket-access-decision">' + commercialPriceMarkup(type, salePrice, 'ticket-type-price') + eventQuantityPicker(type, salePrice) + ticketPurchaseAction(type, event, preview) + '</div>',
+      '<div class="ticket-access-decision"><span class="ticket-access-decision-kicker">Tu acceso</span>' + commercialPriceMarkup(type, salePrice, 'ticket-type-price') + eventQuantityPicker(type, salePrice) + ticketPurchaseAction(type, event, preview) + '</div>',
       '</div>',
       '<div class="ticket-access-secondary">',
       dress ? dressCodeNotice(event, dress) : '',
@@ -584,7 +584,8 @@
       '<aside class="ticket-access-dress ticket-access-dress-notice" aria-label="Código de vestimenta obligatorio: Total White">',
       '<span class="ticket-access-icon" aria-hidden="true">' + accessIcon("dress") + '</span>',
       '<span class="ticket-access-dress-content">',
-      '<span class="ticket-access-dress-title">Código de vestimenta obligatorio <b>· Total White</b></span>',
+      '<span class="ticket-access-dress-title">Código de vestimenta</span>',
+      '<span class="ticket-access-dress-badge">Total White · obligatorio</span>',
       '<span class="ticket-access-dress-copy">Es obligatorio acudir vestido íntegramente de blanco. <strong>No se permitirá el acceso</strong> a quienes no cumplan este código de vestimenta.</span>',
       '</span>',
       '</aside>'

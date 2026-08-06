@@ -342,13 +342,13 @@ body.ticketing-page .event-access {
   grid-area: access;
   width: 100%;
   margin: 0;
-  padding: clamp(3.25rem, 6vw, 6.25rem) var(--event-gutter);
+  padding: clamp(3.5rem, 5vw, 5.5rem) var(--event-gutter);
   background: var(--event-paper);
   color: var(--event-ink);
 }
 
 body.ticketing-page .ticket-types {
-  width: min(100%, 99rem);
+  width: min(100%, 100rem);
   margin: 0 auto;
 }
 
@@ -369,73 +369,77 @@ body.ticketing-page .ticket-access-card {
 
 body.ticketing-page .ticket-access-heading {
   display: grid !important;
-  grid-template-columns: minmax(0, 1.03fr) minmax(25rem, 0.97fr);
-  gap: clamp(3rem, 7vw, 8rem);
+  grid-template-columns: minmax(0, 1.1fr) minmax(25rem, 0.9fr);
+  gap: clamp(3rem, 6vw, 6.5rem);
   align-items: start;
   padding: 0 0 clamp(2.4rem, 5vw, 4rem);
 }
 
 body.ticketing-page .ticket-access-copy {
   min-width: 0;
-  max-width: 44rem;
+  max-width: 46rem;
 }
 
 body.ticketing-page .ticket-access-eyebrow {
   color: #8d6033;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
 }
 
 body.ticketing-page .ticket-access-copy h3 {
-  margin: 0.9rem 0 0;
+  margin: 0.8rem 0 0;
   color: var(--event-ink);
-  font-size: clamp(2.6rem, 4.35vw, 5.2rem);
-  line-height: 0.95;
+  font-size: clamp(2.75rem, 4.15vw, 5rem);
+  line-height: 0.92;
 }
 
 body.ticketing-page .ticket-access-copy p {
-  max-width: 37rem;
-  margin: 1.25rem 0 0;
+  max-width: 39rem;
+  margin: 1.1rem 0 0;
   color: rgba(9, 45, 49, 0.76);
-  font-size: 1.02rem;
-  line-height: 1.65;
+  font-size: clamp(0.98rem, 1.05vw, 1.08rem);
+  line-height: 1.62;
 }
 
 body.ticketing-page .ticket-access-includes-summary {
-  margin-top: 2rem;
-  padding-top: 1.25rem;
+  margin-top: 1.8rem;
+  padding-top: 1.15rem;
   border-top: 1px solid rgba(9, 45, 49, 0.23);
 }
 
 body.ticketing-page .ticket-access-includes-summary > span {
   display: block;
   color: #8d6033;
-  font-size: 0.63rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.18em;
   line-height: 1.3;
   text-transform: uppercase;
 }
 
 body.ticketing-page .ticket-access-includes-summary ul {
   display: grid;
-  gap: 0.5rem;
-  margin: 0.9rem 0 0;
+  gap: 0.55rem;
+  margin: 0.85rem 0 0;
   padding: 0;
   list-style: none;
   color: rgba(9, 45, 49, 0.86);
-  font-size: 0.91rem;
+  font-size: 0.94rem;
   line-height: 1.45;
 }
 
 body.ticketing-page .ticket-access-includes-summary li {
   display: grid;
-  grid-template-columns: 0.85rem minmax(0, 1fr);
-  gap: 0.55rem;
+  grid-template-columns: 1rem minmax(0, 1fr);
+  gap: 0.45rem;
 }
 
 body.ticketing-page .ticket-access-includes-summary li::before {
   content: "✓";
   color: #8d6033;
   font-weight: 700;
+  font-size: 0.75rem;
 }
 
 body.ticketing-page .ticket-access-includes {
@@ -443,8 +447,8 @@ body.ticketing-page .ticket-access-includes {
   align-items: center;
   justify-content: space-between;
   gap: 0.7rem;
-  min-height: 2.8rem;
-  margin-top: 1.7rem;
+  min-height: 2.55rem;
+  margin-top: 1.35rem;
   padding: 0;
   color: var(--event-ink);
   background: transparent;
@@ -456,7 +460,7 @@ body.ticketing-page .ticket-access-includes {
   letter-spacing: 0.18em;
   line-height: 1.3;
   text-transform: uppercase;
-  transition: color 180ms ease, border-color 180ms ease;
+  transition: color 180ms ease, border-color 180ms ease, padding-right 180ms ease;
 }
 
 body.ticketing-page .ticket-access-includes b {
@@ -475,6 +479,7 @@ body.ticketing-page .ticket-access-includes:hover,
 body.ticketing-page .ticket-access-includes:focus-visible {
   color: #8d6033;
   border-color: #8d6033;
+  padding-right: 0.25rem;
 }
 
 body.ticketing-page .ticket-access-included-panel {
@@ -491,29 +496,56 @@ body.ticketing-page .ticket-access-included-panel p {
 
 body.ticketing-page .ticket-access-decision {
   display: grid !important;
+  grid-template-areas:
+    "kicker kicker"
+    "price quantity"
+    "action action";
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.8rem 1.8rem;
+  gap: 1.4rem 2rem;
   align-items: start;
   min-width: 0;
-  padding: 0 0 0 clamp(2.5rem, 5vw, 5rem);
-  border-left: 1px solid rgba(9, 45, 49, 0.25);
+  padding: clamp(1.75rem, 3vw, 2.45rem);
+  background: rgba(247, 232, 205, 0.34);
+  border: 1px solid rgba(9, 45, 49, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(255, 248, 235, 0.18);
+}
+
+body.ticketing-page .ticket-access-decision-kicker {
+  grid-area: kicker;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #8d6033;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+body.ticketing-page .ticket-access-decision-kicker::after {
+  content: "";
+  display: block;
+  flex: 1;
+  height: 1px;
+  background: rgba(9, 45, 49, 0.2);
 }
 
 body.ticketing-page .ticket-type-price {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  grid-column: 1;
+  grid-area: price;
   min-width: 0;
 }
 
 body.ticketing-page .ticket-reference-price {
   display: inline-flex;
   align-items: baseline;
-  gap: 0.5rem;
+  gap: 0.42rem;
   min-height: 1rem;
   color: rgba(9, 45, 49, 0.72);
-  font-size: 0.62rem;
+  font-size: 0.59rem;
   font-weight: 650;
   letter-spacing: 0.14em;
   line-height: 1.25;
@@ -522,46 +554,47 @@ body.ticketing-page .ticket-reference-price {
 
 body.ticketing-page .ticket-reference-price del {
   color: var(--event-ink);
-  font-size: 0.85rem;
+  color: rgba(9, 45, 49, 0.8);
+  font-size: 0.92rem;
   letter-spacing: 0;
 }
 
 body.ticketing-page .ticket-type-price > strong {
   display: block;
-  margin-top: 0.5rem;
+  margin-top: 0.7rem;
   color: var(--event-ink);
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(3.5rem, 5vw, 5.9rem);
+  font-size: clamp(4.1rem, 5.25vw, 5.9rem);
   font-weight: 400;
   letter-spacing: -0.045em;
-  line-height: 0.82;
+  line-height: 0.76;
   white-space: nowrap;
 }
 
 body.ticketing-page .ticket-promo-label {
   display: block;
-  margin-top: 1.2rem;
+  max-width: 20rem;
+  margin-top: 1rem;
   color: #8d6033;
-  font-size: 0.63rem;
+  font-size: 0.6rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   line-height: 1.3;
   text-transform: uppercase;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 body.ticketing-page .event-quantity-picker {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  min-width: 7.25rem;
-  text-align: right;
+  grid-area: quantity;
+  min-width: 10rem;
+  text-align: left;
 }
 
 body.ticketing-page .event-quantity-label {
   display: block;
-  margin-bottom: 0.45rem;
+  margin-bottom: 0.55rem;
   color: rgba(9, 45, 49, 0.7);
-  font-size: 0.61rem;
+  font-size: 0.6rem;
   font-weight: 650;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -571,14 +604,15 @@ body.ticketing-page .event-quantity-controls {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 3rem;
-  border: 1px solid rgba(9, 45, 49, 0.35);
+  height: 3.15rem;
+  background: rgba(255, 248, 235, 0.22);
+  border: 1px solid rgba(9, 45, 49, 0.32);
 }
 
 body.ticketing-page .event-quantity-controls button,
 body.ticketing-page .event-quantity-controls output {
   display: grid;
-  width: 2.8rem;
+  width: 3.1rem;
   height: 100%;
   place-items: center;
   margin: 0;
@@ -586,13 +620,13 @@ body.ticketing-page .event-quantity-controls output {
   color: var(--event-ink);
   background: transparent;
   border: 0;
-  font: 500 1.15rem/1 Arial, sans-serif;
+  font: 500 1.2rem/1 Arial, sans-serif;
 }
 
 body.ticketing-page .event-quantity-controls button {
   appearance: none;
   cursor: pointer;
-  transition: color 160ms ease, background-color 160ms ease;
+  transition: color 180ms ease, background-color 180ms ease, transform 180ms ease;
 }
 
 body.ticketing-page .event-quantity-controls button:hover,
@@ -600,13 +634,14 @@ body.ticketing-page .event-quantity-controls button:focus-visible {
   color: var(--event-ivory);
   background: var(--event-ink);
   outline: 0;
+  transform: translateY(-1px);
 }
 
 body.ticketing-page .event-quantity-controls output {
-  width: 2.65rem;
+  width: 3rem;
   border-right: 1px solid rgba(9, 45, 49, 0.24);
   border-left: 1px solid rgba(9, 45, 49, 0.24);
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 700;
 }
 
@@ -617,9 +652,10 @@ body.ticketing-page .event-quantity-controls button:disabled {
 
 body.ticketing-page .event-quantity-total {
   display: block;
-  margin-top: 0.45rem;
+  margin-top: 0.7rem;
   color: rgba(9, 45, 49, 0.68);
-  font-size: 0.7rem;
+  font-size: 0.62rem;
+  font-weight: 650;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -627,7 +663,8 @@ body.ticketing-page .event-quantity-total {
 body.ticketing-page .event-quantity-total strong {
   color: var(--event-ink);
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 1.25rem;
+  margin-left: 0.25rem;
+  font-size: 1.4rem;
   font-weight: 400;
   letter-spacing: 0;
   text-transform: none;
@@ -635,9 +672,9 @@ body.ticketing-page .event-quantity-total strong {
 
 body.ticketing-page .ticket-access-action,
 body.ticketing-page .ticket-access-unavailable {
-  grid-column: 1 / -1;
+  grid-area: action;
   width: 100%;
-  margin-top: 1.2rem;
+  margin-top: 0.2rem;
 }
 
 body.ticketing-page .ticket-access-action .ticket-btn,
@@ -646,7 +683,7 @@ body.ticketing-page .ticket-access-unavailable {
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 4.15rem;
+  min-height: 4rem;
   padding: 1rem 1.5rem;
   color: var(--event-ivory);
   background: var(--event-ink);
@@ -659,13 +696,25 @@ body.ticketing-page .ticket-access-unavailable {
   text-align: center;
   text-decoration: none;
   text-transform: uppercase;
-  transition: background-color 160ms ease, color 160ms ease;
+  transition: background-color 220ms ease, color 220ms ease, border-color 220ms ease;
 }
 
 body.ticketing-page .ticket-access-action .ticket-btn:hover,
 body.ticketing-page .ticket-access-action .ticket-btn:focus-visible {
   color: var(--event-ink);
-  background: transparent;
+  background: rgba(255, 248, 235, 0.5);
+  border-color: var(--event-ink);
+}
+
+body.ticketing-page .ticket-access-action .ticket-btn span {
+  display: inline-block;
+  margin-left: 0.45rem;
+  transition: transform 220ms ease;
+}
+
+body.ticketing-page .ticket-access-action .ticket-btn:hover span,
+body.ticketing-page .ticket-access-action .ticket-btn:focus-visible span {
+  transform: translateX(0.25rem);
 }
 
 body.ticketing-page .ticket-preview-note {
@@ -677,23 +726,25 @@ body.ticketing-page .ticket-preview-note {
 
 body.ticketing-page .ticket-access-secondary {
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) minmax(9rem, auto) minmax(9rem, auto);
-  gap: 2rem 2.5rem;
+  grid-template-columns: minmax(0, 1.7fr) minmax(10rem, 0.55fr) minmax(9rem, 0.45fr);
+  gap: 0;
   align-items: center;
   margin: 0 !important;
-  padding: 1.8rem 0 0 !important;
+  padding: 1.7rem 0 0 !important;
   border-top: 1px solid rgba(9, 45, 49, 0.25);
 }
 
 body.ticketing-page .ticket-access-dress {
   display: grid !important;
   grid-template-columns: 1.55rem minmax(0, 1fr);
-  gap: 0.85rem;
+  gap: 0.9rem;
   align-items: start;
   width: 100%;
-  max-width: 62rem;
+  max-width: none;
   margin: 0 !important;
-  padding-left: clamp(0.75rem, 2vw, 2.25rem);
+  padding: 0.35rem clamp(1rem, 2vw, 1.75rem);
+  border-left: 2px solid rgba(155, 106, 57, 0.72);
+  background: rgba(155, 106, 57, 0.06);
   color: var(--event-ink);
 }
 
@@ -709,24 +760,30 @@ body.ticketing-page .ticket-access-dress > span:last-child {
 body.ticketing-page .ticket-access-dress-title {
   display: block;
   color: #8d6033;
-  font-size: 0.63rem;
+  font-size: 0.58rem;
   font-weight: 700;
   letter-spacing: 0.15em;
   line-height: 1.45;
   text-transform: uppercase;
 }
 
-body.ticketing-page .ticket-access-dress-title b {
-  color: #9b6a39;
-  font-weight: inherit;
+body.ticketing-page .ticket-access-dress-badge {
+  display: block;
+  margin-top: 0.22rem;
+  color: #73461f;
+  font-size: 0.74rem;
+  font-weight: 750;
+  letter-spacing: 0.13em;
+  line-height: 1.3;
+  text-transform: uppercase;
 }
 
 body.ticketing-page .ticket-access-dress-copy {
   display: block;
   max-width: 62rem;
-  margin-top: 0.55rem;
+  margin-top: 0.5rem;
   color: rgba(9, 45, 49, 0.88);
-  font-size: 0.93rem;
+  font-size: 0.9rem;
   line-height: 1.55;
 }
 
@@ -741,14 +798,16 @@ body.ticketing-page .ticket-access-dress-copy strong {
 body.ticketing-page .ticket-access-status {
   display: inline-flex;
   align-items: center;
-  justify-self: end;
+  justify-self: stretch;
   gap: 0.55rem;
   margin: 0;
   color: rgba(9, 45, 49, 0.86);
   font-size: 0.82rem;
   line-height: 1.4;
-  text-align: right;
-  white-space: nowrap;
+  padding: 0.8rem 0.75rem 0.8rem 1.15rem;
+  border-left: 1px solid rgba(9, 45, 49, 0.2);
+  text-align: left;
+  white-space: normal;
 }
 
 body.ticketing-page .ticket-access-status-dot {
@@ -763,7 +822,10 @@ body.ticketing-page .ticket-access-minor {
   grid-template-columns: auto minmax(0, 1fr);
   gap: 0.55rem;
   align-items: center;
+  min-height: 100%;
   margin: 0;
+  padding: 0.5rem 1rem;
+  border-left: 1px solid rgba(9, 45, 49, 0.2);
   color: var(--event-ink);
 }
 
@@ -1287,13 +1349,12 @@ body.ticketing-page summary:focus-visible {
 
   body.ticketing-page .ticket-access-heading {
     grid-template-columns: minmax(0, 1fr);
-    gap: 3.5rem;
+    gap: 3rem;
   }
 
   body.ticketing-page .ticket-access-decision {
-    padding: 2.5rem 0 0;
-    border-top: 1px solid rgba(9, 45, 49, 0.25);
-    border-left: 0;
+    padding: clamp(1.65rem, 4vw, 2.25rem);
+    border: 1px solid rgba(9, 45, 49, 0.22);
   }
 
   body.ticketing-page .event-story-editorial {
@@ -1397,10 +1458,24 @@ body.ticketing-page summary:focus-visible {
   }
 
   body.ticketing-page .ticket-access-heading {
-    gap: 2.5rem;
+    display: contents !important;
+  }
+
+  body.ticketing-page .ticket-access-card {
+    display: grid !important;
+    gap: 2rem;
+  }
+
+  body.ticketing-page .ticket-access-copy {
+    order: 1;
+  }
+
+  body.ticketing-page .ticket-access-secondary {
+    order: 2;
   }
 
   body.ticketing-page .ticket-access-decision {
+    order: 3;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 1.15rem;
   }
@@ -1417,15 +1492,21 @@ body.ticketing-page summary:focus-visible {
   body.ticketing-page .ticket-access-secondary {
     grid-template-columns: minmax(0, 1fr);
     gap: 1.4rem;
+    padding-top: 1.5rem !important;
   }
 
   body.ticketing-page .ticket-access-dress {
-    padding-left: 0;
+    padding-left: 1rem;
   }
 
   body.ticketing-page .ticket-access-status {
-    justify-self: start;
+    justify-self: stretch;
+    padding-left: 1rem;
     text-align: left;
+  }
+
+  body.ticketing-page .ticket-access-minor {
+    padding-left: 1rem;
   }
 
   body.ticketing-page .event-story-poster-wrap figcaption {
@@ -1528,6 +1609,11 @@ body.ticketing-page summary:focus-visible {
 
   body.ticketing-page .ticket-access-decision {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "kicker"
+      "price"
+      "quantity"
+      "action";
   }
 
   body.ticketing-page .event-quantity-picker {
