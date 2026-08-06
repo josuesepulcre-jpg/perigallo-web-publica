@@ -213,6 +213,7 @@
       var ticketCards = types.length ? types.map(function (type) { return ticketTypeRow(type, event, preview); }).join("") : '<p class="ticket-status event-access-empty">Próximamente anunciaremos las entradas.</p>';
       var editionMatch = String(event.title || "").match(/(?:\s|^)0*(\d+)\s*$/);
       var edition = editionMatch ? " · Edición " + String(editionMatch[1]).padStart(2, "0") : "";
+      var accordions = experienceAccordions(event);
       return [
         '<div class="event-detail-layout">',
         '<section class="ticket-detail event-hero" id="experiencia">',
@@ -232,7 +233,7 @@
         '</section>',
         '<section class="event-story event-story-layout event-story-editorial" id="historia"><div class="event-story-copy"><span class="ticket-eyebrow">La experiencia</span><h2>' + escapeHtml(experienceName) + '</h2><div class="ticket-copy event-story-text">' + storyText + '</div>' + storyVenue + '</div>' + storyVisual + '</section>',
         gallery ? '<section class="event-gallery" id="galeria">' + gallery + '</section>' : '',
-        experienceAccordions(event) ? '<section class="event-public-information event-public-information-accordions" id="faq"><div class="experience-accordions">' + experienceAccordions(event) + '</div></section>' : '',
+        accordions ? '<section class="event-public-information event-public-information-accordions" id="faq"><header class="experience-information-heading"><span class="ticket-eyebrow">Detalles de la experiencia</span><h2>Todo lo que necesitas saber<br>antes de vivir ' + escapeHtml(experienceName) + '.</h2><p>Horarios, ubicación, acceso, vestimenta y toda la información práctica para disfrutar de la experiencia.</p></header><div class="experience-accordions">' + accordions + '</div></section>' : '',
         '</div>'
       ].join("");
   }
@@ -262,22 +263,42 @@
   }
 
   function locationInformation(event) {
-    var details = [event.location, event.address, [event.postal_code, event.locality, event.province].filter(Boolean).join(" · "), event.access_notes, event.parking_info].filter(Boolean).join("\n\n");
-    return textParagraphs(details) + (event.maps_url ? '<p><a class="ticket-btn" href="' + escapeAttr(event.maps_url) + '" target="_blank" rel="noopener noreferrer">Abrir mapa</a></p>' : '');
+    var address = [event.address, [event.postal_code, event.locality, event.province].filter(Boolean).join(" · ")].filter(Boolean).join("\n");
+    var practicalNotes = [event.access_notes, event.parking_info].filter(Boolean).join("\n\n");
+    var facts = [];
+    if (event.location) facts.push('<div><span>Lugar</span><strong>' + escapeHtml(event.location) + '</strong></div>');
+    if (address) facts.push('<div><span>Dirección</span><strong>' + linkifyText(address).replace(/\n/g, "<br>") + '</strong></div>');
+    return (facts.length ? '<dl class="experience-information-facts experience-information-location">' + facts.join("") + '</dl>' : '') +
+      (practicalNotes ? '<div class="experience-information-notes">' + textParagraphs(practicalNotes) + '</div>' : '') +
+      (event.maps_url ? '<p class="experience-information-action"><a class="ticket-btn" href="' + escapeAttr(event.maps_url) + '" target="_blank" rel="noopener noreferrer">Ver ubicación <b aria-hidden="true">→</b></a></p>' : '');
   }
 
   function scheduleInformation(event) {
     var rows = [];
-    if (event.schedule_note) rows.push(event.schedule_note);
-    if (event.doors_open_at) rows.push("Apertura de puertas: " + fmtDate(event.doors_open_at));
-    if (event.starts_at) rows.push("Inicio de la experiencia: " + fmtDate(event.starts_at));
-    if (event.ends_at) rows.push("Finalización prevista: " + fmtDate(event.ends_at));
-    return textParagraphs(rows.join("\n\n"));
+    if (event.doors_open_at) rows.push('<div><span>Apertura de puertas</span><strong>' + escapeHtml(fmtTime(event.doors_open_at)) + ' h</strong></div>');
+    if (event.starts_at) rows.push('<div><span>Inicio de la experiencia</span><strong>' + escapeHtml(fmtDate(event.starts_at)) + '</strong></div>');
+    if (event.ends_at) rows.push('<div><span>Finalización prevista</span><strong>' + escapeHtml(fmtTime(event.ends_at)) + ' h</strong></div>');
+    return (rows.length ? '<dl class="experience-information-facts experience-information-schedule">' + rows.join("") + '</dl>' : '') +
+      (event.schedule_note ? '<div class="experience-information-notes">' + textParagraphs(event.schedule_note) + '</div>' : '');
+  }
+
+  function dressCodeInformation(value) {
+    var raw = String(value || "").trim();
+    var match = raw.match(/^\s*(total\s+white)\s*[.·:—-]*\s*(.*)$/i);
+    var heading = match ? match[1] : "";
+    var body = match ? match[2] : raw;
+    var paragraphs = body.split(/(?=No se permitir[aá] el acceso)/i).map(function (paragraph) {
+      return paragraph.trim();
+    }).filter(Boolean);
+    return '<div class="experience-information-dress">' +
+      (heading ? '<span class="experience-information-highlight">' + escapeHtml(heading) + '</span>' : '') +
+      textParagraphs(paragraphs.join("\n\n")) +
+      '</div>';
   }
 
   function accordionMarkup(item, index, nested) {
     var panelId = "experience-information-" + (nested ? "faq-" : "panel-") + index;
-    return '<article class="experience-accordion' + (nested ? ' experience-accordion-nested' : '') + '" data-experience-accordion>' +
+    return '<article class="experience-accordion' + (nested ? ' experience-accordion-nested' : '') + '" data-experience-accordion data-experience-accordion-level="' + (nested ? 'nested' : 'primary') + '">' +
       '<button class="experience-accordion-trigger" type="button" data-experience-accordion-trigger aria-expanded="false" aria-controls="' + panelId + '">' +
       '<span class="experience-accordion-number">' + escapeHtml(String(index + 1).padStart(2, "0")) + '</span><span class="experience-accordion-copy"><span class="experience-accordion-title">' + escapeHtml(item.title) + '</span></span><span class="experience-accordion-icon" aria-hidden="true"></span></button>' +
       '<div class="experience-accordion-panel" id="' + panelId + '" role="region" aria-label="' + escapeHtml(item.title) + '" aria-hidden="true"><div class="experience-accordion-content">' + item.content + '</div></div>' +
@@ -297,7 +318,7 @@
       { title: "Horarios", content: scheduleInformation(event), visible: !!(event.schedule_note || event.doors_open_at || event.starts_at || event.ends_at) },
       { title: "Ubicación y cómo llegar", content: locationInformation(event), visible: !!(event.location || event.address || event.access_notes || event.parking_info || event.maps_url) },
       { title: "Condiciones de acceso", content: textParagraphs(event.access_conditions), visible: !!event.access_conditions },
-      { title: "Código de vestimenta", content: textParagraphs(event.dress_code), visible: !!event.dress_code },
+      { title: "Código de vestimenta", content: dressCodeInformation(event.dress_code), visible: !!event.dress_code },
       { title: "Recomendaciones", content: textParagraphs(event.recommendations), visible: !!event.recommendations },
       { title: "Accesibilidad", content: textParagraphs(event.accessibility_info), visible: !!event.accessibility_info },
       { title: "Política de menores", content: textParagraphs(event.minor_policy), visible: !!event.minor_policy },
@@ -309,22 +330,36 @@
   }
 
   function initExperienceAccordions(root) {
+    function closeAccordion(item) {
+      item.classList.remove("is-open");
+      var itemTrigger = item.querySelector(":scope > [data-experience-accordion-trigger]");
+      var itemPanel = item.querySelector(":scope > .experience-accordion-panel");
+      if (itemTrigger) itemTrigger.setAttribute("aria-expanded", "false");
+      if (itemPanel) itemPanel.setAttribute("aria-hidden", "true");
+    }
+
+    function scrollToAccordion(accordion) {
+      window.setTimeout(function () {
+        var offset = window.innerWidth <= 760 ? 82 : 116;
+        var top = window.scrollY + accordion.getBoundingClientRect().top - offset;
+        window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+      }, 50);
+    }
+
     root.addEventListener("click", function (event) {
       var trigger = event.target.closest("[data-experience-accordion-trigger]");
       if (!trigger || !root.contains(trigger)) return;
       var accordion = trigger.closest("[data-experience-accordion]");
       var wasOpen = accordion.classList.contains("is-open");
-      root.querySelectorAll("[data-experience-accordion]").forEach(function (item) {
-        if (item === accordion) return;
-        item.classList.remove("is-open");
-        var itemTrigger = item.querySelector("[data-experience-accordion-trigger]");
-        var itemPanel = item.querySelector(".experience-accordion-panel");
-        if (itemTrigger) itemTrigger.setAttribute("aria-expanded", "false");
-        if (itemPanel) itemPanel.setAttribute("aria-hidden", "true");
-      });
+      var level = accordion.dataset.experienceAccordionLevel;
+      var siblings = level === "primary"
+        ? root.querySelectorAll('[data-experience-accordion-level="primary"]')
+        : accordion.parentElement.querySelectorAll('[data-experience-accordion-level="nested"]');
+      siblings.forEach(function (item) { if (item !== accordion) closeAccordion(item); });
       accordion.classList.toggle("is-open", !wasOpen);
       trigger.setAttribute("aria-expanded", String(!wasOpen));
-      accordion.querySelector(".experience-accordion-panel").setAttribute("aria-hidden", String(wasOpen));
+      accordion.querySelector(":scope > .experience-accordion-panel").setAttribute("aria-hidden", String(wasOpen));
+      if (!wasOpen && level === "primary") scrollToAccordion(accordion);
     });
   }
 
@@ -338,8 +373,13 @@
       });
       if (!accordion) return;
       var trigger = accordion.querySelector("[data-experience-accordion-trigger]");
-      if (trigger && trigger.getAttribute("aria-expanded") !== "true") trigger.click();
-      accordion.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (trigger && trigger.getAttribute("aria-expanded") !== "true") {
+        trigger.click();
+        return;
+      }
+      var offset = window.innerWidth <= 760 ? 82 : 116;
+      var top = window.scrollY + accordion.getBoundingClientRect().top - offset;
+      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
     });
   }
 
