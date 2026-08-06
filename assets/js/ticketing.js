@@ -448,10 +448,26 @@
       '<div class="ticket-access-decision">' + commercialPriceMarkup(type, salePrice, 'ticket-type-price') + eventQuantityPicker(type, salePrice) + ticketPurchaseAction(type, event, preview) + '</div>',
       '</div>',
       '<div class="ticket-access-secondary">',
-      dress ? '<p class="ticket-access-dress"><span class="ticket-access-icon" aria-hidden="true">' + accessIcon("dress") + '</span><span><small>Código de vestimenta</small><strong>' + escapeHtml(dress) + '</strong></span></p>' : '',
+      dress ? dressCodeNotice(event, dress) : '',
       '<p class="ticket-access-status"><span class="ticket-access-status-dot" aria-hidden="true"></span><span>' + escapeHtml(availability) + (type.requires_promo ? ' · Código necesario' : '') + '</span></p>',
       '</div>',
       '</article>'
+    ].join("");
+  }
+
+  function dressCodeNotice(event, dress) {
+    var isPerigalla01 = /la\s+perigalla\s*0?1/i.test(String(event.title || ""));
+    if (!isPerigalla01) {
+      return '<p class="ticket-access-dress"><span class="ticket-access-icon" aria-hidden="true">' + accessIcon("dress") + '</span><span><small>Código de vestimenta</small><strong>' + escapeHtml(dress) + '</strong></span></p>';
+    }
+    return [
+      '<aside class="ticket-access-dress ticket-access-dress-notice" aria-label="Código de vestimenta obligatorio: Total White">',
+      '<span class="ticket-access-icon" aria-hidden="true">' + accessIcon("dress") + '</span>',
+      '<span class="ticket-access-dress-content">',
+      '<span class="ticket-access-dress-title">Código de vestimenta obligatorio <b>· Total White</b></span>',
+      '<span class="ticket-access-dress-copy">Es obligatorio acudir vestido íntegramente de blanco. <strong>No se permitirá el acceso</strong> a quienes no cumplan este código de vestimenta.</span>',
+      '</span>',
+      '</aside>'
     ].join("");
   }
 
