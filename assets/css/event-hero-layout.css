@@ -1010,16 +1010,17 @@ body.ticketing-page .event-chapter-next-entry {
 
 /* Chapter 03: a compact editorial index with a dedicated reading panel. */
 body.ticketing-page .event-chapter-details {
-  padding: clamp(2.25rem, 3.5vw, 4rem) var(--event-gutter);
+  padding: clamp(1.5rem, 2.5vw, 3rem) var(--event-gutter);
   background: var(--event-ink);
 }
 
 body.ticketing-page .event-details-layout {
   display: grid !important;
-  grid-template-columns: minmax(19rem, 0.8fr) minmax(0, 1.2fr);
-  gap: clamp(3rem, 6vw, 7rem);
-  width: min(100%, 100rem);
-  min-height: calc(100svh - 7rem);
+  grid-template-columns: minmax(20rem, 0.68fr) minmax(0, 1.32fr);
+  column-gap: clamp(2rem, 4vw, 4rem);
+  row-gap: 0;
+  width: min(100%, 106rem);
+  min-height: 0;
   margin: 0 auto;
   align-content: start;
   align-items: start;
@@ -1033,16 +1034,16 @@ body.ticketing-page .experience-information-heading {
 }
 
 body.ticketing-page .event-details-layout h2 {
-  max-width: 10ch;
-  margin: 0.75rem 0 0;
-  font-size: clamp(2.9rem, 3.8vw, 4.8rem);
+  max-width: 13ch;
+  margin: 0.55rem 0 0;
+  font-size: clamp(2.65rem, 3.25vw, 4.25rem);
   line-height: 0.91;
   text-wrap: balance;
 }
 
 body.ticketing-page .experience-information-heading > p {
   max-width: 20rem;
-  margin: 0.95rem 0 0;
+  margin: 0.7rem 0 0;
   color: rgba(255, 248, 235, 0.7);
   font-size: 1rem;
   line-height: 1.55;
@@ -1062,7 +1063,7 @@ body.ticketing-page .experience-guide-index {
   grid-row: 2;
   display: grid;
   align-content: start;
-  margin-top: clamp(1.8rem, 3vw, 3rem);
+  margin-top: clamp(1.15rem, 1.6vw, 1.5rem);
   border-top: 1px solid var(--event-line);
 }
 
@@ -1072,8 +1073,8 @@ body.ticketing-page .experience-guide-trigger {
   align-items: center;
   gap: 0.65rem;
   min-width: 0;
-  min-height: 2.28rem;
-  padding: 0.32rem 0;
+  min-height: 2.12rem;
+  padding: 0.22rem 0;
   color: rgba(255, 248, 235, 0.75);
   background: transparent;
   border: 0;
@@ -1128,7 +1129,7 @@ body.ticketing-page .experience-guide-panels {
   grid-column: 2;
   grid-row: 1 / span 2;
   min-width: 0;
-  height: min(43rem, calc(100svh - 11rem));
+  height: min(39rem, calc(100svh - 11rem));
   border-top: 1px solid var(--event-line);
   border-bottom: 1px solid var(--event-line);
 }
