@@ -154,9 +154,11 @@ body.ticketing-page .ticket-detail.event-hero {
 
 body.ticketing-page .event-hero-media {
   grid-area: media;
+  align-self: stretch;
   min-width: 0;
-  min-height: 0;
-  aspect-ratio: 1672 / 941;
+  min-height: 100%;
+  height: 100%;
+  aspect-ratio: auto;
   margin: 0 !important;
   overflow: hidden;
   background: var(--event-ink-deep);
@@ -351,6 +353,10 @@ body.ticketing-page .ticket-types {
 }
 
 body.ticketing-page .ticket-access-card {
+  display: block !important;
+  grid-template-columns: none !important;
+  gap: 0 !important;
+  align-items: initial !important;
   width: 100%;
   margin: 0 !important;
   padding: 0 !important;
@@ -810,7 +816,14 @@ body.ticketing-page .event-story-editorial {
   column-gap: clamp(3rem, 9vw, 12rem);
   row-gap: clamp(3.5rem, 8vw, 7rem);
   width: min(100%, 100rem);
+  max-width: 100rem !important;
   margin: 0 auto;
+}
+
+body.ticketing-page .event-story.event-chapter-story {
+  display: block;
+  margin: 0;
+  border: 0;
 }
 
 body.ticketing-page .event-story-poster-wrap {
@@ -1032,6 +1045,17 @@ body.ticketing-page .experience-information-heading > p {
 
 body.ticketing-page .event-details-body {
   min-width: 0;
+}
+
+body.ticketing-page .event-details-body .experience-guide {
+  display: none !important;
+}
+
+body.ticketing-page .event-details-body .experience-accordions {
+  display: grid !important;
+  gap: 0;
+  width: 100%;
+  max-width: 48rem;
 }
 
 body.ticketing-page .event-public-information-accordions {

@@ -311,10 +311,11 @@
 
   function accordionMarkup(item, index, nested) {
     var panelId = "experience-information-" + (nested ? "faq-" : "panel-") + index;
-    return '<article class="experience-accordion' + (nested ? ' experience-accordion-nested' : '') + '" data-experience-accordion data-experience-accordion-level="' + (nested ? 'nested' : 'primary') + '">' +
-      '<button class="experience-accordion-trigger" type="button" data-experience-accordion-trigger aria-expanded="false" aria-controls="' + panelId + '">' +
+    var initiallyOpen = !nested && index === 0;
+    return '<article class="experience-accordion' + (nested ? ' experience-accordion-nested' : '') + (initiallyOpen ? ' is-open' : '') + '" data-experience-accordion data-experience-accordion-level="' + (nested ? 'nested' : 'primary') + '">' +
+      '<button class="experience-accordion-trigger" type="button" data-experience-accordion-trigger aria-expanded="' + String(initiallyOpen) + '" aria-controls="' + panelId + '">' +
       '<span class="experience-accordion-number">' + escapeHtml(String(index + 1).padStart(2, "0")) + '</span><span class="experience-accordion-copy"><span class="experience-accordion-title">' + escapeHtml(item.title) + '</span></span><span class="experience-accordion-icon" aria-hidden="true"></span></button>' +
-      '<div class="experience-accordion-panel" id="' + panelId + '" role="region" aria-label="' + escapeHtml(item.title) + '" aria-hidden="true"><div class="experience-accordion-content">' + item.content + '</div></div>' +
+      '<div class="experience-accordion-panel" id="' + panelId + '" role="region" aria-label="' + escapeHtml(item.title) + '" aria-hidden="' + String(!initiallyOpen) + '"><div class="experience-accordion-content">' + item.content + '</div></div>' +
       '</article>';
   }
 
@@ -342,6 +343,9 @@
     return entries.filter(function (item) { return item.visible && item.content; });
   }
 
+  // Kept as a reusable rendering primitive for the editorial details surface.
+  // The public experience now deliberately uses the accordion below, which is
+  // more legible when the complete event information is available.
   function experienceDesktopGuide(entries) {
     if (!entries.length) return "";
     return '<div class="experience-guide" data-experience-guide><div class="experience-guide-index" role="tablist" aria-label="Índice de detalles">' +
@@ -358,26 +362,10 @@
   function experienceInformation(event) {
     var entries = experienceInformationEntries(event);
     if (!entries.length) return "";
-    return experienceDesktopGuide(entries) + '<div class="experience-accordions">' + entries.map(function (item, index) { return accordionMarkup(item, index, false); }).join("") + '</div>';
+    return '<div class="experience-accordions">' + entries.map(function (item, index) { return accordionMarkup(item, index, false); }).join("") + '</div>';
   }
 
   function initExperienceAccordions(root) {
-    root.addEventListener("click", function (event) {
-      var guideTrigger = event.target.closest("[data-experience-guide-trigger]");
-      if (!guideTrigger || !root.contains(guideTrigger)) return;
-      var guide = guideTrigger.closest("[data-experience-guide]");
-      var panelId = guideTrigger.dataset.guideTarget;
-      guide.querySelectorAll("[data-experience-guide-trigger]").forEach(function (item) {
-        var active = item === guideTrigger;
-        item.classList.toggle("is-active", active);
-        item.setAttribute("aria-selected", String(active));
-      });
-      guide.querySelectorAll(".experience-guide-panel").forEach(function (panel) {
-        var active = panel.id === panelId;
-        panel.classList.toggle("is-active", active);
-        panel.hidden = !active;
-      });
-    });
     function closeAccordion(item) {
       item.classList.remove("is-open");
       var itemTrigger = item.querySelector(":scope > [data-experience-accordion-trigger]");
