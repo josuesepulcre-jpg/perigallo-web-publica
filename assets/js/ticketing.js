@@ -206,6 +206,9 @@
       var storyText = isPerigalla01
         ? '<p>La Perigalla 01 inaugura una nueva forma de celebrar en Finca La Llaguna.</p><p>Una boda ficticia de inspiración ibicenca que presenta el universo de Perigallo a través de la gastronomía, la música, la puesta en escena y una historia protagonizada por Sofía y Carlos.</p><p>Una noche en formato cóctel, bajo las estrellas y con un protocolo de vestimenta completamente blanca.</p>'
         : textParagraphs(event.short_description || event.description || "");
+      var storyVenue = isPerigalla01
+        ? '<aside class="event-story-venue" aria-label="Ubicación de la experiencia"><span>Celebrado en</span><strong>Finca La Llaguna</strong><p>Crevillent · Alicante</p><a href="https://fincalallaguna.com/" target="_blank" rel="noopener noreferrer">Visitar Finca La Llaguna <b aria-hidden="true">→</b></a></aside>'
+        : '';
       var storyVisual = '<a class="event-story-poster" href="' + escapeAttr(experienceUrl) + '" aria-label="Descubrir la experiencia completa de ' + escapeHtml(experienceName) + '"><img loading="lazy" src="' + escapeAttr(storyImageUrl) + '" alt="Cartel de ' + escapeHtml(experienceName) + '"><span class="event-story-poster-cta">Descubrir la experiencia <span aria-hidden="true">→</span></span></a>';
       var ticketCards = types.length ? types.map(function (type) { return ticketTypeRow(type, event, preview); }).join("") : '<p class="ticket-status event-access-empty">Próximamente anunciaremos las entradas.</p>';
       var editionMatch = String(event.title || "").match(/(?:\s|^)0*(\d+)\s*$/);
@@ -227,7 +230,7 @@
         '<div class="ticket-types">' + ticketCards + '</div>',
         '</section>',
         '</section>',
-        '<section class="event-story event-story-layout event-story-editorial" id="historia"><div class="event-story-copy"><span class="ticket-eyebrow">La experiencia</span><h2>' + escapeHtml(experienceName) + '</h2><div class="ticket-copy event-story-text">' + storyText + '</div></div>' + storyVisual + '</section>',
+        '<section class="event-story event-story-layout event-story-editorial" id="historia"><div class="event-story-copy"><span class="ticket-eyebrow">La experiencia</span><h2>' + escapeHtml(experienceName) + '</h2><div class="ticket-copy event-story-text">' + storyText + '</div>' + storyVenue + '</div>' + storyVisual + '</section>',
         gallery ? '<section class="event-gallery" id="galeria">' + gallery + '</section>' : '',
         experienceAccordions(event) ? '<section class="event-public-information event-public-information-accordions" id="faq"><div class="experience-accordions">' + experienceAccordions(event) + '</div></section>' : '',
         '</div>'
