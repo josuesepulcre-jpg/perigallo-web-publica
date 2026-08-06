@@ -220,7 +220,7 @@
         event.subtitle ? '<p class="event-subtitle">' + escapeHtml(event.subtitle) + '</p>' : '',
         '</div>',
         '<div class="ticket-copy event-intro event-hero-description">' + textParagraphs(event.short_description || event.description) + '</div>',
-        '<ul class="ticket-access-facts event-hero-facts" id="detalles" aria-label="Datos principales de la experiencia">' + accessFacts(event) + '</ul>',
+        '<ul class="ticket-access-facts event-hero-facts' + (isPerigalla01 ? ' event-hero-facts--with-dress-code' : '') + '" id="detalles" aria-label="Datos principales de la experiencia">' + accessFacts(event) + '</ul>',
         '</section>',
         '<section class="event-access" id="reservar">',
         '<div class="ticket-types">' + ticketCards + '</div>',
@@ -369,21 +369,25 @@
     return text.slice(0, 69).replace(/\s+\S*$/, "") + "…";
   }
 
-  function accessFact(icon, label, value, detail) {
+  function accessFact(icon, label, value, detail, className) {
     if (!value) return "";
-    return '<li class="ticket-access-fact"><span class="ticket-access-icon" aria-hidden="true">' + accessIcon(icon) + '</span><span><small>' + escapeHtml(label) + '</small><strong>' + escapeHtml(value) + '</strong>' + (detail ? '<em>' + escapeHtml(detail) + '</em>' : '') + '</span></li>';
+    return '<li class="ticket-access-fact' + (className ? ' ' + className : '') + '"><span class="ticket-access-icon" aria-hidden="true">' + accessIcon(icon) + '</span><span><small>' + escapeHtml(label) + '</small><strong>' + escapeHtml(value) + '</strong>' + (detail ? '<em>' + escapeHtml(detail) + '</em>' : '') + '</span></li>';
   }
 
   function accessFacts(event) {
     var locality = [event.locality, event.province].filter(Boolean).join(", ");
     var place = event.location || locality;
     var schedule = event.starts_at ? (event.ends_at ? fmtTime(event.starts_at) + " – " + fmtTime(event.ends_at) : fmtTime(event.starts_at)) : "";
-    return [
+    var facts = [
       accessFact("calendar", "Fecha", fmtDateOnly(event.starts_at)),
       accessFact("clock", "Horario", schedule),
       accessFact("duration", "Duración", durationText(event.starts_at, event.ends_at)),
       accessFact("place", "Lugar", place, event.location ? locality : "")
-    ].filter(Boolean).join("");
+    ];
+    if (/la\s+perigalla\s*0?1/i.test(String(event.title || ""))) {
+      facts.push(accessFact("dress", "Fiesta ibicenca", "Código de vestimenta obligatorio: todo el mundo ir de blanco. Si no, no podrá entrar.", "", "ticket-access-fact--dress-code"));
+    }
+    return facts.filter(Boolean).join("");
   }
 
   function availabilityText(type) {
