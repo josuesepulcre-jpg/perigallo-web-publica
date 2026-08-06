@@ -355,17 +355,33 @@
       }).join("") + '</div><div class="experience-guide-panels">' +
       entries.map(function (item, index) {
         var panelId = "experience-guide-panel-" + index;
-        return '<article class="experience-guide-panel' + (index === 0 ? ' is-active' : '') + '" id="' + panelId + '" role="tabpanel"' + (index === 0 ? '' : ' hidden') + '><span class="ticket-eyebrow">' + escapeHtml(String(index + 1).padStart(2, "0")) + ' · ' + escapeHtml(item.title) + '</span><div class="experience-guide-content">' + item.content + '</div></article>';
+        return '<article class="experience-guide-panel' + (index === 0 ? ' is-active' : '') + '" id="' + panelId + '" role="tabpanel"' + (index === 0 ? '' : ' hidden') + '><span class="ticket-eyebrow">' + escapeHtml(String(index + 1).padStart(2, "0")) + ' · Detalles</span><h3>' + escapeHtml(item.title) + '</h3><div class="experience-guide-content">' + item.content + '</div></article>';
       }).join("") + '</div></div>';
   }
 
   function experienceInformation(event) {
     var entries = experienceInformationEntries(event);
     if (!entries.length) return "";
-    return '<div class="experience-accordions">' + entries.map(function (item, index) { return accordionMarkup(item, index, false); }).join("") + '</div>';
+    return experienceDesktopGuide(entries) + '<div class="experience-accordions">' + entries.map(function (item, index) { return accordionMarkup(item, index, false); }).join("") + '</div>';
   }
 
   function initExperienceAccordions(root) {
+    root.addEventListener("click", function (event) {
+      var guideTrigger = event.target.closest("[data-experience-guide-trigger]");
+      if (!guideTrigger || !root.contains(guideTrigger)) return;
+      var guide = guideTrigger.closest("[data-experience-guide]");
+      var panelId = guideTrigger.dataset.guideTarget;
+      guide.querySelectorAll("[data-experience-guide-trigger]").forEach(function (item) {
+        var active = item === guideTrigger;
+        item.classList.toggle("is-active", active);
+        item.setAttribute("aria-selected", String(active));
+      });
+      guide.querySelectorAll(".experience-guide-panel").forEach(function (panel) {
+        var active = panel.id === panelId;
+        panel.classList.toggle("is-active", active);
+        panel.hidden = !active;
+      });
+    });
     function closeAccordion(item) {
       item.classList.remove("is-open");
       var itemTrigger = item.querySelector(":scope > [data-experience-accordion-trigger]");

@@ -1008,9 +1008,9 @@ body.ticketing-page .event-chapter-next-entry {
   margin: 0 auto;
 }
 
-/* Chapter 03: preserve the successful details section, just give it a stable grid. */
+/* Chapter 03: a compact editorial index with a dedicated reading panel. */
 body.ticketing-page .event-chapter-details {
-  padding: clamp(5rem, 10vw, 9rem) var(--event-gutter);
+  padding: clamp(2.5rem, 4vw, 4.5rem) var(--event-gutter);
   background: var(--event-ink);
 }
 
@@ -1048,14 +1048,149 @@ body.ticketing-page .event-details-body {
 }
 
 body.ticketing-page .event-details-body .experience-guide {
-  display: none !important;
+  display: grid !important;
+  grid-template-columns: minmax(15.5rem, 0.78fr) minmax(0, 1.22fr);
+  gap: clamp(2rem, 4vw, 4.5rem);
+  min-height: min(38rem, calc(100svh - 12rem));
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+body.ticketing-page .experience-guide-index {
+  display: grid;
+  align-content: start;
+  border-top: 1px solid var(--event-line);
+}
+
+body.ticketing-page .experience-guide-trigger {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) 1rem;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+  min-height: 2.85rem;
+  padding: 0.5rem 0;
+  color: rgba(255, 248, 235, 0.75);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--event-line);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: color 180ms ease, padding-left 180ms ease, border-color 180ms ease;
+}
+
+body.ticketing-page .experience-guide-trigger > span {
+  color: var(--event-gold);
+  font-size: 0.59rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+body.ticketing-page .experience-guide-trigger strong {
+  overflow: hidden;
+  color: inherit;
+  font-size: clamp(0.72rem, 0.85vw, 0.86rem);
+  font-weight: 500;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.ticketing-page .experience-guide-trigger b {
+  color: transparent;
+  font-size: 1rem;
+  font-weight: 400;
+  transition: color 180ms ease, transform 180ms ease;
+}
+
+body.ticketing-page .experience-guide-trigger:hover,
+body.ticketing-page .experience-guide-trigger:focus-visible,
+body.ticketing-page .experience-guide-trigger.is-active {
+  padding-left: 0.5rem;
+  color: var(--event-paper);
+  border-color: rgba(214, 177, 127, 0.7);
+  outline: 0;
+}
+
+body.ticketing-page .experience-guide-trigger.is-active b,
+body.ticketing-page .experience-guide-trigger:hover b,
+body.ticketing-page .experience-guide-trigger:focus-visible b {
+  color: var(--event-gold);
+  transform: translateX(0.15rem);
+}
+
+body.ticketing-page .experience-guide-panels {
+  min-width: 0;
+  border-top: 1px solid var(--event-line);
+  border-bottom: 1px solid var(--event-line);
+}
+
+body.ticketing-page .experience-guide-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  padding: clamp(1.5rem, 2.7vw, 2.7rem) 0;
+  animation: event-guide-panel-in 220ms ease both;
+}
+
+body.ticketing-page .experience-guide-panel[hidden] {
+  display: none;
+}
+
+body.ticketing-page .experience-guide-panel .ticket-eyebrow {
+  margin: 0;
+}
+
+body.ticketing-page .experience-guide-panel h3 {
+  margin: 0.85rem 0 0;
+  color: var(--event-ivory);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2rem, 3vw, 3.2rem);
+  font-weight: 400;
+  line-height: 1;
+  text-wrap: balance;
+}
+
+body.ticketing-page .experience-guide-content {
+  max-height: clamp(23rem, 53vh, 34rem);
+  margin-top: clamp(1.5rem, 2.5vw, 2.5rem);
+  padding-right: 1.1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  color: rgba(255, 248, 235, 0.78);
+  font-size: clamp(0.9rem, 1vw, 1rem);
+  line-height: 1.58;
+  scrollbar-color: rgba(214, 177, 127, 0.6) transparent;
+  scrollbar-width: thin;
+}
+
+body.ticketing-page .experience-guide-content::-webkit-scrollbar {
+  width: 0.3rem;
+}
+
+body.ticketing-page .experience-guide-content::-webkit-scrollbar-thumb {
+  background: rgba(214, 177, 127, 0.6);
+}
+
+body.ticketing-page .experience-guide-content p {
+  max-width: 42rem;
+  margin: 0 0 1.05rem;
+}
+
+body.ticketing-page .experience-guide-content p:last-child {
+  margin-bottom: 0;
 }
 
 body.ticketing-page .event-details-body .experience-accordions {
-  display: grid !important;
-  gap: 0;
-  width: 100%;
-  max-width: 48rem;
+  display: none !important;
+}
+
+@keyframes event-guide-panel-in {
+  from { opacity: 0; transform: translateY(0.3rem); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 body.ticketing-page .event-public-information-accordions {
@@ -1279,6 +1414,59 @@ body.ticketing-page summary:focus-visible {
     grid-row: auto;
     margin-top: 1rem;
     white-space: normal;
+  }
+
+  body.ticketing-page .event-chapter-details {
+    padding-top: 3.5rem;
+    padding-bottom: 3.5rem;
+  }
+
+  body.ticketing-page .event-details-body .experience-guide {
+    display: block !important;
+    min-height: 0;
+  }
+
+  body.ticketing-page .experience-guide-index {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    margin-inline: calc(var(--event-gutter) * -1);
+    padding-inline: var(--event-gutter);
+    scrollbar-width: none;
+  }
+
+  body.ticketing-page .experience-guide-index::-webkit-scrollbar {
+    display: none;
+  }
+
+  body.ticketing-page .experience-guide-trigger {
+    flex: 0 0 auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    width: auto;
+    min-width: 10.5rem;
+    padding: 0.8rem 0.85rem;
+    border-top: 1px solid var(--event-line);
+    border-right: 1px solid var(--event-line);
+  }
+
+  body.ticketing-page .experience-guide-trigger strong {
+    overflow: visible;
+    white-space: normal;
+  }
+
+  body.ticketing-page .experience-guide-panels {
+    margin-top: 1.5rem;
+  }
+
+  body.ticketing-page .experience-guide-panel {
+    min-height: 0;
+    padding: 1.5rem 0;
+  }
+
+  body.ticketing-page .experience-guide-content {
+    max-height: none;
+    padding-right: 0;
+    overflow: visible;
   }
 }
 
