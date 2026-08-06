@@ -8,6 +8,24 @@ use Throwable;
 
 final class Mailer
 {
+    public function sendAnalyticsReport(string $email, string $subject, string $body, string $htmlBody): bool
+    {
+        try {
+            $boundary = 'perigallo-analytics-' . bin2hex(random_bytes(12));
+            $headers = [
+                'From: ' . (env_value('MAIL_FROM_NAME', 'Perigallo') ?: 'Perigallo') . ' <' . (env_value('MAIL_FROM', 'entradas@perigallo.com') ?: 'entradas@perigallo.com') . '>',
+                'MIME-Version: 1.0',
+                'Content-Type: multipart/alternative; boundary="' . $boundary . '"',
+            ];
+            $message = "--{$boundary}\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n{$body}\r\n\r\n"
+                . "--{$boundary}\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n{$htmlBody}\r\n\r\n"
+                . "--{$boundary}--";
+            return mail($email, $subject, $message, implode("\r\n", $headers));
+        } catch (Throwable $error) {
+            return false;
+        }
+    }
+
     public function queueOrderEmail(PDO $pdo, int $orderId, string $email, string $subject, string $body, ?string $htmlBody = null): void
     {
         $this->queue($pdo, $orderId, $email, $subject, $body, $htmlBody ?? $this->basicOrderHtml($subject, $body));

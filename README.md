@@ -38,6 +38,7 @@ Las solicitudes y reservas externas se abren fuera de la pagina principal para e
 | `/admin/eventos/` | Listado privado de eventos. |
 | `/admin/eventos/ID/editar/` | Editor completo de evento y tipos de entrada. |
 | `/admin/ventas/` | Pedidos y ventas registrados. |
+| `/admin/analitica/` | Analítica first-party, embudo de compra e informes programados. |
 | `/admin/acceso/` | Escáner/verificación privada de accesos. |
 | `/admin/entradas/` | Ruta heredada: redirige al listado de eventos. |
 | `/admin/entradas/evento/?id=ID` | Ruta heredada: redirige al editor semántico. |
@@ -65,10 +66,14 @@ Endpoints principales:
 - `POST /api/orders/recover`
 - `GET /api/orders/access/{temporaryToken}`
 - `POST /api/redsys/notification`
+- `POST /api/analytics/events`
 - `GET /api/admin/session`
 - `POST /api/admin/login`
 - `POST /api/admin/logout`
 - `GET /api/admin/summary`
+- `GET /api/admin/analytics`
+- `GET` / `PUT /api/admin/analytics/settings`
+- `POST /api/admin/analytics/send-test-report`
 - `GET /api/admin/orders`
 - `GET /api/admin/events`
 - `GET /api/admin/events/{id}`
@@ -129,10 +134,13 @@ mysql -u USER -p DB_NAME < database/migrations/001_ticketing_schema.sql
 mysql -u USER -p DB_NAME < database/migrations/002_event_editor.sql
 mysql -u USER -p DB_NAME < database/migrations/003_suite_experience_integration.sql
 mysql -u USER -p DB_NAME < database/migrations/004_long_public_event_information.sql
+mysql -u USER -p DB_NAME < database/migrations/016_first_party_analytics.sql
 mysql -u USER -p DB_NAME < database/migrations/010_order_access_recovery.sql
 ```
 
 La primera migración crea las tablas aisladas para eventos, tipos de entrada, pedidos, intentos de pago, tickets, escaneos y entregas de email. La segunda amplía los eventos y entradas sin alterar los pedidos o tickets emitidos. La tercera añade el identificador canónico y el registro idempotente de sincronización privada con Suite. La cuarta habilita contenido público extenso mediante columnas `LONGTEXT`.
+
+La migración 016 añade la analítica first-party. Consulta `docs/ANALYTICS_DEPLOYMENT.md` para configurar el cron de Plesk y los informes por correo.
 
 ## Validacion minima
 
@@ -140,6 +148,7 @@ La primera migración crea las tablas aisladas para eventos, tipos de entrada, p
 node --check assets/js/ticketing.js
 node --check assets/js/ticketing-admin.js
 node --check assets/js/site.js
+node --check assets/js/analytics.js
 node tests/static-ticketing-check.mjs
 ```
 
@@ -163,4 +172,5 @@ find api/src -name '*.php' -print -exec php -l {} \;
 - `docs/CYBERPAC_REDSYS_PERIGALLO_COM.md`
 - `docs/TICKETING_DEPLOYMENT.md`
 - `docs/TICKETING_PRODUCTION_CHECKLIST.md`
+- `docs/ANALYTICS_DEPLOYMENT.md`
 - `docs/estructura-deploy-web-publica.md`

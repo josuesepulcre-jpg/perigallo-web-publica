@@ -24,6 +24,12 @@ const required = [
   "database/migrations/012_payment_methods_bizum.sql",
   "database/migrations/013_discount_codes.sql",
   "database/migrations/014_reference_ticket_price.sql",
+  "database/migrations/016_first_party_analytics.sql",
+  "api/src/Analytics.php",
+  "api/cron/analytics-report.php",
+  "assets/js/analytics.js",
+  "admin/analitica/index.html",
+  "docs/ANALYTICS_DEPLOYMENT.md",
   "eventos/index.html",
   "eventos/evento.html",
   "entradas/checkout/index.html",
@@ -375,6 +381,34 @@ for (const marker of [".public-information-editor", "white-space:pre-wrap", ".ev
 for (const marker of [".ticket-editor-drawer", ".ticket-drawer-grid", ".ticket-action-menu", ".ticket-final-price"]) {
   if (!css.includes(marker)) throw new Error(`Missing ticket drawer style: ${marker}`);
 }
+
+const analytics = readFileSync(join(root, "api/src/Analytics.php"), "utf8");
+const analyticsMigration = readFileSync(join(root, "database/migrations/016_first_party_analytics.sql"), "utf8");
+const analyticsClient = readFileSync(join(root, "assets/js/analytics.js"), "utf8");
+const analyticsAdmin = readFileSync(join(root, "admin/analitica/index.html"), "utf8");
+const analyticsCron = readFileSync(join(root, "api/cron/analytics-report.php"), "utf8");
+for (const marker of ["analytics_visitors", "analytics_sessions", "analytics_events", "analytics_settings", "analytics_reports", "idx_analytics_events_period_type"]) {
+  if (!analyticsMigration.includes(marker)) throw new Error(`Analytics migration is missing ${marker}.`);
+}
+for (const marker of ["function track", "function dashboard", "function sendDueReports", "ticket_orders", "status = \"paid\"", "is_test = 0", "isBot"]) {
+  if (!analytics.includes(marker)) throw new Error(`Analytics backend is missing ${marker}.`);
+}
+for (const marker of ["sendBeacon", "IntersectionObserver", "scroll_depth", "checkout_start", "payment_start", "perigallo-analytics-consent"]) {
+  if (!analyticsClient.includes(marker)) throw new Error(`Analytics client is missing ${marker}.`);
+}
+for (const marker of ["/analytics/events", "/admin/analytics", "requireOwner", "analytics->dashboard"]) {
+  if (!api.includes(marker)) throw new Error(`Analytics API route is missing ${marker}.`);
+}
+for (const marker of ["data-admin-analytics-page", "admin-backoffice.js"]) {
+  if (!analyticsAdmin.includes(marker)) throw new Error(`Analytics admin UI is missing ${marker}.`);
+}
+for (const marker of ["sendDueReports", "flock", "analytics-report.lock"]) {
+  if (!analyticsCron.includes(marker)) throw new Error(`Analytics cron is missing ${marker}.`);
+}
+for (const marker of ["data-analytics-section=\"entradas\"", "data-analytics-section=\"experiencia\"", "data-analytics-click=\"ver-experiencia\""]) {
+  if (!publicJs.includes(marker)) throw new Error(`Analytics public event instrumentation is missing ${marker}.`);
+}
+if (!envExample.includes("ANALYTICS_REPORT_EMAIL=")) throw new Error("Analytics report environment variable is missing.");
 
 const publicAccessCss = readFileSync(join(root, "assets/css/event-information-accordions.css"), "utf8");
 for (const marker of [".ticket-access-heading", ".ticket-access-secondary", ".ticket-access-decision", ".ticket-access-status-dot"]) {

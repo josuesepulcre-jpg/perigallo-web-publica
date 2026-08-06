@@ -4,6 +4,7 @@ declare(strict_types=1);
 require __DIR__ . '/src/bootstrap.php';
 
 use Perigallo\Ticketing\AdminAuth;
+use Perigallo\Ticketing\Analytics;
 use Perigallo\Ticketing\Database;
 use Perigallo\Ticketing\Mailer;
 use Perigallo\Ticketing\Redsys;
@@ -19,7 +20,23 @@ $path = preg_replace('#^/api#', '', $path) ?: '/';
 $path = rtrim($path, '/') ?: '/';
 
 try {
-    $ticketing = new Ticketing(Database::pdo(), new Redsys(), new Mailer());
+    $mailer = new Mailer();
+    $ticketing = new Ticketing(Database::pdo(), new Redsys(), $mailer);
+    $analytics = new Analytics(Database::pdo(), $mailer);
+
+    if ($method === 'POST' && $path === '/analytics/events') {
+        $length = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+        if ($length > 12000) {
+            json_response(['ok' => false, 'error' => 'El lote de analítica es demasiado grande.'], 413);
+            return;
+        }
+        if (Analytics::isBot((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''))) {
+            json_response(['ok' => true, 'accepted' => 0]);
+            return;
+        }
+        json_response(['ok' => true] + $analytics->track(read_json_body()), 202);
+        return;
+    }
 
     if ($method === 'GET' && $path === '/events') {
         json_response(['ok' => true, 'events' => $ticketing->listEvents()]);
@@ -190,6 +207,30 @@ try {
     if ($method === 'GET' && $path === '/admin/summary') {
         AdminAuth::require();
         json_response(['ok' => true, 'summary' => $ticketing->adminSummary()]);
+        return;
+    }
+
+    if ($method === 'GET' && $path === '/admin/analytics') {
+        AdminAuth::require();
+        json_response(['ok' => true, 'analytics' => $analytics->dashboard($_GET)]);
+        return;
+    }
+
+    if ($method === 'GET' && $path === '/admin/analytics/settings') {
+        AdminAuth::require();
+        json_response(['ok' => true, 'settings' => $analytics->settings()]);
+        return;
+    }
+
+    if ($method === 'PUT' && $path === '/admin/analytics/settings') {
+        AdminAuth::requireOwner();
+        json_response(['ok' => true, 'settings' => $analytics->saveSettings(read_json_body())]);
+        return;
+    }
+
+    if ($method === 'POST' && $path === '/admin/analytics/send-test-report') {
+        AdminAuth::requireOwner();
+        json_response(['ok' => true, 'report' => $analytics->sendTestReport()]);
         return;
     }
 

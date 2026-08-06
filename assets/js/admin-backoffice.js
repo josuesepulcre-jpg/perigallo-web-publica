@@ -57,6 +57,7 @@
     if (path.indexOf("/admin/eventos") === 0) return "events";
     if (path.indexOf("/admin/ventas") === 0) return "sales";
     if (path.indexOf("/admin/descuentos") === 0) return "discounts";
+    if (path.indexOf("/admin/analitica") === 0) return "analytics";
     if (path.indexOf("/admin/acceso") === 0) return "access";
     if (path.indexOf("/admin/usuarios") === 0) return "users";
     return "dashboard";
@@ -82,6 +83,7 @@
             '<a href="/admin/eventos/" data-admin-nav-item="events">Eventos</a>' +
             '<a href="/admin/ventas/" data-admin-nav-item="sales">Pedidos y ventas</a>' +
             '<a href="/admin/descuentos/" data-admin-nav-item="discounts">Códigos de descuento</a>' +
+            '<a href="/admin/analitica/" data-admin-nav-item="analytics">Analítica</a>' +
             '<span class="admin-nav-label">Operativa</span>' +
             '<a href="/admin/acceso/" data-admin-nav-item="access">Control de acceso</a>' +
             (sessionData.is_owner ? '<span class="admin-nav-label">Configuración</span><a href="/admin/usuarios/" data-admin-nav-item="users">Equipo y permisos</a>' : '') +
@@ -612,6 +614,89 @@
     });
   }
 
+  function analyticsNumber(value) { return new Intl.NumberFormat("es-ES").format(Number(value || 0)); }
+  function analyticsDuration(seconds) {
+    seconds = Number(seconds || 0);
+    return String(Math.floor(seconds / 60)).padStart(2, "0") + ":" + String(seconds % 60).padStart(2, "0");
+  }
+  function analyticsChange(item, unit) {
+    if (item.change === null || item.change === undefined) return '<small class="analytics-change">Sin periodo anterior</small>';
+    var up = Number(item.change) >= 0;
+    var suffix = unit === "points" ? " puntos" : " %";
+    return '<small class="analytics-change ' + (up ? "is-positive" : "is-negative") + '">' + (up ? "↑ +" : "↓ ") + escapeHtml(String(item.change)) + suffix + ' vs. periodo anterior</small>';
+  }
+  function analyticsValue(key, item) {
+    if (key === "conversion_rate" || key === "engagement_rate") return Number(item.value || 0).toLocaleString("es-ES", { maximumFractionDigits: 2 }) + " %";
+    if (key === "revenue_cents") return formatMoney(item.value);
+    if (key === "average_session_seconds") return analyticsDuration(item.value);
+    return analyticsNumber(item.value);
+  }
+  function analyticsTableEmpty(message) { return '<div class="analytics-empty">' + escapeHtml(message) + '</div>'; }
+
+  function renderAnalytics(root, data, stateData) {
+    var kpis = data.kpis || {};
+    var range = stateData.range;
+    var primaryKeys = ["visitors", "sessions", "pageviews", "conversion_rate", "conversions", "average_session_seconds", "pages_per_session", "engagement_rate"];
+    var cards = primaryKeys.map(function (key) {
+      var item = kpis[key] || { label: key, value: 0, change: null };
+      return '<article class="analytics-kpi"><span>' + escapeHtml(item.label) + '</span><strong>' + analyticsValue(key, item) + '</strong>' + analyticsChange(item, item.unit) + '</article>';
+    }).join("");
+    var timeline = data.timeline || [];
+    var metric = stateData.metric;
+    var maximum = Math.max.apply(Math, [1].concat(timeline.map(function (item) { return Number(item[metric] || 0); })));
+    var bars = timeline.length ? timeline.map(function (item) {
+      var value = Number(item[metric] || 0);
+      return '<div class="analytics-bar-wrap" title="' + escapeHtml(item.bucket + ': ' + value) + '"><i style="height:' + Math.max(value ? 6 : 0, Math.round((value / maximum) * 100)) + '%"></i><span>' + escapeHtml(String(item.bucket).slice(range === "today" ? 11 : 5)) + '</span></div>';
+    }).join("") : '<p class="ticket-copy">Los datos empezarán a aparecer cuando se registren nuevas visitas consentidas.</p>';
+    var funnel = (data.funnel || []).map(function (step) { return '<div class="analytics-funnel-step"><div><span>' + escapeHtml(step.label) + '</span><strong>' + analyticsNumber(step.value) + '</strong></div><b style="width:' + Math.min(100, Number(step.rate || 0)) + '%"></b><small>' + Number(step.rate || 0).toLocaleString("es-ES") + ' %</small></div>'; }).join("");
+    var pages = (data.pages || []).length ? '<div class="analytics-table">' + data.pages.map(function (page) { return '<a href="' + escapeHtml(page.path) + '" target="_blank" rel="noopener noreferrer"><span><strong>' + escapeHtml(page.title) + '</strong><small>' + escapeHtml(page.path) + '</small></span><span>' + analyticsNumber(page.visitors) + '</span><span>' + analyticsNumber(page.views) + '</span><span>' + analyticsNumber(page.average_scroll) + ' %</span></a>'; }).join("") + '</div>' : analyticsTableEmpty('Aún no hay páginas con datos.');
+    var experiences = (data.experiences || []).length ? '<div class="analytics-table analytics-experience-table">' + data.experiences.map(function (item) { return '<article><span><strong>' + escapeHtml(item.title) + '</strong><small>/' + escapeHtml(item.slug) + '</small></span><span>' + analyticsNumber(item.visitors) + '<small>visitas</small></span><span>' + analyticsNumber(item.ticket_clicks) + '<small>clics</small></span><span>' + analyticsNumber(item.checkouts) + '<small>checkout</small></span><span>' + analyticsNumber(item.purchases) + '<small>compras</small></span><span>' + Number(item.conversion_rate).toLocaleString("es-ES") + ' %</span></article>'; }).join("") + '</div>' : analyticsTableEmpty('Las experiencias aparecerán cuando reciban visitas consentidas.');
+    var list = function (items, label, value) { return items && items.length ? '<div class="analytics-ranking">' + items.map(function (item) { return '<div><span>' + escapeHtml(item[label]) + '</span><strong>' + analyticsNumber(item[value]) + '</strong></div>'; }).join("") + '</div>' : analyticsTableEmpty('Aún no hay datos.'); };
+    var sectionRetention = (data.sections || []).length ? '<div class="analytics-ranking">' + data.sections.map(function (section) { return '<div><span>' + escapeHtml(section.id) + '<small>' + analyticsNumber(section.sessions) + ' sesiones</small></span><strong>' + Number(section.retention_rate || 0).toLocaleString("es-ES") + ' %</strong></div>'; }).join("") + '</div>' : analyticsTableEmpty('Las secciones aparecerán cuando reciban visitas consentidas.');
+    var scrollDepths = (data.scroll_depths || []).some(function (item) { return Number(item.visitors || 0) > 0; }) ? '<div class="analytics-ranking">' + data.scroll_depths.map(function (item) { return '<div><span>Scroll ' + analyticsNumber(item.depth) + ' %</span><strong>' + Number(item.rate || 0).toLocaleString("es-ES") + ' %</strong></div>'; }).join("") + '</div>' : analyticsTableEmpty('Aún no hay hitos de scroll registrados.');
+    var insights = (data.insights || []).length ? '<div class="analytics-insights">' + data.insights.map(function (item) { return '<p class="' + escapeHtml(item.tone || "") + '">' + escapeHtml(item.text) + '</p>'; }).join("") + '</div>' : analyticsTableEmpty('Los insights aparecerán al acumular datos comparables.');
+    var realtime = data.realtime || { active_sessions: 0, pages: [] };
+    root.innerHTML =
+      '<section class="admin-page-heading analytics-heading"><div><span class="ticket-eyebrow">Analítica</span><h1>Comportamiento y <em>conversión.</em></h1><p>Datos first-party y agregados para entender qué ocurre en Perigallo.com.</p></div><div class="analytics-live"><span>Ahora mismo</span><strong>' + analyticsNumber(realtime.active_sessions) + '</strong><small>sesiones activas</small></div></section>' +
+      '<section class="analytics-controls" aria-label="Intervalo de analítica"><div class="analytics-range-tabs"><button type="button" data-analytics-range="today" class="' + (range === "today" ? "is-active" : "") + '">Hoy</button><button type="button" data-analytics-range="7d" class="' + (range === "7d" ? "is-active" : "") + '">7 días</button><button type="button" data-analytics-range="30d" class="' + (range === "30d" ? "is-active" : "") + '">30 días</button></div><form data-analytics-custom-range><label>Desde<input type="date" name="from" value="' + escapeHtml(stateData.from || "") + '"></label><label>Hasta<input type="date" name="to" value="' + escapeHtml(stateData.to || "") + '"></label><button class="ticket-btn" type="submit">Personalizado</button></form></section>' +
+      '<section class="analytics-kpis">' + cards + '</section>' +
+      '<section class="analytics-grid analytics-grid-main"><article class="analytics-panel analytics-timeline"><div class="analytics-panel-heading"><div><span class="ticket-eyebrow">Evolución</span><h2>Actividad en el tiempo</h2></div><div class="analytics-metric-tabs">' + ["visitors", "sessions", "pageviews", "conversions"].map(function (key) { return '<button type="button" data-analytics-metric="' + key + '" class="' + (metric === key ? "is-active" : "") + '">' + escapeHtml((kpis[key] || {}).label || key) + '</button>'; }).join("") + '</div></div><div class="analytics-bars">' + bars + '</div></article><article class="analytics-panel"><span class="ticket-eyebrow">Embudo de conversión</span><h2>De la visita a la compra</h2><div class="analytics-funnel">' + funnel + '</div></article></section>' +
+      '<section class="analytics-grid"><article class="analytics-panel analytics-wide"><div class="analytics-panel-heading"><div><span class="ticket-eyebrow">Páginas</span><h2>Las más visitadas</h2></div><small>Visitantes · Vistas · Scroll medio</small></div>' + pages + '</article><article class="analytics-panel"><span class="ticket-eyebrow">Insights</span><h2>Qué merece atención</h2>' + insights + '</article></section>' +
+      '<section class="analytics-grid"><article class="analytics-panel analytics-wide"><div class="analytics-panel-heading"><div><span class="ticket-eyebrow">Experiencias</span><h2>Interés y compra</h2></div><small>Visitas · Clics · Checkout · Compras</small></div>' + experiences + '</article><article class="analytics-panel"><span class="ticket-eyebrow">En este momento</span><h2>Páginas activas</h2>' + list(realtime.pages || [], "path", "sessions") + '</article></section>' +
+      '<section class="analytics-grid analytics-grid-three"><article class="analytics-panel"><span class="ticket-eyebrow">Secciones</span><h2>Retención por bloque</h2>' + sectionRetention + '</article><article class="analytics-panel"><span class="ticket-eyebrow">Profundidad</span><h2>Hasta dónde llegan</h2>' + scrollDepths + '</article><article class="analytics-panel"><span class="ticket-eyebrow">Tráfico</span><h2>De dónde llegan</h2>' + list(data.sources || [], "label", "value") + '</article></section>' +
+      '<section class="analytics-grid"><article class="analytics-panel"><span class="ticket-eyebrow">Dispositivos</span><h2>Cómo navegan</h2>' + list(data.devices || [], "label", "value") + '</article></section>' +
+      '<section class="analytics-grid"><article class="analytics-panel"><span class="ticket-eyebrow">Acciones</span><h2>Clics relevantes</h2>' + ((data.actions || []).length ? '<div class="analytics-ranking">' + data.actions.map(function (action) { return '<div><span>' + escapeHtml(action.id) + '</span><strong>' + analyticsNumber(action.clicks) + '</strong></div>'; }).join("") + '</div>' : analyticsTableEmpty('Aún no hay acciones registradas.')) + '</article>' + (stateData.owner ? '<article class="analytics-panel analytics-settings"><span class="ticket-eyebrow">Informes</span><h2>Resumen por correo</h2><form data-analytics-settings><label>Destinatario<input type="email" name="report_email" value="' + escapeHtml(stateData.settings.report_email || "") + '" placeholder="correo@ejemplo.com"></label><div class="analytics-setting-checks"><label><input type="checkbox" name="daily_enabled"' + (stateData.settings.daily_enabled ? " checked" : "") + '> Diario</label><label><input type="checkbox" name="weekly_enabled"' + (stateData.settings.weekly_enabled ? " checked" : "") + '> Semanal</label><label><input type="checkbox" name="monthly_enabled"' + (stateData.settings.monthly_enabled ? " checked" : "") + '> Mensual</label></div><label>Hora<input type="number" min="0" max="23" name="report_hour" value="' + Number(stateData.settings.report_hour || 8) + '"></label><label>Zona horaria<input type="text" name="timezone" value="' + escapeHtml(stateData.settings.timezone || "Europe/Madrid") + '"></label><div class="analytics-settings-actions"><button class="ticket-btn primary" type="submit">Guardar configuración</button><button class="ticket-btn" type="button" data-analytics-test-report>Enviar informe de prueba</button></div><p class="ticket-status" data-analytics-settings-status></p></form></article>' : '<article class="analytics-panel"><span class="ticket-eyebrow">Privacidad</span><h2>Datos con consentimiento</h2><p class="ticket-copy">Sin direcciones IP, nombres, emails, teléfonos ni contenido de formularios. La compra se confirma solo desde el backend.</p></article>') + '</section>';
+  }
+
+  function initAnalytics() {
+    var root = document.querySelector("[data-admin-analytics-page]");
+    if (!root) return;
+    requireSession(function (session) {
+      if (session.role !== "admin") { renderPageError("Esta sección está reservada para administración."); return; }
+      var stateData = { range: "7d", metric: "visitors", from: "", to: "", owner: !!session.is_owner, settings: {} };
+      function query() {
+        var params = new URLSearchParams({ range: stateData.range });
+        if (stateData.range === "custom") { params.set("from", stateData.from); params.set("to", stateData.to); }
+        return request(api + "/admin/analytics?" + params.toString()).then(function (result) { return result.analytics; });
+      }
+      function load() {
+        var settingsRequest = stateData.owner ? request(api + "/admin/analytics/settings") : Promise.resolve({ settings: {} });
+        return Promise.all([query(), settingsRequest]).then(function (result) { stateData.settings = result[1].settings || {}; renderAnalytics(root, result[0], stateData); bind(); });
+      }
+      function bind() {
+        root.querySelectorAll("[data-analytics-range]").forEach(function (button) { button.addEventListener("click", function () { stateData.range = button.dataset.analyticsRange; stateData.from = ""; stateData.to = ""; load().catch(function (error) { renderPageError(error.message); }); }); });
+        root.querySelectorAll("[data-analytics-metric]").forEach(function (button) { button.addEventListener("click", function () { stateData.metric = button.dataset.analyticsMetric; load().catch(function (error) { renderPageError(error.message); }); }); });
+        var custom = root.querySelector("[data-analytics-custom-range]");
+        if (custom) custom.addEventListener("submit", function (event) { event.preventDefault(); stateData.range = "custom"; stateData.from = custom.from.value; stateData.to = custom.to.value; load().catch(function (error) { renderPageError(error.message); }); });
+        var settings = root.querySelector("[data-analytics-settings]");
+        if (settings) settings.addEventListener("submit", function (event) { event.preventDefault(); var status = root.querySelector("[data-analytics-settings-status]"); status.textContent = "Guardando…"; jsonRequest(api + "/admin/analytics/settings", "PUT", { report_email: settings.report_email.value.trim(), daily_enabled: settings.daily_enabled.checked, weekly_enabled: settings.weekly_enabled.checked, monthly_enabled: settings.monthly_enabled.checked, report_hour: settings.report_hour.value, timezone: settings.timezone.value.trim() }).then(function () { status.textContent = "Configuración guardada."; }).catch(function (error) { status.textContent = error.message; }); });
+        var test = root.querySelector("[data-analytics-test-report]");
+        if (test) test.addEventListener("click", function () { var status = root.querySelector("[data-analytics-settings-status]"); test.disabled = true; status.textContent = "Enviando informe de prueba…"; jsonRequest(api + "/admin/analytics/send-test-report", "POST", {}).then(function (result) { status.textContent = result.report.status === "sent" ? "Informe de prueba enviado." : "No se pudo enviar el informe."; }).catch(function (error) { status.textContent = error.message; }).finally(function () { test.disabled = false; }); });
+      }
+      load().catch(function (error) { renderPageError(error.message); });
+    });
+  }
+
   function initAdminChrome() {
     if (!document.querySelector("[data-admin-nav]") || document.querySelector("[data-admin-dashboard]")) return;
     requireSession(function () { /* The scanner shares the authenticated administrative shell. */ });
@@ -624,4 +709,5 @@
   initSales();
   initUsers();
   initDiscountCodes();
+  initAnalytics();
 })();
