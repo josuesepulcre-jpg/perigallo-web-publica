@@ -129,78 +129,21 @@
   .event-access .ticket-access-status{justify-self:end;align-self:start;margin:0}
 }
 
-/* The public experience is read as three consecutive scenes: access, story and practical details. */
-html.event-experience-page{
-  --event-chapter-nav-height:86px;
-  scroll-behavior:smooth;
-  scroll-padding-top:var(--event-chapter-nav-height);
-  scroll-snap-type:y proximity;
-}
-.event-experience-chapters>.event-chapter{
-  scroll-snap-align:start;
-  scroll-margin-top:var(--event-chapter-nav-height);
-}
-.event-chapter-next{
-  align-items:center;
-  color:var(--pg-gold-l);
-  display:inline-flex;
-  font:500 .58rem/1.3 Montserrat,Arial,sans-serif;
-  gap:18px;
-  letter-spacing:.18em;
-  text-decoration:none;
-  text-transform:uppercase;
-}
-.event-chapter-next b{
-  font:300 1.45rem/1 "Cormorant Garamond",serif;
-  transition:transform .2s ease;
-}
-.event-chapter-next:hover,.event-chapter-next:focus-visible{color:var(--pg-cream)}
-.event-chapter-next:focus-visible{outline:1px solid var(--pg-gold-l);outline-offset:7px}
-.event-chapter-next:hover b,.event-chapter-next:focus-visible b{transform:translateY(3px)}
+/* Public experience: natural editorial chapters, not forced full-screen slides. */
+html.event-experience-page{--event-chapter-nav-height:86px;scroll-behavior:smooth;scroll-padding-top:var(--event-chapter-nav-height);scroll-snap-type:none}
+.event-experience-chapters>.event-chapter{scroll-margin-top:var(--event-chapter-nav-height)}
+.event-anchor{position:relative;display:block;top:calc(-1 * var(--event-chapter-nav-height));visibility:hidden}
+.event-chapter-next{display:grid;grid-template-columns:auto minmax(140px,1fr) auto;align-items:center;width:min(100%,650px);gap:16px;margin-top:clamp(38px,5vw,70px);padding-top:17px;border-top:1px solid rgba(205,177,151,.3);color:var(--pg-gold-l);font:500 .58rem/1.3 Montserrat,Arial,sans-serif;letter-spacing:.18em;text-decoration:none;text-transform:uppercase}
+.event-chapter-next-index{color:var(--pg-gold);font-size:.55rem;letter-spacing:.2em}.event-chapter-next b{font:300 1.45rem/1 "Cormorant Garamond",serif;transition:transform .2s ease}.event-chapter-next:hover,.event-chapter-next:focus-visible{color:var(--pg-cream)}.event-chapter-next:focus-visible{outline:1px solid var(--pg-gold-l);outline-offset:7px}.event-chapter-next:hover b,.event-chapter-next:focus-visible b{transform:translateY(3px)}
+.event-story-editorial .event-story-lede{max-width:30ch;margin:22px 0 0;color:var(--pg-gold-l);font:300 clamp(1.35rem,2vw,1.8rem)/1.22 "Cormorant Garamond",serif}.event-story-editorial .event-story-text{margin-top:26px}.event-story-microdata{display:flex;flex-wrap:wrap;gap:8px;margin:25px 0 0;color:var(--pg-gold);font:500 .56rem/1.45 Montserrat,Arial,sans-serif;letter-spacing:.18em}.event-story-microdata span{color:rgba(205,177,151,.55)}
+.event-story-poster-wrap{width:min(100%,470px);margin:0;justify-self:end}.event-story-poster-wrap .event-story-poster{display:block;width:100%}.event-story-poster-wrap figcaption{display:grid;grid-template-columns:1fr auto;gap:7px 16px;margin-top:14px;color:var(--pg-muted);font:.72rem/1.45 Montserrat,Arial,sans-serif}.event-story-poster-wrap figcaption strong{color:var(--pg-cream);font-weight:500}.event-story-poster-wrap figcaption span{grid-column:1}.event-story-poster-wrap figcaption a{grid-column:2;grid-row:1 / span 2;align-self:center;color:var(--pg-gold-l);font:500 .57rem/1.3 Montserrat,Arial,sans-serif;letter-spacing:.14em;text-decoration:none;text-transform:uppercase}.event-story-poster-wrap figcaption a:hover,.event-story-poster-wrap figcaption a:focus-visible{color:var(--pg-cream)}
 @media(min-width:981px){
-  .event-detail-layout.event-experience-chapters>.event-chapter-entry{height:calc(100svh - var(--event-chapter-nav-height))}
-  .event-chapter-entry .event-chapter-next-entry{
-    border-top:1px solid rgba(205,177,151,.3);
-    margin-top:auto;
-    padding-top:18px;
-    width:min(100%,720px);
-  }
-  .event-detail-layout.event-experience-chapters>.event-chapter-story{
-    align-items:stretch;
-    margin:0 auto!important;
-    min-height:calc(100svh - var(--event-chapter-nav-height));
-    padding-bottom:clamp(42px,5vw,76px);
-    padding-top:clamp(42px,5vw,76px);
-  }
-  .event-chapter-story .event-story-copy{
-    align-self:stretch;
-    display:flex;
-    flex-direction:column;
-  }
-  .event-chapter-story .event-chapter-next-story{
-    border-top:1px solid rgba(205,177,151,.3);
-    margin-top:auto;
-    padding-top:18px;
-  }
-  .event-chapter-story .event-story-poster{align-self:center}
-  .event-detail-layout.event-experience-chapters>.event-chapter-details{
-    margin:0 auto!important;
-    padding-bottom:clamp(72px,9vw,130px);
-    padding-top:clamp(72px,9vw,130px);
-  }
+  .ticket-detail.event-hero,.event-detail-layout.event-experience-chapters>.event-chapter-entry{height:auto;min-height:0;grid-template-rows:auto auto}
+  .event-detail-layout.event-experience-chapters>.event-chapter-entry{padding-bottom:clamp(80px,8vw,120px)}
+  .event-detail-layout.event-experience-chapters>.event-chapter-story{align-items:start;min-height:0;margin:0 auto!important;padding:clamp(110px,9vw,130px) 0}
+  .event-chapter-story .event-story-copy{display:block;align-self:start}
+  .event-detail-layout.event-experience-chapters>.event-chapter-details{margin:0 auto!important;padding:clamp(100px,8vw,125px) 0}
 }
-@media(min-width:981px) and (max-height:820px){
-  html.event-experience-page{--event-chapter-nav-height:72px}
-  .event-chapter-entry .event-chapter-next-entry,.event-chapter-story .event-chapter-next-story{padding-top:12px}
-}
-@media(max-width:980px){
-  html.event-experience-page{scroll-snap-type:none;scroll-padding-top:0}
-  .event-experience-chapters>.event-chapter{scroll-margin-top:0}
-  .event-chapter-next{display:none}
-  .event-detail-layout.event-experience-chapters>.event-chapter-story{margin:0 auto!important}
-  .event-detail-layout.event-experience-chapters>.event-chapter-details{margin-top:0!important}
-}
-@media(prefers-reduced-motion:reduce){
-  html.event-experience-page{scroll-behavior:auto}
-  .event-chapter-next b{transition:none}
-}
+@media(max-width:980px){html.event-experience-page{scroll-padding-top:0}.event-experience-chapters>.event-chapter{scroll-margin-top:0}.event-anchor{top:0}.event-chapter-next{display:none}.event-detail-layout.event-experience-chapters>.event-chapter-story{margin:0 auto!important}.event-detail-layout.event-experience-chapters>.event-chapter-details{margin-top:0!important}.event-story-poster-wrap{justify-self:center;width:min(100%,520px)}}
+@media(max-width:640px){.event-story-poster-wrap{width:100%;max-width:430px}.event-story-poster-wrap figcaption{font-size:.69rem}}
+@media(prefers-reduced-motion:reduce){html.event-experience-page{scroll-behavior:auto}.event-chapter-next b{transition:none}}

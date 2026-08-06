@@ -205,19 +205,19 @@
       var experienceUrl = isPerigalla01 ? "/la-perigalla-01/" : "/experiencias/" + encodeURIComponent(event.slug) + "/";
       var storyImageUrl = previewAssetUrl(event.card_image_url || event.image_url || "/assets/images/finca-la-llaguna-principal.jpg", preview);
       var storyText = isPerigalla01
-        ? '<p>La Perigalla 01 inaugura una nueva forma de celebrar en Finca La Llaguna.</p><p>Una boda ficticia de inspiración ibicenca que presenta el universo de Perigallo a través de la gastronomía, la música, la puesta en escena y una historia protagonizada por Sofía y Carlos.</p><p>Una noche en formato cóctel, bajo las estrellas y con un protocolo de vestimenta completamente blanca.</p>'
+        ? '<p>La Perigalla 01 inaugura una forma de celebrar donde cocina, música y puesta en escena cuentan una misma historia.</p><p>Una noche en Finca La Llaguna, al aire libre y vestida de blanco, creada para vivirla despacio.</p>'
         : textParagraphs(event.short_description || event.description || "");
       var storyVenue = isPerigalla01
-        ? '<aside class="event-story-venue" aria-label="Ubicación de la experiencia"><span>Celebrado en</span><strong>Finca La Llaguna</strong><p>Crevillent · Alicante</p><a href="https://fincalallaguna.com/" target="_blank" rel="noopener noreferrer">Visitar Finca La Llaguna <b aria-hidden="true">→</b></a></aside>'
+        ? '<aside class="event-story-venue" aria-label="Ubicación de la experiencia"><span>El escenario</span><strong>Finca La Llaguna</strong><p>Crevillent · Alicante</p><a href="https://fincalallaguna.com/" target="_blank" rel="noopener noreferrer">Descubrir la finca <b aria-hidden="true">↗</b></a></aside><p class="event-story-microdata">29 AGO 2026 <span>·</span> NOCHE <span>·</span> TOTAL WHITE</p>'
         : '';
-      var storyVisual = '<a class="event-story-poster" href="' + escapeAttr(experienceUrl) + '" aria-label="Descubrir la experiencia completa de ' + escapeHtml(experienceName) + '"><img loading="lazy" src="' + escapeAttr(storyImageUrl) + '" alt="Cartel de ' + escapeHtml(experienceName) + '"><span class="event-story-poster-cta">Descubrir la experiencia <span aria-hidden="true">→</span></span></a>';
+      var storyVisual = '<figure class="event-story-poster-wrap"><a class="event-story-poster" href="' + escapeAttr(experienceUrl) + '" aria-label="Descubrir la experiencia completa de ' + escapeHtml(experienceName) + '"><img loading="lazy" src="' + escapeAttr(storyImageUrl) + '" alt="Cartel de ' + escapeHtml(experienceName) + '"><span class="event-story-poster-cta">Descubrir la experiencia <span aria-hidden="true">→</span></span></a><figcaption><strong>' + escapeHtml(experienceName) + '</strong><span>Primera experiencia Perigallo</span><a href="' + escapeAttr(experienceUrl) + '">Descubrir la historia <b aria-hidden="true">→</b></a></figcaption></figure>';
       var ticketCards = types.length ? types.map(function (type) { return ticketTypeRow(type, event, preview); }).join("") : '<p class="ticket-status event-access-empty">Próximamente anunciaremos las entradas.</p>';
       var editionMatch = String(event.title || "").match(/(?:\s|^)0*(\d+)\s*$/);
       var edition = editionMatch ? " · Edición " + String(editionMatch[1]).padStart(2, "0") : "";
-      var accordions = experienceAccordions(event);
+      var information = experienceInformation(event);
       return [
         '<div class="event-detail-layout event-experience-chapters">',
-        '<section class="ticket-detail event-hero event-chapter event-chapter-entry" id="experiencia">',
+        '<section class="ticket-detail event-hero event-chapter event-chapter-entry" id="entrada">',
         '<figure class="ticket-detail-media event-hero-media"><img src="' + escapeAttr(imageUrl) + '" alt="Cartel de ' + escapeHtml(event.title) + '" width="1086" height="1448" loading="eager" fetchpriority="high" decoding="async"></figure>',
         '<section class="event-hero-summary">',
         '<div class="event-hero-introduction">',
@@ -226,16 +226,16 @@
         event.subtitle ? '<p class="event-subtitle">' + escapeHtml(event.subtitle) + '</p>' : '',
         '</div>',
         '<div class="ticket-copy event-intro event-hero-description">' + textParagraphs(event.short_description || event.description) + '</div>',
-        '<ul class="ticket-access-facts event-hero-facts' + (isPerigalla01 ? ' event-hero-facts--with-dress-code' : '') + '" id="detalles" aria-label="Datos principales de la experiencia">' + accessFacts(event) + '</ul>',
-        '<a class="event-chapter-next event-chapter-next-entry" href="#historia"><span>Descubrir la experiencia</span><b aria-hidden="true">↓</b></a>',
+        '<ul class="ticket-access-facts event-hero-facts' + (isPerigalla01 ? ' event-hero-facts--with-dress-code' : '') + '" id="datos-rapidos" aria-label="Datos principales de la experiencia">' + accessFacts(event) + '</ul>',
+        '<a class="event-chapter-next event-chapter-next-entry" href="#experiencia"><span class="event-chapter-next-index">01 / 03</span><span>Descubrir la experiencia</span><b aria-hidden="true">↓</b></a>',
         '</section>',
         '<section class="event-access" id="reservar">',
         '<div class="ticket-types">' + ticketCards + '</div>',
         '</section>',
         '</section>',
-        '<section class="event-story event-story-layout event-story-editorial event-chapter event-chapter-story" id="historia"><div class="event-story-copy"><span class="ticket-eyebrow">La experiencia</span><h2>' + escapeHtml(experienceName) + '</h2><div class="ticket-copy event-story-text">' + storyText + '</div>' + storyVenue + '<a class="event-chapter-next event-chapter-next-story" href="#faq"><span>Ver información práctica</span><b aria-hidden="true">↓</b></a></div>' + storyVisual + '</section>',
+        '<section class="event-story event-story-layout event-story-editorial event-chapter event-chapter-story" id="experiencia"><span class="event-anchor" id="historia" aria-hidden="true"></span><div class="event-story-copy"><span class="ticket-eyebrow">02 · La experiencia</span><h2>' + escapeHtml(experienceName) + '</h2><p class="event-story-lede">Una noche donde gastronomía, música y puesta en escena cuentan una misma historia.</p><div class="ticket-copy event-story-text">' + storyText + '</div>' + storyVenue + '<a class="event-chapter-next event-chapter-next-story" href="#detalles"><span class="event-chapter-next-index">02 / 03</span><span>Todos los detalles</span><b aria-hidden="true">↓</b></a></div>' + storyVisual + '</section>',
         gallery ? '<section class="event-gallery" id="galeria">' + gallery + '</section>' : '',
-        accordions ? '<section class="event-public-information event-public-information-accordions event-chapter event-chapter-details" id="faq"><header class="experience-information-heading"><span class="ticket-eyebrow">Detalles de la experiencia</span><h2>Todo lo que necesitas saber<br>antes de vivir ' + escapeHtml(experienceName) + '.</h2><p>Horarios, ubicación, acceso, vestimenta y toda la información práctica para disfrutar de la experiencia.</p></header><div class="experience-accordions">' + accordions + '</div></section>' : '',
+        information ? '<section class="event-public-information event-public-information-accordions event-chapter event-chapter-details" id="detalles"><span class="event-anchor" id="faq" aria-hidden="true"></span><header class="experience-information-heading"><span class="ticket-eyebrow">03 · Detalles</span><h2>Todo lo que necesitas saber</h2><p>Los detalles de la experiencia.</p></header>' + information + '</section>' : '',
         '</div>'
       ].join("");
   }
@@ -314,7 +314,7 @@
     return questions.length ? '<div class="experience-accordion-nested-list">' + questions.map(function (item, index) { return accordionMarkup(item, index, true); }).join("") + '</div>' : '';
   }
 
-  function experienceAccordions(event) {
+  function experienceInformationEntries(event) {
     var entries = [
       { title: "Información de la experiencia", content: textParagraphs(event.included_text), visible: !!event.included_text },
       { title: "Horarios", content: scheduleInformation(event), visible: !!(event.schedule_note || event.doors_open_at || event.starts_at || event.ends_at) },
@@ -328,10 +328,45 @@
       { title: "Contacto", content: textParagraphs(event.contact_info), visible: !!event.contact_info },
       { title: "Preguntas frecuentes", content: faqAccordion(event.faq || []), visible: !!(event.faq || []).length }
     ];
-    return entries.filter(function (item) { return item.visible && item.content; }).map(function (item, index) { return accordionMarkup(item, index, false); }).join("");
+    return entries.filter(function (item) { return item.visible && item.content; });
+  }
+
+  function experienceDesktopGuide(entries) {
+    if (!entries.length) return "";
+    return '<div class="experience-guide" data-experience-guide><div class="experience-guide-index" role="tablist" aria-label="Índice de detalles">' +
+      entries.map(function (item, index) {
+        var panelId = "experience-guide-panel-" + index;
+        return '<button class="experience-guide-trigger' + (index === 0 ? ' is-active' : '') + '" type="button" role="tab" data-experience-guide-trigger data-guide-target="' + panelId + '" aria-selected="' + String(index === 0) + '" aria-controls="' + panelId + '"><span>' + escapeHtml(String(index + 1).padStart(2, "0")) + '</span><strong>' + escapeHtml(item.title) + '</strong><b aria-hidden="true">→</b></button>';
+      }).join("") + '</div><div class="experience-guide-panels">' +
+      entries.map(function (item, index) {
+        var panelId = "experience-guide-panel-" + index;
+        return '<article class="experience-guide-panel' + (index === 0 ? ' is-active' : '') + '" id="' + panelId + '" role="tabpanel"' + (index === 0 ? '' : ' hidden') + '><span class="ticket-eyebrow">' + escapeHtml(String(index + 1).padStart(2, "0")) + ' · ' + escapeHtml(item.title) + '</span><div class="experience-guide-content">' + item.content + '</div></article>';
+      }).join("") + '</div></div>';
+  }
+
+  function experienceInformation(event) {
+    var entries = experienceInformationEntries(event);
+    if (!entries.length) return "";
+    return experienceDesktopGuide(entries) + '<div class="experience-accordions">' + entries.map(function (item, index) { return accordionMarkup(item, index, false); }).join("") + '</div>';
   }
 
   function initExperienceAccordions(root) {
+    root.addEventListener("click", function (event) {
+      var guideTrigger = event.target.closest("[data-experience-guide-trigger]");
+      if (!guideTrigger || !root.contains(guideTrigger)) return;
+      var guide = guideTrigger.closest("[data-experience-guide]");
+      var panelId = guideTrigger.dataset.guideTarget;
+      guide.querySelectorAll("[data-experience-guide-trigger]").forEach(function (item) {
+        var active = item === guideTrigger;
+        item.classList.toggle("is-active", active);
+        item.setAttribute("aria-selected", String(active));
+      });
+      guide.querySelectorAll(".experience-guide-panel").forEach(function (panel) {
+        var active = panel.id === panelId;
+        panel.classList.toggle("is-active", active);
+        panel.hidden = !active;
+      });
+    });
     function closeAccordion(item) {
       item.classList.remove("is-open");
       var itemTrigger = item.querySelector(":scope > [data-experience-accordion-trigger]");
@@ -369,6 +404,14 @@
     root.addEventListener("click", function (event) {
       var link = event.target.closest("[data-open-included-information]");
       if (!link || !root.contains(link)) return;
+      var guideTrigger = root.querySelector("[data-experience-guide-trigger]");
+      if (guideTrigger && window.innerWidth > 980) {
+        event.preventDefault();
+        guideTrigger.click();
+        var details = root.querySelector("#detalles");
+        if (details) details.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
       var accordion = Array.prototype.find.call(root.querySelectorAll("[data-experience-accordion]"), function (item) {
         var title = item.querySelector(".experience-accordion-title");
         return title && title.textContent.trim() === "Información de la experiencia";

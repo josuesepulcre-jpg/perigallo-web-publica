@@ -1,0 +1,130 @@
+/* Desktop turns the long FAQ into a concise editorial index. Mobile keeps the accordion. */
+.experience-guide {
+  display: none;
+}
+
+@media (min-width: 981px) {
+  .event-public-information-accordions .experience-information-heading {
+    max-width: 680px;
+    margin-bottom: clamp(46px, 5vw, 72px);
+  }
+
+  .event-public-information-accordions .experience-information-heading h2 {
+    font-size: clamp(3.1rem, 4.6vw, 4.85rem);
+  }
+
+  .event-public-information-accordions .experience-accordions {
+    display: none;
+  }
+
+  .experience-guide {
+    display: grid;
+    grid-template-columns: minmax(230px, 0.38fr) minmax(0, 0.62fr);
+    gap: clamp(44px, 7vw, 112px);
+    border-top: 1px solid var(--pg-border);
+  }
+
+  .experience-guide-index {
+    display: grid;
+    align-content: start;
+    border-right: 1px solid var(--pg-border);
+  }
+
+  .experience-guide-trigger {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr) 18px;
+    align-items: center;
+    gap: 13px;
+    min-height: 66px;
+    padding: 0 clamp(24px, 3vw, 42px) 0 0;
+    border: 0;
+    border-bottom: 1px solid rgba(205, 177, 151, 0.2);
+    background: transparent;
+    color: var(--pg-muted);
+    font: 500 0.64rem/1.3 Montserrat, Arial, sans-serif;
+    letter-spacing: 0.08em;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .experience-guide-trigger span {
+    color: var(--pg-gold);
+    font-size: 0.54rem;
+    letter-spacing: 0.18em;
+  }
+
+  .experience-guide-trigger strong {
+    font-weight: 500;
+  }
+
+  .experience-guide-trigger b {
+    color: var(--pg-gold-l);
+    font: 300 1.2rem/1 "Cormorant Garamond", serif;
+    opacity: 0;
+    transform: translateX(-5px);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+
+  .experience-guide-trigger:hover,
+  .experience-guide-trigger:focus-visible,
+  .experience-guide-trigger.is-active {
+    color: var(--pg-cream);
+    outline: 0;
+  }
+
+  .experience-guide-trigger.is-active b,
+  .experience-guide-trigger:hover b,
+  .experience-guide-trigger:focus-visible b {
+    opacity: 1;
+    transform: none;
+  }
+
+  .experience-guide-panels {
+    min-width: 0;
+    padding: clamp(8px, 1vw, 16px) 0 0;
+  }
+
+  .experience-guide-panel {
+    min-height: 290px;
+    animation: experience-guide-in 0.22s ease;
+  }
+
+  .experience-guide-panel .ticket-eyebrow {
+    display: block;
+    margin: 0 0 24px;
+  }
+
+  .experience-guide-content {
+    max-width: 690px;
+    color: var(--pg-muted);
+    font-size: clamp(0.96rem, 1.12vw, 1.06rem);
+    line-height: 1.82;
+  }
+
+  .experience-guide-content p {
+    margin: 0 0 1.3em;
+  }
+
+  .experience-guide-content a {
+    color: var(--pg-gold-l);
+    text-underline-offset: 3px;
+  }
+
+  .experience-guide-content .experience-information-facts {
+    max-width: none;
+    margin-bottom: 28px;
+  }
+
+  .experience-guide-content .experience-information-dress {
+    max-width: 680px;
+  }
+
+  .experience-guide-content .experience-information-highlight {
+    margin-bottom: 18px;
+  }
+}
+
+@keyframes experience-guide-in {
+  from { opacity: 0.2; transform: translateY(5px); }
+  to { opacity: 1; transform: none; }
+}
