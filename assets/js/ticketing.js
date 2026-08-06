@@ -143,7 +143,6 @@
       }
       root.innerHTML = renderEventDetail(event, preview);
       initEventPurchaseControls(root);
-      initEventSectionNavigation(root);
       initExperienceAccordions(root);
       initIncludedInformationLink(root);
     }).catch(function (error) {
@@ -214,7 +213,6 @@
         '<div class="ticket-types">' + ticketCards + '</div>',
         '</section>',
         '</section>',
-        '<div class="event-section-advance"><button type="button" data-scroll-next data-scroll-target="historia" aria-label="Ir a la siguiente sección"><span aria-hidden="true">⌄</span></button></div>',
         '<section class="event-story event-story-layout event-story-editorial" id="historia"><div class="event-story-copy"><span class="ticket-eyebrow">La experiencia</span><h2>' + escapeHtml(experienceName) + '</h2><div class="ticket-copy event-story-text">' + storyText + '</div></div>' + storyVisual + '</section>',
         gallery ? '<section class="event-gallery" id="galeria">' + gallery + '</section>' : '',
         experienceAccordions(event) ? '<section class="event-public-information event-public-information-accordions" id="faq"><div class="experience-accordions">' + experienceAccordions(event) + '</div></section>' : '',
@@ -475,15 +473,6 @@
       var output = picker.querySelector("[data-event-quantity-output]");
       var current = Math.max(0, Number(output ? output.textContent : 0));
       updatePicker(picker, current + (button.dataset.eventQuantityAction === "increase" ? 1 : -1));
-    });
-  }
-
-  function initEventSectionNavigation(root) {
-    root.addEventListener("click", function (event) {
-      var button = event.target.closest("[data-scroll-next]");
-      if (!button || !root.contains(button)) return;
-      var target = document.getElementById(button.dataset.scrollTarget || "");
-      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   }
 

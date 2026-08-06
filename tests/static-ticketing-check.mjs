@@ -202,7 +202,7 @@ if (incompleteFaq.rows.length !== 2 || incompleteFaq.invalidLines.join(",") !== 
 }
 
 const publicJs = readFileSync(join(root, "assets/js/ticketing.js"), "utf8");
-for (const marker of ["Información de la experiencia", "Código de vestimenta", "event.contact_info", "experienceAccordions", "initExperienceAccordions", "aria-expanded", "eventMetadata", "event-story-editorial", "data-scroll-next", "Probar recorrido de compra", "Comprar entradas", "ticketPurchaseAction", "ticket-access-secondary", "event-hero-introduction", "event-hero-facts", "renderCheckoutPreview", "Modo de pruebas", "checkoutTicketMarkup", "data-quantity-action", "data-event-quantity-action", "renderCheckoutSummary"]) {
+for (const marker of ["Información de la experiencia", "Código de vestimenta", "event.contact_info", "experienceAccordions", "initExperienceAccordions", "aria-expanded", "eventMetadata", "event-story-editorial", "Probar recorrido de compra", "Comprar entradas", "ticketPurchaseAction", "ticket-access-secondary", "event-hero-introduction", "event-hero-facts", "renderCheckoutPreview", "Modo de pruebas", "checkoutTicketMarkup", "data-quantity-action", "data-event-quantity-action", "renderCheckoutSummary"]) {
   if (!publicJs.includes(marker)) throw new Error(`Missing public information rendering: ${marker}`);
 }
 for (const marker of ["adminRequest", "data-start-test-payment", "submitPaymentForm", "Redsys TEST", "MODO DE PRUEBAS", "initPaymentResult", "data-payment-result"]) {
