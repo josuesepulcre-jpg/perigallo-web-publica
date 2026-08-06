@@ -35,6 +35,14 @@
     return formatted.charAt(0).toUpperCase() + formatted.slice(1);
   }
 
+  function fmtAgendaDate(value) {
+    if (!value) return "";
+    var date = new Date(value.replace(" ", "T"));
+    var day = new Intl.DateTimeFormat("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(date);
+    var time = new Intl.DateTimeFormat("es-ES", { hour: "2-digit", minute: "2-digit" }).format(date);
+    return day.charAt(0).toUpperCase() + day.slice(1) + " · " + time + " h";
+  }
+
   function cents(value) {
     return money.format((Number(value || 0) / 100));
   }
@@ -76,18 +84,23 @@
     var salePrice = Number(event.price_from_cents || 0);
     var reference = referencePrice(event.reference_price_from_cents, salePrice, true);
     var eventPrice = event.show_price_from !== false && salePrice
-      ? (reference ? '<span>Valor</span><del>' + cents(reference) + '</del><strong>Desde ' + cents(salePrice) + '</strong>' : 'Desde ' + cents(salePrice))
-      : 'Precio por anunciar';
+      ? (reference ? '<del>' + cents(reference) + '</del><strong>Desde ' + cents(salePrice) + '</strong>' : '<strong>Desde ' + cents(salePrice) + '</strong>')
+      : '<strong>Precio por anunciar</strong>';
     return [
       '<article class="event-card">',
-      '<a class="event-card-media" aria-label="' + escapeHtml(event.title) + '" href="' + href + '" style="background-image:url(' + escapeAttr(event.card_image_url || event.image_url || "/assets/images/finca-la-llaguna-principal.jpg") + ')"></a>',
+      '<a class="event-card-shell" aria-label="Descubrir y comprar entradas para ' + escapeHtml(event.title) + '" href="' + href + '">',
+      '<div class="event-card-media" style="background-image:url(' + escapeAttr(event.card_image_url || event.image_url || "/assets/images/finca-la-llaguna-principal.jpg") + ')"></div>',
       '<div class="event-card-body">',
       '<span class="ticket-eyebrow">' + escapeHtml(event.location || "Perigallo") + '</span>',
       '<h3>' + escapeHtml(event.title) + '</h3>',
-      '<div class="event-meta"><span>' + escapeHtml(fmtDate(event.starts_at)) + '</span><span>' + escapeHtml(event.subtitle || "") + '</span></div>',
+      '<div class="event-meta"><span>' + escapeHtml(fmtAgendaDate(event.starts_at)) + '</span><span>' + escapeHtml(event.subtitle || "") + '</span></div>',
+      '<span class="event-card-divider" aria-hidden="true"></span>',
+      '<span class="event-availability">Plazas limitadas</span>',
       '<span class="event-price">' + eventPrice + '</span>',
-      '<a class="ticket-btn primary" href="' + href + '">Comprar entradas</a>',
+      '<span class="ticket-btn primary event-card-action">Comprar entradas <b aria-hidden="true">→</b></span>',
+      '<span class="event-card-discover">Descubrir la experiencia <b aria-hidden="true">→</b></span>',
       '</div>',
+      '</a>',
       '</article>'
     ].join("");
   }
@@ -99,7 +112,7 @@
       target.setAttribute("aria-busy", "true");
       request(api + "/events").then(function (data) {
         if (!data.events.length) {
-          target.innerHTML = '<div class="ticket-panel"><h2>Próximas fechas por anunciar</h2><p class="ticket-copy">Estamos preparando nuevas experiencias. Vuelve pronto o escríbenos por WhatsApp.</p></div>';
+          target.innerHTML = '<div class="ticket-panel experience-empty"><span class="ticket-eyebrow">Próximamente</span><h2>La próxima experiencia está en camino</h2><p class="ticket-copy">Estamos ultimando la siguiente edición Perigallo. Síguenos para descubrirla antes que nadie.</p><a class="ticket-btn primary" href="https://www.instagram.com/perigallo" target="_blank" rel="noopener noreferrer">Seguir novedades</a></div>';
           return;
         }
         target.innerHTML = data.events.map(eventCard).join("");
