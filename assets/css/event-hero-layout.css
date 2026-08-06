@@ -127,6 +127,16 @@ body.ticketing-page .event-anchor {
   scroll-margin-top: 7rem;
 }
 
+/* The narrative and information chapters have their own generous editorial
+ * padding, so their navigation anchors sit slightly higher in the viewport. */
+body.ticketing-page #experiencia {
+  scroll-margin-top: 2.5rem;
+}
+
+body.ticketing-page #faq {
+  scroll-margin-top: 4rem;
+}
+
 body.ticketing-page .event-chapter a {
   color: inherit;
   text-decoration: none;
