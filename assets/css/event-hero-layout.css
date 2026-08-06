@@ -1,185 +1,485 @@
-/* Opening composition for a Perigallo experience: image and purchase share the left column. */
-.event-page-nav{position:sticky;top:0;z-index:20;padding:0;background:rgba(4,17,20,.96);backdrop-filter:blur(14px)}
-.event-nav-inner{width:100%;min-height:86px;padding:0 clamp(28px,3.2vw,60px)}
-.event-page-nav .ticketing-logo{width:auto;height:58px}
-.event-page-nav nav{gap:clamp(20px,2.4vw,42px)}
-.event-page-nav nav a{color:rgba(245,241,229,.88);font-size:.64rem;letter-spacing:.21em;white-space:nowrap}
-.event-page-nav nav .event-nav-reserve{padding:12px 19px;border:1px solid rgba(205,177,151,.56);color:var(--pg-gold-l)}
-.event-page-nav nav .event-nav-reserve:hover,.event-page-nav nav .event-nav-reserve:focus-visible{border-color:var(--pg-gold-l);background:rgba(205,177,151,.12);color:var(--pg-cream);outline:0}
+/* Public experience page: one editorial layout, without viewport spacers. */
+html.event-experience-page {
+  --event-page-max: 1360px;
+  --event-page-gutter: clamp(24px, 5vw, 80px);
+  --event-ink: #17383b;
+  --event-deep: #07191b;
+  --event-paper: #f0d9b6;
+  --event-line: rgba(236, 211, 172, 0.3);
+  scroll-behavior: smooth;
+}
 
-.event-detail-section{padding:0 0 clamp(56px,7vw,104px);background:#19383b}
-.event-detail-container,.event-preview-root{width:100%;max-width:none;margin:0}
-.preview-page .event-preview-root{min-height:0;display:block}
+html.event-experience-page .ticketing-main,
+html.event-experience-page .event-detail-section,
+html.event-experience-page .event-detail-container,
+html.event-experience-page .event-experience-chapters {
+  width: 100%;
+  max-width: none;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  background: var(--event-ink);
+}
 
-.ticket-detail.event-hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(0,1.35fr) minmax(270px,1fr);grid-template-areas:"media summary" "access summary";width:100%;height:calc(100svh - 86px);min-height:0;margin:0;gap:0;align-items:stretch;overflow:hidden;background:#19383b}
-.ticket-detail.event-hero .event-hero-media{grid-area:media;position:relative;display:block;width:100%;height:100%;min-height:0;margin:0;padding:0;overflow:hidden;border:0;border-radius:0;background:#06181b;box-shadow:none}
-.ticket-detail.event-hero .event-hero-media::before{display:none}
-.ticket-detail.event-hero .event-hero-media img{display:block;width:100%;height:100%;max-height:none;object-fit:cover;object-position:var(--event-poster-position,center);filter:saturate(.96) contrast(1.05);transition:transform 900ms ease}
-.ticket-detail.event-hero .event-hero-media:hover img{transform:scale(1.012)}
+html.event-experience-page .event-page-nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  min-height: 82px;
+  border-bottom: 1px solid var(--event-line);
+  background: rgba(7, 25, 27, 0.98);
+}
 
-.ticket-detail.event-hero .event-hero-summary{grid-area:summary;display:flex;flex-direction:column;min-width:0;padding:clamp(46px,4.9vw,94px) clamp(42px,5.7vw,110px) clamp(38px,4.5vw,76px);background:#19383b;box-shadow:none}
-.event-hero-summary>*{width:100%}
-.ticket-detail.event-hero .event-hero-introduction{max-width:760px}
-.event-hero .ticket-eyebrow{margin:0 0 22px;color:var(--pg-gold);font-size:.66rem;letter-spacing:.29em}
-.event-hero .ticket-title{max-width:850px;font-size:clamp(3.65rem,5.65vw,6.75rem);line-height:.88}
-.event-hero .event-subtitle{max-width:760px;margin-top:20px;color:var(--pg-gold-l);font-size:clamp(1.5rem,2.15vw,2.35rem);line-height:1.1}
-.ticket-detail.event-hero .event-hero-description{max-width:700px;margin:clamp(28px,3.4vw,48px) 0 0;color:rgba(245,241,229,.82);font-size:clamp(.9rem,1.04vw,1.06rem);line-height:1.64}
-.ticket-detail.event-hero .event-hero-description p{margin:0 0 16px}.ticket-detail.event-hero .event-hero-description p:last-child{margin-bottom:0}
-.ticket-detail.event-hero .event-hero-facts{max-width:720px;margin:clamp(30px,3.7vw,52px) 0 0;border-top:1px solid rgba(241,232,216,.2)}
-.event-hero-facts .ticket-access-fact{min-height:0;padding:clamp(18px,1.7vw,27px) 0;border-bottom:1px solid rgba(241,232,216,.18)}
-.event-hero-facts .ticket-access-fact:nth-child(odd){padding-right:clamp(20px,2.5vw,38px)}
-.event-hero-facts .ticket-access-fact:nth-child(even){padding-left:clamp(20px,2.5vw,38px);border-left:1px solid rgba(241,232,216,.18)}
-.event-hero-facts .ticket-access-icon{flex-basis:30px;width:30px;height:30px;color:var(--pg-gold-l)}
-.event-hero-facts .ticket-access-icon svg{width:22px;height:22px}
-.event-hero-facts span:last-child{gap:7px}.event-hero-facts small{font-size:.61rem;letter-spacing:.19em}.event-hero-facts strong{font-size:.9rem;line-height:1.45}.event-hero-facts em{font-size:.77rem;line-height:1.42}
-.ticket-detail.event-hero .event-hero-facts--with-dress-code{flex:1 1 auto;grid-template-rows:auto auto minmax(0,1fr)}
-.event-hero-facts .ticket-access-fact--dress-code{grid-column:1/-1;height:100%;min-height:clamp(120px,16vh,220px);align-items:center;padding-right:0;border-left:0}
-.event-hero-facts .ticket-access-fact--dress-code strong{max-width:62ch;font-size:clamp(.9rem,1.05vw,1.08rem);line-height:1.5}
+html.event-experience-page .event-nav-inner {
+  display: flex;
+  width: min(calc(100% - (var(--event-page-gutter) * 2)), var(--event-page-max));
+  min-height: 82px;
+  margin: 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+}
 
-.ticket-detail.event-hero .event-access{grid-area:access;width:100%;min-width:0;min-height:0;margin:0;align-self:stretch}
-.event-access{--ticket-bg:#e5d1b2;--ticket-text:#173638;--ticket-text-secondary:#48605c;--ticket-line:rgba(23,54,56,.22);--ticket-accent:#9a7345;--ticket-button:#173638;--ticket-button-hover:#24494a;--ticket-button-text:#f5ecdd}
-.event-access .ticket-types{height:100%;min-height:0;margin:0}.event-access .ticket-access-card{position:relative;display:flex;box-sizing:border-box;min-height:0;height:100%;padding:clamp(18px,2vw,30px) clamp(26px,3.9vw,58px) clamp(56px,4.5vw,70px);overflow:hidden;border:0;border-radius:0;background:radial-gradient(circle at 82% 20%,rgba(255,255,255,.23),transparent 31%),linear-gradient(135deg,#ecdbbf 0%,#ddc39e 100%);box-shadow:none;color:var(--ticket-text)}
-.event-access .ticket-access-card::after{position:absolute;right:-72px;bottom:-92px;width:260px;height:260px;border:1px solid rgba(23,54,56,.1);border-radius:50%;content:"";pointer-events:none}
-.event-access .ticket-access-heading{display:grid;grid-template-columns:minmax(0,1.06fr) minmax(225px,.94fr);width:100%;gap:clamp(28px,3.5vw,62px);padding:0;align-items:start}
-.event-access .ticket-access-copy{min-width:0;padding:0}.event-access .ticket-access-copy p{display:-webkit-box;max-width:48ch;overflow:hidden;margin:9px 0 0;color:var(--ticket-text-secondary);font-size:clamp(.74rem,.84vw,.9rem);line-height:1.5;-webkit-box-orient:vertical;-webkit-line-clamp:2}
-.event-access .ticket-access-eyebrow{margin-bottom:10px;color:var(--ticket-accent)}.event-access .ticket-access-copy h3{margin:0;color:var(--ticket-text);font-size:clamp(2.05rem,2.45vw,3rem);line-height:.9}
-.event-access .ticket-access-includes{margin-top:13px;padding:0;color:var(--ticket-text);font-size:.6rem}.event-access .ticket-access-includes:hover,.event-access .ticket-access-includes:focus-visible{color:var(--ticket-accent);outline:0}
-.event-access .ticket-access-decision{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"price picker" "action action";gap:10px 18px;min-width:0;padding:0 0 0 clamp(22px,2.5vw,42px);border-left:1px solid var(--ticket-line);align-content:start}
-.event-access .ticket-type-price{grid-area:price;display:grid;justify-items:start;align-content:start;gap:6px;color:var(--ticket-text)}.event-access .ticket-reference-price,.event-access .ticket-type-price .ticket-reference-price,.event-access .ticket-type-price .ticket-reference-price del{color:var(--ticket-text-secondary)}.event-access .ticket-reference-price{min-height:1.2em;font-size:.55rem;letter-spacing:.12em;text-transform:uppercase}.event-access .ticket-type-price strong{display:block;min-height:.98em;color:var(--ticket-text);font-size:clamp(3rem,3.9vw,4.45rem);line-height:.98;letter-spacing:.01em}.event-access .ticket-type-price small,.event-access .ticket-type-price .ticket-promo-label{display:block;min-height:1.45em;margin:0;color:var(--ticket-accent);font-size:.51rem;line-height:1.45}.event-access .ticket-type-price>span:last-child{margin-top:-1px}
-.event-quantity-picker{grid-area:picker;display:grid;justify-items:end;align-content:start;gap:6px;padding-top:2px}.event-quantity-label{color:var(--ticket-text-secondary);font-size:.51rem;letter-spacing:.14em;text-transform:uppercase}.event-quantity-controls{display:grid;grid-template-columns:32px minmax(30px,auto) 32px;align-items:center;border:1px solid rgba(23,54,56,.4);background:rgba(255,255,255,.12)}.event-quantity-controls button{display:grid;place-items:center;width:32px;height:30px;padding:0;border:0;background:transparent;color:var(--ticket-text);font:400 1.1rem/1 Montserrat,Arial,sans-serif;cursor:pointer}.event-quantity-controls button:hover,.event-quantity-controls button:focus-visible{background:rgba(23,54,56,.11);outline:0}.event-quantity-controls button:disabled{opacity:.4;cursor:not-allowed}.event-quantity-controls output{min-width:30px;color:var(--ticket-text);font:500 .83rem/1 Montserrat,Arial,sans-serif;text-align:center}.event-quantity-total{color:var(--ticket-text-secondary);font-size:.54rem;letter-spacing:.08em;white-space:nowrap}.event-quantity-total strong{color:var(--ticket-text);font-size:.67rem;font-weight:500}
-.event-access .ticket-access-action{grid-area:action;display:grid;gap:7px;margin:0;padding:0;border:0}.event-access .ticket-access-action .ticket-btn{display:flex;align-items:center;justify-content:center;min-height:46px;margin-top:1px;border-color:var(--ticket-button);background:var(--ticket-button);color:var(--ticket-button-text);font-size:.58rem;letter-spacing:.16em;transition:background-color .18s ease,transform .18s ease,box-shadow .18s ease}.event-access .ticket-access-action .ticket-btn:hover,.event-access .ticket-access-action .ticket-btn:focus-visible{border-color:var(--ticket-button-hover);background:var(--ticket-button-hover);color:var(--ticket-button-text);outline:0;transform:translateY(-1px)}.event-access .ticket-preview-note{max-width:42ch;margin:0!important;color:var(--ticket-text-secondary)!important;font-size:.6rem!important;line-height:1.4!important}.event-access .ticket-preview-note span{color:var(--ticket-accent)}
-.event-access .ticket-access-secondary{position:absolute;right:clamp(26px,3.9vw,58px);bottom:clamp(13px,1.4vw,21px);left:clamp(26px,3.9vw,58px);display:flex;min-height:0;margin:0;padding:11px 0 0;border-top:1px solid var(--ticket-line);background:transparent}.event-access .ticket-access-dress,.event-access .ticket-access-status{color:var(--ticket-text)!important}.event-access .ticket-access-dress .ticket-access-icon{color:var(--ticket-accent)}.event-access .ticket-access-dress small{color:var(--ticket-accent)}.event-access .ticket-access-dress strong{color:var(--ticket-text)}.event-access .ticket-access-status-dot{border-color:var(--ticket-text-secondary);background:var(--ticket-text-secondary)}
+html.event-experience-page .event-nav-inner nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: clamp(16px, 2.1vw, 36px);
+}
 
-/* Clear, guest-facing dress-code notice for the Total White experience. */
-.event-access .ticket-access-dress-notice{display:grid!important;grid-template-columns:22px minmax(0,1fr);align-items:start;gap:11px;flex:1 1 620px;padding-right:20px}.event-access .ticket-access-dress-notice .ticket-access-icon{width:20px;margin-top:3px}.ticket-access-dress-content{display:grid;gap:5px}.ticket-access-dress-title{color:var(--ticket-text);font:600 .65rem/1.38 Montserrat,Arial,sans-serif;letter-spacing:.11em;text-transform:uppercase}.ticket-access-dress-title b{color:var(--ticket-accent);font-weight:600}.ticket-access-dress-copy{display:block;max-width:68ch;color:var(--ticket-text-secondary);font:400 .75rem/1.5 Montserrat,Arial,sans-serif}.ticket-access-dress-copy strong{color:var(--ticket-text);font-weight:700;text-decoration:underline;text-decoration-color:rgba(154,115,69,.68);text-decoration-thickness:1px;text-underline-offset:3px}
+html.event-experience-page .event-experience-chapters > .event-chapter,
+html.event-experience-page .event-experience-chapters > .event-gallery {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: clamp(64px, 8vw, 112px) 0;
+  transform: none !important;
+}
 
-@media(max-width:760px){.event-access .ticket-access-dress-notice{padding-right:0}.ticket-access-dress-title{font-size:.6rem;letter-spacing:.09em}.ticket-access-dress-copy{font-size:.72rem;line-height:1.52}}
+html.event-experience-page .event-experience-chapters > .event-chapter-entry {
+  padding: 0 0 clamp(48px, 6vw, 88px) !important;
+}
 
-.event-detail-layout .event-story{max-width:1120px;margin:clamp(56px,7vw,96px) auto 0}.event-detail-layout .event-gallery,.event-detail-layout .event-public-information{max-width:1480px;margin-right:auto;margin-left:auto}
-.event-detail-layout [id]{scroll-margin-top:96px}
-.event-detail-layout .event-story.event-story-editorial{display:grid;grid-template-columns:minmax(0,.95fr) minmax(360px,1.05fr);align-items:center;gap:clamp(42px,5.4vw,90px);width:min(100% - clamp(44px,9vw,168px),1320px);max-width:none;min-height:0;margin:0 auto;padding:clamp(36px,4.6vw,68px) 0;overflow:visible;border:0}
-.event-story-editorial .event-story-copy{align-self:start;max-width:37rem;padding-top:clamp(12px,1.6vw,24px)}
-.event-story-editorial .ticket-eyebrow{display:block;margin:0 0 18px;color:var(--pg-gold);font-size:.64rem;letter-spacing:.28em}
-.event-story-editorial h2{margin:0;color:var(--pg-cream);font:300 clamp(3.25rem,5.3vw,5.8rem)/.9 "Cormorant Garamond",serif}
-.event-story-editorial .event-story-text{max-width:31rem;margin-top:26px;color:rgba(245,241,229,.75);font-size:clamp(.94rem,1.08vw,1.05rem);line-height:1.7}
-.event-story-editorial .event-story-text p{margin:0 0 18px}.event-story-editorial .event-story-text p:last-child{margin-bottom:0}
-.event-story-venue{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:22px;align-items:end;max-width:34rem;margin-top:clamp(30px,3vw,42px);padding-top:17px;border-top:1px solid rgba(241,232,216,.24);color:var(--pg-cream)}
-.event-story-venue>span{grid-column:1/-1;margin-bottom:6px;color:var(--pg-gold);font:500 .6rem/1.3 Montserrat,Arial,sans-serif;letter-spacing:.19em;text-transform:uppercase}
-.event-story-venue strong{font:400 clamp(1.45rem,2vw,1.85rem)/1.02 "Cormorant Garamond",serif}.event-story-venue p{margin:6px 0 0;color:rgba(245,241,229,.7);font-size:.79rem;line-height:1.4}
-.event-story-venue a{grid-column:2;grid-row:2/span 2;align-self:center;display:inline-flex;align-items:center;gap:12px;color:var(--pg-gold-l);font:500 .6rem/1.35 Montserrat,Arial,sans-serif;letter-spacing:.16em;text-decoration:none;text-transform:uppercase;white-space:nowrap}.event-story-venue a b{font:300 1.35rem/1 "Cormorant Garamond",serif;transition:transform .25s ease}.event-story-venue a:hover,.event-story-venue a:focus-visible{color:var(--pg-cream);outline:0}.event-story-venue a:hover b,.event-story-venue a:focus-visible b{transform:translateX(4px)}
-.event-story-poster{position:relative;display:block;justify-self:end;width:min(100%,500px);aspect-ratio:4/5;overflow:hidden;background:#10292c;color:var(--pg-cream);text-decoration:none;box-shadow:0 18px 46px rgba(0,0,0,.16);isolation:isolate}
-.event-story-poster::after{position:absolute;inset:0;z-index:1;background:linear-gradient(to top,rgba(4,17,20,.8),rgba(4,17,20,0) 48%);content:"";transition:background .4s ease}
-.event-story-poster img{display:block;width:100%;height:100%;object-fit:cover;object-position:center;transition:transform .4s ease,filter .4s ease}
-.event-story-poster-cta{position:absolute;right:clamp(18px,3vw,30px);bottom:clamp(18px,3vw,28px);left:clamp(18px,3vw,30px);z-index:2;display:flex;align-items:center;justify-content:space-between;gap:16px;color:var(--pg-cream);font:500 .62rem/1.4 Montserrat,Arial,sans-serif;letter-spacing:.19em;text-transform:uppercase}
-.event-story-poster-cta span{font:300 1.5rem/1 "Cormorant Garamond",serif;transition:transform .4s ease}
-.event-story-poster:hover img{transform:scale(1.02);filter:brightness(1.08) contrast(1.04)}.event-story-poster:hover::after{background:linear-gradient(to top,rgba(4,17,20,.88),rgba(4,17,20,.04) 58%)}.event-story-poster:hover .event-story-poster-cta span{transform:translateX(6px)}
-.event-story-poster:focus-visible{outline:2px solid var(--pg-gold-l);outline-offset:6px}.event-story-poster:focus-visible img{transform:scale(1.02);filter:brightness(1.08) contrast(1.04)}.event-story-poster:focus-visible .event-story-poster-cta span{transform:translateX(6px)}
+html.event-experience-page .event-chapter-inner {
+  width: min(calc(100% - (var(--event-page-gutter) * 2)), var(--event-page-max));
+  min-height: 0;
+  margin: 0 auto;
+}
 
-@media(max-width:1279px){.event-page-nav .ticketing-logo{height:50px}.event-page-nav nav{gap:19px}.event-page-nav nav a{font-size:.58rem}.ticket-detail.event-hero .event-hero-summary{padding:clamp(38px,4.6vw,62px) clamp(34px,4.2vw,62px)}.event-hero .ticket-title{font-size:clamp(3.4rem,5.5vw,5.3rem)}.event-hero .event-subtitle{font-size:clamp(1.38rem,2vw,1.95rem)}.ticket-detail.event-hero .event-hero-description{margin-top:24px;font-size:.9rem;line-height:1.56}.ticket-detail.event-hero .event-hero-facts{margin-top:30px}.event-hero-facts .ticket-access-fact{padding-block:18px}.event-access .ticket-access-card{padding-inline:clamp(24px,3vw,38px)}.event-access .ticket-access-heading{gap:24px}.event-access .ticket-access-decision{padding-left:24px}.event-access .ticket-access-secondary{right:clamp(24px,3vw,38px);left:clamp(24px,3vw,38px)}}
+/* Chapter 01: visual introduction, practical details and purchase in one flow. */
+html.event-experience-page .ticket-detail.event-hero {
+  display: grid !important;
+  grid-template-areas:
+    "media summary"
+    "access access";
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  width: 100%;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0;
+  overflow: hidden;
+  background: var(--event-ink);
+}
 
-@media(min-width:981px) and (max-height:820px){.event-nav-inner{min-height:72px}.ticket-detail.event-hero{height:calc(100svh - 72px);grid-template-rows:minmax(0,1.3fr) minmax(250px,1fr)}.ticket-detail.event-hero .event-hero-summary{padding:clamp(30px,3.5vw,48px) clamp(34px,4.5vw,70px) 28px}.event-hero .ticket-eyebrow{margin-bottom:14px}.event-hero .event-subtitle{margin-top:14px}.ticket-detail.event-hero .event-hero-description{margin-top:20px;font-size:.86rem;line-height:1.48}.ticket-detail.event-hero .event-hero-description p{margin-bottom:10px}.ticket-detail.event-hero .event-hero-facts{margin-top:22px}.event-hero-facts .ticket-access-fact{padding-block:14px}.event-access .ticket-access-card{padding-top:16px;padding-bottom:52px}.event-access .ticket-access-copy h3{font-size:clamp(1.85rem,2.25vw,2.55rem)}.event-access .ticket-access-copy p{margin-top:7px;font-size:.72rem;line-height:1.4}.event-access .ticket-access-includes{margin-top:9px}.event-access .ticket-access-secondary{bottom:12px;padding-top:9px}.event-access .ticket-access-dress strong,.event-access .ticket-access-status{font-size:.7rem}}
+html.event-experience-page .event-hero-media {
+  grid-area: media;
+  min-height: 0 !important;
+  height: auto !important;
+  aspect-ratio: 4 / 3;
+  margin: 0 !important;
+  overflow: hidden;
+}
 
-@media(max-width:980px){.event-page-nav{position:relative}.event-nav-inner{min-height:74px;padding-inline:26px}.event-page-nav .ticketing-logo{height:44px}.event-page-nav nav{gap:16px;overflow:auto}.event-page-nav nav a{font-size:.53rem}.event-page-nav nav .event-nav-reserve{padding:10px 13px}.ticket-detail.event-hero{grid-template-columns:1fr;grid-template-rows:auto;grid-template-areas:"media" "summary" "access";height:auto;min-height:0;background:#19383b}.ticket-detail.event-hero .event-hero-media{height:auto;min-height:0;aspect-ratio:16/10}.ticket-detail.event-hero .event-hero-summary{padding:clamp(50px,8vw,82px) clamp(28px,7vw,70px) 52px}.ticket-detail.event-hero .event-access{width:100%;margin:0}.event-access .ticket-access-card{min-height:0;height:auto}.ticket-detail.event-hero .event-hero-facts--with-dress-code{flex:0 0 auto;grid-template-rows:none}.event-hero-facts .ticket-access-fact--dress-code{height:auto;min-height:0}.event-detail-layout .event-story.event-story-editorial{grid-template-columns:1fr;gap:32px;width:min(100% - clamp(44px,10vw,120px),760px);min-height:0;padding:clamp(44px,6vw,64px) 0}.event-story-editorial .event-story-copy{max-width:38rem;padding-top:0}.event-story-poster{justify-self:center;width:min(100%,520px)}}
+html.event-experience-page .event-hero-media img,
+html.event-experience-page .event-hero-media picture {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
 
-@media(max-width:640px){.event-nav-inner{min-height:64px;padding-inline:16px}.event-page-nav .ticketing-logo{height:37px}.event-page-nav nav{max-width:74%;gap:13px}.event-page-nav nav a{font-size:.49rem}.event-page-nav nav a:not(.event-nav-reserve){display:none}.event-page-nav nav .event-nav-reserve{padding:9px 12px;font-size:.52rem}.ticket-detail.event-hero .event-hero-media{aspect-ratio:1/.92}.ticket-detail.event-hero .event-hero-summary{padding:42px 22px 38px}.event-hero .ticket-eyebrow{margin-bottom:16px;font-size:.54rem;letter-spacing:.22em}.event-hero .ticket-title{font-size:clamp(3.1rem,14vw,4.8rem);line-height:.9}.event-hero .event-subtitle{margin-top:15px;font-size:1.45rem;line-height:1.13}.ticket-detail.event-hero .event-hero-description{margin-top:26px;font-size:.9rem;line-height:1.65}.ticket-detail.event-hero .event-hero-description p{margin-bottom:15px}.ticket-detail.event-hero .event-hero-facts{margin-top:32px;grid-template-columns:1fr}.event-hero-facts .ticket-access-fact{padding:17px 0}.event-hero-facts .ticket-access-fact:nth-child(odd),.event-hero-facts .ticket-access-fact:nth-child(even){padding-right:0;padding-left:0;border-left:0}.event-hero-facts .ticket-access-icon{flex-basis:26px;width:26px;height:26px}.event-hero-facts .ticket-access-icon svg{width:19px;height:19px}.event-hero-facts small{font-size:.56rem}.event-hero-facts strong{font-size:.84rem}.event-access .ticket-access-card{padding:28px 22px 88px}.event-access .ticket-access-heading{grid-template-columns:1fr;gap:24px}.event-access .ticket-access-copy h3{font-size:2.65rem}.event-access .ticket-access-copy p{-webkit-line-clamp:2}.event-access .ticket-access-decision{grid-template-columns:minmax(0,1fr) auto;gap:16px;padding:21px 0 0;border-top:1px solid var(--ticket-line);border-left:0}.event-access .ticket-type-price strong{font-size:3.65rem}.event-access .ticket-access-action .ticket-btn{min-height:52px}.event-access .ticket-access-secondary{right:22px;bottom:20px;left:22px;display:grid;gap:10px;padding-top:15px}.event-access .ticket-access-status{white-space:normal}.event-detail-layout .event-story{margin:70px 22px 0}.event-detail-layout .event-story.event-story-editorial{width:calc(100% - 44px);gap:26px;margin:0 auto;padding:36px 0 50px}.event-story-editorial h2{font-size:clamp(3rem,14vw,4.4rem)}.event-story-editorial .event-story-text{margin-top:20px;font-size:.92rem;line-height:1.68}.event-story-editorial .event-story-text p{margin-bottom:16px}.event-story-venue{grid-template-columns:1fr;gap:0;margin-top:28px;padding-top:15px}.event-story-venue a{grid-column:1;grid-row:auto;justify-self:start;margin-top:16px}.event-story-poster{width:100%;max-width:430px}.event-story-poster-cta{font-size:.58rem;letter-spacing:.16em}}
+html.event-experience-page .event-hero-media img {
+  object-fit: cover;
+  object-position: center;
+}
 
-@media(max-width:390px){.event-access .ticket-access-decision{grid-template-columns:1fr}.event-quantity-picker{justify-items:start}.event-access .ticket-access-card{padding-bottom:110px}}
-@media(prefers-reduced-motion:reduce){.ticket-detail.event-hero .event-hero-media img,.event-story-poster img,.event-story-poster::after,.event-story-poster-cta span{transition:none;animation:none}.ticket-detail.event-hero .event-hero-media:hover img,.event-story-poster:hover img,.event-story-poster:focus-visible img{transform:none}}
+html.event-experience-page .event-hero-summary {
+  grid-area: summary;
+  display: flex;
+  min-width: 0;
+  min-height: 0 !important;
+  padding: clamp(42px, 6vw, 92px) var(--event-page-gutter);
+  flex-direction: column;
+  justify-content: center;
+  background: var(--event-ink);
+}
 
-/* Final contrast and hierarchy rules for the guest-facing Total White notice. */
-.event-hero-facts .ticket-access-fact--dress-code{align-items:flex-start}
-.event-hero-facts .ticket-access-fact--dress-code .ticket-access-dress-fact-copy{display:grid;gap:8px;max-width:66ch}
-.event-hero-facts .ticket-access-fact--dress-code small{color:var(--pg-gold-l);font-size:.62rem;letter-spacing:.17em}
-.event-hero-facts .ticket-access-fact--dress-code small b{color:var(--pg-cream);font-weight:600}
-.event-hero-facts .ticket-access-fact--dress-code strong{max-width:62ch;color:var(--pg-cream);font-size:clamp(.9rem,1.05vw,1.08rem);font-weight:400;line-height:1.5}
-.event-hero-facts .ticket-access-fact--dress-code strong b{color:var(--pg-gold-l);font-weight:700;text-decoration:underline;text-decoration-color:rgba(205,177,151,.76);text-decoration-thickness:1px;text-underline-offset:3px}
-.event-access .ticket-type-price .ticket-promo-label{color:#5a3f20;font-weight:600}
-.event-access .ticket-type-price>span:last-child{margin-top:-1px;color:#173638;font-size:.55rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
-.event-access .ticket-access-dress-copy{color:#284448}
-@media(max-width:640px){.event-hero-facts .ticket-access-fact--dress-code strong{font-size:.84rem}.event-hero-facts .ticket-access-fact--dress-code small{font-size:.56rem}.event-access .ticket-type-price>span:last-child{font-size:.53rem}}
+html.event-experience-page .event-hero-summary > * {
+  width: min(100%, 620px);
+}
 
-/* Keep the mandatory dress code legible without turning it into a second hero. */
-.ticket-detail.event-hero .event-hero-facts--with-dress-code{flex:0 0 auto;grid-template-rows:auto auto auto}
-.event-hero-facts .ticket-access-fact--dress-code{height:auto;min-height:0;padding-block:14px}
-.event-hero-facts .ticket-access-fact--dress-code .ticket-access-dress-fact-copy{width:100%;min-width:0;max-width:none;gap:6px}
-.event-hero-facts .ticket-access-fact--dress-code strong{max-width:none;font-size:clamp(.8rem,.92vw,.98rem);line-height:1.42}
-.event-access .ticket-access-dress-notice{padding-right:0}
-.event-access .ticket-access-dress-content{width:100%;max-width:none}
-.event-access .ticket-access-dress-title{font-size:.59rem;line-height:1.35}
-.event-access .ticket-access-dress-copy{max-width:none;font-size:.69rem;line-height:1.4}
-.event-access .ticket-type-price .ticket-promo-label{min-height:0;color:#173638;font-size:.56rem;font-weight:600;letter-spacing:.1em;line-height:1.3;white-space:nowrap}
-@media(max-width:640px){.event-hero-facts .ticket-access-fact--dress-code{padding-block:16px}.event-access .ticket-type-price .ticket-promo-label{font-size:.51rem;white-space:normal}}
+html.event-experience-page .event-hero-summary h1 {
+  max-width: 12ch;
+  margin: 12px 0 10px;
+  font-size: clamp(3.1rem, 5.1vw, 6.1rem);
+  line-height: 0.9;
+}
 
-/* Desktop rhythm for the purchase decision: room around price, caption and action. */
-@media(min-width:981px){
-  .event-access .ticket-access-decision{row-gap:18px}
-  .event-access .ticket-type-price{gap:10px}
-  .event-access .ticket-type-price .ticket-promo-label{white-space:nowrap}
-  .event-access .ticket-access-action{margin-top:2px}
-  .event-access .ticket-type-price strong{margin-bottom:12px}
-  .event-access .ticket-access-secondary{
-    left:clamp(26px,3.9vw,58px);
-    display:grid;
-    grid-template-columns:minmax(0,1fr) auto;
-    column-gap:clamp(24px,3vw,48px);
-    align-items:start
+html.event-experience-page .event-hero-summary .event-subtitle {
+  margin-bottom: clamp(28px, 3vw, 44px);
+  font-size: clamp(1.55rem, 2.2vw, 2.45rem);
+  line-height: 1.05;
+}
+
+html.event-experience-page .event-hero-summary .ticket-copy {
+  max-width: 62ch;
+  margin-bottom: clamp(26px, 3vw, 42px);
+}
+
+html.event-experience-page .event-hero-facts {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid var(--event-line);
+}
+
+html.event-experience-page .event-hero-facts > * {
+  min-height: 106px;
+  padding: 22px 24px;
+  border-right: 1px solid var(--event-line);
+  border-bottom: 1px solid var(--event-line);
+}
+
+html.event-experience-page .event-hero-facts > *:nth-child(2n) {
+  border-right: 0;
+}
+
+html.event-experience-page .event-access {
+  grid-area: access;
+  width: min(calc(100% - (var(--event-page-gutter) * 2)), var(--event-page-max));
+  margin: clamp(42px, 6vw, 80px) auto 0;
+}
+
+html.event-experience-page .event-access .ticket-types {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+html.event-experience-page .event-access .ticket-access-card {
+  position: relative !important;
+  display: block !important;
+  width: 100%;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: clamp(32px, 4.3vw, 64px) clamp(28px, 5vw, 72px) !important;
+  overflow: visible;
+}
+
+html.event-experience-page .event-access .ticket-access-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(300px, 0.9fr);
+  align-items: start;
+  gap: clamp(34px, 7vw, 112px);
+}
+
+html.event-experience-page .event-access .ticket-access-copy {
+  max-width: 54ch;
+}
+
+html.event-experience-page .event-access .ticket-access-price {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+}
+
+html.event-experience-page .event-access .ticket-access-price .ticket-price,
+html.event-experience-page .event-access .ticket-access-price strong {
+  margin-bottom: 6px;
+  line-height: 0.9;
+}
+
+html.event-experience-page .event-access .ticket-access-secondary {
+  position: static !important;
+  display: flex;
+  width: 100%;
+  margin: clamp(28px, 3vw, 44px) 0 0;
+  padding-top: clamp(22px, 2.4vw, 32px);
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 32px;
+  border-top: 1px solid rgba(23, 56, 59, 0.24);
+}
+
+html.event-experience-page .event-access .ticket-access-dresscode {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  max-width: 880px;
+  gap: 14px;
+}
+
+html.event-experience-page .event-access .ticket-access-dresscode > *:first-child {
+  margin-top: 4px;
+}
+
+html.event-experience-page .event-access .ticket-access-availability {
+  flex: 0 0 auto;
+  padding-top: 5px;
+  white-space: nowrap;
+}
+
+html.event-experience-page .event-chapter-next {
+  position: static !important;
+  display: flex;
+  width: min(calc(100% - (var(--event-page-gutter) * 2)), var(--event-page-max));
+  min-height: 64px;
+  margin: clamp(32px, 5vw, 66px) auto 0;
+  padding-top: 22px;
+  align-items: center;
+  gap: 18px;
+  border-top: 1px solid var(--event-line);
+}
+
+html.event-experience-page .event-chapter-next b {
+  margin-left: auto;
+}
+
+/* Chapter 02: a single balanced two-column story, with no vertical void. */
+html.event-experience-page .event-chapter-story {
+  background: var(--event-ink);
+}
+
+html.event-experience-page .event-story-editorial {
+  display: grid !important;
+  grid-template-areas:
+    "poster copy"
+    "next next";
+  grid-template-columns: minmax(300px, 0.86fr) minmax(0, 1.14fr);
+  align-items: start;
+  gap: clamp(40px, 8vw, 128px);
+  min-height: 0 !important;
+  padding: 0 !important;
+}
+
+html.event-experience-page .event-story-poster-wrap {
+  grid-area: poster;
+  width: 100% !important;
+  max-width: 540px;
+  margin: 0 !important;
+  align-self: start;
+}
+
+html.event-experience-page .event-story-poster {
+  display: block;
+  width: 100% !important;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+}
+
+html.event-experience-page .event-story-poster img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+html.event-experience-page .event-story-poster-wrap figcaption {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 7px 24px;
+  padding-top: 18px;
+}
+
+html.event-experience-page .event-story-poster-wrap figcaption strong,
+html.event-experience-page .event-story-poster-wrap figcaption span {
+  grid-column: 1;
+}
+
+html.event-experience-page .event-story-poster-wrap figcaption a {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+}
+
+html.event-experience-page .event-story-copy {
+  grid-area: copy;
+  min-width: 0;
+  max-width: 670px;
+  padding-top: clamp(4px, 1vw, 16px);
+}
+
+html.event-experience-page .event-story-copy h2,
+html.event-experience-page .experience-information-heading h2 {
+  margin: 14px 0 22px;
+  font-size: clamp(3rem, 5vw, 5.5rem);
+  line-height: 0.95;
+}
+
+html.event-experience-page .event-story-lede {
+  max-width: 25ch;
+  margin: 0 0 28px;
+  font-size: clamp(1.5rem, 2.25vw, 2.35rem);
+  line-height: 1.08;
+}
+
+html.event-experience-page .event-story-text {
+  max-width: 52ch;
+}
+
+html.event-experience-page .event-story-venue {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20px;
+  margin-top: 38px;
+  padding: 20px 0;
+  border-top: 1px solid var(--event-line);
+  border-bottom: 1px solid var(--event-line);
+}
+
+html.event-experience-page .event-chapter-next-story {
+  grid-area: next;
+  width: 100%;
+  margin-top: 0;
+}
+
+/* Chapter 03 follows immediately and uses the same content width. */
+html.event-experience-page .event-chapter-details {
+  background: var(--event-ink);
+}
+
+html.event-experience-page .event-details-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.62fr) minmax(0, 1.38fr);
+  align-items: start;
+  gap: clamp(42px, 8vw, 136px);
+  min-height: 0 !important;
+}
+
+html.event-experience-page .experience-information-heading {
+  position: static !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+}
+
+html.event-experience-page .event-details-body,
+html.event-experience-page .event-public-information-accordions {
+  min-width: 0;
+  min-height: 0 !important;
+  margin: 0 !important;
+}
+
+html.event-experience-page .event-gallery {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(calc(100% - (var(--event-page-gutter) * 2)), var(--event-page-max)) !important;
+  gap: 18px;
+  margin: 0 auto !important;
+}
+
+html.event-experience-page .event-gallery > * {
+  min-height: 0 !important;
+}
+
+@media (max-width: 980px) {
+  html.event-experience-page .event-page-nav {
+    position: static;
   }
-  .event-access .ticket-access-dress-notice{width:100%;min-width:0;padding-right:0}
-  .event-access .ticket-access-dress-content{min-width:0}
-  .event-access .ticket-access-status{justify-self:end;align-self:start;margin:0}
+
+  html.event-experience-page .event-nav-inner {
+    min-height: 72px;
+  }
+
+  html.event-experience-page .event-nav-inner nav a:not(.event-nav-reserve) {
+    display: none;
+  }
+
+  html.event-experience-page .ticket-detail.event-hero {
+    grid-template-areas:
+      "media"
+      "summary"
+      "access";
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  html.event-experience-page .event-hero-media {
+    aspect-ratio: 16 / 10;
+  }
+
+  html.event-experience-page .event-access .ticket-access-heading,
+  html.event-experience-page .event-story-editorial,
+  html.event-experience-page .event-details-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  html.event-experience-page .event-story-editorial {
+    grid-template-areas:
+      "poster"
+      "copy"
+      "next";
+  }
+
+  html.event-experience-page .event-story-poster-wrap {
+    max-width: min(100%, 560px);
+  }
+
+  html.event-experience-page .event-gallery {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
-/* Public experience: natural editorial chapters, not forced full-screen slides. */
-html.event-experience-page{--event-chapter-nav-height:86px;scroll-behavior:smooth;scroll-padding-top:var(--event-chapter-nav-height);scroll-snap-type:none}
-.event-experience-chapters>.event-chapter{scroll-margin-top:var(--event-chapter-nav-height)}
-.event-anchor{position:relative;display:block;top:calc(-1 * var(--event-chapter-nav-height));visibility:hidden}
-.event-chapter-next{display:grid;grid-template-columns:auto minmax(140px,1fr) auto;align-items:center;width:min(100%,650px);gap:16px;margin-top:clamp(38px,5vw,70px);padding-top:17px;border-top:1px solid rgba(205,177,151,.3);color:var(--pg-gold-l);font:500 .58rem/1.3 Montserrat,Arial,sans-serif;letter-spacing:.18em;text-decoration:none;text-transform:uppercase}
-.event-chapter-next-index{color:var(--pg-gold);font-size:.55rem;letter-spacing:.2em}.event-chapter-next b{font:300 1.45rem/1 "Cormorant Garamond",serif;transition:transform .2s ease}.event-chapter-next:hover,.event-chapter-next:focus-visible{color:var(--pg-cream)}.event-chapter-next:focus-visible{outline:1px solid var(--pg-gold-l);outline-offset:7px}.event-chapter-next:hover b,.event-chapter-next:focus-visible b{transform:translateY(3px)}
-.event-story-editorial .event-story-lede{max-width:30ch;margin:22px 0 0;color:var(--pg-gold-l);font:300 clamp(1.35rem,2vw,1.8rem)/1.22 "Cormorant Garamond",serif}.event-story-editorial .event-story-text{margin-top:26px}.event-story-microdata{display:flex;flex-wrap:wrap;gap:8px;margin:25px 0 0;color:var(--pg-gold);font:500 .56rem/1.45 Montserrat,Arial,sans-serif;letter-spacing:.18em}.event-story-microdata span{color:rgba(205,177,151,.55)}
-.event-story-poster-wrap{width:min(100%,470px);margin:0;justify-self:end}.event-story-poster-wrap .event-story-poster{display:block;width:100%}.event-story-poster-wrap figcaption{display:grid;grid-template-columns:1fr auto;gap:7px 16px;margin-top:14px;color:var(--pg-muted);font:.72rem/1.45 Montserrat,Arial,sans-serif}.event-story-poster-wrap figcaption strong{color:var(--pg-cream);font-weight:500}.event-story-poster-wrap figcaption span{grid-column:1}.event-story-poster-wrap figcaption a{grid-column:2;grid-row:1 / span 2;align-self:center;color:var(--pg-gold-l);font:500 .57rem/1.3 Montserrat,Arial,sans-serif;letter-spacing:.14em;text-decoration:none;text-transform:uppercase}.event-story-poster-wrap figcaption a:hover,.event-story-poster-wrap figcaption a:focus-visible{color:var(--pg-cream)}
-@media(min-width:981px){
-  .ticket-detail.event-hero,.event-detail-layout.event-experience-chapters>.event-chapter-entry{height:auto;min-height:0;grid-template-rows:auto auto}
-  .event-detail-layout.event-experience-chapters>.event-chapter-entry{padding-bottom:clamp(80px,8vw,120px)}
-  .event-detail-layout.event-experience-chapters>.event-chapter-story{align-items:start;min-height:0;margin:0 auto!important;padding:clamp(110px,9vw,130px) 0}
-  .event-chapter-story .event-story-copy{display:block;align-self:start}
-  .event-detail-layout.event-experience-chapters>.event-chapter-details{margin:0 auto!important;padding:clamp(100px,8vw,125px) 0}
-}
-@media(max-width:980px){html.event-experience-page{scroll-padding-top:0}.event-experience-chapters>.event-chapter{scroll-margin-top:0}.event-anchor{top:0}.event-chapter-next{display:none}.event-detail-layout.event-experience-chapters>.event-chapter-story{margin:0 auto!important}.event-detail-layout.event-experience-chapters>.event-chapter-details{margin-top:0!important}.event-story-poster-wrap{justify-self:center;width:min(100%,520px)}}
-@media(max-width:640px){.event-story-poster-wrap{width:100%;max-width:430px}.event-story-poster-wrap figcaption{font-size:.69rem}}
-@media(prefers-reduced-motion:reduce){html.event-experience-page{scroll-behavior:auto}.event-chapter-next b{transition:none}}
+@media (max-width: 640px) {
+  html.event-experience-page {
+    --event-page-gutter: 20px;
+  }
 
-/* Content-led experience chapters. These rules override the legacy viewport grid. */
-.event-experience-chapters{--experience-page-max:1360px;--experience-gutter:clamp(22px,5vw,76px);display:block;width:100%}
-.event-experience-chapters .event-chapter-inner{width:min(calc(100% - (var(--experience-gutter) * 2)),var(--experience-page-max));margin-inline:auto}
-.event-experience-chapters>.event-chapter{width:100%;max-width:none!important;height:auto!important;min-height:0!important;margin:0!important;padding:clamp(82px,9vw,138px) 0;scroll-margin-top:var(--event-chapter-nav-height)}
-.event-experience-chapters>.event-chapter-entry{padding:0!important;background:#19383b}
-.event-experience-chapters .ticket-detail.event-hero{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:clamp(520px,48vw,680px) auto;grid-template-areas:"media summary" "access summary";width:100%;height:auto!important;min-height:0!important}
-.event-experience-chapters .ticket-detail.event-hero .event-hero-media{min-height:0;height:auto;aspect-ratio:auto}
-.event-experience-chapters .ticket-detail.event-hero .event-hero-summary{min-height:0}
-.event-experience-chapters .event-chapter-entry-progress{padding:0 0 clamp(82px,9vw,128px)}
-.event-experience-chapters .event-chapter-entry-progress .event-chapter-next{margin-top:clamp(36px,5vw,68px)}
-.event-experience-chapters>.event-chapter-story{background:#19383b}
-.event-experience-chapters .event-story-editorial{display:grid!important;grid-template-columns:minmax(380px,.42fr) minmax(0,.58fr);grid-template-areas:"poster copy" "next next";align-items:start;gap:clamp(48px,7vw,112px);width:min(calc(100% - (var(--experience-gutter) * 2)),var(--experience-page-max))!important;min-height:0!important;margin:0 auto!important;padding:0!important}
-.event-experience-chapters .event-story-poster-wrap{grid-area:poster;justify-self:start;width:clamp(420px,35vw,540px);max-width:100%;margin:0}
-.event-experience-chapters .event-story-poster{width:100%;box-shadow:0 18px 46px rgba(0,0,0,.16)}
-.event-experience-chapters .event-story-copy{grid-area:copy;align-self:start;max-width:none!important;padding:0!important}
-.event-experience-chapters .event-story-copy .event-story-text{max-width:42rem}
-.event-experience-chapters .event-story-copy .event-story-lede{max-width:32rem}
-.event-experience-chapters .event-chapter-next-story{grid-area:next;width:100%;margin-top:clamp(20px,3vw,46px)}
-.event-experience-chapters .event-story-poster-wrap figcaption{margin-top:14px}
-.event-experience-chapters .event-story-poster-cta{display:none}
-.event-experience-chapters>.event-chapter-details{background:#19383b}
-.event-experience-chapters .event-details-layout{width:min(calc(100% - (var(--experience-gutter) * 2)),var(--experience-page-max))}
-.event-experience-chapters>.event-gallery{width:min(calc(100% - (var(--experience-gutter) * 2)),var(--experience-page-max));max-width:none;margin:0 auto;padding:clamp(72px,8vw,124px) 0}
-@media(max-width:980px){
-  .event-experience-chapters>.event-chapter{padding:clamp(58px,11vw,86px) 0}
-  .event-experience-chapters>.event-chapter-entry{padding:0!important}
-  .event-experience-chapters .ticket-detail.event-hero{grid-template-columns:1fr;grid-template-rows:auto;grid-template-areas:"media" "summary" "access"}
-  .event-experience-chapters .ticket-detail.event-hero .event-hero-media{aspect-ratio:16/10}
-  .event-experience-chapters .event-chapter-entry-progress{display:none}
-  .event-experience-chapters .event-story-editorial{grid-template-columns:1fr;grid-template-areas:"copy" "poster";gap:34px;width:min(calc(100% - (var(--experience-gutter) * 2)),760px)!important}
-  .event-experience-chapters .event-story-poster-wrap{justify-self:center;width:min(100%,540px)}
-  .event-experience-chapters .event-chapter-next-story{display:none}
-  .event-experience-chapters .event-details-layout{width:min(calc(100% - (var(--experience-gutter) * 2)),760px)}
+  html.event-experience-page .event-hero-summary {
+    padding-top: 42px;
+    padding-bottom: 46px;
+  }
+
+  html.event-experience-page .event-hero-summary h1 {
+    font-size: clamp(3rem, 15vw, 4.6rem);
+  }
+
+  html.event-experience-page .event-hero-facts > * {
+    min-height: 88px;
+    padding: 17px 14px;
+  }
+
+  html.event-experience-page .event-access .ticket-access-card {
+    padding: 30px 20px !important;
+  }
+
+  html.event-experience-page .event-access .ticket-access-secondary,
+  html.event-experience-page .event-story-venue {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  html.event-experience-page .event-access .ticket-access-availability {
+    padding: 0;
+  }
+
+  html.event-experience-page .event-story-poster-wrap figcaption {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  html.event-experience-page .event-story-poster-wrap figcaption a {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  html.event-experience-page .event-story-copy h2,
+  html.event-experience-page .experience-information-heading h2 {
+    font-size: clamp(2.8rem, 13vw, 4.2rem);
+  }
+
+  html.event-experience-page .event-gallery {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
-@media(max-width:640px){.event-experience-chapters{--experience-gutter:22px}.event-experience-chapters>.event-chapter{padding:54px 0}.event-experience-chapters .event-story-editorial{gap:28px}}
