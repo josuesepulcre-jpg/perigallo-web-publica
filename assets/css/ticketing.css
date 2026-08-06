@@ -23,6 +23,10 @@ body.ticketing-page{margin:0;background:var(--pg-bg);color:var(--pg-cream);font-
 .ticket-section h2{font-family:"Cormorant Garamond",serif;font-size:clamp(2rem,4vw,4rem);font-weight:300;margin:0}
 .events-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
 .event-card{border:1px solid var(--pg-border);background:rgba(245,241,229,.035);min-height:360px;display:flex;flex-direction:column;overflow:hidden}
+.event-card-shell{display:flex;flex:1;flex-direction:column;min-height:inherit;color:inherit;text-decoration:none}
+.event-card-shell .event-card-media{display:block;flex:none}
+.event-card-shell .event-card-body{flex:1}
+.event-card-divider,.event-availability,.event-card-discover{display:none}
 .event-card-media{aspect-ratio:4/3;background:linear-gradient(135deg,rgba(205,177,151,.22),rgba(245,241,229,.04));background-size:cover;background-position:center}
 .event-card-body{padding:24px;display:flex;flex-direction:column;gap:14px;flex:1}
 .event-card h3{font-family:"Cormorant Garamond",serif;font-size:2rem;font-weight:300;line-height:1;margin:0;color:var(--pg-cream)}
