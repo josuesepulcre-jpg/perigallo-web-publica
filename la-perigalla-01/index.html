@@ -17,7 +17,11 @@
   <a class="skip-link" href="#recorrido">Saltar al recorrido</a>
   <header class="perigalla-nav">
     <a class="perigalla-brand" href="/" aria-label="Volver a Perigallo">P<span>G</span></a>
-    <nav aria-label="Navegacion de La Perigalla 01">
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="perigalla-navigation" aria-label="Abrir navegación">
+      <span aria-hidden="true"></span><span aria-hidden="true"></span>
+      <span class="menu-toggle-label">Menu</span>
+    </button>
+    <nav id="perigalla-navigation" data-menu aria-label="Navegación de La Perigalla 01">
       <a href="#historia">La historia</a>
       <a href="#recorrido">El recorrido</a>
       <a href="#galeria">La noche</a>
@@ -33,10 +37,21 @@
         <p class="intro-lead">La Perigalla 01 inaugura una nueva forma de celebrar en Finca La Llaguna.</p>
         <p>Una boda ficticia de inspiraci&oacute;n ibicenca que presenta el universo de Perigallo a trav&eacute;s de la gastronom&iacute;a, la m&uacute;sica, la puesta en escena y la historia de Sof&iacute;a y Carlos.</p>
         <p>Una noche en formato c&oacute;ctel, bajo las estrellas y con un protocolo de vestimenta completamente blanca.</p>
-        <a class="text-link" href="#recorrido">Descubrir el recorrido <span aria-hidden="true">&darr;</span></a>
+        <div class="intro-actions">
+          <a class="button-dark" href="/experiencias/la-perigalla-01-ibicenca/#reservar">Reservar la experiencia <span aria-hidden="true">&rarr;</span></a>
+          <a class="text-link" href="#recorrido">Descubrir el recorrido <span aria-hidden="true">&darr;</span></a>
+        </div>
       </div>
       <figure class="intro-poster">
-        <img src="/assets/images/perigalla-01/scene-00-desktop.jpg" alt="La Perigalla 01, una noche ibicenca vestida de blanco" width="1600" height="900" fetchpriority="high">
+        <picture>
+          <source media="(max-width: 599px)" type="image/avif" srcset="/assets/images/perigalla-01/hero-mobile.avif">
+          <source media="(max-width: 599px)" type="image/webp" srcset="/assets/images/perigalla-01/hero-mobile.webp">
+          <source media="(max-width: 899px)" type="image/avif" srcset="/assets/images/perigalla-01/hero-tablet.avif">
+          <source media="(max-width: 899px)" type="image/webp" srcset="/assets/images/perigalla-01/hero-tablet.webp">
+          <source type="image/avif" srcset="/assets/images/perigalla-01/hero-desktop.avif">
+          <source type="image/webp" srcset="/assets/images/perigalla-01/hero-desktop.webp">
+          <img src="/assets/images/perigalla-01/hero-desktop.jpg" alt="La Perigalla 01, una noche ibicenca vestida de blanco" width="1600" height="720" sizes="(max-width: 599px) 100vw, (max-width: 899px) 100vw, 52vw" fetchpriority="high" decoding="async">
+        </picture>
         <figcaption>Finca La Llaguna &middot; 29 agosto 2026</figcaption>
       </figure>
     </section>
@@ -44,7 +59,7 @@
     <section id="historia" class="story-opening" aria-labelledby="historia-title">
       <div>
         <p class="eyebrow">Cuento audiovisual</p>
-        <h2 id="historia-title">Antes de llegar, <em>todo empieza</em> aqui.</h2>
+        <h2 id="historia-title">Antes de llegar, <em>todo empieza</em> aqu&iacute;.</h2>
       </div>
       <div class="story-opening-copy">
         <p>La Perigalla 01 se abre, se cuenta, se saborea y termina celebr&aacute;ndose. Recorre la historia que dio forma a la noche y descubre los detalles que viven detr&aacute;s de cada acto.</p>
@@ -70,10 +85,10 @@
         <li class="route-featured">
           <span class="route-number">03</span>
           <div><p class="route-time">El coraz&oacute;n de la noche</p><h3>Recorrido gastron&oacute;mico</h3><p>Diecinueve piezas que recorren la isla, la historia y sus sabores.</p>
-            <ul><li>La isla nos recibe</li><li>Mercat de la Vila</li><li>Todo empezo con un mensaje</li><li>Paseo por la playa</li></ul>
+            <ul><li>La isla nos recibe</li><li>Mercat de la Vila</li><li>Todo empez&oacute; con un mensaje</li><li>Paseo por la playa</li></ul>
           </div>
         </li>
-        <li>
+        <li class="route-closing">
           <span class="route-number">04</span>
           <div><p class="route-time">La celebraci&oacute;n</p><h3>La noche contin&uacute;a</h3><p>M&uacute;sica, sorpresas, fiesta y resop&oacute;n para cerrar la historia.</p></div>
         </li>
@@ -87,9 +102,21 @@
         <button class="text-button" type="button" data-open-story>Ver el cuento completo <span aria-hidden="true">&rarr;</span></button>
       </div>
       <div class="gallery-grid">
-        <img loading="lazy" src="/assets/images/perigalla-01/scene-04-desktop.jpg" alt="Escena de La Perigalla 01">
-        <img loading="lazy" src="/assets/images/perigalla-01/scene-10-desktop.jpg" alt="Detalle de la experiencia La Perigalla 01">
-        <img loading="lazy" src="/assets/images/perigalla-01/scene-18-desktop.jpg" alt="Celebracion de La Perigalla 01">
+        <picture>
+          <source type="image/avif" srcset="/assets/images/perigalla-01/scene-04-gallery.avif">
+          <source type="image/webp" srcset="/assets/images/perigalla-01/scene-04-gallery.webp">
+          <img loading="lazy" decoding="async" src="/assets/images/perigalla-01/scene-04-gallery.jpg" alt="Escena de La Perigalla 01" width="1200" height="900">
+        </picture>
+        <picture>
+          <source type="image/avif" srcset="/assets/images/perigalla-01/scene-10-gallery.avif">
+          <source type="image/webp" srcset="/assets/images/perigalla-01/scene-10-gallery.webp">
+          <img loading="lazy" decoding="async" src="/assets/images/perigalla-01/scene-10-gallery.jpg" alt="Detalle de la experiencia La Perigalla 01" width="1200" height="900">
+        </picture>
+        <picture>
+          <source type="image/avif" srcset="/assets/images/perigalla-01/scene-18-gallery.avif">
+          <source type="image/webp" srcset="/assets/images/perigalla-01/scene-18-gallery.webp">
+          <img loading="lazy" decoding="async" src="/assets/images/perigalla-01/scene-18-gallery.jpg" alt="Celebración de La Perigalla 01" width="1200" height="900">
+        </picture>
       </div>
     </section>
 
@@ -107,7 +134,7 @@
       <button type="button" class="dialog-close" data-close-story aria-label="Cerrar el cuento">Cerrar <span aria-hidden="true">&times;</span></button>
     </div>
     <div class="story-frame">
-      <img id="story-image" src="/assets/images/perigalla-01/scene-01-desktop.jpg" alt="">
+      <img id="story-image" alt="" decoding="async">
       <div class="story-caption"><p id="story-kicker" class="eyebrow"></p><h2 id="dialog-title"></h2><p id="story-copy"></p></div>
     </div>
     <div class="story-controls">
