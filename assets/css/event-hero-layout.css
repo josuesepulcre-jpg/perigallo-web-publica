@@ -81,3 +81,15 @@
 
 @media(max-width:390px){.event-access .ticket-access-decision{grid-template-columns:1fr}.event-quantity-picker{justify-items:start}.event-access .ticket-access-card{padding-bottom:110px}}
 @media(prefers-reduced-motion:reduce){.ticket-detail.event-hero .event-hero-media img,.event-story-poster img,.event-story-poster::after,.event-story-poster-cta span{transition:none;animation:none}.ticket-detail.event-hero .event-hero-media:hover img,.event-story-poster:hover img,.event-story-poster:focus-visible img{transform:none}}
+
+/* Final contrast and hierarchy rules for the guest-facing Total White notice. */
+.event-hero-facts .ticket-access-fact--dress-code{align-items:flex-start}
+.event-hero-facts .ticket-access-fact--dress-code .ticket-access-dress-fact-copy{display:grid;gap:8px;max-width:66ch}
+.event-hero-facts .ticket-access-fact--dress-code small{color:var(--pg-gold-l);font-size:.62rem;letter-spacing:.17em}
+.event-hero-facts .ticket-access-fact--dress-code small b{color:var(--pg-cream);font-weight:600}
+.event-hero-facts .ticket-access-fact--dress-code strong{max-width:62ch;color:var(--pg-cream);font-size:clamp(.9rem,1.05vw,1.08rem);font-weight:400;line-height:1.5}
+.event-hero-facts .ticket-access-fact--dress-code strong b{color:var(--pg-gold-l);font-weight:700;text-decoration:underline;text-decoration-color:rgba(205,177,151,.76);text-decoration-thickness:1px;text-underline-offset:3px}
+.event-access .ticket-type-price .ticket-promo-label{color:#5a3f20;font-weight:600}
+.event-access .ticket-type-price>span:last-child{margin-top:-1px;color:#173638;font-size:.55rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.event-access .ticket-access-dress-copy{color:#284448}
+@media(max-width:640px){.event-hero-facts .ticket-access-fact--dress-code strong{font-size:.84rem}.event-hero-facts .ticket-access-fact--dress-code small{font-size:.56rem}.event-access .ticket-type-price>span:last-child{font-size:.53rem}}

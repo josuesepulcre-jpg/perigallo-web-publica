@@ -205,7 +205,7 @@ const publicJs = readFileSync(join(root, "assets/js/ticketing.js"), "utf8");
 for (const marker of ["Información de la experiencia", "Código de vestimenta", "event.contact_info", "experienceAccordions", "initExperienceAccordions", "aria-expanded", "eventMetadata", "event-story-editorial", "Probar recorrido de compra", "Comprar entradas", "ticketPurchaseAction", "ticket-access-secondary", "event-hero-introduction", "event-hero-facts", "renderCheckoutPreview", "Modo de pruebas", "checkoutTicketMarkup", "data-quantity-action", "data-event-quantity-action", "renderCheckoutSummary"]) {
   if (!publicJs.includes(marker)) throw new Error(`Missing public information rendering: ${marker}`);
 }
-for (const marker of ["dressCodeNotice", "Código de vestimenta obligatorio", "No se permitirá el acceso"]) {
+for (const marker of ["dressCodeNotice", "perigallaDressCodeFact", "Código de vestimenta obligatorio", "Es obligatorio acudir vestido íntegramente de blanco", "No se permitirá el acceso"]) {
   if (!publicJs.includes(marker)) throw new Error(`Missing clear public dress-code notice: ${marker}`);
 }
 

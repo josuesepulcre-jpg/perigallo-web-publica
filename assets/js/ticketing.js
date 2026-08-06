@@ -374,6 +374,18 @@
     return '<li class="ticket-access-fact' + (className ? ' ' + className : '') + '"><span class="ticket-access-icon" aria-hidden="true">' + accessIcon(icon) + '</span><span><small>' + escapeHtml(label) + '</small><strong>' + escapeHtml(value) + '</strong>' + (detail ? '<em>' + escapeHtml(detail) + '</em>' : '') + '</span></li>';
   }
 
+  function perigallaDressCodeFact() {
+    return [
+      '<li class="ticket-access-fact ticket-access-fact--dress-code">',
+      '<span class="ticket-access-icon" aria-hidden="true">' + accessIcon("dress") + '</span>',
+      '<span class="ticket-access-dress-fact-copy">',
+      '<small>Código de vestimenta obligatorio <b>· Total White</b></small>',
+      '<strong>Es obligatorio acudir vestido íntegramente de blanco. <b>No se permitirá el acceso</b> a quienes no cumplan este código de vestimenta.</strong>',
+      '</span>',
+      '</li>'
+    ].join("");
+  }
+
   function accessFacts(event) {
     var locality = [event.locality, event.province].filter(Boolean).join(", ");
     var place = event.location || locality;
@@ -385,7 +397,7 @@
       accessFact("place", "Lugar", place, event.location ? locality : "")
     ];
     if (/la\s+perigalla\s*0?1/i.test(String(event.title || ""))) {
-      facts.push(accessFact("dress", "Fiesta ibicenca", "Código de vestimenta obligatorio: todo el mundo ir de blanco. Si no, no podrá entrar.", "", "ticket-access-fact--dress-code"));
+      facts.push(perigallaDressCodeFact());
     }
     return facts.filter(Boolean).join("");
   }
