@@ -200,7 +200,7 @@
       var imageUrl = previewAssetUrl(event.image_url || "/assets/images/finca-la-llaguna-principal.jpg", preview);
       var isPerigalla01 = /la\s+perigalla\s*0?1/i.test(String(event.title || ""));
       var experienceName = isPerigalla01 ? "La Perigalla 01" : event.title;
-      var experienceUrl = "/experiencias/" + encodeURIComponent(event.slug) + "/";
+      var experienceUrl = isPerigalla01 ? "/la-perigalla-01/" : "/experiencias/" + encodeURIComponent(event.slug) + "/";
       var storyImageUrl = previewAssetUrl(event.card_image_url || event.image_url || "/assets/images/finca-la-llaguna-principal.jpg", preview);
       var storyText = isPerigalla01
         ? '<p>La Perigalla 01 inaugura una nueva forma de celebrar en Finca La Llaguna.</p><p>Una boda ficticia de inspiración ibicenca que presenta el universo de Perigallo a través de la gastronomía, la música, la puesta en escena y una historia protagonizada por Sofía y Carlos.</p><p>Una noche en formato cóctel, bajo las estrellas y con un protocolo de vestimenta completamente blanca.</p>'
