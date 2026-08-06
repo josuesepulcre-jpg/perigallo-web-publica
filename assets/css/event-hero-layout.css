@@ -1092,7 +1092,9 @@ body.ticketing-page .event-details-layout {
   column-gap: clamp(2rem, 4vw, 4rem);
   row-gap: 0;
   width: min(100%, 106rem);
-  min-height: 0;
+  --event-details-panel-height: min(42rem, calc(100svh - 12.75rem));
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: var(--event-details-panel-height);
   margin: 0 auto;
   align-content: start;
   align-items: start;
@@ -1134,7 +1136,8 @@ body.ticketing-page .experience-guide-index {
   grid-column: 1;
   grid-row: 2;
   display: grid;
-  align-content: start;
+  align-self: stretch;
+  grid-template-rows: repeat(11, minmax(0, 1fr));
   margin-top: clamp(1.15rem, 1.6vw, 1.5rem);
   border-top: 1px solid var(--event-line);
 }
@@ -1145,8 +1148,8 @@ body.ticketing-page .experience-guide-trigger {
   align-items: center;
   gap: 0.65rem;
   min-width: 0;
-  min-height: 2.12rem;
-  padding: 0.22rem 0;
+  min-height: 0;
+  padding: 0.3rem 0;
   color: rgba(255, 248, 235, 0.75);
   background: transparent;
   border: 0;
@@ -1201,7 +1204,7 @@ body.ticketing-page .experience-guide-panels {
   grid-column: 2;
   grid-row: 1 / span 2;
   min-width: 0;
-  height: min(39rem, calc(100svh - 11rem));
+  height: var(--event-details-panel-height);
   border-top: 1px solid var(--event-line);
   border-bottom: 1px solid var(--event-line);
 }
@@ -1265,36 +1268,6 @@ body.ticketing-page .experience-guide-content p:last-child {
   margin-bottom: 0;
 }
 
-/* The final chapter needs enough scrollable depth for its anchor to align at
- * the top of the viewport instead of being limited by the end of the page. */
-@media (min-width: 1041px) {
-  body.ticketing-page .event-chapter-details {
-    --event-details-inset: clamp(1.5rem, 2.5vw, 3rem);
-    min-height: 100svh;
-    padding-top: var(--event-details-inset);
-    padding-bottom: var(--event-details-inset);
-  }
-
-  body.ticketing-page .event-details-layout {
-    grid-template-rows: auto minmax(0, 1fr);
-    min-height: calc(100svh - var(--event-details-inset) - var(--event-details-inset));
-  }
-
-  body.ticketing-page .experience-guide-index {
-    align-self: stretch;
-    grid-template-rows: repeat(11, minmax(0, 1fr));
-  }
-
-  body.ticketing-page .experience-guide-trigger {
-    min-height: 0;
-    height: 100%;
-    padding-block: 0.3rem;
-  }
-
-  body.ticketing-page .experience-guide-panels {
-    height: 100%;
-  }
-}
 
 body.ticketing-page .event-details-body .experience-accordions {
   display: none !important;
