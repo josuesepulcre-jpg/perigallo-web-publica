@@ -1010,56 +1010,58 @@ body.ticketing-page .event-chapter-next-entry {
 
 /* Chapter 03: a compact editorial index with a dedicated reading panel. */
 body.ticketing-page .event-chapter-details {
-  padding: clamp(2.5rem, 4vw, 4.5rem) var(--event-gutter);
+  padding: clamp(2.25rem, 3.5vw, 4rem) var(--event-gutter);
   background: var(--event-ink);
 }
 
 body.ticketing-page .event-details-layout {
   display: grid !important;
-  grid-template-columns: minmax(16rem, 0.55fr) minmax(0, 1.45fr);
-  gap: clamp(3rem, 9vw, 12rem);
+  grid-template-columns: minmax(19rem, 0.8fr) minmax(0, 1.2fr);
+  gap: clamp(3rem, 6vw, 7rem);
   width: min(100%, 100rem);
+  min-height: calc(100svh - 7rem);
   margin: 0 auto;
+  align-items: start;
 }
 
 body.ticketing-page .experience-information-heading {
-  position: sticky;
-  top: 2rem;
+  grid-column: 1;
+  grid-row: 1;
+  position: static;
   align-self: start;
 }
 
 body.ticketing-page .event-details-layout h2 {
-  max-width: 8ch;
-  margin: 1rem 0 0;
-  font-size: clamp(3.15rem, 5vw, 5.8rem);
-  line-height: 0.96;
+  max-width: 10ch;
+  margin: 0.75rem 0 0;
+  font-size: clamp(2.9rem, 3.8vw, 4.8rem);
+  line-height: 0.91;
+  text-wrap: balance;
 }
 
 body.ticketing-page .experience-information-heading > p {
   max-width: 20rem;
-  margin: 1.3rem 0 0;
+  margin: 0.95rem 0 0;
   color: rgba(255, 248, 235, 0.7);
   font-size: 1rem;
   line-height: 1.55;
 }
 
 body.ticketing-page .event-details-body {
+  display: contents;
   min-width: 0;
 }
 
 body.ticketing-page .event-details-body .experience-guide {
-  display: grid !important;
-  grid-template-columns: minmax(15.5rem, 0.78fr) minmax(0, 1.22fr);
-  gap: clamp(2rem, 4vw, 4.5rem);
-  min-height: min(38rem, calc(100svh - 12rem));
-  width: 100%;
-  max-width: none;
-  margin: 0;
+  display: contents !important;
 }
 
 body.ticketing-page .experience-guide-index {
+  grid-column: 1;
+  grid-row: 2;
   display: grid;
   align-content: start;
+  margin-top: clamp(1.8rem, 3vw, 3rem);
   border-top: 1px solid var(--event-line);
 }
 
@@ -1069,8 +1071,8 @@ body.ticketing-page .experience-guide-trigger {
   align-items: center;
   gap: 0.65rem;
   min-width: 0;
-  min-height: 2.85rem;
-  padding: 0.5rem 0;
+  min-height: 2.28rem;
+  padding: 0.32rem 0;
   color: rgba(255, 248, 235, 0.75);
   background: transparent;
   border: 0;
@@ -1091,7 +1093,7 @@ body.ticketing-page .experience-guide-trigger > span {
 body.ticketing-page .experience-guide-trigger strong {
   overflow: hidden;
   color: inherit;
-  font-size: clamp(0.72rem, 0.85vw, 0.86rem);
+  font-size: clamp(0.69rem, 0.78vw, 0.8rem);
   font-weight: 500;
   line-height: 1.2;
   text-overflow: ellipsis;
@@ -1122,7 +1124,10 @@ body.ticketing-page .experience-guide-trigger:focus-visible b {
 }
 
 body.ticketing-page .experience-guide-panels {
+  grid-column: 2;
+  grid-row: 1 / span 2;
   min-width: 0;
+  height: min(43rem, calc(100svh - 11rem));
   border-top: 1px solid var(--event-line);
   border-bottom: 1px solid var(--event-line);
 }
@@ -1155,7 +1160,9 @@ body.ticketing-page .experience-guide-panel h3 {
 }
 
 body.ticketing-page .experience-guide-content {
-  max-height: clamp(23rem, 53vh, 34rem);
+  flex: 1;
+  min-height: 0;
+  max-height: none;
   margin-top: clamp(1.5rem, 2.5vw, 2.5rem);
   padding-right: 1.1rem;
   overflow-y: auto;
@@ -1317,6 +1324,29 @@ body.ticketing-page summary:focus-visible {
   body.ticketing-page .experience-information-heading {
     position: static;
   }
+
+  body.ticketing-page .event-details-body {
+    display: block;
+  }
+
+  body.ticketing-page .event-details-body .experience-guide {
+    display: grid !important;
+    grid-template-columns: minmax(13rem, 0.72fr) minmax(0, 1.28fr);
+    gap: clamp(1.5rem, 4vw, 3rem);
+    min-height: min(38rem, calc(100svh - 15rem));
+  }
+
+  body.ticketing-page .experience-guide-index {
+    grid-column: 1;
+    grid-row: 1;
+    margin-top: 0;
+  }
+
+  body.ticketing-page .experience-guide-panels {
+    grid-column: 2;
+    grid-row: 1;
+    height: min(38rem, calc(100svh - 15rem));
+  }
 }
 
 @media (max-width: 700px) {
@@ -1455,6 +1485,7 @@ body.ticketing-page summary:focus-visible {
   }
 
   body.ticketing-page .experience-guide-panels {
+    height: auto;
     margin-top: 1.5rem;
   }
 
