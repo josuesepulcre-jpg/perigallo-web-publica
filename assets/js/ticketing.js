@@ -7,6 +7,13 @@
     return new URLSearchParams(window.location.search).get(name);
   }
 
+  function publicEventSlug() {
+    var fromQuery = qs("slug");
+    if (fromQuery) return fromQuery;
+    var match = window.location.pathname.match(/^\/(?:experiencias|eventos)\/([a-z0-9-]+)\/?$/i);
+    return match ? decodeURIComponent(match[1]) : "";
+  }
+
   function fmtDate(value) {
     if (!value) return "";
     return new Intl.DateTimeFormat("es-ES", { dateStyle: "full", timeStyle: "short" }).format(new Date(value.replace(" ", "T")));
@@ -112,7 +119,7 @@
     var root = document.querySelector("[data-event-detail]");
     if (!root) return;
     var preview = root.hasAttribute("data-preview");
-    var slug = root.dataset.slug || qs("slug");
+    var slug = root.dataset.slug || publicEventSlug();
     var previewId = qs("id");
     if (!preview && !slug) {
       root.innerHTML = '<p class="ticket-status">Evento no indicado.</p>';
