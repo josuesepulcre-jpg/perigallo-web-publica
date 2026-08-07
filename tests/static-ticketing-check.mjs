@@ -217,8 +217,28 @@ const leadMigration = readFileSync(join(root, "database/migrations/019_public_le
 for (const marker of ["lead_form_settings", "lead_requests", "follow_up", "proposal_sent", "email_status", "ip_hash"]) {
   if (!leadMigration.includes(marker)) throw new Error(`Lead form migration is missing ${marker}.`);
 }
-for (const marker of ["^solicitud-evento/?$ /formulario/ [R=301,L]", "^admin/formulario/?$ admin/formulario/index.html"]) {
+for (const marker of ["^solicitud-evento/?$ https://suite.perigallo.com/solicitud?origen=web-perigallo [R=302,L,NE]", "^admin/formulario/?$ admin/formulario/index.html"]) {
   if (!rootHtaccess.includes(marker)) throw new Error(`Missing lead form route contract: ${marker}`);
+}
+const publicRequestPages = [
+  "index.html",
+  "contacto/index.html",
+  "bodas-alicante/index.html",
+  "celebraciones-familiares-alicante/index.html",
+  "comuniones-alicante/index.html",
+  "bautizos-alicante/index.html",
+  "eventos-empresa-alicante/index.html",
+  "eventos-privados-alicante/index.html",
+  "experiencias/index.html",
+  "finca-la-llaguna/index.html",
+  "sobre-perigallo/index.html",
+  "solicitud-evento/index.html",
+];
+const initialRequestUrl = "https://suite.perigallo.com/solicitud?origen=web-perigallo";
+for (const page of publicRequestPages) {
+  const content = readFileSync(join(root, page), "utf8");
+  if (!content.includes(initialRequestUrl)) throw new Error(`Public request route is missing from ${page}.`);
+  if (content.includes('href="/formulario/"')) throw new Error(`Private wedding form is publicly linked from ${page}.`);
 }
 const leadAdmin = readFileSync(join(root, "admin/formulario/index.html"), "utf8");
 if (!leadAdmin.includes("data-admin-lead-form-page")) throw new Error("Missing lead form admin page marker.");
@@ -267,15 +287,17 @@ for (const forbiddenMarker of ["Simular pago aceptado", "Simular pago rechazado"
 
 const perigallaStoryPage = readFileSync(join(root, "la-perigalla-01/index.html"), "utf8");
 const storyAssets = Array.from(perigallaStoryPage.matchAll(/(?:src|href)="(\/la-perigalla-01\/assets\/[^\"]+)"/g), (match) => match[1]);
-if (storyAssets.length !== 2) throw new Error("La Perigalla story page must reference one JavaScript and one stylesheet asset.");
+const storyJavaScriptAssets = storyAssets.filter((asset) => asset.endsWith(".js"));
+const storyStylesheetAssets = storyAssets.filter((asset) => asset.endsWith(".css"));
+if (storyJavaScriptAssets.length !== 1 || storyStylesheetAssets.length < 1) throw new Error("La Perigalla story page must reference one JavaScript asset and at least one stylesheet asset.");
 for (const asset of storyAssets) {
   if (!existsSync(join(root, asset.slice(1)))) throw new Error(`La Perigalla story asset is missing: ${asset}`);
 }
-const storyBundle = readFileSync(join(root, storyAssets.find((asset) => asset.endsWith(".js")).slice(1)), "utf8");
+const storyBundle = readFileSync(join(root, storyJavaScriptAssets[0].slice(1)), "utf8");
 for (const marker of ["Bienvenidos a", "La Perigalla 01", "v9-scenes", "final-celebration", "Quiero vivir la historia", "/entradas/checkout/?event=la-perigalla-01-ibicenca&quantity=1&ticketType=1", "story_transition_start", "story_transition_end", "20260807-03"]) {
   if (!storyBundle.includes(marker)) throw new Error(`La Perigalla story bundle is missing ${marker}.`);
 }
-const storyStyles = readFileSync(join(root, storyAssets.find((asset) => asset.endsWith(".css")).slice(1)), "utf8");
+const storyStyles = storyStylesheetAssets.map((asset) => readFileSync(join(root, asset.slice(1)), "utf8")).join("\n");
 if (!storyStyles.includes("hosts-hero-cover.png")) {
   throw new Error("La Perigalla story stylesheet is missing the approved cover image.");
 }

@@ -15,7 +15,7 @@ ErrorDocument 404 /404.html
   RewriteRule ^celebraciones/?$ /celebraciones-familiares-alicante/ [R=301,L]
   RewriteRule ^pop-up/?$ /experiencias/ [R=301,L]
   RewriteRule ^reservar/?$ /experiencias/ [R=301,L]
-  RewriteRule ^solicitud-evento/?$ /formulario/ [R=301,L]
+  RewriteRule ^solicitud-evento/?$ https://suite.perigallo.com/solicitud?origen=web-perigallo [R=302,L,NE]
   RewriteRule ^la-finca/?$ /finca-la-llaguna/ [R=301,L]
   RewriteRule ^eventos/?$ /experiencias/ [R=301,L]
   RewriteCond %{REQUEST_FILENAME} !-f
