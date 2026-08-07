@@ -63,6 +63,8 @@ const required = [
   "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/cover.mp3",
   "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/final-celebration.mp3",
   "la-perigalla-01/media/storytelling/perigalla-01/hosts/hosts-hero-cover.png",
+  "scripts/audit-story-audio.mjs",
+  "docs/LA_PERIGALLA_AUDIO_AUDIT.md",
   "admin/formulario/index.html",
   "api/src/LeadForms.php",
   "docs/CYBERPAC_REDSYS_PERIGALLO_COM.md",
@@ -270,12 +272,15 @@ for (const asset of storyAssets) {
   if (!existsSync(join(root, asset.slice(1)))) throw new Error(`La Perigalla story asset is missing: ${asset}`);
 }
 const storyBundle = readFileSync(join(root, storyAssets.find((asset) => asset.endsWith(".js")).slice(1)), "utf8");
-for (const marker of ["Bienvenidos a", "La Perigalla 01", "v9-scenes", "final-celebration", "Quiero vivir la historia", "/entradas/checkout/?event=la-perigalla-01-ibicenca&quantity=1&ticketType=1"]) {
+for (const marker of ["Bienvenidos a", "La Perigalla 01", "v9-scenes", "final-celebration", "Quiero vivir la historia", "/entradas/checkout/?event=la-perigalla-01-ibicenca&quantity=1&ticketType=1", "story_transition_start", "story_transition_end", "20260807-03"]) {
   if (!storyBundle.includes(marker)) throw new Error(`La Perigalla story bundle is missing ${marker}.`);
 }
 const storyStyles = readFileSync(join(root, storyAssets.find((asset) => asset.endsWith(".css")).slice(1)), "utf8");
 if (!storyStyles.includes("hosts-hero-cover.png")) {
   throw new Error("La Perigalla story stylesheet is missing the approved cover image.");
+}
+for (const marker of ["scene-composition", "story-scene-exit", "story-content-enter", "story-act-matte"]) {
+  if (!storyStyles.includes(marker)) throw new Error(`La Perigalla story stylesheet is missing ${marker}.`);
 }
 if (storyBundle.includes('"/media/storytelling/perigalla-01')) {
   throw new Error("La Perigalla story bundle still contains an unscoped media URL.");
