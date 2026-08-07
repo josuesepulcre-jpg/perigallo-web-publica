@@ -7,6 +7,28 @@
   --ease-cinema: cubic-bezier(.22, 1, .36, 1);
 }
 
+/* The landing page has one direct entry into the story; the old teaser is no longer a second step. */
+.event-page .story-teaser,
+.event-page .hero-scroll { display: none; }
+.event-hero .hero-copy > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 42px;
+  min-width: 205px;
+  padding: 15px 18px;
+  border: 0;
+  color: var(--ink);
+  background: var(--cream);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+.event-hero .hero-copy > button:hover,
+.event-hero .hero-copy > button:focus-visible { color: var(--cream); background: var(--ink); outline: 1px solid var(--cream); outline-offset: 4px; }
+
 .story-player .scene-composition { overflow: hidden; }
 .story-player .scene-artwork { position: absolute; inset: 0; z-index: -3; overflow: hidden; }
 .story-player .scene-artwork-bleed,

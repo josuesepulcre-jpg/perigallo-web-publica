@@ -44,6 +44,8 @@ for (const marker of [
   ".story-player.is-starting .scene-composition.is-active",
   "story-v3-scene-exit",
   "story-frozen-transform",
+  ".event-page .story-teaser",
+  ".hero-copy > button",
 ]) {
   if (!motionCss.includes(marker)) throw new Error(`The visual motion stylesheet is missing ${marker}.`);
 }
@@ -59,8 +61,14 @@ for (const marker of [
   "getAnimations?.()",
   "fromTransform",
   "toMotionAge",
+  "Descubrir la historia",
+  "[i,a]=(0,l.useState)(e===`auto`)",
 ]) {
   if (!bundle.includes(marker)) throw new Error(`The story playback resilience check is missing ${marker}.`);
+}
+
+if (bundle.includes("Comenzar la experiencia") || bundle.includes("Ver cuento")) {
+  throw new Error("The La Perigalla entry flow still contains an intermediate story action.");
 }
 
 const audioAudit = JSON.parse(readFileSync(resolve(root, "reports/story-audio-audit.json"), "utf8"));
