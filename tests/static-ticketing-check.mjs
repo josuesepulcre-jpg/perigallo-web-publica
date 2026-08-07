@@ -58,6 +58,10 @@ const required = [
   "assets/vendor/jspdf.umd.min.js",
   "solicitud-evento/index.html",
   "formulario/index.html",
+  "la-perigalla-01/index.html",
+  "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-score.mp3",
+  "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/cover.mp3",
+  "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/final-celebration.mp3",
   "admin/formulario/index.html",
   "api/src/LeadForms.php",
   "docs/CYBERPAC_REDSYS_PERIGALLO_COM.md",
@@ -256,6 +260,20 @@ for (const marker of ["adminRequest", "data-start-test-payment", "submitPaymentF
 }
 for (const forbiddenMarker of ["Simular pago aceptado", "Simular pago rechazado", "Cancelar prueba", "initTestPayment", "data-test-payment"]) {
   if (publicJs.includes(forbiddenMarker)) throw new Error(`Legacy simulated payment marker is still public: ${forbiddenMarker}`);
+}
+
+const perigallaStoryPage = readFileSync(join(root, "la-perigalla-01/index.html"), "utf8");
+const storyAssets = Array.from(perigallaStoryPage.matchAll(/(?:src|href)="(\/la-perigalla-01\/assets\/[^\"]+)"/g), (match) => match[1]);
+if (storyAssets.length !== 2) throw new Error("La Perigalla story page must reference one JavaScript and one stylesheet asset.");
+for (const asset of storyAssets) {
+  if (!existsSync(join(root, asset.slice(1)))) throw new Error(`La Perigalla story asset is missing: ${asset}`);
+}
+const storyBundle = readFileSync(join(root, storyAssets.find((asset) => asset.endsWith(".js")).slice(1)), "utf8");
+for (const marker of ["Bienvenidos a", "La Perigalla 01", "v9-scenes", "final-celebration", "/formulario/"]) {
+  if (!storyBundle.includes(marker)) throw new Error(`La Perigalla story bundle is missing ${marker}.`);
+}
+if (storyBundle.includes('"/media/storytelling/perigalla-01')) {
+  throw new Error("La Perigalla story bundle still contains an unscoped media URL.");
 }
 if (existsSync(join(root, "entradas/pago/prueba/index.html"))) {
   throw new Error("Legacy simulated payment page must not be present.");
