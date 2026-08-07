@@ -54,6 +54,20 @@ for (const marker of [
   if (!motionCss.includes(marker)) throw new Error(`The visual motion stylesheet is missing ${marker}.`);
 }
 
+const mobileAudioGuard = readFileSync(resolve(root, "la-perigalla-01/assets/mobile-audio-recovery.js"), "utf8");
+for (const marker of [
+  "waitForPlayableNarration",
+  "needs-audio-recovery",
+  "NotAllowedError",
+  "story-audio-recovery",
+]) {
+  if (!mobileAudioGuard.includes(marker)) throw new Error(`The mobile narration guard is missing ${marker}.`);
+}
+
+if (!html.includes("mobile-audio-recovery.js")) {
+  throw new Error("The published story page does not load the mobile narration guard.");
+}
+
 for (const marker of [
   "dataset.storyScene",
   "preload:`auto`",

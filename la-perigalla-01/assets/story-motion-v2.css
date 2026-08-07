@@ -91,6 +91,28 @@
 .story-player .player-progress,
 .story-player .player-controls { z-index: 30; pointer-events: auto; }
 .story-player .player-controls { padding-bottom: max(15px, calc(env(safe-area-inset-bottom) + 10px)); }
+.story-audio-recovery {
+  display: none;
+  position: absolute;
+  z-index: 40;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(82px, calc(env(safe-area-inset-bottom) + 64px));
+  padding: 12px 16px;
+  border: 1px solid var(--cream);
+  color: var(--ink);
+  background: var(--cream);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.story-player.needs-audio-recovery .story-audio-recovery { display: inline-flex; }
+.story-player.is-audio-buffering .scene-marker::after {
+  content: " · preparando narración";
+  color: var(--cream);
+  font-size: 8px;
+  letter-spacing: .1em;
+}
 
 .story-player .scene-artwork-main img { animation-delay: var(--story-camera-delay, 0ms); }
 .story-player.is-starting .scene-composition.is-active:not(.is-outgoing) .scene-artwork-main { animation: story-v2-art-in var(--motion-enter) var(--ease-cinema) both; }
@@ -149,6 +171,7 @@
   .story-player .gastronomy-layer { inset-inline: max(14px, env(safe-area-inset-left)); bottom: max(70px, calc(env(safe-area-inset-bottom) + 56px)); }
   .story-player .gastronomy-layer .scene-gastronomy-bar { max-block-size: min(31dvh, 256px); }
   .story-player .dialogue-safe-area { max-block-size: 34dvh; }
+  .story-audio-recovery { right: max(14px, env(safe-area-inset-right)); bottom: max(72px, calc(env(safe-area-inset-bottom) + 56px)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
