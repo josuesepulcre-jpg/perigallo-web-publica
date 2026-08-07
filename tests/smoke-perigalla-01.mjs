@@ -46,6 +46,9 @@ for (const marker of [
   "story-frozen-transform",
   ".event-page .story-teaser",
   ".hero-copy > button",
+  "height: 64svh",
+  "min-height: 36svh",
+  "welcome image and its promise are one opening composition",
 ]) {
   if (!motionCss.includes(marker)) throw new Error(`The visual motion stylesheet is missing ${marker}.`);
 }

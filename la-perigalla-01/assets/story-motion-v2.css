@@ -10,6 +10,24 @@
 /* The landing page has one direct entry into the story; the old teaser is no longer a second step. */
 .event-page .story-teaser,
 .event-page .hero-scroll { display: none; }
+
+/* The welcome image and its promise are one opening composition, before the story begins. */
+.event-page .event-hero {
+  height: 64svh;
+  min-height: 500px;
+  max-height: none;
+  padding-block: clamp(92px, 12vh, 142px) clamp(52px, 7vh, 84px);
+}
+.event-page .promise {
+  min-height: 36svh;
+  padding: clamp(38px, 6vh, 66px) clamp(42px, 9.5vw, 184px);
+}
+.event-page .promise p {
+  max-width: 42ch;
+  font-size: clamp(32px, 3.2vw, 52px);
+  line-height: 1.04;
+}
+
 .event-hero .hero-copy > button {
   display: inline-flex;
   align-items: center;
@@ -28,6 +46,19 @@
 }
 .event-hero .hero-copy > button:hover,
 .event-hero .hero-copy > button:focus-visible { color: var(--cream); background: var(--ink); outline: 1px solid var(--cream); outline-offset: 4px; }
+
+@media (max-width: 800px) {
+  .event-page .event-hero {
+    height: auto;
+    min-height: 600px;
+    padding: 140px 22px 56px;
+  }
+  .event-page .promise {
+    min-height: 0;
+    padding: 54px 22px;
+  }
+  .event-page .promise p { max-width: 22ch; }
+}
 
 .story-player .scene-composition { overflow: hidden; }
 .story-player .scene-artwork { position: absolute; inset: 0; z-index: -3; overflow: hidden; }
