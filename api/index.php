@@ -23,7 +23,6 @@ $path = rtrim($path, '/') ?: '/';
 try {
     $mailer = new Mailer();
     $ticketing = new Ticketing(Database::pdo(), new Redsys(), $mailer);
-    $leadForms = new LeadForms(Database::pdo(), $mailer);
     $analytics = new Analytics(Database::pdo(), $mailer);
 
     if ($method === 'POST' && $path === '/analytics/events') {
@@ -72,6 +71,7 @@ try {
     }
 
     if ($method === 'GET' && $path === '/formulario/settings') {
+        $leadForms = new LeadForms(Database::pdo(), $mailer);
         json_response(['ok' => true, 'settings' => $leadForms->publicSettings()]);
         return;
     }
@@ -81,6 +81,7 @@ try {
             json_response(['ok' => false, 'error' => 'La solicitud es demasiado extensa. Reduce el contenido e inténtalo de nuevo.'], 413);
             return;
         }
+        $leadForms = new LeadForms(Database::pdo(), $mailer);
         json_response(['ok' => true, 'request' => $leadForms->submit(read_json_body(), client_ip())], 201);
         return;
     }
@@ -258,24 +259,28 @@ try {
 
     if ($method === 'GET' && $path === '/admin/formulario/settings') {
         AdminAuth::require();
+        $leadForms = new LeadForms(Database::pdo(), $mailer);
         json_response(['ok' => true, 'settings' => $leadForms->adminSettings()]);
         return;
     }
 
     if ($method === 'PUT' && $path === '/admin/formulario/settings') {
         AdminAuth::requireCsrf();
+        $leadForms = new LeadForms(Database::pdo(), $mailer);
         json_response(['ok' => true, 'settings' => $leadForms->saveSettings(read_json_body())]);
         return;
     }
 
     if ($method === 'GET' && $path === '/admin/formulario/solicitudes') {
         AdminAuth::require();
+        $leadForms = new LeadForms(Database::pdo(), $mailer);
         json_response(['ok' => true, 'requests' => $leadForms->adminRequests($_GET)]);
         return;
     }
 
     if ($method === 'GET' && preg_match('#^/admin/formulario/solicitudes/([0-9]+)$#', $path, $m)) {
         AdminAuth::require();
+        $leadForms = new LeadForms(Database::pdo(), $mailer);
         json_response(['ok' => true, 'request' => $leadForms->adminRequest((int) $m[1]));
         return;
     }
@@ -283,6 +288,7 @@ try {
     if ($method === 'PUT' && preg_match('#^/admin/formulario/solicitudes/([0-9]+)/estado$#', $path, $m)) {
         AdminAuth::requireCsrf();
         $data = read_json_body();
+        $leadForms = new LeadForms(Database::pdo(), $mailer);
         json_response(['ok' => true, 'request' => $leadForms->updateStatus((int) $m[1], (string) ($data['status'] ?? ''))]);
         return;
     }
