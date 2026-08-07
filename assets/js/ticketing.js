@@ -671,6 +671,8 @@
     var applyDiscount = form.querySelector("[data-apply-discount]");
     var clearDiscountButton = form.querySelector("[data-clear-discount]");
     var discountStatus = form.querySelector("[data-discount-status]");
+    var accessConditionsSection = form.querySelector("[data-checkout-access-conditions]");
+    var accessConditionsStatus = form.querySelector("[data-checkout-access-conditions-status]");
     var attendeesSection = form.querySelector("[data-checkout-attendees-section]");
     var attendeesBox = form.querySelector("[data-checkout-attendees]");
     var attendeeProgress = form.querySelector("[data-checkout-attendee-progress]");
@@ -792,7 +794,7 @@
       input.addEventListener("change", refreshCheckout);
       input.addEventListener("blur", function () { updateCheckoutField(input, true); refreshCheckout(); });
     });
-    form.querySelectorAll(".checkout-check input").forEach(function (input) { input.addEventListener("change", refreshCheckout); });
+    form.querySelectorAll(".checkout-check input, .checkout-access-check input").forEach(function (input) { input.addEventListener("change", refreshCheckout); });
     if (paymentMethodsBox) paymentMethodsBox.addEventListener("change", refreshCheckout);
     if (discountInput) discountInput.addEventListener("input", function () {
       if (appliedDiscount && String(appliedDiscount.code || "").toUpperCase() !== discountInput.value.trim().toUpperCase()) clearDiscount("El código ha cambiado. Aplícalo de nuevo para actualizar el total.");
@@ -965,6 +967,29 @@
       });
     }
 
+    function accessConditionsAccepted() {
+      return !!(form.age_requirement_accepted && form.age_requirement_accepted.checked && form.dress_code_accepted && form.dress_code_accepted.checked);
+    }
+
+    function refreshAccessConditions() {
+      if (!accessConditionsSection) return;
+      var accepted = accessConditionsAccepted();
+      accessConditionsSection.classList.toggle("is-complete", accepted);
+      if (accepted) accessConditionsSection.classList.remove("has-error");
+      if (accessConditionsStatus) accessConditionsStatus.textContent = accepted ? "✓ Condiciones de acceso aceptadas" : "";
+    }
+
+    function focusInvalidCheckoutStep(validation) {
+      if (!validation || !validation.focus) return;
+      var target = validation.focus;
+      var section = target.closest(".checkout-section, .checkout-legal");
+      if (section) {
+        section.classList.add("has-error");
+        section.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      window.setTimeout(function () { target.focus({ preventScroll: true }); }, 240);
+    }
+
     function refreshCheckout() {
       var inputs = Array.from(form.querySelectorAll("[data-ticket-type]"));
       var selected = selectedTicketInputs();
@@ -987,6 +1012,7 @@
         }
       });
       syncAttendees();
+      refreshAccessConditions();
       var subtotal = selected.reduce(function (sum, input) { return sum + Number(input.value || 0) * Number(input.dataset.ticketPrice || 0); }, 0);
       if (appliedDiscount && discountFingerprint !== selectionFingerprint()) {
         appliedDiscount = null;
@@ -1019,6 +1045,7 @@
       if (!validation.valid || isSubmitting) {
         form.querySelectorAll(".checkout-field input").forEach(function (input) { updateCheckoutField(input, true); });
         status.textContent = validation.message;
+        focusInvalidCheckoutStep(validation);
         return;
       }
       var payload = {
@@ -1027,6 +1054,8 @@
         last_name: form.last_name.value,
         email: form.email.value,
         phone: form.phone.value,
+        age_requirement_accepted: form.age_requirement_accepted.checked,
+        dress_code_accepted: form.dress_code_accepted.checked,
         privacy_accepted: form.privacy_accepted.checked,
         terms_accepted: form.terms_accepted.checked,
         payment_method: selectedPaymentMethod(),
@@ -1136,6 +1165,8 @@
     if (!selected.length) return { valid: false, message: "Selecciona al menos una entrada para continuar." };
     var requiredFields = [form.first_name, form.last_name, form.email, form.phone];
     if (requiredFields.some(function (input) { return !checkoutFieldValid(input); })) return { valid: false, message: "Completa los datos obligatorios para continuar." };
+    if (!form.age_requirement_accepted.checked) return { valid: false, message: "Confirma que eres mayor de 18 años.", focus: form.age_requirement_accepted };
+    if (!form.dress_code_accepted.checked) return { valid: false, message: "Debes aceptar el código de vestimenta Total White para continuar.", focus: form.dress_code_accepted };
     attendees = Array.isArray(attendees) ? attendees : [];
     if (attendees.length !== selected.reduce(function (total, input) { return total + Number(input.value || 0); }, 0)) return { valid: false, message: "Completa la información de alergias de cada asistente para continuar." };
     for (var index = 0; index < attendees.length; index++) {

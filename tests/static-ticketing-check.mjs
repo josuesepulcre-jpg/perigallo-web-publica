@@ -26,6 +26,7 @@ const required = [
   "database/migrations/014_reference_ticket_price.sql",
   "database/migrations/016_first_party_analytics.sql",
   "database/migrations/017_ticket_attendee_allergies.sql",
+  "database/migrations/018_order_access_conditions.sql",
   "api/scripts/apply-migration.php",
   "api/src/Analytics.php",
   "api/cron/analytics-report.php",
@@ -347,7 +348,7 @@ const envExample = readFileSync(join(root, ".env.example"), "utf8");
 if (!envExample.includes("REDSYS_BIZUM_ENABLED=false")) throw new Error("Bizum feature flag is missing from .env.example.");
 
 const checkout = readFileSync(join(root, "entradas/checkout/index.html"), "utf8");
-for (const marker of ["data-checkout-eyebrow", "data-checkout-title", "data-checkout-safety-copy", "data-checkout-summary", "data-checkout-submit", "checkout.css", "data-checkout-attendees", "Alergias de los asistentes"]) {
+for (const marker of ["data-checkout-eyebrow", "data-checkout-title", "data-checkout-safety-copy", "data-checkout-summary", "data-checkout-submit", "checkout.css", "data-checkout-attendees", "Alergias de los asistentes", "data-checkout-access-conditions", "Condiciones de acceso", "Total White"]) {
   if (!checkout.includes(marker)) throw new Error(`Missing preview-aware checkout marker: ${marker}`);
 }
 for (const marker of ["data-payment-methods", "payment_method", "Método de pago"]) {
@@ -368,6 +369,10 @@ for (const marker of ["FOOD_ALLERGENS", "attendeesPayload", "normaliseAttendees"
 const attendeeMigration = readFileSync(join(root, "database/migrations/017_ticket_attendee_allergies.sql"), "utf8");
 for (const marker of ["ticket_attendees", "ticket_attendee_allergens", "allergy_notes", "severe_allergy", "fk_ticket_attendees_ticket"]) {
   if (!attendeeMigration.includes(marker)) throw new Error(`Attendee allergy migration is missing ${marker}.`);
+}
+const accessConditionsMigration = readFileSync(join(root, "database/migrations/018_order_access_conditions.sql"), "utf8");
+for (const marker of ["age_requirement_accepted", "age_requirement_accepted_at", "dress_code_accepted", "dress_code_accepted_at", "dress_code_version"]) {
+  if (!accessConditionsMigration.includes(marker) || !ticketing.includes(marker)) throw new Error(`Access conditions persistence is missing ${marker}.`);
 }
 const discountsAdmin = readFileSync(join(root, "admin/descuentos/index.html"), "utf8");
 for (const marker of ["data-admin-discounts-page", "data-admin-discount-form", "maximum_uses_per_customer", "per_ticket"]) {

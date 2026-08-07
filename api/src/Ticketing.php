@@ -28,6 +28,7 @@ final class Ticketing
         'lupin' => 'Altramuces',
         'molluscs' => 'Moluscos',
     ];
+    private const DRESS_CODE_VERSION = 'total-white-v1';
 
     public function __construct(
         private PDO $pdo,
@@ -128,6 +129,12 @@ final class Ticketing
         if (empty($data['privacy_accepted']) || empty($data['terms_accepted'])) {
             throw new RuntimeException('Debes aceptar privacidad y condiciones de compra.');
         }
+        if (empty($data['age_requirement_accepted'])) {
+            throw new RuntimeException('Confirma que eres mayor de 18 años.');
+        }
+        if (empty($data['dress_code_accepted'])) {
+            throw new RuntimeException('Debes aceptar el código de vestimenta Total White para continuar.');
+        }
         if (!is_array($data['items']) || count($data['items']) === 0) {
             throw new RuntimeException('Selecciona al menos una entrada.');
         }
@@ -143,8 +150,8 @@ final class Ticketing
 
             $orderStmt = $this->pdo->prepare(
                 'INSERT INTO ticket_orders
-                 (public_token, redsys_order, first_name, last_name, name, email, phone, subtotal_cents, total_cents, currency, status, reservation_expires_at, ip_address, user_agent, created_at, updated_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, "pending", ?, ?, ?, NOW(), NOW())'
+                 (public_token, redsys_order, first_name, last_name, name, email, phone, age_requirement_accepted, age_requirement_accepted_at, dress_code_accepted, dress_code_accepted_at, dress_code_version, subtotal_cents, total_cents, currency, status, reservation_expires_at, ip_address, user_agent, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW(), 1, NOW(), ?, 0, 0, ?, "pending", ?, ?, ?, NOW(), NOW())'
             );
             $firstName = clean_string((string) $data['first_name'], 120);
             $lastName = clean_string((string) $data['last_name'], 160);
@@ -159,6 +166,7 @@ final class Ticketing
                 $name,
                 $email,
                 $phone,
+                self::DRESS_CODE_VERSION,
                 env_value('REDSYS_CURRENCY', '978'),
                 $expires,
                 client_ip(),
@@ -530,6 +538,9 @@ final class Ticketing
         if (empty($data['privacy_accepted']) || empty($data['terms_accepted']) || !is_array($data['items'])) {
             throw new RuntimeException('Completa los datos y acepta las condiciones para continuar.');
         }
+        if (empty($data['age_requirement_accepted']) || empty($data['dress_code_accepted'])) {
+            throw new RuntimeException('Confirma las condiciones de acceso para continuar.');
+        }
         $event = $this->requireAdminEvent($eventId);
         $paymentMethod = $this->redsys->paymentMethod((string) ($data['payment_method'] ?? 'card'));
         $testSession = substr(preg_replace('/[^A-Za-z0-9_-]/', '', (string) ($data['test_session_id'] ?? '')) ?: public_token(18), 0, 96);
@@ -561,10 +572,10 @@ final class Ticketing
             $expires = (new DateTimeImmutable('now'))->add(new DateInterval('PT30M'))->format('Y-m-d H:i:s');
             $orderStmt = $this->pdo->prepare(
                 'INSERT INTO ticket_orders
-                 (public_token, redsys_order, first_name, last_name, name, email, phone, subtotal_cents, total_cents, currency, status, reservation_expires_at, ip_address, user_agent, is_test, environment, order_status, payment_status, delivery_status, test_session_id, created_at, updated_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, "payment_processing", ?, ?, ?, 1, "sandbox", "pending_payment", "pending", "pending", ?, NOW(), NOW())'
+                 (public_token, redsys_order, first_name, last_name, name, email, phone, age_requirement_accepted, age_requirement_accepted_at, dress_code_accepted, dress_code_accepted_at, dress_code_version, subtotal_cents, total_cents, currency, status, reservation_expires_at, ip_address, user_agent, is_test, environment, order_status, payment_status, delivery_status, test_session_id, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW(), 1, NOW(), ?, 0, 0, ?, "payment_processing", ?, ?, ?, 1, "sandbox", "pending_payment", "pending", "pending", ?, NOW(), NOW())'
             );
-            $orderStmt->execute([$publicToken, $redsysOrder, $firstName, $lastName, $name, $email, $phone, env_value('REDSYS_CURRENCY', '978'), $expires, client_ip(), substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255), $testSession]);
+            $orderStmt->execute([$publicToken, $redsysOrder, $firstName, $lastName, $name, $email, $phone, self::DRESS_CODE_VERSION, env_value('REDSYS_CURRENCY', '978'), $expires, client_ip(), substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255), $testSession]);
             $orderId = (int) $this->pdo->lastInsertId();
             $reference = 'TEST-PG' . str_pad((string) $eventId, 2, '0', STR_PAD_LEFT) . '-' . str_pad((string) $orderId, 6, '0', STR_PAD_LEFT);
             $this->pdo->prepare('UPDATE ticket_orders SET test_reference = ? WHERE id = ?')->execute([$reference, $orderId]);

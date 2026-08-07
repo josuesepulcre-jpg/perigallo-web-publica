@@ -9,7 +9,7 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/css/ticketing.css?v=20260804-ticket-pdf-v6">
-  <link rel="stylesheet" href="/assets/css/checkout.css?v=20260807-attendees-v1">
+  <link rel="stylesheet" href="/assets/css/checkout.css?v=20260807-access-conditions-v1">
 </head>
 <body class="ticketing-page">
   <header class="ticketing-nav">
@@ -45,13 +45,32 @@
                   <div class="checkout-field"><label for="phone">Teléfono o WhatsApp</label><input id="phone" name="phone" autocomplete="tel" inputmode="tel" required aria-describedby="phone_error"><small id="phone_error" class="checkout-field-error"></small></div>
                 </div>
               </section>
+              <section class="checkout-section checkout-access-conditions" data-checkout-access-conditions aria-labelledby="checkout-access-conditions-title">
+                <div class="checkout-section-head"><span class="ticket-eyebrow">03 · Condiciones de acceso</span><h2 id="checkout-access-conditions-title">Condiciones de acceso</h2><p>Antes de continuar, necesitamos que confirmes las condiciones esenciales de acceso a esta experiencia.</p></div>
+                <div class="checkout-access-condition-list">
+                  <article class="checkout-access-condition">
+                    <span class="ticket-eyebrow">+18 · Acceso exclusivo para adultos</span>
+                    <p>Declaro que soy mayor de 18 años y que cumplo el requisito de edad establecido para acceder a la experiencia.</p>
+                    <label class="checkout-access-check"><input id="age_requirement_accepted" type="checkbox" name="age_requirement_accepted" required><span class="checkout-access-check-mark" aria-hidden="true"></span><span>He leído y confirmo que soy mayor de 18 años.</span></label>
+                  </article>
+                  <article class="checkout-access-condition checkout-dress-code-condition">
+                    <span class="ticket-eyebrow">Total White · Código de vestimenta obligatorio</span>
+                    <p>La experiencia requiere vestimenta íntegramente blanca.</p>
+                    <ul class="checkout-dress-code-list" aria-label="Condiciones Total White"><li>Total White</li><li>Vestimenta completamente blanca</li><li>Condición obligatoria de acceso</li></ul>
+                    <p class="checkout-access-warning">El cumplimiento del código de vestimenta es una condición de acceso. Si el día del evento no se respeta el protocolo Total White, podrá denegarse el acceso.</p>
+                    <label class="checkout-access-check"><input id="dress_code_accepted" type="checkbox" name="dress_code_accepted" required><span class="checkout-access-check-mark" aria-hidden="true"></span><span>He leído, comprendo y acepto el código de vestimenta Total White y las condiciones de acceso.</span></label>
+                  </article>
+                </div>
+                <p class="checkout-access-conditions-status" data-checkout-access-conditions-status aria-live="polite"></p>
+                <p class="checkout-access-all-attendees">Estas condiciones son obligatorias para todas las personas incluidas en la reserva.</p>
+              </section>
               <section class="checkout-section checkout-attendees" data-checkout-attendees-section hidden aria-labelledby="checkout-attendees-title">
-                <div class="checkout-section-head"><span class="ticket-eyebrow">03 · Alergias</span><h2 id="checkout-attendees-title">Alergias de los asistentes</h2><p>Indícanos únicamente alergias o intolerancias alimentarias relevantes que debamos conocer por seguridad.</p><small class="checkout-attendees-note">Intentaremos tenerlas en cuenta siempre que sea posible, aunque la experiencia no permite adaptar individualmente todo el recorrido gastronómico. Si algún plato contiene un alérgeno que no pueda consumir, deberá evitar su consumo.</small></div>
+                <div class="checkout-section-head"><span class="ticket-eyebrow">04 · Alergias</span><h2 id="checkout-attendees-title">Alergias de los asistentes</h2><p>Indícanos únicamente alergias o intolerancias alimentarias relevantes que debamos conocer por seguridad.</p><small class="checkout-attendees-note">Intentaremos tenerlas en cuenta siempre que sea posible, aunque la experiencia no permite adaptar individualmente todo el recorrido gastronómico. Si algún plato contiene un alérgeno que no pueda consumir, deberá evitar su consumo.</small></div>
                 <div class="checkout-attendee-progress" data-checkout-attendee-progress aria-live="polite"></div>
                 <div class="checkout-attendees-list" data-checkout-attendees></div>
               </section>
               <section class="checkout-section checkout-discount" data-checkout-discount-section>
-                <div class="checkout-section-head"><span class="ticket-eyebrow">04 · Código de descuento</span><h2>¿Tienes un código?</h2><p>Introdúcelo y comprobaremos las condiciones antes de aplicar el descuento.</p></div>
+                <div class="checkout-section-head"><span class="ticket-eyebrow">05 · Código de descuento</span><h2>¿Tienes un código?</h2><p>Introdúcelo y comprobaremos las condiciones antes de aplicar el descuento.</p></div>
                 <div class="checkout-discount-form">
                   <label class="checkout-field" for="discount_code"><span>Código de descuento</span><input id="discount_code" name="discount_code" autocomplete="off" autocapitalize="characters" placeholder="EJ. BIENVENIDA10"></label>
                   <button class="ticket-btn" type="button" data-apply-discount>Aplicar código</button>
@@ -60,11 +79,11 @@
                 <p class="checkout-discount-status" data-discount-status aria-live="polite"></p>
               </section>
               <section class="checkout-section checkout-payment-method" data-payment-method-section hidden aria-labelledby="checkout-payment-method-title">
-                <div class="checkout-section-head"><span class="ticket-eyebrow">05 · Método de pago</span><h2 id="checkout-payment-method-title">Elige cómo pagar</h2><p>Completarás el pago en la pasarela segura de Redsys.</p></div>
+                <div class="checkout-section-head"><span class="ticket-eyebrow">06 · Método de pago</span><h2 id="checkout-payment-method-title">Elige cómo pagar</h2><p>Completarás el pago en la pasarela segura de Redsys.</p></div>
                 <div class="checkout-payment-methods" data-payment-methods aria-live="polite"></div>
               </section>
               <section class="checkout-legal" aria-labelledby="checkout-legal-title">
-                <div class="checkout-section-head"><span class="ticket-eyebrow">06 · Condiciones</span><h2 id="checkout-legal-title">Antes de continuar</h2><p>Revisa y acepta las condiciones necesarias para completar la reserva.</p></div>
+                <div class="checkout-section-head"><span class="ticket-eyebrow">07 · Condiciones</span><h2 id="checkout-legal-title">Antes de continuar</h2><p>Revisa y acepta las condiciones necesarias para completar la reserva.</p></div>
                 <label class="checkout-check"><input id="privacy_accepted" type="checkbox" name="privacy_accepted" required><span class="checkout-check-mark" aria-hidden="true"></span><span>He leído y acepto la <a href="/politica-privacidad/" target="_blank" rel="noopener noreferrer">Política de privacidad</a>.</span></label>
                 <label class="checkout-check"><input id="terms_accepted" type="checkbox" name="terms_accepted" required><span class="checkout-check-mark" aria-hidden="true"></span><span>He leído y acepto las <a href="/condiciones/" target="_blank" rel="noopener noreferrer">Condiciones de compra, cancelación y acceso</a>.</span></label>
               </section>
@@ -82,6 +101,6 @@
       </div>
     </section>
   </main>
-  <script src="/assets/js/ticketing.js?v=20260807-attendees-v1" defer></script>
+  <script src="/assets/js/ticketing.js?v=20260807-access-conditions-v1" defer></script>
 </body>
 </html>
