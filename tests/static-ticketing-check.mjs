@@ -267,7 +267,7 @@ if (incompleteFaq.rows.length !== 2 || incompleteFaq.invalidLines.join(",") !== 
 }
 
 const publicJs = readFileSync(join(root, "assets/js/ticketing.js"), "utf8");
-for (const marker of ["Información de la experiencia", "Código de vestimenta", "event.contact_info", "experienceInformation", "experienceDesktopGuide", "initExperienceAccordions", "aria-expanded", "eventMetadata", "event-story-editorial", "Probar recorrido de compra", "Comprar entradas", "ticketPurchaseAction", "ticket-access-secondary", "event-hero-introduction", "event-hero-facts", "renderCheckoutPreview", "Modo de pruebas", "checkoutTicketMarkup", "data-quantity-action", "data-event-quantity-action", "renderCheckoutSummary", "storyCtaUrl", "storyCtaLabel", "Descubrir la historia"]) {
+for (const marker of ["Información de la experiencia", "Código de vestimenta", "event.contact_info", "experienceInformation", "experienceDesktopGuide", "initExperienceAccordions", "aria-expanded", "eventMetadata", "event-story-editorial", "Probar recorrido de compra", "Comprar entradas", "ticketPurchaseAction", "ticket-access-secondary", "event-hero-introduction", "event-hero-facts", "renderCheckoutPreview", "Modo de pruebas", "checkoutTicketMarkup", "data-quantity-action", "data-event-quantity-action", "renderCheckoutSummary", "storyCtaUrl", "storyCtaLabel", "Descubrir la historia", "event-card-primary-link", "https://perigallo.com/la-perigalla-01/", "data-analytics-click=\"descubrir-historia\""]) {
   if (!publicJs.includes(marker)) throw new Error(`Missing public information rendering: ${marker}`);
 }
 for (const marker of ["dressCodeNotice", "perigallaDressCodeFact", "Código de vestimenta obligatorio", "Es obligatorio acudir vestido íntegramente de blanco", "No se permitirá el acceso"]) {

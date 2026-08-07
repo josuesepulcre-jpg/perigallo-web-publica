@@ -106,6 +106,9 @@
 
   function eventCard(event) {
     var href = "/experiencias/" + encodeURIComponent(event.slug) + "/";
+    var isPerigalla01 = /la\s+perigalla\s*0?1/i.test(String(event.title || ""));
+    var storyHref = isPerigalla01 ? "https://perigallo.com/la-perigalla-01/" : href;
+    var storyLabel = isPerigalla01 ? "Descubrir la historia" : "Descubrir la experiencia";
     var salePrice = Number(event.price_from_cents || 0);
     var reference = referencePrice(event.reference_price_from_cents, salePrice, true);
     var eventPrice = event.show_price_from !== false && salePrice
@@ -113,8 +116,8 @@
       : '<strong>Precio por anunciar</strong>';
     return [
       '<article class="event-card">',
-      '<a class="event-card-shell" data-analytics-click="ver-experiencia" aria-label="Descubrir y comprar entradas para ' + escapeHtml(event.title) + '" href="' + href + '">',
-      '<div class="event-card-media" style="background-image:url(' + escapeAttr(event.card_image_url || event.image_url || "/assets/images/finca-la-llaguna-principal.jpg") + ')"></div>',
+      '<div class="event-card-shell">',
+      '<a class="event-card-media event-card-primary-link" data-analytics-click="ver-experiencia" aria-label="Ver entradas para ' + escapeHtml(event.title) + '" href="' + href + '" style="background-image:url(' + escapeAttr(event.card_image_url || event.image_url || "/assets/images/finca-la-llaguna-principal.jpg") + ')"></a>',
       '<div class="event-card-body">',
       '<span class="ticket-eyebrow">' + escapeHtml(event.location || "Perigallo") + '</span>',
       '<h3>' + escapeHtml(event.title) + '</h3>',
@@ -122,10 +125,10 @@
       '<span class="event-card-divider" aria-hidden="true"></span>',
       '<span class="event-availability">Plazas limitadas</span>',
       '<span class="event-price">' + eventPrice + '</span>',
-      '<span class="ticket-btn primary event-card-action">Comprar entradas <b aria-hidden="true">→</b></span>',
-      '<span class="event-card-discover">Descubrir la experiencia <b aria-hidden="true">→</b></span>',
+      '<a class="ticket-btn primary event-card-action" data-analytics-click="comprar-entradas" href="' + href + '">Comprar entradas <b aria-hidden="true">→</b></a>',
+      '<a class="event-card-discover" data-analytics-click="descubrir-historia" href="' + escapeAttr(storyHref) + '">' + escapeHtml(storyLabel) + ' <b aria-hidden="true">→</b></a>',
       '</div>',
-      '</a>',
+      '</div>',
       '</article>'
     ].join("");
   }
