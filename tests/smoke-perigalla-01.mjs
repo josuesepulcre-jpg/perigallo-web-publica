@@ -22,6 +22,27 @@ if (!bundle.includes("(orientation: portrait) and (max-width: 1100px)")) {
   throw new Error("The story bundle is missing its portrait-art direction media query.");
 }
 
+for (const marker of [
+  "function posterForScene",
+  "getSceneGastronomy(c)&&Q(`dismissing`)",
+  "!i||w||!getSceneGastronomy(A)",
+  "gastronomy-layer phase-",
+  "is-starting",
+]) {
+  if (!bundle.includes(marker)) throw new Error(`The story visual motor is missing ${marker}.`);
+}
+
+const motionCss = readFileSync(resolve(root, "la-perigalla-01/assets/story-motion-v2.css"), "utf8");
+for (const marker of [
+  "env(safe-area-inset-top)",
+  "object-fit: contain",
+  "phase-revealing",
+  "story-v2-gastro-out",
+  "prefers-reduced-motion",
+]) {
+  if (!motionCss.includes(marker)) throw new Error(`The visual motion stylesheet is missing ${marker}.`);
+}
+
 for (let scene = 0; scene <= 21; scene += 1) {
   const file = resolve(
     root,
