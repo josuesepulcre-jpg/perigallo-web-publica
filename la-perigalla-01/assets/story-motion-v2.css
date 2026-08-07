@@ -18,12 +18,18 @@
   max-height: none;
   padding-block: clamp(92px, 12vh, 142px) clamp(52px, 7vh, 84px);
 }
+
+/* On wide screens, keep the hosts' faces within the opening frame and crop from below. */
+@media (min-width: 801px) {
+  .event-page .hero-hosts { background-position: 50% 0%; }
+}
+
 .event-page .promise {
   min-height: 36svh;
   padding: clamp(38px, 6vh, 66px) clamp(42px, 9.5vw, 184px);
 }
 .event-page .promise p {
-  max-width: 42ch;
+  max-width: 36ch;
   font-size: clamp(32px, 3.2vw, 52px);
   line-height: 1.04;
 }

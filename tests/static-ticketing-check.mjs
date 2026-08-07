@@ -301,6 +301,9 @@ const storyStyles = storyStylesheetAssets.map((asset) => readFileSync(join(root,
 if (!storyStyles.includes("hosts-hero-cover.png")) {
   throw new Error("La Perigalla story stylesheet is missing the approved cover image.");
 }
+if (!storyStyles.includes("background-position: 50% 0%")) {
+  throw new Error("La Perigalla desktop hero must preserve the hosts' faces.");
+}
 for (const marker of ["scene-composition", "story-scene-exit", "story-content-enter", "story-act-matte"]) {
   if (!storyStyles.includes(marker)) throw new Error(`La Perigalla story stylesheet is missing ${marker}.`);
 }
