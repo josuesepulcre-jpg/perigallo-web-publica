@@ -35,7 +35,10 @@
 .story-player.is-starting .scene-composition.is-active:not(.is-outgoing) .dialogue-bubbles { animation: story-v2-copy-in 460ms 270ms var(--ease-cinema) both; }
 .story-player .scene-composition.is-outgoing .scene-copy,
 .story-player .scene-composition.is-outgoing .dialogue-safe-area { animation: story-v2-copy-out 220ms ease both; }
-.story-player .scene-composition.is-outgoing .scene-artwork-main { animation: story-v2-art-out var(--motion-scene) var(--ease-cinema) both; }
+.story-player .scene-composition.is-outgoing .scene-artwork-main { animation: none; }
+.story-player.is-transitioning .scene-composition.is-outgoing { animation: story-v3-scene-exit var(--story-transition) var(--ease-cinema) both; }
+.story-player.is-transitioning .scene-composition.is-active { animation: story-v3-scene-enter var(--story-transition) var(--ease-cinema) both; }
+.story-player .scene-composition.is-outgoing .scene-artwork-main img { animation: none !important; transform: var(--story-frozen-transform, none); }
 
 .story-player .gastronomy-layer { position: absolute; z-index: 9; inset: auto max(20px, env(safe-area-inset-right)) max(76px, calc(env(safe-area-inset-bottom) + 58px)) max(20px, env(safe-area-inset-left)); pointer-events: none; }
 .story-player .gastronomy-layer > * { pointer-events: auto; }
@@ -62,6 +65,8 @@
 
 @keyframes story-v2-art-in { from { opacity: .25; transform: scale(1.012); } to { opacity: 1; transform: scale(1); } }
 @keyframes story-v2-art-out { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(1.008); } }
+@keyframes story-v3-scene-exit { from { opacity: 1; filter: brightness(1); } to { opacity: 0; filter: brightness(.93); } }
+@keyframes story-v3-scene-enter { from { opacity: 0; filter: brightness(.93); } to { opacity: 1; filter: brightness(1); } }
 @keyframes story-v2-copy-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes story-v2-copy-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-8px); } }
 @keyframes story-v2-marker-in { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }

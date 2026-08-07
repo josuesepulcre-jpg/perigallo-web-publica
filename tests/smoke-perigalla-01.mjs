@@ -42,6 +42,8 @@ for (const marker of [
   "z-index: 30",
   "story-camera-delay",
   ".story-player.is-starting .scene-composition.is-active",
+  "story-v3-scene-exit",
+  "story-frozen-transform",
 ]) {
   if (!motionCss.includes(marker)) throw new Error(`The visual motion stylesheet is missing ${marker}.`);
 }
@@ -55,6 +57,8 @@ for (const marker of [
   "fromMotionAge",
   "story-camera-delay",
   "getAnimations?.()",
+  "fromTransform",
+  "toMotionAge",
 ]) {
   if (!bundle.includes(marker)) throw new Error(`The story playback resilience check is missing ${marker}.`);
 }
