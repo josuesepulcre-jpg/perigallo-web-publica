@@ -11,6 +11,11 @@
 .event-page .story-teaser,
 .event-page .hero-scroll { display: none; }
 
+/* Keep the welcome portrait aligned with the refined right-side facial detail. */
+.event-page .hero-hosts {
+  background-image: url("/la-perigalla-01/media/storytelling/perigalla-01/hosts/hosts-hero-v6-right-face-refined.png");
+}
+
 /* The welcome image and its promise are one opening composition, before the story begins. */
 .event-page .event-hero {
   height: 64svh;

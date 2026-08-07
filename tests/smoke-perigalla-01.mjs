@@ -49,6 +49,7 @@ for (const marker of [
   "height: 64svh",
   "min-height: 36svh",
   "welcome image and its promise are one opening composition",
+  "hosts-hero-v6-right-face-refined.png",
 ]) {
   if (!motionCss.includes(marker)) throw new Error(`The visual motion stylesheet is missing ${marker}.`);
 }
