@@ -281,7 +281,7 @@ try {
     if ($method === 'GET' && preg_match('#^/admin/formulario/solicitudes/([0-9]+)$#', $path, $m)) {
         AdminAuth::require();
         $leadForms = new LeadForms(Database::pdo(), $mailer);
-        json_response(['ok' => true, 'request' => $leadForms->adminRequest((int) $m[1]));
+        json_response(['ok' => true, 'request' => $leadForms->adminRequest((int) $m[1])]);
         return;
     }
 
