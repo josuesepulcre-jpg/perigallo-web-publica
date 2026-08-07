@@ -1,0 +1,105 @@
+{
+  "generatedAt": "2026-08-07T21:22:55.817Z",
+  "purpose": "Expected script baseline only; this file is not an ASR transcript.",
+  "source": {
+    "suppliedArtifact": "user-supplied source archive",
+    "sourceFile": "lib/perigalla-story.ts",
+    "sha256": "a887a1b749a0460da1a7d42f8731931f8494af8da1ab53e98308974077c08303",
+    "versionControlledInThisRepository": false
+  },
+  "sceneCount": 23,
+  "scenes": [
+    {
+      "sceneId": "cover",
+      "narration": "Hay lugares que se visitan una vez…\n\nY hay lugares que, después de marcharnos, se quedan esperando nuestro regreso."
+    },
+    {
+      "sceneId": "arrival",
+      "narration": "Sofía y Carlos llegaron a Ibiza por separado.\n\nEran dos viajes. Dos itinerarios. Dos vidas que todavía no tenían ningún motivo para encontrarse.\n\nO, al menos, eso creían ellos.\n\nPorque, antes de que llegaran a verse, fue la isla quien los recibió."
+    },
+    {
+      "sceneId": "market",
+      "narration": "Los reunió entre los puestos de un mercado, en mitad del ruido, de los aromas y de las conversaciones que se cruzaban en el aire.\n\nSe miraron.\n\nSolo un instante.\n\nNo se conocían. No llegaron a hablarse. Ni siquiera sabían sus nombres.\n\nPero algunas historias comienzan mucho antes de que sus protagonistas sepan que ya forman parte de ellas.\n\nCarlos se marchó del mercado con la sensación de haber dejado allí algo que todavía no sabía nombrar. Intentó encontrarla. Buscó entre lugares, fotografías y recuerdos. Volvió mentalmente sobre cada detalle: su mirada, su sonrisa, aquel gesto escogiendo la fruta entre los puestos.\n\nY cuando ya parecía que aquella coincidencia iba a quedarse únicamente en eso —en una coincidencia—, decidió buscarla donde a veces aparecen las personas que todavía no sabemos que estamos buscando.\n\nEntró en Tinder. Deslizó un perfil. Después otro. Y otro más.\n\nHasta que, de pronto, apareció ella.\n\nSofía.\n\nCarlos deslizó hacia la derecha.\n\nY esperó."
+    },
+    {
+      "sceneId": "message",
+      "narration": "Entonces llegó el match.\n\nAquella mirada fugaz en el mercado se convirtió, esa misma noche, en un mensaje.\n\nY funcionó.\n\nPorque hay conversaciones que empiezan con una gran declaración…\n\nY otras, sencillamente, con un melón."
+    },
+    {
+      "sceneId": "beach",
+      "narration": "Carlos le propuso dar un paseo.\n\nLo que debía ser una vuelta corta terminó convirtiéndose en una conversación sin reloj, sin rumbo y sin ninguna prisa por llegar."
+    },
+    {
+      "sceneId": "dalias-first",
+      "narration": "La tarde los condujo hasta Las Dalias.\n\nEntre colores, música y caminos improvisados, fueron dejando atrás la cautela y la distancia.\n\nPoco a poco, casi sin darse cuenta, dejaron de comportarse como dos desconocidos.\n\nEl primer plan terminó.\n\nLa cita, no."
+    },
+    {
+      "sceneId": "marina",
+      "narration": "Después llegó un aperitivo junto al puerto.\n\nHablaron de viajes. De trabajos. De proyectos. De miedos.\n\nY de todas esas pequeñas cosas que uno cuenta cuando empieza a desear que alguien lo conozca de verdad.\n\nYa no estaban improvisando.\n\nHabían decidido volver a encontrarse."
+    },
+    {
+      "sceneId": "snorkel",
+      "narration": "Al día siguiente, se encontraron bajo el agua.\n\nAllí donde hablar era imposible…\n\ny entenderse resultaba, sorprendentemente, fácil."
+    },
+    {
+      "sceneId": "cala-hort",
+      "narration": "Cala d’Hort les regaló una tarde que ninguno de los dos había planeado.\n\nEl mar se extendía ante ellos. Es Vedrà permanecía inmóvil en el horizonte.\n\nY, por primera vez, el silencio no necesitó ser llenado."
+    },
+    {
+      "sceneId": "sunset",
+      "narration": "El día comenzó a despedirse.\n\nEllos, en cambio, buscaban cualquier excusa para quedarse un poco más."
+    },
+    {
+      "sceneId": "kiss",
+      "narration": "Aquella noche dejaron de ser dos personas que habían coincidido en una isla.\n\nEl primer viaje terminó con un beso.\n\nNo hubo respuesta.\n\nTampoco hizo falta."
+    },
+    {
+      "sceneId": "interlude",
+      "narration": "Después llegaron los días normales.\n\nLos mensajes de cada mañana. Los planes compartidos. Las llamadas que se alargaban. Las pequeñas costumbres que, sin hacer ruido, empiezan a parecerse a un hogar.\n\nY, exactamente un año después, regresaron a Ibiza.\n\nEsta vez, juntos."
+    },
+    {
+      "sceneId": "sunday",
+      "narration": "Regresaron sin itinerarios separados, sin búsquedas y sin necesidad de presentarse.\n\nEl segundo viaje comenzó alrededor de una mesa.\n\nPorque hay historias que empiezan con una mirada…\n\ny otras etapas que comienzan cuando dos personas descubren que ya saben sentarse a compartir la vida."
+    },
+    {
+      "sceneId": "roots",
+      "narration": "En Santa Gertrudis descubrieron otra Ibiza.\n\nLa Ibiza de la tierra. De las huertas. De las casas blancas. De las sobremesas que se alargan hasta que nadie recuerda quién pidió la última copa."
+    },
+    {
+      "sceneId": "dalias-second",
+      "narration": "Un año antes habían llegado hasta Las Dalias intentando alargar una primera cita.\n\nAhora regresaban sin miedo a que terminara la tarde.\n\nEl lugar era el mismo.\n\nEllos, no.\n\nHabían cambiado las preguntas. Habían cambiado los silencios. Había cambiado la forma de mirarse."
+    },
+    {
+      "sceneId": "tagomago",
+      "narration": "Navegaron hacia Tagomago con la sensación de que la isla todavía guardaba rincones reservados para ellos."
+    },
+    {
+      "sceneId": "formentera",
+      "narration": "Un año antes improvisaban porque todavía no sabían qué querían.\n\nAhora improvisaban porque sabían que, ocurriera lo que ocurriera, querían vivirlo juntos.\n\nPorque crecer no significa dejar de perderse.\n\nA veces significa, simplemente, encontrar a la persona con la que merece la pena hacerlo."
+    },
+    {
+      "sceneId": "table",
+      "narration": "Carlos no había preparado aquella mesa únicamente para recordar cómo había comenzado todo."
+    },
+    {
+      "sceneId": "fire",
+      "narration": "La tierra había sido el lugar en el que se vieron.\n\nEl agua, todo aquello que se atrevieron a descubrir.\n\nEl aire, la libertad de continuar siendo ellos mismos.\n\nY el fuego…\n\nEl fuego era la decisión.\n\nLa decisión de cuidar lo encontrado. De mantener viva la chispa. De transformar dos caminos en uno solo.\n\nPorque algunas historias comienzan con una chispa.\n\nPero las historias verdaderamente importantes son aquellas que aprenden a mantener el fuego."
+    },
+    {
+      "sceneId": "proposal",
+      "narration": "Hace un año te escribí para preguntarte si querías dar un paseo.\n\nDesde entonces, cada camino que he recorrido me ha llevado hasta ti.\n\nNo quiero volver a esta isla solamente para recordar nuestra historia.\n\nQuiero regresar contigo. Una vez. Y otra. Y todas las veces que nos queden.\n\nQuiero seguir perdiéndome contigo.\n\nQuiero seguir encontrándote.\n\nDurante toda la vida.\n\n¿Te quieres casar conmigo?\n\nLa primera vez, el viaje terminó con un beso.\n\nLa segunda, terminaba con una promesa."
+    },
+    {
+      "sceneId": "dalt-vila",
+      "narration": "La historia había comenzado con dos personas que se miraron sin hablar.\n\nAquella noche, todos celebraban que hubieran decidido continuar mirando en la misma dirección.\n\nLa noche cayó sobre Ibiza.\n\nPero para Sofía y Carlos…\n\nacababa de amanecer."
+    },
+    {
+      "sceneId": "final-celebration",
+      "narration": "Cuando parecía que la historia ya había encontrado su final…\n\nla finca comenzó a transformarse.\n\nUna a una, las luces fueron encendiéndose entre los árboles.\n\nLa música se abrió paso por los jardines.\n\nLas copas se elevaron.\n\nLas primeras risas se mezclaron con el sonido de la noche…\n\ny, de pronto, todo empezó a suceder.\n\nLlegaron las sorpresas.\n\nLos brindis inesperados.\n\nLas canciones que nadie quería dejar de bailar.\n\nLos abrazos que no necesitaban palabras.\n\nY esa extraña sensación de estar viviendo algo que, incluso antes de terminar, ya se había convertido en un recuerdo.\n\nSofía y Carlos se miraron una vez más.\n\nPero ahora ya no estaban solos.\n\nA su alrededor, cada invitado formaba parte de aquella historia.\n\nPorque algunas noches no terminan cuando se apagan las luces.\n\nAlgunas noches permanecen.\n\nY aquella…\n\naquella apenas acababa de comenzar."
+    },
+    {
+      "sceneId": "epilogue",
+      "narration": "La Perigalla 01 convierte el viaje de Sofía y Carlos en una experiencia gastronómica, artística y escénica.\n\nCada invitado recorrerá sus encuentros. Sus paisajes. Sus juegos. Sus descubrimientos. Y su promesa.\n\nLa primera vez, la historia perteneció a Sofía y a Carlos.\n\nLa segunda, perteneció a su recuerdo.\n\nLa tercera vez…\n\nla historia será compartida contigo."
+    }
+  ]
+}
