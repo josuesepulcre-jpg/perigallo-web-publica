@@ -57,6 +57,7 @@
     if (path.indexOf("/admin/eventos") === 0) return "events";
     if (path.indexOf("/admin/ventas") === 0) return "sales";
     if (path.indexOf("/admin/descuentos") === 0) return "discounts";
+    if (path.indexOf("/admin/formulario") === 0) return "lead_form";
     if (path.indexOf("/admin/analitica") === 0) return "analytics";
     if (path.indexOf("/admin/acceso") === 0) return "access";
     if (path.indexOf("/admin/usuarios") === 0) return "users";
@@ -82,6 +83,7 @@
             '<span class="admin-nav-label">Gestión</span>' +
             '<a href="/admin/eventos/" data-admin-nav-item="events">Eventos</a>' +
             '<a href="/admin/ventas/" data-admin-nav-item="sales">Pedidos y ventas</a>' +
+            '<a href="/admin/formulario/" data-admin-nav-item="lead_form">Formulario</a>' +
             '<a href="/admin/descuentos/" data-admin-nav-item="discounts">Códigos de descuento</a>' +
             '<a href="/admin/analitica/" data-admin-nav-item="analytics">Analítica</a>' +
             '<span class="admin-nav-label">Operativa</span>' +
@@ -354,6 +356,66 @@
           jsonRequest(url, method, body).then(function () { reload(); }).catch(function (error) { renderPageError(error.message); }).finally(function () { button.disabled = false; });
         });
       }).catch(function (error) { renderPageError(error.message); });
+    });
+  }
+
+  function leadStatusLabel(status) {
+    return ({ new: "Nueva", contacted: "Contactada", follow_up: "En seguimiento", proposal_sent: "Propuesta enviada", closed: "Cerrada", discarded: "Descartada" })[status] || status;
+  }
+
+  function renderLeadFormAdmin(root, settings, requests, selected) {
+    var selectedDetail = selected ? '<section class="admin-dashboard-section"><div class="admin-section-label"><div><span class="ticket-eyebrow">Solicitud ' + escapeHtml(selected.public_reference) + '</span><h2>' + escapeHtml(selected.name) + (selected.partner_name ? ' y ' + escapeHtml(selected.partner_name) : '') + '</h2></div><button class="text-action" type="button" data-lead-close-detail>Cerrar ficha</button></div><article class="admin-empty" style="justify-items:stretch"><p><strong>Contacto</strong><br>' + escapeHtml(selected.email || 'Sin email') + ' · ' + escapeHtml(selected.phone || 'Sin teléfono') + '</p><p><strong>Evento</strong><br>' + escapeHtml(selected.event_type) + ' · ' + escapeHtml(selected.event_date || 'Fecha por definir') + ' · ' + escapeHtml(selected.guest_count || 'Asistentes por definir') + '</p><p><strong>Notificación</strong><br>' + escapeHtml(selected.email_status) + (selected.email_error ? ' · ' + escapeHtml(selected.email_error) : '') + '</p><label class="admin-search" style="width:100%"><span>Estado comercial</span><select data-lead-detail-status>' + ["new", "contacted", "follow_up", "proposal_sent", "closed", "discarded"].map(function (status) { return '<option value="' + status + '"' + (selected.status === status ? ' selected' : '') + '>' + leadStatusLabel(status) + '</option>'; }).join('') + '</select></label><pre style="overflow:auto;max-height:58vh;white-space:pre-wrap;color:var(--pg-cream);font:400 .75rem/1.6 monospace">' + escapeHtml(JSON.stringify(selected.answers || {}, null, 2)) + '</pre></article></section>' : '';
+    var rows = requests.length ? requests.map(function (requestItem) {
+      return '<article class="admin-order-row"><div><strong>' + escapeHtml(requestItem.name) + (requestItem.partner_name ? ' y ' + escapeHtml(requestItem.partner_name) : '') + '</strong><small>Recibida ' + escapeHtml(formatDate(requestItem.created_at, true)) + ' · ' + escapeHtml(requestItem.event_type) + ' · ' + escapeHtml(requestItem.event_date || 'Fecha por definir') + ' · ' + escapeHtml(requestItem.public_reference) + '</small></div><span>' + escapeHtml(requestItem.guest_count || '—') + ' invitados</span><span class="status-pill status-' + escapeHtml(requestItem.status) + '">' + escapeHtml(leadStatusLabel(requestItem.status)) + '</span><span>' + (requestItem.email_status === 'sent' ? 'Email enviado' : requestItem.email_status === 'failed' ? 'Email fallido' : 'Email pendiente') + '</span><button type="button" class="text-action" data-lead-open="' + Number(requestItem.id) + '">Ver solicitud</button></article>';
+    }).join('') : '<div class="admin-empty"><strong>Aún no hay solicitudes.</strong><span>Las respuestas recibidas desde /formulario/ aparecerán aquí.</span></div>';
+    root.innerHTML = '<section class="admin-page-heading admin-page-heading-compact"><div><span class="ticket-eyebrow">Captación</span><h1>Formulario y <em>solicitudes.</em></h1><p>La base de datos es la fuente de verdad: cada solicitud queda guardada aunque el correo de aviso falle.</p></div><a class="ticket-btn" href="/formulario/" target="_blank" rel="noopener noreferrer">Ver formulario público</a></section>' +
+      '<section class="admin-user-create"><span class="ticket-eyebrow">Configuración</span><h2>Formulario público</h2><form class="admin-user-form" data-lead-settings><label><span>Estado</span><select name="enabled"><option value="1"' + (Number(settings.enabled) ? ' selected' : '') + '>Activo</option><option value="0"' + (!Number(settings.enabled) ? ' selected' : '') + '>Pausado</option></select></label><label><span>URL pública</span><input value="https://perigallo.com/formulario/" readonly></label><label><span>Email de destino</span><input name="recipient_email" type="email" value="' + escapeHtml(settings.recipient_email || 'hola@perigallo.com') + '"></label><label><span>Título</span><input name="title" value="' + escapeHtml(settings.title || '') + '"></label><label><span>Subtítulo</span><input name="subtitle" value="' + escapeHtml(settings.subtitle || '') + '"></label><label style="grid-column:span 2"><span>Mensaje de confirmación</span><input name="confirmation_message" value="' + escapeHtml(settings.confirmation_message || '') + '"></label><button class="ticket-btn primary" type="submit">Guardar configuración</button></form><p class="ticket-status" data-lead-settings-status></p></section>' +
+      '<section class="admin-dashboard-section"><div class="admin-section-label"><div><span class="ticket-eyebrow">Solicitudes recibidas</span><h2>Seguimiento comercial</h2></div></div><section class="admin-order-toolbar"><div class="admin-filter-group" data-lead-status-tabs>' + ["all", "new", "contacted", "follow_up", "proposal_sent", "closed", "discarded"].map(function (status) { return '<button type="button" data-lead-status="' + status + '" class="' + ((status === "all" ? !settings._leadStatus : settings._leadStatus === status) ? 'is-active' : '') + '">' + (status === 'all' ? 'Todas' : leadStatusLabel(status)) + '</button>'; }).join('') + '</div><label class="admin-search"><span>Tipo de evento</span><input type="search" data-lead-event-type value="' + escapeHtml(settings._leadEventType || '') + '" placeholder="Boda, celebración…"></label><label class="admin-search"><span>Fecha de solicitud</span><input type="date" data-lead-created-date value="' + escapeHtml(settings._leadCreatedDate || '') + '"></label><label class="admin-search"><span>Fecha prevista</span><input type="search" data-lead-event-date value="' + escapeHtml(settings._leadEventDate || '') + '" placeholder="2027-06-20"></label><label class="admin-search"><span>Buscar</span><input type="search" data-lead-search value="' + escapeHtml(settings._leadSearch || '') + '" placeholder="Nombre, email, teléfono o referencia"></label></section><section class="admin-orders-list" data-lead-requests>' + rows + '</section></section>' + selectedDetail;
+  }
+
+  function initLeadForms() {
+    var root = document.querySelector("[data-admin-lead-form-page]");
+    if (!root) return;
+    requireSession(function (session) {
+      if (session.role !== "admin") { renderPageError("Esta sección está reservada para administración."); return; }
+      var filters = { status: "", q: "", event_type: "", event_date: "", created_date: "" };
+      var selectedId = Number(new URLSearchParams(window.location.search).get("request") || 0);
+      function load(selected) {
+        var params = new URLSearchParams();
+        if (filters.status) params.set("status", filters.status);
+        if (filters.q) params.set("q", filters.q);
+        if (filters.event_type) params.set("event_type", filters.event_type);
+        if (filters.event_date) params.set("event_date", filters.event_date);
+        if (filters.created_date) params.set("created_date", filters.created_date);
+        return Promise.all([request(api + "/admin/formulario/settings"), request(api + "/admin/formulario/solicitudes?" + params.toString()), selected ? request(api + "/admin/formulario/solicitudes/" + selected) : Promise.resolve({ request: null })]).then(function (result) {
+          result[0].settings._leadStatus = filters.status;
+          result[0].settings._leadSearch = filters.q;
+          result[0].settings._leadEventType = filters.event_type;
+          result[0].settings._leadEventDate = filters.event_date;
+          result[0].settings._leadCreatedDate = filters.created_date;
+          renderLeadFormAdmin(root, result[0].settings || {}, result[1].requests || [], result[2].request);
+          bind();
+        });
+      }
+      function bind() {
+        var settings = root.querySelector("[data-lead-settings]");
+        if (settings) settings.addEventListener("submit", function (event) {
+          event.preventDefault();
+          var status = root.querySelector("[data-lead-settings-status]");
+          status.textContent = "Guardando…";
+          jsonRequest(api + "/admin/formulario/settings", "PUT", { enabled: settings.enabled.value === "1", recipient_email: settings.recipient_email.value.trim(), title: settings.title.value.trim(), subtitle: settings.subtitle.value.trim(), confirmation_message: settings.confirmation_message.value.trim() }).then(function () { status.textContent = "Configuración guardada."; }).catch(function (error) { status.textContent = error.message; });
+        });
+        root.querySelectorAll("[data-lead-status]").forEach(function (button) { button.addEventListener("click", function () { filters.status = button.dataset.leadStatus === "all" ? "" : button.dataset.leadStatus; load(selectedId).catch(function (error) { renderPageError(error.message); }); }); });
+        var search = root.querySelector("[data-lead-search]");
+        if (search) search.addEventListener("input", function () { filters.q = search.value.trim(); window.clearTimeout(search._leadTimer); search._leadTimer = window.setTimeout(function () { load(selectedId).catch(function (error) { renderPageError(error.message); }); }, 250); });
+        root.querySelectorAll("[data-lead-event-type], [data-lead-event-date], [data-lead-created-date]").forEach(function (field) { field.addEventListener("input", function () { var filterName = field.hasAttribute("data-lead-event-type") ? "event_type" : field.hasAttribute("data-lead-event-date") ? "event_date" : "created_date"; filters[filterName] = field.value.trim(); window.clearTimeout(field._leadTimer); field._leadTimer = window.setTimeout(function () { load(selectedId).catch(function (error) { renderPageError(error.message); }); }, 250); }); });
+        root.querySelectorAll("[data-lead-open]").forEach(function (button) { button.addEventListener("click", function () { selectedId = Number(button.dataset.leadOpen); load(selectedId).catch(function (error) { renderPageError(error.message); }); }); });
+        var close = root.querySelector("[data-lead-close-detail]");
+        if (close) close.addEventListener("click", function () { selectedId = 0; load(0).catch(function (error) { renderPageError(error.message); }); });
+        var statusSelect = root.querySelector("[data-lead-detail-status]");
+        if (statusSelect) statusSelect.addEventListener("change", function () { jsonRequest(api + "/admin/formulario/solicitudes/" + selectedId + "/estado", "PUT", { status: statusSelect.value }).then(function () { load(selectedId); }).catch(function (error) { renderPageError(error.message); }); });
+      }
+      load(selectedId).catch(function (error) { renderPageError(error.message); });
     });
   }
 
@@ -734,6 +796,7 @@
   initDashboard();
   initEvents();
   initSales();
+  initLeadForms();
   initUsers();
   initDiscountCodes();
   initAnalytics();

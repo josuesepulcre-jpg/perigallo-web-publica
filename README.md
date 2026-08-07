@@ -7,14 +7,13 @@ Este repositorio corresponde solo a `perigallo.com`. No es Perigallo Suite, no e
 ## Alcance
 
 - Home publica y rutas comerciales de Perigallo.
-- Enlaces externos oficiales a Perigallo Suite y Perigallo Reservas.
+- Enlaces externos oficiales a Perigallo Suite y Perigallo Reservas, y formulario propio de solicitudes.
 - Paginas publicas de eventos y checkout de entradas.
 - API PHP propia para pedidos, tickets, notificacion Redsys y panel privado de gestión completa de eventos.
 - Documentacion de despliegue para Plesk/Cyberpac Redsys.
 
 ## Integraciones externas
 
-- Solicitud inicial: `https://suite.perigallo.com/solicitud?origen=web-perigallo`
 - Reservas pop-up externas: `https://reservas.perigallo.com/reservar?source=web`
 - Web de la finca: `https://fincalallaguna.com/`
 - WhatsApp: `https://wa.me/34691499985`
@@ -31,6 +30,7 @@ Las solicitudes y reservas externas se abren fuera de la pagina principal para e
 | `/entradas/checkout/?event=slug` | Checkout de entradas. |
 | `/entradas/pedido/?token=...` | Resumen de pedido y entradas emitidas. |
 | `/mis-entradas/` | Recuperación neutral por correo/teléfono y acceso mediante enlace temporal revocable. |
+| `/formulario/` | Formulario público permanente de solicitudes y propuestas. |
 | `/entradas/pago/correcto/` | Retorno informativo de pago correcto. |
 | `/entradas/pago/error/` | Retorno informativo de pago fallido/cancelado. |
 | `/admin/` | Panel privado central de Administración Perigallo. |
@@ -44,7 +44,7 @@ Las solicitudes y reservas externas se abren fuera de la pagina principal para e
 | `/admin/entradas/evento/?id=ID` | Ruta heredada: redirige al editor semántico. |
 | `/admin/entradas/vista-previa/?id=ID` | Vista previa privada del evento, incluso en borrador. |
 | `/admin/entradas/acceso/` | Ruta heredada del escáner privado. |
-| `/solicitud-evento/` | Pasarela legacy hacia la solicitud oficial de Perigallo Suite. |
+| `/solicitud-evento/` | Ruta legacy: redirección 301 a `/formulario/`. |
 | `/politica-privacidad/` | Politica de privacidad. |
 | `/aviso-legal/` | Aviso legal. |
 | `/cookies/` | Politica de cookies. |
@@ -67,6 +67,8 @@ Endpoints principales:
 - `GET /api/orders/access/{temporaryToken}`
 - `POST /api/redsys/notification`
 - `POST /api/analytics/events`
+- `GET /api/formulario/settings`
+- `POST /api/formulario`
 - `GET /api/admin/session`
 - `POST /api/admin/login`
 - `POST /api/admin/logout`
@@ -75,6 +77,10 @@ Endpoints principales:
 - `GET` / `PUT /api/admin/analytics/settings`
 - `POST /api/admin/analytics/send-test-report`
 - `GET /api/admin/orders`
+- `GET` / `PUT /api/admin/formulario/settings`
+- `GET /api/admin/formulario/solicitudes`
+- `GET /api/admin/formulario/solicitudes/{id}`
+- `PUT /api/admin/formulario/solicitudes/{id}/estado`
 - `GET /api/admin/events`
 - `GET /api/admin/events/{id}`
 - `POST /api/admin/events`
@@ -136,6 +142,7 @@ mysql -u USER -p DB_NAME < database/migrations/003_suite_experience_integration.
 mysql -u USER -p DB_NAME < database/migrations/004_long_public_event_information.sql
 mysql -u USER -p DB_NAME < database/migrations/016_first_party_analytics.sql
 mysql -u USER -p DB_NAME < database/migrations/010_order_access_recovery.sql
+php api/scripts/apply-migration.php database/migrations/019_public_lead_form.sql
 ```
 
 La primera migración crea las tablas aisladas para eventos, tipos de entrada, pedidos, intentos de pago, tickets, escaneos y entregas de email. La segunda amplía los eventos y entradas sin alterar los pedidos o tickets emitidos. La tercera añade el identificador canónico y el registro idempotente de sincronización privada con Suite. La cuarta habilita contenido público extenso mediante columnas `LONGTEXT`.
@@ -150,6 +157,7 @@ node --check assets/js/ticketing-admin.js
 node --check assets/js/site.js
 node --check assets/js/analytics.js
 node tests/static-ticketing-check.mjs
+node tests/smoke-public-form.mjs https://perigallo.com/formulario/
 ```
 
 Si hay PHP disponible:
@@ -173,4 +181,5 @@ find api/src -name '*.php' -print -exec php -l {} \;
 - `docs/TICKETING_DEPLOYMENT.md`
 - `docs/TICKETING_PRODUCTION_CHECKLIST.md`
 - `docs/ANALYTICS_DEPLOYMENT.md`
+- `docs/FORMULARIO_PUBLICO.md`
 - `docs/estructura-deploy-web-publica.md`

@@ -8,6 +8,21 @@ use Throwable;
 
 final class Mailer
 {
+    /** @return array{sent: bool, error: ?string} */
+    public function sendLeadNotification(string $email, string $subject, string $body): array
+    {
+        try {
+            $headers = [
+                'From: ' . (env_value('MAIL_FROM_NAME', 'Perigallo') ?: 'Perigallo') . ' <' . (env_value('MAIL_FROM', 'entradas@perigallo.com') ?: 'entradas@perigallo.com') . '>',
+                'Content-Type: text/plain; charset=UTF-8',
+            ];
+            $sent = mail($email, $subject, $body, implode("\r\n", $headers));
+            return ['sent' => $sent, 'error' => $sent ? null : 'mail() devolvió false. Configura el SMTP transaccional en Plesk.'];
+        } catch (Throwable $error) {
+            return ['sent' => false, 'error' => 'Fallo técnico de envío registrado.'];
+        }
+    }
+
     public function sendAnalyticsReport(string $email, string $subject, string $body, string $htmlBody): bool
     {
         try {

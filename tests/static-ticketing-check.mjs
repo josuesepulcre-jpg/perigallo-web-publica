@@ -27,6 +27,7 @@ const required = [
   "database/migrations/016_first_party_analytics.sql",
   "database/migrations/017_ticket_attendee_allergies.sql",
   "database/migrations/018_order_access_conditions.sql",
+  "database/migrations/019_public_lead_form.sql",
   "api/scripts/apply-migration.php",
   "api/src/Analytics.php",
   "api/cron/analytics-report.php",
@@ -56,6 +57,9 @@ const required = [
   "assets/vendor/qrcode-generator.min.js",
   "assets/vendor/jspdf.umd.min.js",
   "solicitud-evento/index.html",
+  "formulario/index.html",
+  "admin/formulario/index.html",
+  "api/src/LeadForms.php",
   "docs/CYBERPAC_REDSYS_PERIGALLO_COM.md",
   "docs/TICKETING_DEPLOYMENT.md",
   "docs/TICKETING_PRODUCTION_CHECKLIST.md",
@@ -86,6 +90,7 @@ const activeFiles = [
   "assets/css/checkout.css",
   "assets/css/event-information-accordions.css",
   "assets/css/admin-orders.css",
+  "formulario/index.html",
 ];
 
 const forbidden = [
@@ -188,6 +193,30 @@ for (const marker of ["Administración Perigallo", "data-admin-login-page", "dat
 const rootHtaccess = readFileSync(join(root, ".htaccess"), "utf8");
 for (const marker of ["^admin/acceso", "^admin/eventos/([0-9]+)/editar"]) {
   if (!rootHtaccess.includes(marker)) throw new Error(`Missing central admin rewrite: ${marker}`);
+}
+const publicLeadForm = readFileSync(join(root, "formulario/index.html"), "utf8");
+for (const marker of ["https://perigallo.com/formulario/", "privacy-accepted", "website", "fetch('/api/formulario'", "Formulario temporalmente en pausa"]) {
+  if (!publicLeadForm.includes(marker)) throw new Error(`Missing public lead form marker: ${marker}`);
+}
+if (publicLeadForm.includes("emailjs.init(")) throw new Error("The public lead form must not initialise EmailJS.");
+const leadForms = readFileSync(join(root, "api/src/LeadForms.php"), "utf8");
+for (const marker of ["lead_requests", "lead_form_settings", "PGF-", "email_status", "normaliseAnswers", "privacy_accepted", "INTERVAL 15 MINUTE"]) {
+  if (!leadForms.includes(marker)) throw new Error(`Missing lead form persistence contract: ${marker}`);
+}
+for (const marker of ["/formulario/settings", "POST' && $path === '/formulario'", "/admin/formulario/solicitudes", "CONTENT_LENGTH"]) {
+  if (!api.includes(marker)) throw new Error(`Missing lead form API contract: ${marker}`);
+}
+const leadMigration = readFileSync(join(root, "database/migrations/019_public_lead_form.sql"), "utf8");
+for (const marker of ["lead_form_settings", "lead_requests", "follow_up", "proposal_sent", "email_status", "ip_hash"]) {
+  if (!leadMigration.includes(marker)) throw new Error(`Lead form migration is missing ${marker}.`);
+}
+for (const marker of ["^solicitud-evento/?$ /formulario/ [R=301,L]", "^admin/formulario/?$ admin/formulario/index.html"]) {
+  if (!rootHtaccess.includes(marker)) throw new Error(`Missing lead form route contract: ${marker}`);
+}
+const leadAdmin = readFileSync(join(root, "admin/formulario/index.html"), "utf8");
+if (!leadAdmin.includes("data-admin-lead-form-page")) throw new Error("Missing lead form admin page marker.");
+for (const marker of ["/admin/formulario/", "data-admin-nav-item=\"lead_form\"", "initLeadForms", "leadStatusLabel"]) {
+  if (!adminBackoffice.includes(marker)) throw new Error(`Missing lead form admin behavior: ${marker}`);
 }
 const adminUsersMigration = readFileSync(join(root, "database/migrations/011_admin_users_and_order_operations.sql"), "utf8");
 for (const marker of ["ticket_admin_users", "password_hash", "ticket_admin_audit_logs", "control_acceso"]) {

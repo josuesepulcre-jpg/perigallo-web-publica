@@ -7,6 +7,7 @@ use Perigallo\Ticketing\AdminAuth;
 use Perigallo\Ticketing\Analytics;
 use Perigallo\Ticketing\Database;
 use Perigallo\Ticketing\Mailer;
+use Perigallo\Ticketing\LeadForms;
 use Perigallo\Ticketing\Redsys;
 use Perigallo\Ticketing\Ticketing;
 
@@ -22,6 +23,7 @@ $path = rtrim($path, '/') ?: '/';
 try {
     $mailer = new Mailer();
     $ticketing = new Ticketing(Database::pdo(), new Redsys(), $mailer);
+    $leadForms = new LeadForms(Database::pdo(), $mailer);
     $analytics = new Analytics(Database::pdo(), $mailer);
 
     if ($method === 'POST' && $path === '/analytics/events') {
@@ -66,6 +68,20 @@ try {
     if ($method === 'POST' && $path === '/orders') {
         $result = $ticketing->createOrder(read_json_body());
         json_response(['ok' => true] + $result, 201);
+        return;
+    }
+
+    if ($method === 'GET' && $path === '/formulario/settings') {
+        json_response(['ok' => true, 'settings' => $leadForms->publicSettings()]);
+        return;
+    }
+
+    if ($method === 'POST' && $path === '/formulario') {
+        if ((int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 150000) {
+            json_response(['ok' => false, 'error' => 'La solicitud es demasiado extensa. Reduce el contenido e inténtalo de nuevo.'], 413);
+            return;
+        }
+        json_response(['ok' => true, 'request' => $leadForms->submit(read_json_body(), client_ip())], 201);
         return;
     }
 
@@ -237,6 +253,37 @@ try {
     if ($method === 'GET' && $path === '/admin/orders') {
         AdminAuth::require();
         json_response(['ok' => true, 'orders' => $ticketing->adminOrders()]);
+        return;
+    }
+
+    if ($method === 'GET' && $path === '/admin/formulario/settings') {
+        AdminAuth::require();
+        json_response(['ok' => true, 'settings' => $leadForms->adminSettings()]);
+        return;
+    }
+
+    if ($method === 'PUT' && $path === '/admin/formulario/settings') {
+        AdminAuth::requireCsrf();
+        json_response(['ok' => true, 'settings' => $leadForms->saveSettings(read_json_body())]);
+        return;
+    }
+
+    if ($method === 'GET' && $path === '/admin/formulario/solicitudes') {
+        AdminAuth::require();
+        json_response(['ok' => true, 'requests' => $leadForms->adminRequests($_GET)]);
+        return;
+    }
+
+    if ($method === 'GET' && preg_match('#^/admin/formulario/solicitudes/([0-9]+)$#', $path, $m)) {
+        AdminAuth::require();
+        json_response(['ok' => true, 'request' => $leadForms->adminRequest((int) $m[1]));
+        return;
+    }
+
+    if ($method === 'PUT' && preg_match('#^/admin/formulario/solicitudes/([0-9]+)/estado$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        $data = read_json_body();
+        json_response(['ok' => true, 'request' => $leadForms->updateStatus((int) $m[1], (string) ($data['status'] ?? ''))]);
         return;
     }
 
@@ -515,8 +562,8 @@ try {
 } catch (InvalidArgumentException $e) {
     json_response(['ok' => false, 'error' => $e->getMessage()], 422);
 } catch (RuntimeException $e) {
-    if ($e->getCode() === 409) {
-        json_response(['ok' => false, 'error' => $e->getMessage()], 409);
+    if (in_array($e->getCode(), [409, 429], true)) {
+        json_response(['ok' => false, 'error' => $e->getMessage()], $e->getCode());
         return;
     }
     $isRedsysNotification = $method === 'POST' && $path === '/redsys/notification';
