@@ -40,6 +40,8 @@ for (const marker of [
   "story-v2-gastro-out",
   "prefers-reduced-motion",
   "z-index: 30",
+  "story-camera-delay",
+  ".story-player.is-starting .scene-composition.is-active",
 ]) {
   if (!motionCss.includes(marker)) throw new Error(`The visual motion stylesheet is missing ${marker}.`);
 }
@@ -50,6 +52,9 @@ for (const marker of [
   "playback failed",
   "media error",
   "xe(!0,!1)",
+  "fromMotionAge",
+  "story-camera-delay",
+  "getAnimations?.()",
 ]) {
   if (!bundle.includes(marker)) throw new Error(`The story playback resilience check is missing ${marker}.`);
 }
