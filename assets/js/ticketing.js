@@ -228,6 +228,8 @@
       var isPerigalla01 = /la\s+perigalla\s*0?1/i.test(String(event.title || ""));
       var experienceName = isPerigalla01 ? "La Perigalla 01" : event.title;
       var experienceUrl = isPerigalla01 ? "/la-perigalla-01/" : "/experiencias/" + encodeURIComponent(event.slug) + "/";
+      var storyCtaUrl = isPerigalla01 ? experienceUrl : "#experiencia";
+      var storyCtaLabel = isPerigalla01 ? "Descubrir la historia" : "Descubrir la experiencia";
       var storyImageUrl = previewAssetUrl(event.card_image_url || event.image_url || "/assets/images/finca-la-llaguna-principal.jpg", preview);
       var storyText = isPerigalla01
         ? '<p>La Perigalla 01 inaugura una forma de celebrar donde cocina, música y puesta en escena cuentan una misma historia.</p><p>Una noche en Finca La Llaguna, al aire libre y vestida de blanco, creada para vivirla despacio.</p>'
@@ -258,7 +260,7 @@
         '<div class="ticket-types">' + ticketCards + '</div>',
         '</section>',
         '</div>',
-        '<div class="event-chapter-inner event-chapter-entry-progress"><a class="event-chapter-next event-chapter-next-entry" href="#experiencia"><span class="event-chapter-next-index">01 / 03</span><span>Descubrir la experiencia</span><b aria-hidden="true">↓</b></a></div>',
+        '<div class="event-chapter-inner event-chapter-entry-progress"><a class="event-chapter-next event-chapter-next-entry" href="' + escapeAttr(storyCtaUrl) + '"><span class="event-chapter-next-index">01 / 03</span><span>' + escapeHtml(storyCtaLabel) + '</span><b aria-hidden="true">→</b></a></div>',
         '</section>',
         '<section class="event-story event-story-layout event-chapter event-chapter-story" id="experiencia" data-analytics-section="experiencia"><span class="event-anchor" id="historia" aria-hidden="true"></span><div class="event-chapter-inner event-story-editorial">' + storyVisual + '<div class="event-story-copy"><span class="ticket-eyebrow">02 / 03 · La experiencia</span><h2>' + escapeHtml(experienceName) + '</h2><p class="event-story-lede">Una noche donde gastronomía, música y puesta en escena cuentan una misma historia.</p><div class="ticket-copy event-story-text">' + storyText + '</div>' + storyVenue + '</div><a class="event-chapter-next event-chapter-next-story" data-analytics-click="ver-detalles" href="#detalles"><span class="event-chapter-next-index">02 / 03</span><span>Todos los detalles</span><b aria-hidden="true">↓</b></a></div></section>',
         gallery ? '<section class="event-gallery" id="galeria" data-analytics-section="galeria">' + gallery + '</section>' : '',
