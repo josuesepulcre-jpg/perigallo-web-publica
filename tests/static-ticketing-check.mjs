@@ -270,7 +270,7 @@ for (const asset of storyAssets) {
   if (!existsSync(join(root, asset.slice(1)))) throw new Error(`La Perigalla story asset is missing: ${asset}`);
 }
 const storyBundle = readFileSync(join(root, storyAssets.find((asset) => asset.endsWith(".js")).slice(1)), "utf8");
-for (const marker of ["Bienvenidos a", "La Perigalla 01", "v9-scenes", "final-celebration", "/formulario/"]) {
+for (const marker of ["Bienvenidos a", "La Perigalla 01", "v9-scenes", "final-celebration", "Quiero vivir la historia", "/entradas/checkout/?event=la-perigalla-01-ibicenca&quantity=1&ticketType=1"]) {
   if (!storyBundle.includes(marker)) throw new Error(`La Perigalla story bundle is missing ${marker}.`);
 }
 const storyStyles = readFileSync(join(root, storyAssets.find((asset) => asset.endsWith(".css")).slice(1)), "utf8");
