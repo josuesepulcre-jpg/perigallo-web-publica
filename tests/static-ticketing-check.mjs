@@ -62,6 +62,7 @@ const required = [
   "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-score.mp3",
   "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/cover.mp3",
   "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/final-celebration.mp3",
+  "la-perigalla-01/media/storytelling/perigalla-01/hosts/hosts-hero-cover.png",
   "admin/formulario/index.html",
   "api/src/LeadForms.php",
   "docs/CYBERPAC_REDSYS_PERIGALLO_COM.md",
@@ -271,6 +272,10 @@ for (const asset of storyAssets) {
 const storyBundle = readFileSync(join(root, storyAssets.find((asset) => asset.endsWith(".js")).slice(1)), "utf8");
 for (const marker of ["Bienvenidos a", "La Perigalla 01", "v9-scenes", "final-celebration", "/formulario/"]) {
   if (!storyBundle.includes(marker)) throw new Error(`La Perigalla story bundle is missing ${marker}.`);
+}
+const storyStyles = readFileSync(join(root, storyAssets.find((asset) => asset.endsWith(".css")).slice(1)), "utf8");
+if (!storyStyles.includes("hosts-hero-cover.png")) {
+  throw new Error("La Perigalla story stylesheet is missing the approved cover image.");
 }
 if (storyBundle.includes('"/media/storytelling/perigalla-01')) {
   throw new Error("La Perigalla story bundle still contains an unscoped media URL.");
