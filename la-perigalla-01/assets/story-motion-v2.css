@@ -23,6 +23,10 @@
 .story-player .scene-marker span { transform: none; }
 .story-player .player-controls button { min-inline-size: 46px; min-block-size: 46px; }
 .story-player .player-controls button:active { transform: scale(.94); }
+.story-player .player-top,
+.story-player .player-progress,
+.story-player .player-controls { z-index: 30; pointer-events: auto; }
+.story-player .player-controls { padding-bottom: max(15px, calc(env(safe-area-inset-bottom) + 10px)); }
 
 .story-player .scene-composition.is-active:not(.is-outgoing) .scene-artwork-main { animation: story-v2-art-in var(--motion-enter) var(--ease-cinema) both; }
 .story-player .scene-composition.is-active:not(.is-outgoing) .scene-copy { animation: story-v2-copy-in 560ms 150ms var(--ease-cinema) both; }

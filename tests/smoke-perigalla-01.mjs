@@ -39,8 +39,24 @@ for (const marker of [
   "phase-revealing",
   "story-v2-gastro-out",
   "prefers-reduced-motion",
+  "z-index: 30",
 ]) {
   if (!motionCss.includes(marker)) throw new Error(`The visual motion stylesheet is missing ${marker}.`);
+}
+
+for (const marker of [
+  "dataset.storyScene",
+  "preload:`auto`",
+  "playback failed",
+  "media error",
+  "xe(!0,!1)",
+]) {
+  if (!bundle.includes(marker)) throw new Error(`The story playback resilience check is missing ${marker}.`);
+}
+
+const audioAudit = JSON.parse(readFileSync(resolve(root, "reports/story-audio-audit.json"), "utf8"));
+if (audioAudit.report?.length !== 23 || audioAudit.report.some((item) => item.severity === "error")) {
+  throw new Error("The generated narration audio audit is incomplete or has errors.");
 }
 
 for (let scene = 0; scene <= 21; scene += 1) {
@@ -52,3 +68,4 @@ for (let scene = 0; scene <= 21; scene += 1) {
 }
 
 console.log("Portrait art direction check passed: 22 mobile scene assets available.");
+console.log("Narration audio audit passed: 23 unchanged MP3 scenes are valid.");

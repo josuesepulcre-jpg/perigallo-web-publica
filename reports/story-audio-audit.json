@@ -1,0 +1,1181 @@
+{
+  "generated_at": "2026-08-07T21:55:33.891Z",
+  "audio_root": "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes",
+  "transcript_source": null,
+  "report": [
+    {
+      "scene": "cover",
+      "file": "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/cover.mp3",
+      "bytes": 130605,
+      "duration_seconds": 8.16,
+      "mp3_readable": true,
+      "transcription": "not-provided",
+      "differences": [
+        "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+      ],
+      "silence": {
+        "available": true,
+        "intervals": [
+          {
+            "start": 2.684104,
+            "end": 3.294271,
+            "duration": 0.610167
+          },
+          {
+            "start": 7.797,
+            "end": 8.16,
+            "duration": 0.363
+          }
+        ]
+      },
+      "severity": "info",
+      "recommended_action": "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+    },
+    {
+      "scene": "arrival",
+      "file": "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/arrival.mp3",
+      "bytes": 325293,
+      "duration_seconds": 20.328,
+      "mp3_readable": true,
+      "transcription": "not-provided",
+      "differences": [
+        "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+      ],
+      "silence": {
+        "available": true,
+        "intervals": [
+          {
+            "start": 0,
+            "end": 0.570417,
+            "duration": 0.570417
+          },
+          {
+            "start": 0.674396,
+            "end": 1.037521,
+            "duration": 0.363125
+          },
+          {
+            "start": 4.209646,
+            "end": 4.627104,
+            "duration": 0.417458
+          },
+          {
+            "start": 5.962479,
+            "end": 6.567396,
+            "duration": 0.604917
+          },
+          {
+            "start": 7.810458,
+            "end": 8.494271,
+            "duration": 0.683812
+          },
+          {
+            "start": 12.527312,
+            "end": 12.954042,
+            "duration": 0.426729
+          },
+          {
+            "start": 15.628583,
+            "end": 16.096875,
+            "duration": 0.468292
+          },
+          {
+            "start": 19.955083,
+            "end": 20.328,
+            "duration": 0.372917
+          }
+        ]
+      },
+      "severity": "info",
+      "recommended_action": "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+    },
+    {
+      "scene": "market",
+      "file": "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/market.mp3",
+      "bytes": 1250733,
+      "duration_seconds": 78.168,
+      "mp3_readable": true,
+      "transcription": "not-provided",
+      "differences": [
+        "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+      ],
+      "silence": {
+        "available": true,
+        "intervals": [
+          {
+            "start": 0,
+            "end": 0.4075,
+            "duration": 0.4075
+          },
+          {
+            "start": 8.090583,
+            "end": 8.922292,
+            "duration": 0.831708
+          },
+          {
+            "start": 9.05225,
+            "end": 9.403,
+            "duration": 0.35075
+          },
+          {
+            "start": 10.581167,
+            "end": 11.180375,
+            "duration": 0.599208
+          },
+          {
+            "start": 11.450437,
+            "end": 11.809604,
+            "duration": 0.359167
+          },
+          {
+            "start": 13.422458,
+            "end": 14.16325,
+            "duration": 0.740792
+          },
+          {
+            "start": 15.348417,
+            "end": 16.124875,
+            "duration": 0.776458
+          },
+          {
+            "start": 17.575896,
+            "end": 18.24125,
+            "duration": 0.665354
+          },
+          {
+            "start": 20.322958,
+            "end": 20.8185,
+            "duration": 0.495542
+          },
+          {
+            "start": 26.966167,
+            "end": 27.431833,
+            "duration": 0.465667
+          },
+          {
+            "start": 33.305833,
+            "end": 34.020396,
+            "duration": 0.714562
+          },
+          {
+            "start": 35.516729,
+            "end": 35.974229,
+            "duration": 0.4575
+          },
+          {
+            "start": 39.13075,
+            "end": 39.83325,
+            "duration": 0.7025
+          },
+          {
+            "start": 47.440167,
+            "end": 47.991229,
+            "duration": 0.551063
+          },
+          {
+            "start": 61.167,
+            "end": 62.086958,
+            "duration": 0.919958
+          },
+          {
+            "start": 63.226625,
+            "end": 63.978271,
+            "duration": 0.751646
+          },
+          {
+            "start": 65.229083,
+            "end": 65.905312,
+            "duration": 0.676229
+          },
+          {
+            "start": 66.847313,
+            "end": 67.512292,
+            "duration": 0.664979
+          },
+          {
+            "start": 68.473417,
+            "end": 68.953292,
+            "duration": 0.479875
+          },
+          {
+            "start": 71.54075,
+            "end": 71.914625,
+            "duration": 0.373875
+          },
+          {
+            "start": 73.693396,
+            "end": 74.256896,
+            "duration": 0.5635
+          },
+          {
+            "start": 76.314625,
+            "end": 76.98025,
+            "duration": 0.665625
+          },
+          {
+            "start": 77.762417,
+            "end": 78.168,
+            "duration": 0.405583
+          }
+        ]
+      },
+      "severity": "info",
+      "recommended_action": "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+    },
+    {
+      "scene": "message",
+      "file": "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/message.mp3",
+      "bytes": 284973,
+      "duration_seconds": 17.808,
+      "mp3_readable": true,
+      "transcription": "not-provided",
+      "differences": [
+        "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+      ],
+      "silence": {
+        "available": true,
+        "intervals": [
+          {
+            "start": 0,
+            "end": 0.407396,
+            "duration": 0.407396
+          },
+          {
+            "start": 2.65525,
+            "end": 3.128312,
+            "duration": 0.473062
+          },
+          {
+            "start": 9.792729,
+            "end": 10.203021,
+            "duration": 0.410292
+          },
+          {
+            "start": 13.734021,
+            "end": 14.377167,
+            "duration": 0.643146
+          },
+          {
+            "start": 17.439292,
+            "end": 17.808,
+            "duration": 0.368708
+          }
+        ]
+      },
+      "severity": "info",
+      "recommended_action": "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+    },
+    {
+      "scene": "beach",
+      "file": "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/beach.mp3",
+      "bytes": 189357,
+      "duration_seconds": 11.832,
+      "mp3_readable": true,
+      "transcription": "not-provided",
+      "differences": [
+        "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+      ],
+      "silence": {
+        "available": true,
+        "intervals": [
+          {
+            "start": 2.308792,
+            "end": 3.137354,
+            "duration": 0.828562
+          },
+          {
+            "start": 11.374896,
+            "end": 11.832,
+            "duration": 0.457104
+          }
+        ]
+      },
+      "severity": "info",
+      "recommended_action": "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+    },
+    {
+      "scene": "dalias-first",
+      "file": "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/dalias-first.mp3",
+      "bytes": 327213,
+      "duration_seconds": 20.448,
+      "mp3_readable": true,
+      "transcription": "not-provided",
+      "differences": [
+        "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+      ],
+      "silence": {
+        "available": true,
+        "intervals": [
+          {
+            "start": 0,
+            "end": 0.407396,
+            "duration": 0.407396
+          },
+          {
+            "start": 3.248917,
+            "end": 4.13425,
+            "duration": 0.885333
+          },
+          {
+            "start": 10.073,
+            "end": 10.553854,
+            "duration": 0.480854
+          },
+          {
+            "start": 15.716146,
+            "end": 16.210896,
+            "duration": 0.49475
+          },
+          {
+            "start": 17.358208,
+            "end": 17.9755,
+            "duration": 0.617292
+          }
+        ]
+      },
+      "severity": "info",
+      "recommended_action": "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+    },
+    {
+      "scene": "marina",
+      "file": "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/marina.mp3",
+      "bytes": 343341,
+      "duration_seconds": 21.456,
+      "mp3_readable": true,
+      "transcription": "not-provided",
+      "differences": [
+        "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+      ],
+      "silence": {
+        "available": true,
+        "intervals": [
+          {
+            "start": 0,
+            "end": 0.407271,
+            "duration": 0.407271
+          },
+          {
+            "start": 3.328083,
+            "end": 3.834312,
+            "duration": 0.506229
+          },
+          {
+            "start": 5.124396,
+            "end": 5.767333,
+            "duration": 0.642937
+          },
+          {
+            "start": 6.639312,
+            "end": 7.214313,
+            "duration": 0.575
+          },
+          {
+            "start": 8.344604,
+            "end": 8.981396,
+            "duration": 0.636792
+          },
+          {
+            "start": 9.792542,
+            "end": 10.278521,
+            "duration": 0.485979
+          },
+          {
+            "start": 15.889437,
+            "end": 16.58125,
+            "duration": 0.691812
+          },
+          {
+            "start": 18.162917,
+            "end": 18.662312,
+            "duration": 0.499396
+          }
+        ]
+      },
+      "severity": "info",
+      "recommended_action": "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+    },
+    {
+      "scene": "snorkel",
+      "file": "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/snorkel.mp3",
+      "bytes": 180525,
+      "duration_seconds": 11.28,
+      "mp3_readable": true,
+      "transcription": "not-provided",
+      "differences": [
+        "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+      ],
+      "silence": {
+        "available": true,
+        "intervals": [
+          {
+            "start": 3.027792,
+            "end": 3.521292,
+            "duration": 0.4935
+          }
+        ]
+      },
+      "severity": "info",
+      "recommended_action": "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+    },
+    {
+      "scene": "cala-hort",
+      "file": "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/cala-hort.mp3",
+      "bytes": 248493,
+      "duration_seconds": 15.528,
+      "mp3_readable": true,
+      "transcription": "not-provided",
+      "differences": [
+        "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+      ],
+      "silence": {
+        "available": true,
+        "intervals": [
+          {
+            "start": 4.788563,
+            "end": 5.304667,
+            "duration": 0.516104
+          },
+          {
+            "start": 7.761875,
+            "end": 8.176896,
+            "duration": 0.415021
+          },
+          {
+            "start": 11.015417,
+            "end": 11.624521,
+            "duration": 0.609104
+          },
+          {
+            "start": 15.115437,
+            "end": 15.528,
+            "duration": 0.412562
+          }
+        ]
+      },
+      "severity": "info",
+      "recommended_action": "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+    },
+    {
+      "scene": "sunset",
+      "file": "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/sunset.mp3",
+      "bytes": 122925,
+      "duration_seconds": 7.68,
+      "mp3_readable": true,
+      "transcription": "not-provided",
+      "differences": [
+        "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+      ],
+      "silence": {
+        "available": true,
+        "intervals": [
+          {
+            "start": 0,
+            "end": 0.596146,
+            "duration": 0.596146
+          },
+          {
+            "start": 2.498646,
+            "end": 2.984458,
+            "duration": 0.485812
+          },
+          {
+            "start": 7.296792,
+            "end": 7.68,
+            "duration": 0.383208
+          }
+        ]
+      },
+      "severity": "info",
+      "recommended_action": "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+    },
+    {
+      "scene": "kiss",
+      "file": "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/kiss.mp3",
+      "bytes": 185901,
+      "duration_seconds": 11.616,
+      "mp3_readable": true,
+      "transcription": "not-provided",
+      "differences": [
+        "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+      ],
+      "silence": {
+        "available": true,
+        "intervals": [
+          {
+            "start": 4.720354,
+            "end": 5.297312,
+            "duration": 0.576958
+          },
+          {
+            "start": 7.348979,
+            "end": 8.139729,
+            "duration": 0.79075
+          },
+          {
+            "start": 9.296687,
+            "end": 9.791521,
+            "duration": 0.494833
+          },
+          {
+            "start": 11.183354,
+            "end": 11.616,
+            "duration": 0.432646
+          }
+        ]
+      },
+      "severity": "info",
+      "recommended_action": "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+    },
+    {
+      "scene": "interlude",
+      "file": "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/interlude.mp3",
+      "bytes": 366381,
+      "duration_seconds": 22.896,
+      "mp3_readable": true,
+      "transcription": "not-provided",
+      "differences": [
+        "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+      ],
+      "silence": {
+        "available": true,
+        "intervals": [
+          {
+            "start": 0,
+            "end": 0.407292,
+            "duration": 0.407292
+          },
+          {
+            "start": 2.866312,
+            "end": 3.458417,
+            "duration": 0.592104
+          },
+          {
+            "start": 5.695562,
+            "end": 6.345417,
+            "duration": 0.649854
+          },
+          {
+            "start": 8.483542,
+            "end": 9.068354,
+            "duration": 0.584812
+          },
+          {
+            "start": 10.833063,
+            "end": 11.475396,
+            "duration": 0.642333
+          },
+          {
+            "start": 15.936813,
+            "end": 16.518438,
+            "duration": 0.581625
+          },
+          {
+            "start": 20.238958,
+            "end": 20.768271,
+            "duration": 0.529312
+          },
+          {
+            "start": 22.516125,
+            "end": 22.896,
+            "duration": 0.379875
+          }
+        ]
+      },
+      "severity": "info",
+      "recommended_action": "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+    },
+    {
+      "scene": "sunday",
+      "file": "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/sunday.mp3",
+      "bytes": 326445,
+      "duration_seconds": 20.4,
+      "mp3_readable": true,
+      "transcription": "not-provided",
+      "differences": [
+        "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+      ],
+      "silence": {
+        "available": true,
+        "intervals": [
+          {
+            "start": 5.809188,
+            "end": 6.766271,
+            "duration": 0.957083
+          },
+          {
+            "start": 9.627292,
+            "end": 10.169062,
+            "duration": 0.541771
+          },
+          {
+            "start": 12.704167,
+            "end": 13.079229,
+            "duration": 0.375062
+          },
+          {
+            "start": 20.005896,
+            "end": 20.4,
+            "duration": 0.394104
+          }
+        ]
+      },
+      "severity": "info",
+      "recommended_action": "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+    },
+    {
+      "scene": "roots",
+      "file": "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/roots.mp3",
+      "bytes": 278061,
+      "duration_seconds": 17.376,
+      "mp3_readable": true,
+      "transcription": "not-provided",
+      "differences": [
+        "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+      ],
+      "silence": {
+        "available": true,
+        "intervals": [
+          {
+            "start": 0,
+            "end": 0.407417,
+            "duration": 0.407417
+          },
+          {
+            "start": 3.671167,
+            "end": 4.638542,
+            "duration": 0.967375
+          },
+          {
+            "start": 6.795333,
+            "end": 7.362312,
+            "duration": 0.566979
+          },
+          {
+            "start": 8.486417,
+            "end": 9.129188,
+            "duration": 0.642771
+          },
+          {
+            "start": 10.758375,
+            "end": 11.376167,
+            "duration": 0.617792
+          },
+          {
+            "start": 17.004875,
+            "end": 17.376,
+            "duration": 0.371125
+          }
+        ]
+      },
+      "severity": "info",
+      "recommended_action": "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+    },
+    {
+      "scene": "dalias-second",
+      "file": "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/dalias-second.mp3",
+      "bytes": 325677,
+      "duration_seconds": 20.352,
+      "mp3_readable": true,
+      "transcription": "not-provided",
+      "differences": [
+        "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+      ],
+      "silence": {
+        "available": true,
+        "intervals": [
+          {
+            "start": 4.625375,
+            "end": 5.120333,
+            "duration": 0.494958
+          },
+          {
+            "start": 8.340813,
+            "end": 8.905542,
+            "duration": 0.564729
+          },
+          {
+            "start": 10.766562,
+            "end": 11.302396,
+            "duration": 0.535833
+          },
+          {
+            "start": 12.414438,
+            "end": 12.893313,
+            "duration": 0.478875
+          },
+          {
+            "start": 14.838125,
+            "end": 15.300312,
+            "duration": 0.462187
+          },
+          {
+            "start": 17.050667,
+            "end": 17.707313,
+            "duration": 0.656646
+          },
+          {
+            "start": 19.96825,
+            "end": 20.352,
+            "duration": 0.38375
+          }
+        ]
+      },
+      "severity": "info",
+      "recommended_action": "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+    },
+    {
+      "scene": "tagomago",
+      "file": "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/tagomago.mp3",
+      "bytes": 109869,
+      "duration_seconds": 6.864,
+      "mp3_readable": true,
+      "transcription": "not-provided",
+      "differences": [
+        "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+      ],
+      "silence": {
+        "available": true,
+        "intervals": [
+          {
+            "start": 0,
+            "end": 0.407396,
+            "duration": 0.407396
+          }
+        ]
+      },
+      "severity": "info",
+      "recommended_action": "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+    },
+    {
+      "scene": "formentera",
+      "file": "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/formentera.mp3",
+      "bytes": 313389,
+      "duration_seconds": 19.584,
+      "mp3_readable": true,
+      "transcription": "not-provided",
+      "differences": [
+        "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+      ],
+      "silence": {
+        "available": true,
+        "intervals": [
+          {
+            "start": 4.32175,
+            "end": 4.801312,
+            "duration": 0.479563
+          },
+          {
+            "start": 10.497708,
+            "end": 11.129854,
+            "duration": 0.632146
+          },
+          {
+            "start": 13.70625,
+            "end": 14.241333,
+            "duration": 0.535083
+          }
+        ]
+      },
+      "severity": "info",
+      "recommended_action": "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+    },
+    {
+      "scene": "table",
+      "file": "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/table.mp3",
+      "bytes": 104877,
+      "duration_seconds": 6.552,
+      "mp3_readable": true,
+      "transcription": "not-provided",
+      "differences": [
+        "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+      ],
+      "silence": {
+        "available": true,
+        "intervals": [
+          {
+            "start": 6.194604,
+            "end": 6.552,
+            "duration": 0.357396
+          }
+        ]
+      },
+      "severity": "info",
+      "recommended_action": "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+    },
+    {
+      "scene": "fire",
+      "file": "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/fire.mp3",
+      "bytes": 556077,
+      "duration_seconds": 34.752,
+      "mp3_readable": true,
+      "transcription": "not-provided",
+      "differences": [
+        "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+      ],
+      "silence": {
+        "available": true,
+        "intervals": [
+          {
+            "start": 0,
+            "end": 0.407375,
+            "duration": 0.407375
+          },
+          {
+            "start": 3.608979,
+            "end": 4.441375,
+            "duration": 0.832396
+          },
+          {
+            "start": 8.214313,
+            "end": 8.887396,
+            "duration": 0.673083
+          },
+          {
+            "start": 12.272437,
+            "end": 12.96725,
+            "duration": 0.694812
+          },
+          {
+            "start": 14.091396,
+            "end": 14.600771,
+            "duration": 0.509375
+          },
+          {
+            "start": 16.636458,
+            "end": 17.464333,
+            "duration": 0.827875
+          },
+          {
+            "start": 19.757312,
+            "end": 20.348292,
+            "duration": 0.590979
+          },
+          {
+            "start": 22.177083,
+            "end": 22.605521,
+            "duration": 0.428437
+          },
+          {
+            "start": 25.204979,
+            "end": 25.646021,
+            "duration": 0.441042
+          },
+          {
+            "start": 28.383792,
+            "end": 28.924854,
+            "duration": 0.541063
+          },
+          {
+            "start": 34.396771,
+            "end": 34.752,
+            "duration": 0.355229
+          }
+        ]
+      },
+      "severity": "info",
+      "recommended_action": "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+    },
+    {
+      "scene": "proposal",
+      "file": "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/proposal.mp3",
+      "bytes": 599469,
+      "duration_seconds": 37.464,
+      "mp3_readable": true,
+      "transcription": "not-provided",
+      "differences": [
+        "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+      ],
+      "silence": {
+        "available": true,
+        "intervals": [
+          {
+            "start": 4.333583,
+            "end": 4.967292,
+            "duration": 0.633708
+          },
+          {
+            "start": 9.428937,
+            "end": 10.263667,
+            "duration": 0.834729
+          },
+          {
+            "start": 14.028542,
+            "end": 14.727271,
+            "duration": 0.698729
+          },
+          {
+            "start": 16.16875,
+            "end": 16.750125,
+            "duration": 0.581375
+          },
+          {
+            "start": 17.236917,
+            "end": 17.941312,
+            "duration": 0.704396
+          },
+          {
+            "start": 18.654354,
+            "end": 19.078458,
+            "duration": 0.424104
+          },
+          {
+            "start": 20.669729,
+            "end": 21.315271,
+            "duration": 0.645542
+          },
+          {
+            "start": 23.396979,
+            "end": 24.04225,
+            "duration": 0.645271
+          },
+          {
+            "start": 25.488042,
+            "end": 26.129396,
+            "duration": 0.641354
+          },
+          {
+            "start": 27.711083,
+            "end": 28.230646,
+            "duration": 0.519562
+          },
+          {
+            "start": 29.657646,
+            "end": 30.275417,
+            "duration": 0.617771
+          },
+          {
+            "start": 33.391,
+            "end": 34.198479,
+            "duration": 0.807479
+          },
+          {
+            "start": 37.0775,
+            "end": 37.464,
+            "duration": 0.3865
+          }
+        ]
+      },
+      "severity": "info",
+      "recommended_action": "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+    },
+    {
+      "scene": "dalt-vila",
+      "file": "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/dalt-vila.mp3",
+      "bytes": 288045,
+      "duration_seconds": 18,
+      "mp3_readable": true,
+      "transcription": "not-provided",
+      "differences": [
+        "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+      ],
+      "silence": {
+        "available": true,
+        "intervals": [
+          {
+            "start": 0,
+            "end": 0.4075,
+            "duration": 0.4075
+          },
+          {
+            "start": 4.837271,
+            "end": 5.401312,
+            "duration": 0.564042
+          },
+          {
+            "start": 10.569354,
+            "end": 11.2075,
+            "duration": 0.638146
+          },
+          {
+            "start": 13.297875,
+            "end": 13.934312,
+            "duration": 0.636437
+          },
+          {
+            "start": 17.621,
+            "end": 18,
+            "duration": 0.379
+          }
+        ]
+      },
+      "severity": "info",
+      "recommended_action": "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+    },
+    {
+      "scene": "final-celebration",
+      "file": "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/final-celebration.mp3",
+      "bytes": 1063725,
+      "duration_seconds": 66.48,
+      "mp3_readable": true,
+      "transcription": "not-provided",
+      "differences": [
+        "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+      ],
+      "silence": {
+        "available": true,
+        "intervals": [
+          {
+            "start": 5.927021,
+            "end": 6.317667,
+            "duration": 0.390646
+          },
+          {
+            "start": 10.318896,
+            "end": 11.020396,
+            "duration": 0.7015
+          },
+          {
+            "start": 13.554667,
+            "end": 14.227354,
+            "duration": 0.672687
+          },
+          {
+            "start": 15.897896,
+            "end": 16.474396,
+            "duration": 0.5765
+          },
+          {
+            "start": 23.738396,
+            "end": 24.3445,
+            "duration": 0.606104
+          },
+          {
+            "start": 25.825437,
+            "end": 26.606604,
+            "duration": 0.781167
+          },
+          {
+            "start": 28.751292,
+            "end": 29.318188,
+            "duration": 0.566896
+          },
+          {
+            "start": 32.318562,
+            "end": 33.021396,
+            "duration": 0.702833
+          },
+          {
+            "start": 36.203854,
+            "end": 36.868271,
+            "duration": 0.664417
+          },
+          {
+            "start": 44.390313,
+            "end": 45.055396,
+            "duration": 0.665083
+          },
+          {
+            "start": 45.318396,
+            "end": 45.681375,
+            "duration": 0.362979
+          },
+          {
+            "start": 48.643854,
+            "end": 49.073563,
+            "duration": 0.429708
+          },
+          {
+            "start": 50.654292,
+            "end": 51.13025,
+            "duration": 0.475958
+          },
+          {
+            "start": 55.0495,
+            "end": 55.492042,
+            "duration": 0.442542
+          },
+          {
+            "start": 58.8565,
+            "end": 59.345396,
+            "duration": 0.488896
+          },
+          {
+            "start": 61.085792,
+            "end": 61.625187,
+            "duration": 0.539396
+          },
+          {
+            "start": 66.106771,
+            "end": 66.48,
+            "duration": 0.373229
+          }
+        ]
+      },
+      "severity": "info",
+      "recommended_action": "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+    },
+    {
+      "scene": "epilogue",
+      "file": "la-perigalla-01/media/storytelling/perigalla-01/audio/v9-scenes/epilogue.mp3",
+      "bytes": 541101,
+      "duration_seconds": 33.816,
+      "mp3_readable": true,
+      "transcription": "not-provided",
+      "differences": [
+        "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+      ],
+      "silence": {
+        "available": true,
+        "intervals": [
+          {
+            "start": 0,
+            "end": 0.542792,
+            "duration": 0.542792
+          },
+          {
+            "start": 7.622271,
+            "end": 8.177542,
+            "duration": 0.555271
+          },
+          {
+            "start": 11.108417,
+            "end": 11.694396,
+            "duration": 0.585979
+          },
+          {
+            "start": 13.833562,
+            "end": 14.421417,
+            "duration": 0.587854
+          },
+          {
+            "start": 14.6915,
+            "end": 15.050812,
+            "duration": 0.359312
+          },
+          {
+            "start": 15.943812,
+            "end": 16.668396,
+            "duration": 0.724583
+          },
+          {
+            "start": 16.938437,
+            "end": 17.297833,
+            "duration": 0.359396
+          },
+          {
+            "start": 19.776438,
+            "end": 20.362417,
+            "duration": 0.585979
+          },
+          {
+            "start": 24.395667,
+            "end": 25.2455,
+            "duration": 0.849833
+          },
+          {
+            "start": 27.923854,
+            "end": 28.772562,
+            "duration": 0.848708
+          },
+          {
+            "start": 33.418312,
+            "end": 33.816,
+            "duration": 0.397687
+          }
+        ]
+      },
+      "severity": "info",
+      "recommended_action": "Transcripción no disponible: revisar locución manualmente o aportar --transcript=archivo.json."
+    }
+  ]
+}
