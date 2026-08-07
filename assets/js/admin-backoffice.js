@@ -198,6 +198,7 @@
   function orderActions(order) {
     if (!state.session || state.session.role !== "admin") return "";
     var actions = '<div class="admin-order-actions"><a class="text-action" href="/entradas/pedido/?token=' + encodeURIComponent(order.public_token) + '" target="_blank" rel="noopener noreferrer">Ver pedido</a>';
+    if (Number(order.allergy_attendee_count || 0)) actions += '<button type="button" class="text-action" data-order-allergies data-order-id="' + Number(order.id) + '">Alergias (' + Number(order.allergy_attendee_count) + ')</button>';
     if (!isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="cancel" data-order-id="' + Number(order.id) + '">Cancelar</button>';
     if (!isClosedOrder(order) && (order.payment_status === "paid" || order.status === "paid")) actions += '<button type="button" class="text-action" data-order-action="refund" data-order-id="' + Number(order.id) + '">Registrar devolución</button>';
     if (state.session.is_owner && Number(order.is_test)) actions += '<button type="button" class="text-action danger" data-order-action="purge-test" data-order-id="' + Number(order.id) + '">Eliminar prueba</button>';
@@ -214,8 +215,26 @@
       var amount = discount
         ? '<strong><s>' + formatMoney(order.subtotal_cents) + '</s> ' + formatMoney(order.total_cents) + '</strong><small class="admin-order-discount">Cupón ' + escapeHtml(order.discount_code || "") + ' · −' + formatMoney(discount) + '</small>'
         : '<strong>' + formatMoney(order.total_cents) + '</strong>';
-      return '<article class="admin-order-row"><div><strong>' + escapeHtml(order.name || "Comprador sin nombre") + '</strong><small>' + escapeHtml(order.event_title || "Evento por asignar") + ' · ' + escapeHtml(reference) + ' · ' + paymentMethod + (Number(order.is_test) ? ' · Prueba' : '') + '</small></div><span>' + Number(order.ticket_quantity || 0) + ' entrada' + (Number(order.ticket_quantity || 0) === 1 ? "" : "s") + '</span><span class="status-pill status-' + escapeHtml(displayStatus) + '">' + escapeHtml(statusLabel(displayStatus)) + '</span><span class="admin-order-amount">' + amount + '</span>' + (compact ? "" : orderActions(order)) + '</article>';
+      var allergySummary = Number(order.allergy_attendee_count || 0) ? ' · ' + Number(order.allergy_attendee_count) + ' alergia' + (Number(order.allergy_attendee_count) === 1 ? '' : 's') + ' comunicada' + (Number(order.allergy_attendee_count) === 1 ? '' : 's') : '';
+      return '<article class="admin-order-row"><div><strong>' + escapeHtml(order.name || "Comprador sin nombre") + '</strong><small>' + escapeHtml(order.event_title || "Evento por asignar") + ' · ' + escapeHtml(reference) + ' · ' + paymentMethod + allergySummary + (Number(order.is_test) ? ' · Prueba' : '') + '</small></div><span>' + Number(order.ticket_quantity || 0) + ' entrada' + (Number(order.ticket_quantity || 0) === 1 ? "" : "s") + '</span><span class="status-pill status-' + escapeHtml(displayStatus) + '">' + escapeHtml(statusLabel(displayStatus)) + '</span><span class="admin-order-amount">' + amount + '</span>' + (compact ? "" : orderActions(order)) + '</article>';
     }).join("");
+  }
+
+  function showOrderAllergies(data) {
+    var rows = (data.attendees || []).map(function (attendee) {
+      var hasAllergies = Number(attendee.has_allergies) === 1;
+      return '<div class="ticket-access-ticket-data"><strong>' + escapeHtml(attendee.attendee_name) + '</strong><span>' + escapeHtml(attendee.ticket_type_name || 'Entrada') + (attendee.public_code ? ' · ' + escapeHtml(attendee.public_code) : '') + '</span>' +
+        (hasAllergies
+          ? '<span><strong>Alergias:</strong> ' + escapeHtml(attendee.allergens || 'Sin detalle') + '</span><span><strong>Gravedad:</strong> ' + (Number(attendee.severe_allergy) ? 'Grave' : 'No grave') + '</span>' + (attendee.allergy_notes ? '<span><strong>Notas:</strong> ' + escapeHtml(attendee.allergy_notes) + '</span>' : '')
+          : '<span>Sin alergias comunicadas.</span>') + '</div>';
+    }).join("");
+    var modal = document.createElement("div");
+    modal.className = "ticket-access-modal";
+    modal.innerHTML = '<div class="ticket-access-modal-card" role="dialog" aria-modal="true" aria-label="Alergias del pedido"><button type="button" class="ticket-access-modal-close" aria-label="Cerrar">×</button><section class="ticket-access-decision"><span class="ticket-eyebrow">Información sensible · pedido ' + escapeHtml(data.order && data.order.reference || '') + '</span><h2 class="ticket-holder-name">Alergias de los asistentes</h2><p>Consulta esta información únicamente para coordinar la atención del evento.</p>' + (rows || '<p>No hay asistentes registrados para este pedido.</p>') + '</section></div>';
+    function close() { modal.remove(); }
+    modal.addEventListener("click", function (event) { if (event.target === modal || event.target.closest(".ticket-access-modal-close")) close(); });
+    document.body.appendChild(modal);
+    modal.querySelector(".ticket-access-modal-close").focus();
   }
 
   function initDashboard() {
@@ -315,6 +334,14 @@
           });
         });
         root.addEventListener("click", function (event) {
+          var allergiesButton = event.target.closest("[data-order-allergies]");
+          if (allergiesButton) {
+            var allergiesOrderId = Number(allergiesButton.getAttribute("data-order-id"));
+            if (!allergiesOrderId) return;
+            allergiesButton.disabled = true;
+            request(api + "/admin/orders/" + allergiesOrderId + "/attendees").then(showOrderAllergies).catch(function (error) { renderPageError(error.message); }).finally(function () { allergiesButton.disabled = false; });
+            return;
+          }
           var button = event.target.closest("[data-order-action]");
           if (!button) return;
           var action = button.getAttribute("data-order-action");

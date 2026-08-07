@@ -12,6 +12,22 @@ use RuntimeException;
 final class Ticketing
 {
     private ?DiscountCodes $discountCodes = null;
+    private const FOOD_ALLERGENS = [
+        'gluten' => 'Cereales con gluten',
+        'crustaceans' => 'Crustáceos',
+        'eggs' => 'Huevos',
+        'fish' => 'Pescado',
+        'peanuts' => 'Cacahuetes',
+        'soy' => 'Soja',
+        'milk' => 'Leche',
+        'nuts' => 'Frutos de cáscara',
+        'celery' => 'Apio',
+        'mustard' => 'Mostaza',
+        'sesame' => 'Sésamo',
+        'sulphites' => 'Sulfitos',
+        'lupin' => 'Altramuces',
+        'molluscs' => 'Moluscos',
+    ];
 
     public function __construct(
         private PDO $pdo,
@@ -152,6 +168,8 @@ final class Ticketing
 
             $subtotal = 0;
             $selectedItems = 0;
+            $quantityTotal = 0;
+            $orderItems = [];
             $pricedItems = [];
             foreach ($data['items'] as $item) {
                 $typeId = (int) ($item['ticket_type_id'] ?? 0);
@@ -178,6 +196,7 @@ final class Ticketing
                 $lineTotal = $quantity * $unitPrice;
                 $subtotal += $lineTotal;
                 $selectedItems++;
+                $quantityTotal += $quantity;
                 $referenceUnitPrice = $this->visibleReferencePrice($type, $unitPrice);
                 $pricedItems[] = ['ticket_type_id' => $typeId, 'quantity' => $quantity, 'unit_price_cents' => $unitPrice];
                 $itemStmt = $this->pdo->prepare(
@@ -186,11 +205,18 @@ final class Ticketing
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
                 );
                 $itemStmt->execute([$orderId, $event['id'], $typeId, $type['name'], $quantity, $unitPrice, $referenceUnitPrice, $referenceUnitPrice ? $quantity * $referenceUnitPrice : null, $this->promotionalLabel($type), $referenceUnitPrice ? 1 : 0, $lineTotal]);
+                $orderItems[] = ['id' => (int) $this->pdo->lastInsertId(), 'quantity' => $quantity];
             }
 
             if ($selectedItems === 0) {
                 throw new RuntimeException('El pedido no contiene entradas validas.');
             }
+
+            $this->persistAttendees(
+                $orderId,
+                $orderItems,
+                $this->normaliseAttendees($data['attendees'] ?? null, $quantityTotal, $name)
+            );
 
             $discount = $this->discounts()->quote(
                 (string) ($data['discount_code'] ?? ''),
@@ -546,6 +572,7 @@ final class Ticketing
             $subtotal = 0;
             $quantityTotal = 0;
             $pricedItems = [];
+            $orderItems = [];
             foreach ($data['items'] as $item) {
                 $typeId = (int) ($item['ticket_type_id'] ?? 0);
                 $quantity = (int) ($item['quantity'] ?? 0);
@@ -569,10 +596,16 @@ final class Ticketing
                     'INSERT INTO ticket_order_items (order_id, event_id, ticket_type_id, ticket_type_name, quantity, unit_price_cents, reference_unit_price_cents, reference_total_cents, promotional_label, show_reference_price, total_cents, created_at)
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
                 )->execute([$orderId, $eventId, $typeId, $type['name'], $quantity, $unitPrice, $referenceUnitPrice, $referenceUnitPrice ? $quantity * $referenceUnitPrice : null, $this->promotionalLabel($type), $referenceUnitPrice ? 1 : 0, $lineTotal]);
+                $orderItems[] = ['id' => (int) $this->pdo->lastInsertId(), 'quantity' => $quantity];
             }
             if ($quantityTotal === 0) {
                 throw new RuntimeException('Selecciona al menos una entrada para la prueba.');
             }
+            $this->persistAttendees(
+                $orderId,
+                $orderItems,
+                $this->normaliseAttendees($data['attendees'] ?? null, $quantityTotal, $name)
+            );
             $discount = $this->discounts()->quote(
                 (string) ($data['discount_code'] ?? ''),
                 $eventId,
@@ -794,6 +827,9 @@ final class Ticketing
                     CASE WHEN o.status IN ("cancelled", "refunded") THEN o.status ELSE COALESCE(o.payment_status, o.status) END AS display_status,
                     COALESCE((SELECT pa.payment_method FROM payment_attempts pa WHERE pa.order_id = o.id ORDER BY pa.id DESC LIMIT 1), "card") AS payment_method,
                     COALESCE(items.ticket_quantity, 0) AS ticket_quantity,
+                    COALESCE(attendee_data.attendee_count, 0) AS attendee_count,
+                    COALESCE(attendee_data.allergy_attendee_count, 0) AS allergy_attendee_count,
+                    COALESCE(attendee_data.severe_allergy_count, 0) AS severe_allergy_count,
                     items.event_title
              FROM ticket_orders o
              LEFT JOIN (
@@ -803,9 +839,48 @@ final class Ticketing
                 LEFT JOIN events e ON e.id = oi.event_id
                 GROUP BY oi.order_id
              ) items ON items.order_id = o.id
+             LEFT JOIN (
+                SELECT ta.order_id,
+                       COUNT(*) AS attendee_count,
+                       SUM(CASE WHEN ta.has_allergies = 1 THEN 1 ELSE 0 END) AS allergy_attendee_count,
+                       SUM(CASE WHEN ta.severe_allergy = 1 THEN 1 ELSE 0 END) AS severe_allergy_count
+                FROM ticket_attendees ta
+                GROUP BY ta.order_id
+             ) attendee_data ON attendee_data.order_id = o.id
              ORDER BY o.id DESC
              LIMIT ' . $limit
         )->fetchAll();
+    }
+
+    public function adminOrderAttendees(int $orderId): array
+    {
+        $order = $this->pdo->prepare('SELECT id, name, redsys_order, test_reference FROM ticket_orders WHERE id = ? LIMIT 1');
+        $order->execute([$orderId]);
+        $record = $order->fetch();
+        if (!$record) {
+            throw new InvalidArgumentException('Pedido no encontrado.');
+        }
+        $attendees = $this->pdo->prepare(
+            'SELECT ta.attendee_name, ta.has_allergies, ta.severe_allergy, ta.allergy_notes, ta.ticket_sequence,
+                    toi.ticket_type_name, t.public_code,
+                    GROUP_CONCAT(taa.allergen_label ORDER BY taa.allergen_label SEPARATOR " · ") AS allergens
+             FROM ticket_attendees ta
+             JOIN ticket_order_items toi ON toi.id = ta.order_item_id
+             LEFT JOIN tickets t ON t.id = ta.ticket_id
+             LEFT JOIN ticket_attendee_allergens taa ON taa.attendee_id = ta.id
+             WHERE ta.order_id = ?
+             GROUP BY ta.id, ta.attendee_name, ta.has_allergies, ta.severe_allergy, ta.allergy_notes, ta.ticket_sequence, toi.ticket_type_name, t.public_code
+             ORDER BY toi.id ASC, ta.ticket_sequence ASC'
+        );
+        $attendees->execute([$orderId]);
+        return [
+            'order' => [
+                'id' => (int) $record['id'],
+                'name' => $record['name'],
+                'reference' => $record['test_reference'] ?: $record['redsys_order'],
+            ],
+            'attendees' => $attendees->fetchAll(),
+        ];
     }
 
     public function adminCancelOrder(int $orderId, string $operator, string $reason = ''): array
@@ -1613,10 +1688,11 @@ final class Ticketing
         $this->requireAdminEvent($eventId);
         $rows = $this->pdo->prepare(
             'SELECT t.id, t.public_code, t.status, t.access_status, t.first_entry_at, t.last_entry_at, t.last_exit_at, t.entry_count, t.exit_count, t.last_access_action, t.last_access_by, toi.ticket_type_name,
-                    o.name, o.email, o.phone, COALESCE(o.test_reference, o.redsys_order) AS order_reference
+                    COALESCE(ta.attendee_name, o.name) AS name, o.email, o.phone, COALESCE(o.test_reference, o.redsys_order) AS order_reference
              FROM tickets t
              JOIN ticket_order_items toi ON toi.id = t.order_item_id
              JOIN ticket_orders o ON o.id = toi.order_id
+             LEFT JOIN ticket_attendees ta ON ta.ticket_id = t.id
              WHERE t.event_id = ?
              ORDER BY FIELD(t.access_status, "inside", "outside", "not_entered"), t.last_entry_at DESC, o.created_at ASC, t.id ASC'
         );
@@ -1693,10 +1769,11 @@ final class Ticketing
     {
         $qrToken = $this->extractQrToken($scannedValue);
         $stmt = $this->pdo->prepare(
-            'SELECT t.*, o.name AS attendee_name, COALESCE(o.test_reference, o.redsys_order) AS order_reference, toi.ticket_type_name
+            'SELECT t.*, COALESCE(ta.attendee_name, o.name) AS attendee_name, COALESCE(o.test_reference, o.redsys_order) AS order_reference, toi.ticket_type_name
              FROM tickets t
              JOIN ticket_order_items toi ON toi.id = t.order_item_id
              JOIN ticket_orders o ON o.id = toi.order_id
+             LEFT JOIN ticket_attendees ta ON ta.ticket_id = t.id
              WHERE ' . ($qrToken !== null ? 't.qr_token_hash = ?' : 't.public_code = ?') . ($forUpdate ? ' FOR UPDATE' : '')
         );
         $stmt->execute([$qrToken !== null ? hash('sha256', $qrToken) : $scannedValue]);
@@ -2376,6 +2453,111 @@ final class Ticketing
         return (string) $order['status'];
     }
 
+    /**
+     * Validates health-related attendee data on the server. It is never returned
+     * in public order or ticket payloads.
+     */
+    private function normaliseAttendees(mixed $value, int $quantity, string $buyerName): array
+    {
+        if (!is_array($value) || count($value) !== $quantity) {
+            throw new InvalidArgumentException('Completa la información de alergias de cada asistente.');
+        }
+
+        $attendees = [];
+        foreach ($value as $index => $raw) {
+            if (!is_array($raw)) {
+                throw new InvalidArgumentException('La información de los asistentes no es válida.');
+            }
+            $name = clean_string((string) ($raw['name'] ?? ''), 190);
+            if ($index === 0) {
+                $name = $buyerName;
+            }
+            if ($name === '') {
+                throw new InvalidArgumentException('Indica el nombre de cada asistente.');
+            }
+            $hasAllergies = $this->nullableBoolean($raw['has_allergies'] ?? null);
+            if ($hasAllergies === null) {
+                throw new InvalidArgumentException('Indica si cada asistente tiene alergias alimentarias.');
+            }
+            $allergens = [];
+            if ($hasAllergies) {
+                if (!is_array($raw['allergens'] ?? null)) {
+                    throw new InvalidArgumentException('Selecciona los alérgenos relevantes para cada asistente.');
+                }
+                foreach ($raw['allergens'] as $allergen) {
+                    $id = (string) $allergen;
+                    if (!isset(self::FOOD_ALLERGENS[$id])) {
+                        throw new InvalidArgumentException('Se ha indicado un alérgeno no válido.');
+                    }
+                    $allergens[$id] = self::FOOD_ALLERGENS[$id];
+                }
+                if (!$allergens) {
+                    throw new InvalidArgumentException('Selecciona al menos un alérgeno para cada asistente que lo necesite.');
+                }
+                $severeAllergy = $this->nullableBoolean($raw['severe_allergy'] ?? null);
+                if ($severeAllergy === null) {
+                    throw new InvalidArgumentException('Indica si la alergia es grave.');
+                }
+            } else {
+                $severeAllergy = false;
+            }
+            $attendees[] = [
+                'name' => $name,
+                'has_allergies' => $hasAllergies,
+                'allergens' => $allergens,
+                'severe_allergy' => $severeAllergy,
+                'allergy_notes' => $hasAllergies ? clean_string((string) ($raw['allergy_notes'] ?? ''), 500) : null,
+            ];
+        }
+        return $attendees;
+    }
+
+    private function nullableBoolean(mixed $value): ?bool
+    {
+        if ($value === true || $value === 1 || $value === '1' || $value === 'true') {
+            return true;
+        }
+        if ($value === false || $value === 0 || $value === '0' || $value === 'false') {
+            return false;
+        }
+        return null;
+    }
+
+    private function persistAttendees(int $orderId, array $orderItems, array $attendees): void
+    {
+        $attendeeInsert = $this->pdo->prepare(
+            'INSERT INTO ticket_attendees
+             (order_id, order_item_id, ticket_sequence, attendee_name, has_allergies, severe_allergy, allergy_notes, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())'
+        );
+        $allergenInsert = $this->pdo->prepare(
+            'INSERT INTO ticket_attendee_allergens (attendee_id, allergen_id, allergen_label, created_at)
+             VALUES (?, ?, ?, NOW())'
+        );
+        $position = 0;
+        foreach ($orderItems as $item) {
+            for ($sequence = 1; $sequence <= (int) $item['quantity']; $sequence++) {
+                $attendee = $attendees[$position++] ?? null;
+                if (!$attendee) {
+                    throw new RuntimeException('No se ha podido asociar la información de los asistentes a las entradas.');
+                }
+                $attendeeInsert->execute([
+                    $orderId,
+                    (int) $item['id'],
+                    $sequence,
+                    $attendee['name'],
+                    $attendee['has_allergies'] ? 1 : 0,
+                    $attendee['severe_allergy'] ? 1 : 0,
+                    $attendee['allergy_notes'],
+                ]);
+                $attendeeId = (int) $this->pdo->lastInsertId();
+                foreach ($attendee['allergens'] as $id => $label) {
+                    $allergenInsert->execute([$attendeeId, $id, $label]);
+                }
+            }
+        }
+    }
+
     private function generateTicketsOnce(int $orderId): void
     {
         $existing = $this->pdo->prepare(
@@ -2393,6 +2575,9 @@ final class Ticketing
         $insert = $this->pdo->prepare(
             'INSERT INTO tickets (order_item_id, event_id, ticket_type_id, public_code, qr_token_hash, qr_token_ciphertext, status, issued_at, created_at, updated_at)
              VALUES (?, ?, ?, ?, ?, ?, "issued", NOW(), NOW(), NOW())'
+        );
+        $attendeeUpdate = $this->pdo->prepare(
+            'UPDATE ticket_attendees SET ticket_id = ?, updated_at = NOW() WHERE order_item_id = ? AND ticket_sequence = ?'
         );
         foreach ($items->fetchAll() as $item) {
             for ($i = 0; $i < (int) $item['quantity']; $i++) {
@@ -2415,6 +2600,7 @@ final class Ticketing
                     hash('sha256', $token),
                     $ciphertext,
                 ]);
+                $attendeeUpdate->execute([(int) $this->pdo->lastInsertId(), (int) $item['id'], $i + 1]);
             }
         }
     }

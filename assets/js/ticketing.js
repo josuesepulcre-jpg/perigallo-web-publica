@@ -2,6 +2,22 @@
   var api = "/api";
   var money = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" });
   var LOW_AVAILABILITY_THRESHOLD = 8;
+  var FOOD_ALLERGENS = [
+    { id: "gluten", label: "Cereales con gluten" },
+    { id: "crustaceans", label: "Crustáceos" },
+    { id: "eggs", label: "Huevos" },
+    { id: "fish", label: "Pescado" },
+    { id: "peanuts", label: "Cacahuetes" },
+    { id: "soy", label: "Soja" },
+    { id: "milk", label: "Leche" },
+    { id: "nuts", label: "Frutos de cáscara" },
+    { id: "celery", label: "Apio" },
+    { id: "mustard", label: "Mostaza" },
+    { id: "sesame", label: "Sésamo" },
+    { id: "sulphites", label: "Sulfitos" },
+    { id: "lupin", label: "Altramuces" },
+    { id: "molluscs", label: "Moluscos" }
+  ];
 
   if (!window.PerigalloAnalytics && !document.querySelector('script[data-perigallo-analytics]')) {
     var analyticsScript = document.createElement("script");
@@ -655,6 +671,10 @@
     var applyDiscount = form.querySelector("[data-apply-discount]");
     var clearDiscountButton = form.querySelector("[data-clear-discount]");
     var discountStatus = form.querySelector("[data-discount-status]");
+    var attendeesSection = form.querySelector("[data-checkout-attendees-section]");
+    var attendeesBox = form.querySelector("[data-checkout-attendees]");
+    var attendeeProgress = form.querySelector("[data-checkout-attendee-progress]");
+    var attendeeState = [];
     var appliedDiscount = null;
     var discountFingerprint = "";
     var isSubmitting = false;
@@ -715,6 +735,54 @@
       input.value = Math.max(0, Math.min(Number(input.max || 0), Number(input.value || 0) + delta));
       refreshCheckout();
     });
+
+    if (attendeesBox) {
+      attendeesBox.addEventListener("change", function (event) {
+        var target = event.target;
+        var card = target.closest("[data-attendee-index]");
+        var index = Number(card && card.dataset.attendeeIndex);
+        if (!Number.isInteger(index) || !attendeeState[index]) return;
+        var attendee = attendeeState[index];
+        if (target.matches("[data-attendee-allergy-answer]")) {
+          attendee.hasAllergies = target.value === "yes";
+          attendee.allergens = [];
+          attendee.severeAllergy = null;
+          attendee.notes = "";
+          if (attendee.hasAllergies) attendee.open = true;
+          else openNextAttendee(index);
+          renderAttendees();
+        } else if (target.matches("[data-attendee-allergen]")) {
+          attendee.allergens = Array.from(card.querySelectorAll("[data-attendee-allergen]:checked")).map(function (input) { return input.value; });
+          renderAttendeeProgress();
+        } else if (target.matches("[data-attendee-severity]")) {
+          attendee.severeAllergy = target.value === "yes";
+          renderAttendeeProgress();
+        } else if (target.matches("[data-attendee-name]")) {
+          attendee.name = target.value;
+          renderAttendeeProgress();
+        }
+        refreshCheckout();
+      });
+      attendeesBox.addEventListener("input", function (event) {
+        var target = event.target;
+        var card = target.closest("[data-attendee-index]");
+        var index = Number(card && card.dataset.attendeeIndex);
+        if (!Number.isInteger(index) || !attendeeState[index]) return;
+        if (target.matches("[data-attendee-name]")) attendeeState[index].name = target.value;
+        if (target.matches("[data-attendee-notes]")) {
+          attendeeState[index].notes = target.value.slice(0, 500);
+          var count = card.querySelector("[data-attendee-notes-count]");
+          if (count) count.textContent = attendeeState[index].notes.length + "/500";
+        }
+        renderAttendeeProgress();
+        refreshCheckout();
+      });
+      attendeesBox.addEventListener("toggle", function (event) {
+        var card = event.target;
+        var index = Number(card && card.dataset.attendeeIndex);
+        if (card.matches && card.matches("[data-attendee-index]") && Number.isInteger(index) && attendeeState[index]) attendeeState[index].open = card.open;
+      }, true);
+    }
 
     form.querySelectorAll(".checkout-field input").forEach(function (input) {
       input.addEventListener("input", function () {
@@ -792,6 +860,111 @@
       refreshCheckout();
     }
 
+    function attendeeName(attendee, index) {
+      if (index === 0) return [form.first_name.value.trim(), form.last_name.value.trim()].filter(Boolean).join(" ") || "Comprador/a";
+      return attendee.name.trim() || "Pendiente de identificar";
+    }
+
+    function attendeeComplete(attendee, index) {
+      if (index > 0 && !attendee.name.trim()) return false;
+      if (attendee.hasAllergies === null) return false;
+      if (attendee.hasAllergies && (!attendee.allergens.length || attendee.severeAllergy === null)) return false;
+      return true;
+    }
+
+    function openNextAttendee(index) {
+      attendeeState.forEach(function (attendee, position) { attendee.open = position === index + 1 && attendee.hasAllergies === null; });
+    }
+
+    function renderAttendeeProgress() {
+      if (!attendeeProgress) return;
+      var complete = attendeeState.filter(function (attendee, index) { return attendeeComplete(attendee, index); }).length;
+      attendeeProgress.textContent = complete + " de " + attendeeState.length + " asistentes completados";
+    }
+
+    function attendeeCardMarkup(attendee, index) {
+      var isBuyer = index === 0;
+      var hasAllergies = attendee.hasAllergies;
+      var summary = hasAllergies === false
+        ? "✓ Sin alergias comunicadas"
+        : hasAllergies === true
+        ? (attendee.allergens.length ? attendee.allergens.map(function (id) { var allergen = FOOD_ALLERGENS.find(function (item) { return item.id === id; }); return allergen ? allergen.label : id; }).join(" · ") : "Selecciona los alérgenos")
+        : "Respuesta pendiente";
+      var allergens = FOOD_ALLERGENS.map(function (allergen) {
+        var checked = attendee.allergens.indexOf(allergen.id) !== -1;
+        return '<label class="checkout-allergen-chip"><input type="checkbox" data-attendee-allergen value="' + allergen.id + '"' + (checked ? ' checked' : '') + '><span>' + allergen.label + '</span></label>';
+      }).join("");
+      var allergyDetails = hasAllergies === true ? [
+        '<div class="checkout-attendee-allergen-detail">',
+        '<p class="checkout-attendee-subtitle">Selecciona todos los alérgenos relevantes.</p>',
+        '<div class="checkout-allergen-grid">' + allergens + '</div>',
+        '<fieldset class="checkout-attendee-question"><legend>¿Se trata de una alergia grave?</legend><div class="checkout-attendee-choice-row">',
+        '<label class="checkout-attendee-choice"><input type="radio" name="attendee_severity_' + index + '" data-attendee-severity value="no"' + (attendee.severeAllergy === false ? ' checked' : '') + '><span>No</span></label>',
+        '<label class="checkout-attendee-choice"><input type="radio" name="attendee_severity_' + index + '" data-attendee-severity value="yes"' + (attendee.severeAllergy === true ? ' checked' : '') + '><span>Sí</span></label>',
+        '</div></fieldset>',
+        '<label class="checkout-allergy-notes">Notas sobre la alergia<textarea data-attendee-notes maxlength="500" placeholder="Añade cualquier información importante que debamos conocer.">' + escapeHtml(attendee.notes) + '</textarea><small class="checkout-allergy-count" data-attendee-notes-count>' + attendee.notes.length + '/500</small></label>',
+        '</div>'
+      ].join("") : hasAllergies === false ? '<p class="checkout-attendee-status">✓ Sin alergias comunicadas.</p>' : "";
+      return [
+        '<details class="checkout-attendee-card" data-attendee-index="' + index + '"' + (attendee.open ? ' open' : '') + '>',
+        '<summary><span><strong>Asistente ' + (index + 1) + ' · ' + escapeHtml(attendeeName(attendee, index)) + '</strong></span><small>' + escapeHtml(summary) + '</small></summary>',
+        '<div class="checkout-attendee-card-body">',
+        isBuyer ? '<p class="checkout-attendee-status">Este asistente corresponde a los datos de compra.</p>' : '<label class="checkout-field checkout-attendee-name"><span>Nombre del asistente</span><input data-attendee-name value="' + escapeAttr(attendee.name) + '" autocomplete="name" placeholder="Nombre y apellidos"></label>',
+        '<fieldset class="checkout-attendee-question"><legend>¿Tiene alguna alergia alimentaria que debamos conocer?</legend><div class="checkout-attendee-choice-row">',
+        '<label class="checkout-attendee-choice"><input type="radio" name="attendee_allergy_' + index + '" data-attendee-allergy-answer value="no"' + (hasAllergies === false ? ' checked' : '') + '><span>No</span></label>',
+        '<label class="checkout-attendee-choice"><input type="radio" name="attendee_allergy_' + index + '" data-attendee-allergy-answer value="yes"' + (hasAllergies === true ? ' checked' : '') + '><span>Sí</span></label>',
+        '</div></fieldset>',
+        allergyDetails,
+        '<p class="checkout-attendee-status">Este apartado es exclusivamente para alergias o intolerancias relevantes, no para preferencias gastronómicas.</p>',
+        '</div></details>'
+      ].join("");
+    }
+
+    function renderAttendees() {
+      if (!attendeesBox) return;
+      attendeesBox.innerHTML = attendeeState.map(attendeeCardMarkup).join("");
+      renderAttendeeProgress();
+    }
+
+    function syncAttendees() {
+      if (!attendeesSection || !attendeesBox) return;
+      var quantity = selectedTicketInputs().reduce(function (total, input) { return total + Number(input.value || 0); }, 0);
+      if (!quantity) {
+        attendeeState = [];
+        attendeesSection.hidden = true;
+        return;
+      }
+      var changed = false;
+      while (attendeeState.length < quantity) {
+        attendeeState.push({ name: "", hasAllergies: null, allergens: [], severeAllergy: null, notes: "", open: attendeeState.length === 0 });
+        changed = true;
+      }
+      if (attendeeState.length > quantity) {
+        attendeeState = attendeeState.slice(0, quantity);
+        changed = true;
+      }
+      attendeesSection.hidden = false;
+      if (changed || !attendeesBox.children.length) {
+        renderAttendees();
+      } else {
+        var buyerName = attendeesBox.querySelector('[data-attendee-index="0"] summary strong');
+        if (buyerName) buyerName.textContent = "Asistente 1 · " + attendeeName(attendeeState[0], 0);
+        renderAttendeeProgress();
+      }
+    }
+
+    function attendeesPayload() {
+      return attendeeState.map(function (attendee, index) {
+        return {
+          name: attendeeName(attendee, index),
+          has_allergies: attendee.hasAllergies,
+          allergens: attendee.allergens.slice(),
+          severe_allergy: attendee.severeAllergy,
+          allergy_notes: attendee.notes.trim()
+        };
+      });
+    }
+
     function refreshCheckout() {
       var inputs = Array.from(form.querySelectorAll("[data-ticket-type]"));
       var selected = selectedTicketInputs();
@@ -813,6 +986,7 @@
           subtotal.innerHTML = quantity ? 'Subtotal especial: <strong>' + cents(lineTotal) + '</strong>' + (lineReference > lineTotal ? ' <span>Valor <del>' + cents(lineReference) + '</del></span>' : '') : '';
         }
       });
+      syncAttendees();
       var subtotal = selected.reduce(function (sum, input) { return sum + Number(input.value || 0) * Number(input.dataset.ticketPrice || 0); }, 0);
       if (appliedDiscount && discountFingerprint !== selectionFingerprint()) {
         appliedDiscount = null;
@@ -821,8 +995,8 @@
       }
       var discount = appliedDiscount && appliedDiscount.applied ? Math.min(subtotal, Number(appliedDiscount.discount_cents || 0)) : 0;
       var total = Math.max(0, subtotal - discount);
-      renderCheckoutSummary(summary, selected, form.dataset.eventTitle || "La experiencia", { subtotal: subtotal, discount: discount, code: appliedDiscount && appliedDiscount.code, total: total });
-      var validation = checkoutValidation(form, selected);
+      renderCheckoutSummary(summary, selected, form.dataset.eventTitle || "La experiencia", { subtotal: subtotal, discount: discount, code: appliedDiscount && appliedDiscount.code, total: total, attendees: attendeeState });
+      var validation = checkoutValidation(form, selected, attendeeState);
       var paymentMethod = selectedPaymentMethod();
       if (paymentMethodsBox) {
         paymentMethodsBox.querySelectorAll('input[name="payment_method"]').forEach(function (input) {
@@ -841,7 +1015,7 @@
     form.addEventListener("submit", function (event) {
       event.preventDefault();
       var selected = selectedTicketInputs();
-      var validation = checkoutValidation(form, selected);
+      var validation = checkoutValidation(form, selected, attendeeState);
       if (!validation.valid || isSubmitting) {
         form.querySelectorAll(".checkout-field input").forEach(function (input) { updateCheckoutField(input, true); });
         status.textContent = validation.message;
@@ -858,7 +1032,8 @@
         payment_method: selectedPaymentMethod(),
         promo_code: form.promo_code ? form.promo_code.value : "",
         discount_code: appliedDiscount && discountFingerprint === selectionFingerprint() ? (appliedDiscount.code || "") : "",
-        items: selectedItemsPayload()
+        items: selectedItemsPayload(),
+        attendees: attendeesPayload()
       };
       if (preview) {
         renderCheckoutPreview(form, payload, form.dataset.eventTitle || "Este evento", layout, confirmation, appliedDiscount);
@@ -957,10 +1132,19 @@
     ].join("");
   }
 
-  function checkoutValidation(form, selected) {
+  function checkoutValidation(form, selected, attendees) {
     if (!selected.length) return { valid: false, message: "Selecciona al menos una entrada para continuar." };
     var requiredFields = [form.first_name, form.last_name, form.email, form.phone];
     if (requiredFields.some(function (input) { return !checkoutFieldValid(input); })) return { valid: false, message: "Completa los datos obligatorios para continuar." };
+    attendees = Array.isArray(attendees) ? attendees : [];
+    if (attendees.length !== selected.reduce(function (total, input) { return total + Number(input.value || 0); }, 0)) return { valid: false, message: "Completa la información de alergias de cada asistente para continuar." };
+    for (var index = 0; index < attendees.length; index++) {
+      var attendee = attendees[index];
+      if (index > 0 && !String(attendee.name || "").trim()) return { valid: false, message: "Indica el nombre del asistente " + (index + 1) + "." };
+      if (attendee.hasAllergies === null || typeof attendee.hasAllergies === "undefined") return { valid: false, message: "Indica si el asistente " + (index + 1) + " tiene alergias alimentarias." };
+      if (attendee.hasAllergies && (!Array.isArray(attendee.allergens) || !attendee.allergens.length)) return { valid: false, message: "Selecciona al menos un alérgeno para el asistente " + (index + 1) + "." };
+      if (attendee.hasAllergies && (attendee.severeAllergy === null || typeof attendee.severeAllergy === "undefined")) return { valid: false, message: "Indica si la alergia del asistente " + (index + 1) + " es grave." };
+    }
     if (!form.privacy_accepted.checked) return { valid: false, message: "Acepta la política de privacidad para continuar." };
     if (!form.terms_accepted.checked) return { valid: false, message: "Acepta las condiciones de compra, cancelación y acceso." };
     return { valid: true, message: "" };
@@ -991,12 +1175,17 @@
     var total = totals && Number.isFinite(totals.total) ? totals.total : subtotal - discount;
     var referenceTotal = selected.reduce(function (sum, input) { return sum + Number(input.value || 0) * Number(input.dataset.ticketReferencePrice || 0); }, 0);
     var savings = referenceTotal > total ? referenceTotal - total : 0;
+    var attendees = Array.isArray(totals && totals.attendees) ? totals.attendees : [];
+    var allergyCount = attendees.filter(function (attendee) { return attendee && attendee.hasAllergies === true; }).length;
+    var attendeeSummary = attendees.length
+      ? '<div class="checkout-summary-attendees"><span><strong>' + attendees.length + ' asistente' + (attendees.length === 1 ? '' : 's') + '</strong><small>' + (allergyCount ? allergyCount + ' con alergias comunicadas' : 'Sin alergias comunicadas todavía') + '</small></span></div>'
+      : '';
     target.innerHTML = '<p class="checkout-summary-event">' + escapeHtml(eventTitle) + '</p><ul class="checkout-summary-items">' + selected.map(function (input) {
       var quantity = Number(input.value || 0);
       var price = Number(input.dataset.ticketPrice || 0);
       var reference = Number(input.dataset.ticketReferencePrice || 0);
       return '<li class="checkout-summary-item"><span><strong>' + escapeHtml(input.dataset.ticketName) + '</strong><small>' + quantity + ' × ' + cents(price) + '</small>' + (reference ? '<small class="checkout-summary-reference">Valor: <del>' + cents(reference) + '</del></small>' : '') + '</span><strong>' + cents(quantity * price) + '</strong></li>';
-    }).join("") + '</ul>' + (referenceTotal ? '<div class="checkout-summary-reference-total"><span>Valor de la experiencia</span><del>' + cents(referenceTotal) + '</del></div>' : '') + (discount ? '<div class="checkout-summary-subtotal"><span>Subtotal especial</span><strong>' + cents(subtotal) + '</strong></div><div class="checkout-summary-discount"><span>Descuento' + (totals.code ? ' · ' + escapeHtml(totals.code) : '') + '</span><strong>−' + cents(discount) + '</strong></div>' : '') + '<div class="checkout-summary-total"><span>Total a pagar</span><strong>' + cents(total) + '</strong></div>' + (savings ? '<div class="checkout-summary-saving">Ahorro en esta reserva: <strong>' + cents(savings) + '</strong></div>' : '');
+    }).join("") + '</ul>' + (referenceTotal ? '<div class="checkout-summary-reference-total"><span>Valor de la experiencia</span><del>' + cents(referenceTotal) + '</del></div>' : '') + (discount ? '<div class="checkout-summary-subtotal"><span>Subtotal especial</span><strong>' + cents(subtotal) + '</strong></div><div class="checkout-summary-discount"><span>Descuento' + (totals.code ? ' · ' + escapeHtml(totals.code) : '') + '</span><strong>−' + cents(discount) + '</strong></div>' : '') + attendeeSummary + '<div class="checkout-summary-total"><span>Total a pagar</span><strong>' + cents(total) + '</strong></div>' + (savings ? '<div class="checkout-summary-saving">Ahorro en esta reserva: <strong>' + cents(savings) + '</strong></div>' : '');
   }
 
   function renderCheckoutPreview(form, payload, eventTitle, layout, confirmation, appliedDiscount) {

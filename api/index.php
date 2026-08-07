@@ -240,6 +240,12 @@ try {
         return;
     }
 
+    if ($method === 'GET' && preg_match('#^/admin/orders/([0-9]+)/attendees$#', $path, $m)) {
+        AdminAuth::require();
+        json_response(['ok' => true] + $ticketing->adminOrderAttendees((int) $m[1]));
+        return;
+    }
+
     if ($method === 'GET' && $path === '/admin/discount-codes/meta') {
         AdminAuth::require();
         json_response(['ok' => true] + $ticketing->adminDiscountCodeMeta());
