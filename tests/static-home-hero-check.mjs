@@ -42,6 +42,8 @@ const required = [
   'left:clamp(188px,20vw,396px)',
   'https://www.instagram.com/perigallo/',
   'aria-label="Instagram de Perigallo"',
+  '.nav-links-left .nav-social-link{width:36px;height:36px;min-height:36px;padding:0;',
+  '.nav-links-left .nav-social-link svg{width:17px;height:17px;display:block;overflow:visible;stroke:currentColor;',
   'background:#29474d',
   'favicon.svg?v=perigallo-monogram-20260808',
   '<section class="manifest" id="quienes-somos" aria-labelledby="about-title">',
