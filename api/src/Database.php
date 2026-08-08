@@ -33,7 +33,14 @@ final class Database
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES => false,
         ]);
-        self::$pdo->exec("SET time_zone = '+00:00'");
+        // Las fechas introducidas desde el editor (ventas, publicación y
+        // horarios) se guardan como hora civil de la aplicación. La sesión
+        // MySQL debe comparar NOW() en esa misma zona; usar UTC aquí hacía que
+        // una venta programada para las 19:00 en España no se activase hasta
+        // dos horas después durante el horario de verano.
+        $appTimezone = new \DateTimeZone(env_value('APP_TIMEZONE', 'Europe/Madrid') ?? 'Europe/Madrid');
+        $offset = (new \DateTimeImmutable('now', $appTimezone))->format('P');
+        self::$pdo->exec('SET time_zone = ' . self::$pdo->quote($offset));
 
         return self::$pdo;
     }

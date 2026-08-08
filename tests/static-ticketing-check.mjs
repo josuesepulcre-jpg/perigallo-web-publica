@@ -129,6 +129,7 @@ for (const file of activeFiles) {
 
 const api = readFileSync(join(root, "api/index.php"), "utf8");
 const ticketing = readFileSync(join(root, "api/src/Ticketing.php"), "utf8");
+const database = readFileSync(join(root, "api/src/Database.php"), "utf8");
 const testDataPurge = readFileSync(join(root, "api/scripts/purge-test-ticketing-data.php"), "utf8");
 const holdedClient = readFileSync(join(root, "api/src/HoldedClient.php"), "utf8");
 const holdedSync = readFileSync(join(root, "api/src/HoldedSyncService.php"), "utf8");
@@ -163,6 +164,9 @@ for (const marker of ["holded_invoice_delivery_status", "holded_invoice_delivery
 }
 
 const publicTicketing = readFileSync(join(root, "assets/js/ticketing.js"), "utf8");
+for (const marker of ["DateTimeZone", "DateTimeImmutable", "SET time_zone"]) {
+  if (!database.includes(marker)) throw new Error(`Database session timezone configuration is missing ${marker}.`);
+}
 for (const marker of ["experience-accordion-nested", "Preguntas frecuentes", "Cancelaciones y devoluciones", "linkifyText"]) {
   if (!publicTicketing.includes(marker)) throw new Error(`Missing public information accordion marker: ${marker}`);
 }
