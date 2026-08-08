@@ -31,6 +31,7 @@ const required = [
   "database/migrations/019_public_lead_form.sql",
   "database/migrations/020_holded_fiscal_sync.sql",
   "database/migrations/021_holded_invoice_delivery.sql",
+  "database/migrations/022_checkout_runtime_compatibility.sql",
   "api/scripts/apply-migration.php",
   "api/scripts/purge-test-ticketing-data.php",
   "api/scripts/holded-health.php",
