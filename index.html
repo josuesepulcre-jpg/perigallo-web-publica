@@ -42,13 +42,19 @@ body{background:var(--bg);color:var(--cream);font-family:'Montserrat',sans-serif
 /* NAV */
 nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;height:var(--header-desktop-height);padding:0 clamp(26px,4.4vw,76px);border-bottom:1px solid rgba(226,205,181,.065);background:linear-gradient(180deg,rgba(43,73,79,.985),rgba(38,66,73,.9));transition:height .4s ease,background .4s ease,border-color .4s ease}
 nav.scrolled{height:76px;background:rgba(34,61,68,.975);border-color:rgba(226,205,181,.09);box-shadow:none}
-.nav-links-left{display:flex;gap:clamp(22px,2.5vw,42px);list-style:none}
-.nav-links-right{position:relative;display:flex;gap:clamp(16px,1.25vw,24px);margin-left:auto;margin-right:clamp(40px,6vw,122px);padding:10px 15px 11px;list-style:none;justify-content:flex-end;align-items:center;border:1px solid rgba(226,205,181,.11);border-radius:999px;background:linear-gradient(90deg,rgba(245,241,229,.008),rgba(245,241,229,.032),rgba(245,241,229,.008));box-shadow:inset 0 1px rgba(245,241,229,.025),inset 0 -1px rgba(226,205,181,.12)}
-.nav-links-left a,.nav-links-right a{position:relative;font-size:.61rem;letter-spacing:.22em;text-transform:uppercase;color:var(--cream);text-decoration:none;opacity:.8;transition:opacity .32s ease,color .32s ease,letter-spacing .32s ease;font-weight:500;white-space:nowrap}
-.nav-links-left a::after,.nav-links-right a::after{content:'';position:absolute;left:.05em;right:.25em;bottom:-9px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-l),transparent);opacity:.75;transform:scaleX(0);transform-origin:center;transition:transform .34s cubic-bezier(.22,1,.36,1)}
-.nav-links-left a:hover,.nav-links-right a:hover{opacity:1;color:var(--gold-l);letter-spacing:.235em}
-.nav-links-left a:hover::after,.nav-links-right a:hover::after{transform:scaleX(1)}
-.nav-links-right a{letter-spacing:.19em}.nav-links-right a:hover{letter-spacing:.205em}
+.nav-links-left{position:absolute;left:clamp(188px,20vw,396px);display:flex;gap:clamp(22px,2.5vw,42px);list-style:none}
+.nav-links-right{position:absolute;right:clamp(32px,4.4vw,76px);display:flex;gap:8px;margin:0;padding:0;list-style:none;justify-content:flex-end;align-items:center}
+.nav-links-left a,.nav-links-right a{position:relative;font-size:.61rem;letter-spacing:.22em;text-transform:uppercase;color:var(--cream);text-decoration:none;opacity:.8;transition:opacity .32s ease,color .32s ease,letter-spacing .32s ease,background .32s ease,border-color .32s ease,transform .32s ease;font-weight:500;white-space:nowrap}
+.nav-links-left a::after{content:'';position:absolute;left:.05em;right:.25em;bottom:-9px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-l),transparent);opacity:.75;transform:scaleX(0);transform-origin:center;transition:transform .34s cubic-bezier(.22,1,.36,1)}
+.nav-links-left a:hover{opacity:1;color:var(--gold-l);letter-spacing:.235em}.nav-links-left a:hover::after{transform:scaleX(1)}
+.nav-links-right a{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:0 14px;border:1px solid rgba(226,205,181,.23);border-radius:999px;font-size:.54rem;letter-spacing:.17em;opacity:1}
+.nav-links-right a:hover{transform:translateY(-1px);letter-spacing:.17em}
+.nav-links-right .nav-button--about{background:rgba(31,66,73,.48);color:rgba(245,241,229,.92)}
+.nav-links-right .nav-button--finca{background:rgba(205,177,151,.17);border-color:rgba(226,205,181,.42);color:var(--gold-l)}
+.nav-links-right .nav-button--contact{background:var(--gold-l);border-color:var(--gold-l);color:#1d353b}
+.nav-links-right .nav-button--about:hover{background:rgba(42,82,89,.78);border-color:rgba(226,205,181,.44);color:#fff}
+.nav-links-right .nav-button--finca:hover{background:rgba(205,177,151,.29);color:#fff}
+.nav-links-right .nav-button--contact:hover{background:#f4efe5;border-color:#f4efe5;color:#172c31}
 .nav-social-link{width:31px;height:31px;border:1px solid rgba(245,241,229,.24);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:var(--cream);opacity:.68;transition:opacity .3s,color .3s,border-color .3s,background .3s}
 .nav-social-link:hover{opacity:1;color:var(--gold);border-color:var(--gold);background:rgba(205,177,151,.06)}
 .nav-social-link svg{width:14px;height:14px;display:block}
@@ -524,9 +530,9 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
     <img class="nav-logo-img" src="assets/images/perigallo-logo-original.png" alt="Perigallo">
   </a>
   <ul class="nav-links-right">
-    <li><a href="/#quienes-somos">Quiénes somos</a></li>
-    <li><a href="/finca-la-llaguna/">La Finca</a></li>
-    <li><a href="/contacto/">Contacto</a></li>
+    <li><a class="nav-button--about" href="/#quienes-somos">Quiénes somos</a></li>
+    <li><a class="nav-button--finca" href="/finca-la-llaguna/">La Finca</a></li>
+    <li><a class="nav-button--contact" href="/contacto/">Contacto</a></li>
   </ul>
 </nav>
 
