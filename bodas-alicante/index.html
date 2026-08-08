@@ -15,7 +15,7 @@
   <link rel="icon" href="/favicon.svg?v=perigallo-monogram-20260808">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/assets/css/weddings-page.css?v=20260808-weddings-v1">
+  <link rel="stylesheet" href="/assets/css/weddings-page.css?v=20260808-weddings-v2">
 </head>
 <body>
   <a class="wedding-skip" href="#contenido">Saltar al contenido</a>
@@ -52,44 +52,48 @@
       <a class="wedding-hero__scroll" href="#la-experiencia"><span>Descubrir</span><i></i></a>
     </section>
 
-    <section class="wedding-manifesto" id="la-experiencia" aria-labelledby="manifesto-title">
-      <div class="wedding-manifesto__inner">
+    <section class="wedding-connection" id="la-experiencia" aria-labelledby="manifesto-title">
+      <div class="wedding-connection__inner">
         <div class="wedding-manifesto__intro">
           <p class="wedding-eyebrow">La experiencia Perigallo</p>
           <h2 id="manifesto-title">Una celebración<br>con <em>vuestro relato.</em></h2>
           <p>Partimos de lo que os reúne y de cómo queréis sentiros ese día. A partir de ahí, la gastronomía se convierte en una manera de recibir, emocionar y celebrar.</p>
           <a class="wedding-text-link" href="https://suite.perigallo.com/solicitud?origen=web-perigallo" target="_blank" rel="noopener noreferrer">Hablar de vuestra boda</a>
         </div>
-        <figure class="wedding-manifesto__image">
-          <div class="wedding-manifesto__image-main" role="img" aria-label="Finca La Llaguna preparada para una celebración"></div>
-          <figcaption><span>Perigallo</span><span>Cocina · Servicio · Escena</span></figcaption>
+        <figure class="wedding-story-carousel" aria-label="Selección de propuestas gastronómicas Perigallo">
+          <div class="wedding-story-carousel__stage">
+            <img class="wedding-story-carousel__slide is-active" src="/assets/images/gastronomy-carousel/foreground/fortune-cookie.webp" alt="Propuesta gastronómica Perigallo" width="620" height="620" decoding="async">
+            <img class="wedding-story-carousel__slide" src="/assets/images/gastronomy-carousel/foreground/brioche-braseado.webp" alt="" width="505" height="620" decoding="async">
+          </div>
+          <div class="wedding-story-carousel__meta" aria-live="polite"><span>Perigallo</span><span><b data-wedding-carousel-current>01</b> / 12</span></div>
         </figure>
         <blockquote class="wedding-manifesto__quote">“La cocina no acompaña a la celebración. <em>Forma parte de ella.</em>”</blockquote>
-      </div>
-    </section>
-
-    <section class="wedding-layers" aria-labelledby="layers-title">
-      <div class="wedding-section-head">
-        <p class="wedding-eyebrow">Diseñamos el conjunto</p>
-        <h2 id="layers-title">Todo tiene que<br><em>sentirse conectado.</em></h2>
-        <p>Cuando cada capa está pensada para el momento, los invitados no solo asisten: viven una experiencia que permanece.</p>
-      </div>
-      <div class="wedding-layers__grid">
-        <article class="wedding-layer">
-          <span>01</span>
-          <h3>Cocina<br><em>con intención</em></h3>
-          <p>Una propuesta gastronómica creada para vuestro formato, vuestro espacio y la energía de cada momento del día.</p>
-        </article>
-        <article class="wedding-layer">
-          <span>02</span>
-          <h3>Servicio<br><em>con ritmo</em></h3>
-          <p>Un equipo que acompaña con naturalidad, sabe cuándo aparecer y deja que la celebración fluya sin interrupciones.</p>
-        </article>
-        <article class="wedding-layer">
-          <span>03</span>
-          <h3>Escena<br><em>con memoria</em></h3>
-          <p>La mesa, la luz, el gesto y el ambiente se trabajan como una misma atmósfera, sin fórmulas prefabricadas.</p>
-        </article>
+        <div class="wedding-connection__layers" aria-labelledby="layers-title">
+          <div class="wedding-section-head">
+            <div>
+              <p class="wedding-eyebrow">Diseñamos el conjunto</p>
+              <h2 id="layers-title">Todo tiene que<br><em>sentirse conectado.</em></h2>
+            </div>
+            <p>Cuando cada capa está pensada para el momento, los invitados no solo asisten: viven una experiencia que permanece.</p>
+          </div>
+          <div class="wedding-layers__grid">
+            <article class="wedding-layer">
+              <span>01</span>
+              <h3>Cocina<br><em>con intención</em></h3>
+              <p>Una propuesta gastronómica creada para vuestro formato, vuestro espacio y la energía de cada momento del día.</p>
+            </article>
+            <article class="wedding-layer">
+              <span>02</span>
+              <h3>Servicio<br><em>con ritmo</em></h3>
+              <p>Un equipo que acompaña con naturalidad, sabe cuándo aparecer y deja que la celebración fluya sin interrupciones.</p>
+            </article>
+            <article class="wedding-layer">
+              <span>03</span>
+              <h3>Escena<br><em>con memoria</em></h3>
+              <p>La mesa, la luz, el gesto y el ambiente se trabajan como una misma atmósfera, sin fórmulas prefabricadas.</p>
+            </article>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -132,7 +136,7 @@
     <div><a href="/">Inicio</a><a href="/experiencias/">Experiencias</a><a href="/#contact">Contacto</a></div>
   </footer>
 
-  <script src="/assets/js/weddings-page.js?v=20260808-weddings-v1" defer></script>
+  <script src="/assets/js/weddings-page.js?v=20260808-weddings-v3" defer></script>
   <script src="/assets/js/analytics.js" defer></script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"Service","name":"Bodas inmersivas Perigallo","areaServed":"Alicante","provider":{"@type":"Organization","name":"Perigallo","url":"https://perigallo.com/"}}</script>
 </body>
