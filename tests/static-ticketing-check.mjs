@@ -29,6 +29,7 @@ const required = [
   "database/migrations/018_order_access_conditions.sql",
   "database/migrations/019_public_lead_form.sql",
   "api/scripts/apply-migration.php",
+  "api/scripts/purge-test-ticketing-data.php",
   "api/src/Analytics.php",
   "api/cron/analytics-report.php",
   "assets/js/analytics.js",
@@ -119,6 +120,7 @@ for (const file of activeFiles) {
 
 const api = readFileSync(join(root, "api/index.php"), "utf8");
 const ticketing = readFileSync(join(root, "api/src/Ticketing.php"), "utf8");
+const testDataPurge = readFileSync(join(root, "api/scripts/purge-test-ticketing-data.php"), "utf8");
 const whatsAppDelivery = readFileSync(join(root, "api/src/WhatsAppDeliveryService.php"), "utf8");
 for (const marker of [
   "/admin/events/([0-9]+)/preview",
@@ -251,6 +253,10 @@ for (const marker of ["ticket_admin_users", "password_hash", "ticket_admin_audit
 }
 for (const marker of ["/admin/orders/([0-9]+)/cancel", "/admin/orders/([0-9]+)/record-refund", "/admin/orders/([0-9]+)/test", "/admin/users", "requireOwner"]) {
   if (!api.includes(marker) && !adminBackoffice.includes(marker)) throw new Error(`Missing protected backoffice operation: ${marker}`);
+}
+
+for (const marker of ["--confirm", "WHERE is_test = 1", "adminPurgeTestOrder", "Limpieza inicial por terminal"]) {
+  if (!testDataPurge.includes(marker)) throw new Error(`Test-data purge command is missing ${marker}.`);
 }
 const parseFaqSource = adminJs.match(/function parseFaq\(value\) \{[\s\S]*?\n  \}\n\n  function formData/);
 if (!parseFaqSource) throw new Error("Unable to locate the FAQ parser.");
