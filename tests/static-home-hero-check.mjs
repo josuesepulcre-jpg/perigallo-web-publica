@@ -3,8 +3,8 @@ import { resolve } from 'node:path';
 
 const home = readFileSync(resolve('index.html'), 'utf8');
 const required = [
-  'Gastronomía <em>Perigallo</em>',
-  'Gastronomía <em>inmersiva</em>',
+  '<h1 class="hero-title">Perigallo</h1>',
+  'Gastronomía inmersiva',
   'Diseñamos cocina, servicio y puesta en escena para celebraciones irrepetibles.',
   'Quiero celebrar un evento',
   'Quiero vivir una experiencia Perigallo',
