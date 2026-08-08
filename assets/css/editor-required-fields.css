@@ -1,0 +1,24 @@
+.editor-required-note {
+  margin: 0 0 26px;
+  padding: 13px 16px;
+  border-left: 2px solid var(--pg-gold);
+  background: rgba(205, 177, 151, .08);
+  color: var(--pg-muted);
+  font-size: .78rem;
+  line-height: 1.6;
+}
+
+.editor-required-note > span {
+  color: #e4aaa1;
+  font-weight: 600;
+  margin-right: 3px;
+}
+
+.editor-form .ticket-field:has(> input[required]) > label::after,
+.editor-form .ticket-field:has(> textarea[required]) > label::after,
+.ticket-drawer-panel .ticket-field:has(input[required]) > label::after,
+.publication-url-control:has(input[required]) > label::after {
+  color: #e4aaa1;
+  content: " *";
+  font-weight: 600;
+}
