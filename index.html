@@ -313,11 +313,12 @@ section{position:relative}
 
 .contact-info{display:flex;justify-content:center;gap:clamp(28px,6vw,82px);margin-top:clamp(56px,7vw,90px);padding-top:clamp(35px,5vw,54px);border-top:1px solid rgba(205,177,151,.28);flex-wrap:wrap}
 .contact-detail-label{font-size:.56rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:7px}
-.contact-detail-value{font-family:'Cormorant Garamond',serif;font-size:1.05rem;color:var(--cream)}
+.contact-detail-value{font-family:'Montserrat',sans-serif;font-size:.76rem;font-weight:500;letter-spacing:.025em;color:rgba(245,241,229,.9)}
 .contact-detail-value a{color:var(--cream);text-decoration:none;transition:color .3s}
 .contact-detail-value a:hover{color:var(--gold)}
-.proposal-entry{position:relative;overflow:hidden;display:grid;grid-template-columns:minmax(0,1.02fr) minmax(290px,.98fr);gap:clamp(34px,6vw,82px);align-items:center;padding:clamp(30px,5vw,64px);border:1px solid rgba(205,177,151,.35);background:linear-gradient(135deg,rgba(245,241,229,.09),rgba(205,177,151,.025) 48%,rgba(20,49,55,.35));box-shadow:0 30px 80px rgba(0,0,0,.2)}
-.proposal-entry::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 38% 80% at 100% 0%,rgba(205,177,151,.16),transparent 74%),linear-gradient(90deg,transparent 49.9%,rgba(205,177,151,.16) 50%,transparent 50.1%);pointer-events:none}
+.proposal-entry{position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(0,1.02fr) minmax(290px,.98fr);gap:clamp(34px,6vw,82px);align-items:center;padding:clamp(36px,5vw,68px) 0;overflow:visible}
+.proposal-entry::before{content:'';position:absolute;z-index:-1;inset:4% -7%;pointer-events:none;background:radial-gradient(ellipse 48% 76% at 8% 42%,rgba(78,119,117,.18),transparent 72%),radial-gradient(ellipse 38% 66% at 92% 50%,rgba(205,177,151,.1),transparent 75%),linear-gradient(90deg,rgba(205,177,151,.24),transparent 19% 81%,rgba(205,177,151,.24));mask-image:linear-gradient(0deg,transparent,rgba(0,0,0,.72) 16% 84%,transparent)}
+.proposal-entry::after{content:'';position:absolute;z-index:-1;top:15%;bottom:15%;left:50%;width:1px;background:linear-gradient(transparent,rgba(205,177,151,.48) 18% 82%,transparent);pointer-events:none}
 .proposal-copy,.proposal-side{position:relative;z-index:1}
 .proposal-kicker{font-size:.55rem;font-weight:500;letter-spacing:.34em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:18px}
 .proposal-title{max-width:430px;font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,3.3vw,3.35rem);font-weight:300;line-height:.95;letter-spacing:-.025em;color:var(--cream);margin-bottom:20px}
@@ -335,10 +336,10 @@ footer::after{content:'';position:absolute;z-index:-1;inset:0;pointer-events:non
 .footer-brand-img{height:61px;margin-bottom:22px;opacity:1;filter:brightness(1.1) drop-shadow(0 10px 20px rgba(5,19,22,.2));display:block}
 .footer-brand-text{font-size:.79rem;line-height:1.86;color:rgba(245,241,229,.76);max-width:345px}
 .footer-col-title{font-size:.54rem;font-weight:500;letter-spacing:.3em;text-transform:uppercase;color:var(--gold-l);margin-bottom:20px;display:flex;align-items:center;gap:11px}.footer-col-title::before{content:'';width:22px;height:1px;background:var(--gold)}
-.footer-col-list{list-style:none;display:flex;flex-direction:column;gap:11px}.footer-col-list a,.footer-col-list span{font-size:.82rem;color:rgba(245,241,229,.76);text-decoration:none;transition:color .3s,transform .3s;font-family:'Cormorant Garamond',serif;font-style:italic}.footer-col-list a:hover{color:var(--gold-l);transform:translateX(3px)}
+.footer-col-list{list-style:none;display:flex;flex-direction:column;gap:12px}.footer-col-list a,.footer-col-list span{font-family:'Montserrat',sans-serif;font-size:.63rem;font-weight:400;letter-spacing:.025em;color:rgba(245,241,229,.76);text-decoration:none;transition:color .3s,transform .3s}.footer-col-list a:hover{color:var(--gold-l);transform:translateX(3px)}
 .footer-contact{position:relative;padding:25px 25px 23px;border:1px solid rgba(226,205,181,.28);background:linear-gradient(135deg,rgba(245,241,229,.09),rgba(205,177,151,.045) 50%,rgba(19,49,55,.32));box-shadow:0 20px 48px rgba(5,19,22,.12)}
-.footer-contact .footer-col-title{margin-bottom:18px}.footer-phone{display:inline-block;color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:1.45rem;line-height:1;text-decoration:none;transition:color .3s}.footer-phone:hover{color:var(--gold-l)}
-.footer-location{margin:18px 0 20px;color:rgba(245,241,229,.68);font-size:.69rem;line-height:1.62}.footer-location strong{display:block;margin-bottom:2px;color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-style:italic;font-weight:400}
+.footer-contact .footer-col-title{margin-bottom:18px}.footer-phone{display:inline-block;color:var(--cream);font-family:'Montserrat',sans-serif;font-size:.92rem;font-weight:500;letter-spacing:.07em;line-height:1;text-decoration:none;transition:color .3s}.footer-phone:hover{color:var(--gold-l)}
+.footer-location{margin:18px 0 20px;color:rgba(245,241,229,.68);font-family:'Montserrat',sans-serif;font-size:.64rem;line-height:1.65}.footer-location strong{display:block;margin-bottom:4px;color:var(--cream);font-family:'Montserrat',sans-serif;font-size:.66rem;font-style:normal;font-weight:500;letter-spacing:.06em;text-transform:uppercase}
 .footer-map-link{display:inline-flex;align-items:center;justify-content:space-between;gap:15px;min-height:44px;padding:7px 8px 7px 15px;border:1px solid rgba(226,205,181,.55);border-radius:999px;color:var(--cream);font-size:.5rem;font-weight:500;letter-spacing:.18em;text-decoration:none;text-transform:uppercase;transition:transform .3s ease,background .3s ease,border-color .3s ease,color .3s ease}.footer-map-link svg{width:15px;height:15px;flex:0 0 15px;stroke:currentColor}.footer-map-link span{display:grid;place-items:center;width:27px;height:27px;border:1px solid currentColor;border-radius:50%;font-size:.9rem;line-height:1}.footer-map-link:hover{transform:translateY(-2px);border-color:var(--gold-l);background:var(--gold-l);color:var(--bg2)}
 .footer-bottom{position:relative;max-width:1240px;margin:0 auto;padding-top:27px;border-top:1px solid rgba(205,177,151,.26);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:18px}.footer-disclaimer{font-size:.61rem;letter-spacing:.05em;color:var(--muted);max-width:700px;line-height:1.75;font-style:italic}.footer-copy{font-size:.56rem;color:rgba(245,241,229,.55);letter-spacing:.16em;text-transform:uppercase}
 
@@ -445,7 +446,7 @@ footer::after{content:'';position:absolute;z-index:-1;inset:0;pointer-events:non
   .finca-visual{height:340px;order:-1}
   .catering{padding:90px 22px}
   .catering-list{grid-template-columns:repeat(2,1fr)}
-  .contact{padding:94px 22px 74px}.contact-head{grid-template-columns:1fr;gap:26px;margin-bottom:42px}.contact-title{font-size:clamp(3rem,14vw,4.3rem)}.contact-side-note{max-width:360px;margin:0}.contact-info{flex-direction:column;gap:28px;align-items:flex-start}.proposal-entry{grid-template-columns:1fr;padding:30px 23px;gap:30px}.proposal-entry::before{background:radial-gradient(ellipse 65% 46% at 100% 0%,rgba(205,177,151,.13),transparent 78%)}
+  .contact{padding:94px 22px 74px}.contact-head{grid-template-columns:1fr;gap:26px;margin-bottom:42px}.contact-title{font-size:clamp(3rem,14vw,4.3rem)}.contact-side-note{max-width:360px;margin:0}.contact-info{flex-direction:column;gap:28px;align-items:flex-start}.proposal-entry{grid-template-columns:1fr;padding:30px 0;gap:30px}.proposal-entry::before{inset:0 -22px;background:radial-gradient(ellipse 65% 46% at 100% 0%,rgba(205,177,151,.13),transparent 78%)}.proposal-entry::after{display:none}
   .proposal-actions .btn-primary,.proposal-actions .btn-ghost{width:100%;text-align:center}
   .form{grid-template-columns:1fr;gap:24px}
   .form-row-full,.form-submit,.form-disclaimer{grid-column:span 1}
@@ -674,7 +675,7 @@ footer::after{content:'';position:absolute;z-index:-1;inset:0;pointer-events:non
     </div>
 
     <div class="contact-info reveal reveal-delay-4">
-      <div><span class="contact-detail-label">Teléfono</span><span class="contact-detail-value"><a href="tel:+34691499985">+34 691 499 985</a></span></div>
+      <div><span class="contact-detail-label">Teléfono</span><span class="contact-detail-value"><a href="tel:+34691499985">691 499 985</a></span></div>
       <div><span class="contact-detail-label">Base</span><span class="contact-detail-value">Crevillent, Alicante</span></div>
       <div><span class="contact-detail-label">Primera respuesta</span><span class="contact-detail-value">En menos de 48 horas</span></div>
     </div>
@@ -711,7 +712,7 @@ footer::after{content:'';position:absolute;z-index:-1;inset:0;pointer-events:non
     </div>
     <div class="footer-contact">
       <span class="footer-col-title">Contacto</span>
-      <a class="footer-phone" href="tel:+34691499985">+34 691 499 985</a>
+      <a class="footer-phone" href="tel:+34691499985">691 499 985</a>
       <p class="footer-location"><strong>Finca La Llaguna</strong>Crevillent · Alicante</p>
       <a class="footer-map-link" href="https://www.google.com/maps/search/?api=1&amp;query=Finca%20La%20Llaguna%2C%20Crevillent%2C%20Alicante" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11Z"></path><circle cx="12" cy="10" r="2.1"></circle></svg>Abrir ubicación <span aria-hidden="true">→</span></a>
     </div>
