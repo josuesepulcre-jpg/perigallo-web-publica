@@ -2,62 +2,123 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Experiencias gastronómicas pop-up en Alicante | Perigallo</title>
-  <meta name="description" content="Descubre y compra entradas para las experiencias gastronómicas pop-up de Perigallo en Alicante.">
+  <meta name="description" content="Experiencias gastronómicas pop-up en Alicante: fechas únicas, plazas limitadas y una forma diferente de vivir Perigallo.">
   <link rel="canonical" href="https://perigallo.com/experiencias/">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Experiencias gastronómicas pop-up en Alicante | Perigallo">
-  <meta property="og:description" content="Fechas puntuales, aforo limitado y propuestas que no se repiten.">
-  <meta property="og:image" content="https://perigallo.com/assets/images/perigallo-hero-original-01.jpg">
+  <meta property="og:description" content="Fechas únicas, aforo limitado y una propuesta que no se repite.">
+  <meta property="og:image" content="https://perigallo.com/assets/images/perigalla-01/hero-desktop.jpg">
   <meta property="og:url" content="https://perigallo.com/experiencias/">
   <meta name="twitter:card" content="summary_large_image">
-  <link rel="icon" href="/favicon.svg">
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/assets/css/public-pages.css">
-  <link rel="stylesheet" href="/assets/css/ticketing.css">
+  <link rel="icon" href="/favicon.svg?v=perigallo-monogram-20260808">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/weddings-page.css?v=20260808-weddings-v2">
+  <link rel="stylesheet" href="/assets/css/ticketing.css?v=20260808-agenda-v1">
+  <link rel="stylesheet" href="/assets/css/experiences-page.css?v=20260808-experiences-v1">
 </head>
-<body class="ticketing-page">
-  <a class="pg-skip" href="#contenido">Saltar al contenido</a>
-  <header class="pg-nav" data-public-nav>
-    <a class="pg-logo" href="/"><img src="/assets/images/perigallo-logo-original.png" alt="Perigallo"></a>
-    <button class="pg-menu" data-public-menu aria-expanded="false">Menú</button>
-    <nav class="pg-links" aria-label="Principal">
-      <a href="/bodas-alicante/">Bodas</a><a href="/celebraciones-familiares-alicante/">Celebraciones</a><a href="/experiencias/">Experiencias</a><a href="/finca-la-llaguna/">Finca La Llaguna</a><a href="/sobre-perigallo/">Sobre Perigallo</a><a href="/contacto/">Contacto</a>
+<body class="experiences-page ticketing-page">
+  <a class="wedding-skip" href="#contenido">Saltar al contenido</a>
+
+  <header class="wedding-nav" id="weddingNav">
+    <div class="wedding-nav__left">
+      <a href="/#descubre-perigallo">Descubre Perigallo</a>
+      <a class="wedding-nav__instagram" href="https://www.instagram.com/perigallo/" target="_blank" rel="noopener noreferrer" aria-label="Instagram de Perigallo">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"></circle></svg>
+      </a>
+    </div>
+    <a class="wedding-nav__logo" href="/" aria-label="Inicio Perigallo"><img src="/assets/images/perigallo-logo-original.png" alt="Perigallo"></a>
+    <nav class="wedding-nav__right" aria-label="Principal">
+      <a href="/#quienes-somos">Quiénes somos</a>
+      <a href="/finca-la-llaguna/">La Finca</a>
+      <a class="wedding-nav__contact" href="/#contact">Contacto</a>
     </nav>
-    <a class="pg-cta" href="https://suite.perigallo.com/solicitud?origen=web-perigallo" target="_blank" rel="noopener noreferrer">Solicitar propuesta</a>
   </header>
+
   <main id="contenido">
-    <section class="pg-hero">
-      <div class="pg-hero-inner">
-        <span class="pg-eyebrow">Experiencias Perigallo · Alicante</span>
-        <h1>Una fecha, una mesa, una experiencia que <em>no se repite</em></h1>
-        <p class="pg-lead">Propuestas gastronómicas pop-up con aforo limitado y venta de entradas. Consulta las próximas fechas y elige cómo quieres vivirlas.</p>
-        <div class="pg-actions"><a class="pg-cta" href="#proximas-experiencias">Ver próximas experiencias</a><a class="pg-cta-alt" href="/mis-entradas/">Ya tengo entradas</a></div>
-      </div>
-    </section>
-    <section class="ticket-section experience-agenda" id="proximas-experiencias">
-      <div class="ticket-section-inner experience-agenda-inner">
-        <div class="ticket-section-head experience-agenda-head">
-          <div><span class="ticket-eyebrow">Calendario de experiencias</span><h2>Próximas fechas</h2></div>
-          <p class="ticket-copy">Descubre las próximas experiencias Perigallo. Cada edición es única y cuenta con plazas limitadas.</p>
+    <section class="wedding-hero experiences-hero" aria-labelledby="experiences-title">
+      <div class="wedding-hero__glow" aria-hidden="true"></div>
+      <div class="wedding-hero__visual" role="img" aria-label="Una experiencia Perigallo al atardecer en Finca La Llaguna"></div>
+      <div class="wedding-hero__content">
+        <p class="wedding-eyebrow">Experiencias Perigallo · Alicante</p>
+        <h1 id="experiences-title">Una fecha, una mesa,<br>una experiencia que <em>no se repite.</em></h1>
+        <p class="wedding-hero__lead">Propuestas gastronómicas pop-up para vivir Perigallo de una forma distinta: una historia, una fecha y un aforo deliberadamente limitado.</p>
+        <div class="wedding-hero__actions">
+          <a class="wedding-button wedding-button--solid" href="#proximas-experiencias">Ver próximas experiencias</a>
+          <a class="wedding-button wedding-button--outline" href="/mis-entradas/">Ya tengo entradas</a>
         </div>
-        <div class="events-grid" data-events-list>
+      </div>
+      <div class="wedding-hero__index" aria-hidden="true"><b>03</b><span>/</span><span>04</span></div>
+      <a class="wedding-hero__scroll" href="#proximas-experiencias"><span>Descubrir</span><i></i></a>
+    </section>
+
+    <section class="experiences-agenda" id="proximas-experiencias" aria-labelledby="agenda-title">
+      <div class="experiences-agenda__inner">
+        <header class="experiences-agenda__head">
+          <div>
+            <p class="wedding-eyebrow">Calendario de experiencias</p>
+            <h2 id="agenda-title">La próxima fecha<br><em>empieza aquí.</em></h2>
+          </div>
+          <p>Descubre las próximas experiencias Perigallo. Cada edición tiene una historia propia, plazas limitadas y una sola oportunidad para vivirla.</p>
+        </header>
+        <div class="events-grid experiences-agenda__list" data-events-list>
           <div class="ticket-panel experience-empty"><span class="ticket-eyebrow">Próximamente</span><h2>La próxima experiencia está en camino</h2><p class="ticket-copy">Estamos ultimando la siguiente edición Perigallo. Vuelve pronto para descubrirla.</p><a class="ticket-btn primary" href="https://www.instagram.com/perigallo" target="_blank" rel="noopener noreferrer">Seguir novedades</a></div>
         </div>
       </div>
     </section>
-    <section class="pg-main">
-      <section class="pg-section pg-grid">
-        <div class="pg-copy"><span class="pg-eyebrow">Cómo funciona</span><h2>Elige la experiencia y compra tus <em>entradas</em></h2><p>Las experiencias se publican con toda la información práctica: fecha, ubicación, contenido, condiciones y disponibilidad.</p><p>Después de completar la compra en la pasarela segura, recibirás el acceso a tus entradas por correo y podrás recuperarlas cuando lo necesites.</p></div>
-        <div class="pg-visual" role="img" aria-label="Experiencia gastronómica Perigallo" style="background-image:url('/assets/images/perigallo-hero-original-01.jpg')"></div>
-      </section>
-      <section class="pg-callout"><h2>¿Aún no hay una fecha para ti?</h2><p>Estamos preparando la próxima experiencia Perigallo. Mientras tanto puedes seguir las novedades o escribirnos para resolver cualquier duda.</p><div class="pg-actions" style="justify-content:center"><a class="pg-cta" href="https://www.instagram.com/perigallo" target="_blank" rel="noopener noreferrer">Seguir Instagram</a><a class="pg-cta-alt" href="https://wa.me/34691499985" target="_blank" rel="noopener noreferrer">Hablar por WhatsApp</a></div></section>
+
+    <section class="experiences-story" aria-labelledby="story-title">
+      <div class="experiences-story__inner">
+        <figure class="wedding-story-carousel experiences-story__carousel" aria-label="Selección de propuestas gastronómicas Perigallo">
+          <div class="wedding-story-carousel__stage">
+            <img class="wedding-story-carousel__slide is-active" src="/assets/images/gastronomy-carousel/foreground/vieiras-espuma.webp" alt="Propuesta gastronómica Perigallo" width="620" height="620" decoding="async">
+            <img class="wedding-story-carousel__slide" src="/assets/images/gastronomy-carousel/foreground/helado-rosa.webp" alt="" width="620" height="620" decoding="async">
+          </div>
+          <div class="wedding-story-carousel__meta" aria-live="polite"><span>Perigallo</span><span><b data-wedding-carousel-current>01</b> / 12</span></div>
+        </figure>
+        <div class="experiences-story__copy">
+          <p class="wedding-eyebrow">Más que una cena</p>
+          <h2 id="story-title">La mesa también<br>puede contar una <em>historia.</em></h2>
+          <p>En cada edición unimos cocina, escena y personas alrededor de un relato pensado para esa única noche. No se trata solo de asistir: se trata de entrar en la experiencia.</p>
+          <a class="wedding-text-link" href="/#contact">Hablar con Perigallo</a>
+        </div>
+        <blockquote class="experiences-story__quote">“Una experiencia se queda contigo<br>mucho después del <em>último brindis.</em>”</blockquote>
+      </div>
+    </section>
+
+    <section class="experiences-layers" aria-labelledby="layers-title">
+      <div class="wedding-section-head">
+        <div><p class="wedding-eyebrow">La edición se vive completa</p><h2 id="layers-title">Todo sucede<br>en el mismo <em>relato.</em></h2></div>
+        <p>La gastronomía es el hilo conductor. El ritmo, la música, el espacio y los detalles están ahí para que la noche tenga sentido de principio a fin.</p>
+      </div>
+      <div class="wedding-layers__grid">
+        <article class="wedding-layer"><span>01</span><h3>Cocina<br><em>con intención</em></h3><p>Un menú creado para el momento, con pases que forman parte de la historia y no solo del servicio.</p></article>
+        <article class="wedding-layer"><span>02</span><h3>Escena<br><em>con ritmo</em></h3><p>La luz, la música y cada transición construyen una atmósfera que acompaña la noche sin imponerse.</p></article>
+        <article class="wedding-layer"><span>03</span><h3>Memoria<br><em>compartida</em></h3><p>Una mesa de personas que llegan como invitadas y salen con algo único que recordar juntas.</p></article>
+      </div>
+    </section>
+
+    <section class="experiences-closing" aria-labelledby="closing-title">
+      <p class="wedding-eyebrow">No te pierdas la siguiente</p>
+      <h2 id="closing-title">Las experiencias<br>no se repiten. <em>Se viven.</em></h2>
+      <p>Consulta las próximas fechas o recupera el acceso a tus entradas siempre que lo necesites.</p>
+      <div class="wedding-hero__actions">
+        <a class="wedding-button wedding-button--solid" href="#proximas-experiencias">Ver experiencias</a>
+        <a class="wedding-button wedding-button--outline" href="/mis-entradas/">Acceder a mis entradas</a>
+      </div>
     </section>
   </main>
-  <footer class="pg-footer"><div class="pg-footer-grid"><div><img src="/assets/images/perigallo-logo-original.png" alt="Perigallo"><p>Experiencias gastronómicas para celebrar lo irrepetible.</p></div><div><h2>Celebraciones</h2><ul><li><a href="/bodas-alicante/">Bodas</a></li><li><a href="/celebraciones-familiares-alicante/">Celebraciones</a></li></ul></div><div><h2>Experiencias</h2><ul><li><a href="/experiencias/">Próximas experiencias</a></li><li><a href="/mis-entradas/">Mis entradas</a></li></ul></div><div><h2>Legal</h2><ul><li><a href="/condiciones/">Condiciones</a></li><li><a href="/politica-reembolso/">Reembolsos</a></li></ul></div></div><div class="pg-footer-bottom">Perigallo · Alicante</div></footer>
-  <script src="/assets/js/public-pages.js" defer></script>
-  <script src="/assets/js/ticketing.js" defer></script>
+
+  <footer class="wedding-footer">
+    <img src="/assets/images/perigallo-logo-original.png" alt="Perigallo">
+    <p>Experiencias gastronómicas para celebrar lo irrepetible.</p>
+    <div><a href="/">Inicio</a><a href="/bodas-alicante/">Bodas</a><a href="https://suite.perigallo.com/solicitud?origen=web-perigallo" target="_blank" rel="noopener noreferrer">Solicitar propuesta</a><a href="/#contact">Contacto</a></div>
+  </footer>
+
+  <script src="/assets/js/weddings-page.js?v=20260808-weddings-v3" defer></script>
+  <script src="/assets/js/ticketing.js?v=20260808-events-v1" defer></script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"CollectionPage","name":"Experiencias Perigallo","url":"https://perigallo.com/experiencias/"}</script>
 </body>
 </html>

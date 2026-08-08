@@ -1,0 +1,47 @@
+:root{--experience-deep:#10282d;--experience-bg:#18373e;--experience-panel:#29494f;--experience-cream:#f5f1e5;--experience-gold:#dfc6a8;--experience-line:rgba(223,198,168,.3)}
+.experiences-page{background:var(--experience-deep);color:var(--experience-cream)}
+.experiences-page .wedding-nav__right>a:nth-child(2){background:transparent;border-color:transparent;color:rgba(245,241,229,.84)}
+.experiences-page .wedding-nav__right>a:nth-child(2):hover{border-color:rgba(226,205,181,.48);background:rgba(42,82,89,.78);color:#fff}
+.experiences-hero{background:linear-gradient(180deg,#24434a 0%,var(--experience-deep) 100%)}
+.experiences-hero::before{background:radial-gradient(ellipse 45% 63% at 70% 50%,rgba(205,177,151,.16),transparent 74%),linear-gradient(90deg,rgba(9,28,32,.93) 0%,rgba(9,28,32,.76) 36%,rgba(9,28,32,.09) 72%,rgba(9,28,32,.28))}
+.experiences-hero .wedding-hero__visual{width:min(61vw,980px);background:linear-gradient(90deg,var(--experience-deep),transparent 30%),linear-gradient(0deg,var(--experience-deep),transparent 43%),url('/assets/images/perigalla-01/hero-desktop.jpg') 52% 50%/cover;filter:brightness(.71) saturate(.78)}
+.experiences-hero .wedding-hero__glow{background:radial-gradient(ellipse 58% 86% at 72% 52%,rgba(67,103,102,.36),transparent 73%)}
+.experiences-agenda{position:relative;padding:clamp(102px,12vw,174px) clamp(24px,7vw,120px);overflow:hidden;background:linear-gradient(180deg,#193a41 0%,#163239 100%)}
+.experiences-agenda::before{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 48% 62% at 88% 23%,rgba(223,198,168,.1),transparent 72%),repeating-linear-gradient(90deg,transparent 0 calc(12.5% - 1px),rgba(226,205,181,.035) calc(12.5% - 1px) 12.5%)}
+.experiences-agenda__inner{position:relative;width:min(100%,1240px);margin:auto}
+.experiences-agenda__head{display:grid;grid-template-columns:minmax(330px,.9fr) minmax(300px,.65fr);gap:clamp(48px,11vw,165px);align-items:end;margin-bottom:clamp(45px,6vw,78px)}
+.experiences-agenda__head h2,.experiences-story h2,.experiences-closing h2{margin:18px 0 0;color:var(--experience-cream);font:300 clamp(3.55rem,5.7vw,6.25rem)/.89 'Cormorant Garamond',Georgia,serif;letter-spacing:-.05em}
+.experiences-agenda__head h2 em,.experiences-story h2 em,.experiences-closing h2 em{color:var(--experience-gold);font-style:italic}
+.experiences-agenda__head>p{max-width:410px;margin:0 0 9px;color:rgba(245,241,229,.7);font-size:.88rem;line-height:1.9}
+.experiences-page .experience-agenda,.experiences-page .ticket-section{padding:0;background:transparent}
+.experiences-page .experience-agenda .events-grid,.experiences-agenda__list{display:grid;grid-template-columns:1fr;gap:24px}
+.experiences-page .experience-agenda .event-card{border-color:var(--experience-line);background:var(--experience-panel);box-shadow:0 28px 64px rgba(3,16,19,.22)}
+.experiences-page .experience-agenda .event-card-shell{grid-template-columns:minmax(0,1.34fr) minmax(370px,.9fr);min-height:470px}
+.experiences-page .experience-agenda .event-card-media{min-height:470px}
+.experiences-page .experience-agenda .event-card-body{background:linear-gradient(145deg,#31545a,#203e44)}
+.experiences-page .experience-agenda .event-card-action{border-radius:999px;background:var(--experience-gold);border-color:var(--experience-gold);color:#183239}
+.experiences-page .experience-agenda .event-card-discover{padding-bottom:3px;text-decoration:none}
+.experiences-page .experience-agenda .experience-empty{border-color:var(--experience-line);background:linear-gradient(135deg,#31545a,#203e44)}
+.experiences-page .experience-agenda .experience-empty .ticket-btn{border-radius:999px;background:var(--experience-gold);border-color:var(--experience-gold);color:#183239}
+.experiences-story{position:relative;overflow:hidden;padding:clamp(104px,12vw,180px) clamp(24px,7vw,120px);background:linear-gradient(180deg,#163239,#10292e)}
+.experiences-story::before{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 45% 50% at 11% 24%,rgba(74,115,113,.18),transparent 73%),radial-gradient(ellipse 40% 45% at 90% 80%,rgba(223,198,168,.09),transparent 76%)}
+.experiences-story__inner{position:relative;display:grid;grid-template-columns:minmax(380px,1.05fr) minmax(270px,.78fr);gap:clamp(44px,10vw,164px);align-items:center;width:min(100%,1240px);margin:auto}
+.experiences-story__carousel{min-height:clamp(460px,47vw,630px)}
+.experiences-story__copy p:not(.wedding-eyebrow){max-width:430px;margin:0;color:rgba(245,241,229,.72);font-size:.86rem;line-height:1.9}
+.experiences-story__copy h2{margin-bottom:26px}
+.experiences-story__quote{grid-column:1/-1;max-width:800px;margin:clamp(6px,2vw,30px) auto 0;padding-top:clamp(34px,4vw,55px);border-top:1px solid var(--experience-line);color:var(--experience-cream);font:300 clamp(2rem,3.4vw,3.55rem)/1.06 'Cormorant Garamond',Georgia,serif;letter-spacing:-.025em;text-align:center}
+.experiences-story__quote em{color:var(--experience-gold);font-style:italic}
+.experiences-layers{padding:clamp(102px,12vw,170px) clamp(24px,7vw,120px);background:linear-gradient(180deg,#10292e,#1b3a41)}
+.experiences-layers .wedding-section-head{width:min(100%,1240px)}
+.experiences-layers .wedding-section-head h2{color:var(--experience-cream)}
+.experiences-layers .wedding-section-head>p:last-child{color:rgba(245,241,229,.68)}
+.experiences-layers .wedding-layers__grid{width:min(100%,1240px);box-shadow:0 26px 62px rgba(3,16,19,.16)}
+.experiences-layers .wedding-layer{background:rgba(34,65,72,.95)}
+.experiences-layers .wedding-layer:hover{background:#30545a}
+.experiences-closing{position:relative;isolation:isolate;padding:clamp(118px,13vw,190px) 24px;text-align:center;overflow:hidden;background:radial-gradient(ellipse 43% 62% at 50% 43%,rgba(77,116,114,.28),transparent 74%),linear-gradient(180deg,#1b3a41,#112a30)}
+.experiences-closing::before{content:'';position:absolute;z-index:-1;inset:0;opacity:.31;background:repeating-linear-gradient(90deg,transparent 0 calc(8.333% - 1px),rgba(226,205,181,.065) calc(8.333% - 1px) 8.333%),repeating-linear-gradient(0deg,transparent 0 calc(16.667% - 1px),rgba(226,205,181,.045) calc(16.667% - 1px) 16.667%);mask-image:radial-gradient(ellipse 61% 75% at 50% 50%,#000,transparent 85%)}
+.experiences-closing h2{margin:20px auto 23px;font-size:clamp(3.45rem,6.4vw,6.75rem)}
+.experiences-closing>p:not(.wedding-eyebrow){max-width:540px;margin:0 auto;color:rgba(245,241,229,.72);font-size:.84rem;line-height:1.85}
+.experiences-closing .wedding-hero__actions{justify-content:center;margin-top:36px}
+@media(max-width:900px){.experiences-hero .wedding-hero__visual{width:100%;background-position:58% center}.experiences-agenda{padding:92px 24px}.experiences-agenda__head{grid-template-columns:1fr;gap:22px}.experiences-agenda__head>p{margin:0}.experiences-page .experience-agenda .event-card-shell{grid-template-columns:minmax(0,1.05fr) minmax(310px,.95fr);min-height:390px}.experiences-page .experience-agenda .event-card-media{min-height:390px}.experiences-story{padding:92px 24px}.experiences-story__inner{grid-template-columns:1fr;gap:41px}.experiences-story__carousel{order:-1;min-height:min(112vw,530px)}.experiences-story__quote{margin-top:0}.experiences-layers{padding:92px 24px}}
+@media(max-width:680px){.experiences-page .experience-agenda .event-card-shell{grid-template-columns:1fr}.experiences-page .experience-agenda .event-card-media{min-height:0;aspect-ratio:4/3}.experiences-agenda__head h2,.experiences-story h2{font-size:clamp(3.25rem,14.4vw,5.1rem)}.experiences-page .experience-agenda .event-card-action{width:100%}.experiences-closing .wedding-button{width:100%}}
