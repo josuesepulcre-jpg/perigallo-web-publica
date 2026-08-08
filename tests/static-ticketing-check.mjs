@@ -289,11 +289,12 @@ const perigallaStoryPage = readFileSync(join(root, "la-perigalla-01/index.html")
 const storyAssets = Array.from(perigallaStoryPage.matchAll(/(?:src|href)="(\/la-perigalla-01\/assets\/[^\"]+)"/g), (match) => match[1]);
 const storyJavaScriptAssets = storyAssets.filter((asset) => asset.endsWith(".js"));
 const storyStylesheetAssets = storyAssets.filter((asset) => asset.endsWith(".css"));
-if (storyJavaScriptAssets.length !== 1 || storyStylesheetAssets.length < 1) throw new Error("La Perigalla story page must reference one JavaScript asset and at least one stylesheet asset.");
+const storyApplicationAsset = storyJavaScriptAssets.find((asset) => /\/index-[^/]+\.js$/.test(asset));
+if (!storyApplicationAsset || storyStylesheetAssets.length < 1) throw new Error("La Perigalla story page must reference its application bundle and at least one stylesheet asset.");
 for (const asset of storyAssets) {
   if (!existsSync(join(root, asset.slice(1)))) throw new Error(`La Perigalla story asset is missing: ${asset}`);
 }
-const storyBundle = readFileSync(join(root, storyJavaScriptAssets[0].slice(1)), "utf8");
+const storyBundle = readFileSync(join(root, storyApplicationAsset.slice(1)), "utf8");
 for (const marker of ["Bienvenidos a", "La Perigalla 01", "v9-scenes", "final-celebration", "Quiero vivir la historia", "/entradas/checkout/?event=la-perigalla-01-ibicenca&quantity=1&ticketType=1", "story_transition_start", "story_transition_end", "20260807-03"]) {
   if (!storyBundle.includes(marker)) throw new Error(`La Perigalla story bundle is missing ${marker}.`);
 }
