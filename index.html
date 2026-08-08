@@ -154,7 +154,7 @@ section{position:relative}
 .service-name{max-width:10ch;margin:clamp(70px,8vw,112px) 0 22px;color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:clamp(2.15rem,3.15vw,3.35rem);font-weight:300;line-height:.95;letter-spacing:-.035em;text-wrap:balance}
 .service-name em{font-style:italic;color:var(--gold-l)}
 .service-desc{max-width:28ch;margin:0;color:rgba(245,241,229,.84);font-size:clamp(.76rem,.9vw,.9rem);line-height:1.88;font-weight:400}
-.service-link{display:flex;align-items:center;justify-content:space-between;gap:13px;width:100%;min-height:56px;margin-top:auto;padding:8px 9px 8px 27px;border:1px solid rgba(226,205,181,.52);border-radius:999px;background:rgba(245,241,229,.92);color:var(--bg2);font-size:.56rem;font-weight:600;letter-spacing:.18em;line-height:1.35;text-decoration:none;text-transform:uppercase;transition:transform .32s ease,background .32s ease,border-color .32s ease,color .32s ease}
+.service-link{display:flex;align-self:flex-start;align-items:center;justify-content:space-between;gap:13px;width:fit-content;max-width:100%;min-height:56px;margin-top:auto;margin-bottom:clamp(42px,4vw,64px);padding:8px 9px 8px 24px;border:1px solid rgba(226,205,181,.52);border-radius:999px;background:rgba(245,241,229,.94);color:var(--bg2);font-size:.54rem;font-weight:600;letter-spacing:.17em;line-height:1.35;text-decoration:none;text-transform:uppercase;white-space:nowrap;transition:transform .32s ease,background .32s ease,border-color .32s ease,color .32s ease}
 .service-link::after{content:'→';display:grid;flex:0 0 39px;place-items:center;width:39px;height:39px;border:1px solid rgba(30,51,56,.55);border-radius:50%;font-size:1rem;font-weight:400;letter-spacing:0;transition:transform .32s ease,background .32s ease,color .32s ease}
 .service-link:hover,.service-link:focus-visible{border-color:var(--gold-l);background:var(--gold-l);color:var(--bg2);outline:0;transform:translateY(-3px)}.service-link:hover::after,.service-link:focus-visible::after{background:var(--bg2);border-color:var(--bg2);color:var(--cream);transform:translateX(3px)}
 
@@ -446,7 +446,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
   .service-num{margin:0 auto}
   .service-name{max-width:11ch;margin:70px 0 18px;font-size:2.65rem}
   .service-desc{font-size:.79rem;line-height:1.8}
-  .service-link{min-height:52px;padding-left:22px;font-size:.52rem}
+  .service-link{min-height:52px;margin-bottom:42px;padding-left:20px;font-size:.5rem;letter-spacing:.15em}
   .service-link::after{flex-basis:35px;width:35px;height:35px}
   .experience-carousel-track,.experience-carousel-empty,.experience-carousel-loading,.celebrate-inner,.finca-inner{grid-template-columns:1fr}
   .celebrate-inner,.finca-inner{padding:0 24px;gap:48px}

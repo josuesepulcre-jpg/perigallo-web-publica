@@ -53,7 +53,9 @@ const required = [
   "--service-image:url('assets/images/finca-la-llaguna-principal.jpg')",
   "--service-image:url('assets/images/perigallo-hero-original-02.jpg')",
   'border-radius:50% 50% 47% 48% / 18% 18% 26% 27%',
-  'background:rgba(245,241,229,.92)',
+  'width:fit-content',
+  'margin-bottom:clamp(42px,4vw,64px)',
+  'background:rgba(245,241,229,.94)',
   '#quienes-somos,#descubre-perigallo{scroll-margin-top:var(--header-anchor-offset)}',
   "document.querySelectorAll('a[href^=\"#\"],a[href^=\"/#\"]')",
 ];
