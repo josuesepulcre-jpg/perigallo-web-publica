@@ -1,0 +1,11 @@
+.celebrations-page .wedding-hero{background:linear-gradient(180deg,#29484f 0%,var(--wedding-bg) 100%)}
+.celebrations-page .wedding-hero::before{background:radial-gradient(ellipse 48% 64% at 69% 47%,rgba(224,194,156,.13),transparent 73%),linear-gradient(90deg,rgba(12,31,35,.92) 0%,rgba(12,31,35,.7) 36%,rgba(12,31,35,.08) 72%,rgba(12,31,35,.27))}
+.celebrations-page .wedding-hero__visual{width:min(64vw,1020px);background:linear-gradient(90deg,var(--wedding-bg),transparent 30%),linear-gradient(0deg,var(--wedding-bg),transparent 43%),url('/assets/images/finca-la-llaguna-principal.jpg') 54% 52%/cover;filter:brightness(.72) saturate(.8)}
+.celebrations-page .wedding-hero__lead{max-width:605px}
+.celebrations-page .wedding-connection{background:linear-gradient(180deg,#203f46 0%,#19343a 45%,#26464c 100%)}
+.celebrations-page .wedding-connection::before{background:radial-gradient(ellipse 47% 42% at 78% 20%,rgba(228,192,151,.14),transparent 73%),radial-gradient(ellipse 42% 45% at 17% 68%,rgba(86,128,124,.2),transparent 75%),repeating-linear-gradient(90deg,transparent 0 calc(12.5% - 1px),rgba(226,205,181,.035) calc(12.5% - 1px) 12.5%)}
+.celebrations-page .wedding-story-carousel{background:radial-gradient(ellipse 48% 62% at 50% 46%,rgba(105,74,54,.25),transparent 72%),linear-gradient(135deg,#153137,#10262b)}
+.celebrations-page .wedding-process__visual{background:linear-gradient(0deg,var(--wedding-deep),transparent 43%),linear-gradient(90deg,rgba(16,39,44,.08),rgba(16,39,44,.44)),url('/assets/images/finca-la-llaguna-principal.jpg') center/cover;filter:brightness(.75) saturate(.82)}
+.celebrations-page .wedding-process__list a{display:inline-flex;margin-top:11px;color:var(--wedding-gold-light);font-size:.55rem;font-weight:600;letter-spacing:.18em;text-decoration:none;text-transform:uppercase}.celebrations-page .wedding-process__list a:hover{color:#fff}
+.celebrations-page .celebrations-closing{background:radial-gradient(ellipse 44% 67% at 50% 46%,rgba(128,91,68,.22),transparent 74%),linear-gradient(180deg,#1d393f,#142c31)}
+@media(max-width:900px){.celebrations-page .wedding-hero__visual{width:100%;background-position:62% center}.celebrations-page .wedding-hero::before{background:linear-gradient(90deg,rgba(12,31,35,.92),rgba(12,31,35,.61) 63%,rgba(12,31,35,.24)),linear-gradient(0deg,var(--wedding-bg),transparent 45%)}}
