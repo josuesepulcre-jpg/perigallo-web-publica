@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const home = readFileSync(resolve('index.html'), 'utf8');
@@ -30,10 +30,16 @@ const required = [
   'border-radius:999px',
   'background:#29474d',
   'favicon.svg?v=perigallo-monogram-20260808',
-  '<section class="manifest" id="about" aria-label="Quiénes somos">',
-  'class="manifest-artwork" src="assets/images/about/quienes-somos-perigallo.png"',
-  'width="1672" height="941"',
-  '.manifest-artwork{display:block;width:100%;max-width:1672px;height:auto;margin:0 auto}',
+  '<section class="manifest" id="about" aria-labelledby="about-title">',
+  'class="manifest-portrait manifest-portrait--josue reveal"',
+  'src="assets/images/about/josue-about-v2.jpg"',
+  'class="manifest-portrait manifest-portrait--david reveal"',
+  'src="assets/images/about/david-about-v2.jpg"',
+  'class="manifest-eyebrow reveal">Quiénes somos</p>',
+  'id="about-title">Perigallo nace de la visión',
+  'class="manifest-copy manifest-copy--closing reveal reveal-delay-3"',
+  '.manifest-portrait img{display:block;width:100%;height:auto;',
+  'prefers-reduced-motion:reduce',
 ];
 
 for (const fragment of required) {
@@ -53,6 +59,16 @@ if (carouselSlides !== 12) {
 
 if (home.includes('.hero-slide::before') || home.includes('background-blend-mode:color')) {
   throw new Error('El hero no puede recrear un fondo fotográfico por slide.');
+}
+
+if (home.includes('manifest-artwork') || home.includes('quienes-somos-perigallo.png')) {
+  throw new Error('Quiénes somos debe usar retratos y contenido HTML, no una composición plana.');
+}
+
+for (const asset of ['assets/images/about/josue-about-v2.jpg', 'assets/images/about/david-about-v2.jpg']) {
+  if (!existsSync(resolve(asset))) {
+    throw new Error(`Falta el retrato independiente: ${asset}`);
+  }
 }
 
 console.log('Home hero static checks passed.');
