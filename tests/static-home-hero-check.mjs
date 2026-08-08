@@ -16,6 +16,8 @@ const required = [
   'border-radius:999px',
   'background:#29474d',
   'favicon.svg?v=perigallo-monogram-20260808',
+  '.hero-slide::before{display:none}',
+  'mask-image:radial-gradient',
 ];
 
 for (const fragment of required) {
