@@ -18,6 +18,11 @@ const required = [
   'favicon.svg?v=perigallo-monogram-20260808',
   '.hero-slide::before{display:none}',
   'mask-image:radial-gradient',
+  'id="about-title" class="manifest-heading reveal">Quiénes somos</h2>',
+  'Perigallo nace de la visión compartida de <em>David y Josué</em>.',
+  'assets/images/about/josue-perigallo.jpg',
+  'assets/images/about/david-perigallo.jpg',
+  'Cocina con relato · Producción cuidada · Experiencias a medida',
 ];
 
 for (const fragment of required) {
