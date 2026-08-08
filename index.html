@@ -43,11 +43,12 @@ body{background:var(--bg);color:var(--cream);font-family:'Montserrat',sans-serif
 nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;height:var(--header-desktop-height);padding:0 clamp(26px,4.4vw,76px);border-bottom:1px solid rgba(226,205,181,.08);background:linear-gradient(180deg,rgba(39,66,73,.98),rgba(39,66,73,.88));transition:height .4s ease,background .4s ease,border-color .4s ease}
 nav.scrolled{height:76px;background:rgba(35,61,68,.96);border-color:rgba(226,205,181,.11);box-shadow:none}
 .nav-links-left{display:flex;gap:clamp(22px,2.5vw,42px);list-style:none}
-.nav-links-right{display:flex;gap:clamp(20px,2.2vw,38px);margin-left:auto;list-style:none;justify-content:flex-end;align-items:center}
+.nav-links-right{position:relative;display:flex;gap:clamp(16px,1.25vw,24px);margin-left:auto;margin-right:clamp(32px,4.5vw,92px);padding:10px 14px 11px;list-style:none;justify-content:flex-end;align-items:center;border-radius:999px;background:linear-gradient(90deg,rgba(245,241,229,.012),rgba(245,241,229,.035),rgba(245,241,229,.012));box-shadow:inset 0 -1px rgba(226,205,181,.19)}
 .nav-links-left a,.nav-links-right a{position:relative;font-size:.61rem;letter-spacing:.22em;text-transform:uppercase;color:var(--cream);text-decoration:none;opacity:.8;transition:opacity .32s ease,color .32s ease,letter-spacing .32s ease;font-weight:500;white-space:nowrap}
 .nav-links-left a::after,.nav-links-right a::after{content:'';position:absolute;left:.05em;right:.25em;bottom:-9px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-l),transparent);opacity:.75;transform:scaleX(0);transform-origin:center;transition:transform .34s cubic-bezier(.22,1,.36,1)}
 .nav-links-left a:hover,.nav-links-right a:hover{opacity:1;color:var(--gold-l);letter-spacing:.235em}
 .nav-links-left a:hover::after,.nav-links-right a:hover::after{transform:scaleX(1)}
+.nav-links-right a{letter-spacing:.19em}.nav-links-right a:hover{letter-spacing:.205em}
 .nav-social-link{width:31px;height:31px;border:1px solid rgba(245,241,229,.24);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:var(--cream);opacity:.68;transition:opacity .3s,color .3s,border-color .3s,background .3s}
 .nav-social-link:hover{opacity:1;color:var(--gold);border-color:var(--gold);background:rgba(205,177,151,.06)}
 .nav-social-link svg{width:14px;height:14px;display:block}
@@ -65,7 +66,7 @@ nav.scrolled .nav-logo-img{width:50px;height:50px}
 .hero{min-height:100svh;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:148px 0 132px;isolation:isolate}
 .hero-brand-background{position:absolute;inset:0;z-index:0;background:var(--color-perigallo-hero)}
 .hero-media-stage{position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none;background:radial-gradient(ellipse 35% 56% at 50% 48%,rgba(12,39,44,.3) 0%,rgba(31,73,78,.12) 45%,transparent 78%),radial-gradient(ellipse 64% 88% at 50% 55%,rgba(90,116,108,.065),transparent 74%)}
-.hero-media-stage::before{content:'';position:absolute;inset:8% 12%;background:radial-gradient(ellipse 28% 46% at 50% 48%,rgba(224,171,92,.075),rgba(224,171,92,.022) 39%,transparent 74%);filter:blur(20px);opacity:.82}
+.hero-media-stage::before{content:'';position:absolute;inset:5% 7%;background:radial-gradient(ellipse 48% 67% at 50% 49%,rgba(66,107,108,.2),rgba(53,94,96,.075) 46%,transparent 77%),radial-gradient(ellipse 28% 46% at 50% 48%,rgba(224,171,92,.07),rgba(224,171,92,.018) 39%,transparent 74%);filter:blur(22px);opacity:.86}
 .hero-media-slot{position:absolute;inset:0;display:grid;place-items:center;opacity:0;transition:opacity 1.6s cubic-bezier(.22,1,.36,1);will-change:opacity}
 .hero-media-slot.is-visible{opacity:1}.hero-media-slot.is-underlay{z-index:0}.hero-media-slot.is-overlay{z-index:1}
 .hero-media-asset{position:relative;z-index:1;width:min(var(--hero-width),60vw);max-width:82vw;max-height:78svh;height:auto;object-fit:contain;transform:translate3d(var(--hero-offset-x,0),var(--hero-offset-y,0),0) scale(var(--hero-scale,1));transform-origin:center;filter:brightness(var(--hero-brightness,.96)) contrast(var(--hero-contrast,1.035)) saturate(var(--hero-saturation,.91)) drop-shadow(0 18px 34px rgba(5,19,22,.28)) drop-shadow(0 0 28px rgba(224,171,92,.075));-webkit-mask-image:none;mask-image:none}
@@ -133,25 +134,29 @@ section{position:relative}
 .manifest-portrait--david{right:clamp(-160px,-7vw,-52px);--portrait-shift:24px}
 .manifest-inner .reveal{transition-duration:1s;transition-timing-function:cubic-bezier(.22,1,.36,1)}
 
-/* QUÉ HACEMOS — tres caminos dentro de una misma escena */
-.services{position:relative;isolation:isolate;overflow:hidden;padding:clamp(108px,11vw,172px) clamp(24px,5vw,84px);background:var(--bg2)}
-.services::before{content:'';position:absolute;z-index:-1;inset:0;background:radial-gradient(ellipse 54% 66% at 50% 53%,rgba(71,111,112,.18),transparent 72%),linear-gradient(180deg,rgba(44,80,87,.2),transparent 26%,rgba(8,26,30,.16) 100%)}
-.services-header{text-align:center;max-width:760px;margin:0 auto clamp(52px,6vw,84px);padding:0 18px}
-.services-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));max-width:1320px;margin:0 auto;border:1px solid rgba(205,177,151,.36);background:rgba(205,177,151,.13);box-shadow:0 28px 72px rgba(5,18,22,.16)}
-.service-card{position:relative;display:flex;flex-direction:column;min-height:438px;padding:clamp(38px,4vw,64px) clamp(30px,4vw,54px) 32px;overflow:hidden;background:linear-gradient(145deg,rgba(50,84,91,.92),rgba(36,70,77,.96));transition:transform .45s cubic-bezier(.22,1,.36,1),background .45s ease,box-shadow .45s ease}
-.service-card+.service-card{border-left:1px solid rgba(8,27,32,.48)}
-.service-card::before{content:'';position:absolute;top:0;right:0;left:0;height:1px;background:linear-gradient(90deg,transparent,rgba(226,205,181,.82),transparent);opacity:.38;transition:opacity .45s ease}
-.service-card::after{content:'';position:absolute;right:0;bottom:0;left:0;height:4px;background:linear-gradient(90deg,var(--gold),var(--gold-l),transparent 72%);transform:scaleX(0);transform-origin:left;transition:transform .55s cubic-bezier(.22,1,.36,1)}
-.service-card:hover{z-index:1;background:linear-gradient(145deg,#365b63,#284951);transform:translateY(-9px);box-shadow:0 24px 52px rgba(5,18,22,.22)}
-.service-card:hover::before{opacity:.9}.service-card:hover::after{transform:scaleX(1)}
-.service-num{display:flex;align-items:center;gap:12px;margin-bottom:clamp(38px,4vw,56px);color:var(--gold);font-family:inherit;font-size:.58rem;font-style:normal;font-weight:500;letter-spacing:.26em;text-transform:uppercase}
-.service-num::before{content:'';width:22px;height:1px;background:currentColor}
-.service-name{max-width:12ch;margin:0 0 18px;color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,2.5vw,2.55rem);font-weight:400;line-height:.94;letter-spacing:-.025em}
+/* QUÉ HACEMOS — tres escenas editoriales, una por camino */
+.services{position:relative;isolation:isolate;overflow:hidden;padding:clamp(104px,10vw,158px) clamp(24px,5vw,84px) clamp(116px,11vw,176px);background:linear-gradient(180deg,#203c43 0%,var(--bg) 48%,#203c43 100%)}
+.services::before{content:'';position:absolute;z-index:-1;inset:0;pointer-events:none;background:radial-gradient(ellipse 46% 58% at 50% 44%,rgba(78,119,117,.18),transparent 74%),radial-gradient(ellipse 34% 48% at 8% 82%,rgba(205,177,151,.055),transparent 78%),radial-gradient(ellipse 34% 48% at 92% 76%,rgba(205,177,151,.045),transparent 78%)}
+.services-header{text-align:center;max-width:900px;margin:0 auto clamp(58px,6vw,90px);padding:0 18px}
+.services-header .section-eyebrow{display:inline-flex;flex-direction:column;align-items:center;gap:17px;margin-bottom:20px}.services-header .section-eyebrow::after{content:'';width:30px;height:1px;background:var(--gold)}
+.services-header .section-title{font-size:clamp(3rem,5.45vw,5.45rem);letter-spacing:-.028em}
+.services-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;gap:clamp(18px,2.3vw,42px);max-width:1560px;margin:0 auto}
+.service-card{position:relative;isolation:isolate;display:flex;flex-direction:column;min-height:clamp(555px,47vw,680px);padding:clamp(44px,4vw,66px) clamp(31px,3.2vw,54px) 28px;overflow:hidden;border:1px solid rgba(226,205,181,.36);background-color:#203f45;background-image:linear-gradient(180deg,rgba(13,37,41,.24) 0%,rgba(17,48,53,.48) 38%,rgba(13,36,41,.92) 78%,rgba(13,36,41,.97) 100%),var(--service-image);background-position:center;background-size:cover;box-shadow:0 28px 62px rgba(5,19,22,.15);transition:transform .5s cubic-bezier(.22,1,.36,1),border-color .4s ease,box-shadow .5s ease}
+.service-card::before{content:'';position:absolute;z-index:-1;inset:0;background:radial-gradient(ellipse 78% 50% at 50% 43%,rgba(31,73,76,.1),transparent 62%),linear-gradient(90deg,rgba(20,56,61,.18),transparent 34%,transparent 66%,rgba(20,56,61,.2));transition:background .5s ease}
+.service-card::after{content:'';position:absolute;z-index:-1;inset:13px;border:1px solid rgba(226,205,181,.13);border-radius:inherit;pointer-events:none;transition:inset .45s ease,border-color .45s ease}
+.service-card--weddings{--service-image:url('assets/images/perigalla-01/scene-18-desktop.jpg');border-radius:50% 50% 47% 48% / 18% 18% 26% 27%}
+.service-card--celebrations{--service-image:url('assets/images/finca-la-llaguna-principal.jpg');border-radius:48% 48% 45% 45% / 18% 18% 25% 25%}
+.service-card--experiences{--service-image:url('assets/images/perigallo-hero-original-02.jpg');border-radius:48% 48% 48% 48% / 18% 18% 25% 25%}
+.service-card:hover{z-index:1;transform:translateY(-10px);border-color:rgba(226,205,181,.62);box-shadow:0 34px 76px rgba(5,19,22,.25)}
+.service-card:hover::before{background:radial-gradient(ellipse 78% 50% at 50% 43%,rgba(67,108,108,.16),transparent 62%),linear-gradient(90deg,rgba(20,56,61,.11),transparent 34%,transparent 66%,rgba(20,56,61,.13))}.service-card:hover::after{inset:10px;border-color:rgba(226,205,181,.26)}
+.service-num{display:flex;flex-direction:column;align-items:center;gap:10px;margin:0 auto;color:var(--gold-l);font-family:'Cormorant Garamond',serif;font-size:clamp(1.55rem,2vw,2rem);font-style:normal;font-weight:300;letter-spacing:0;line-height:1}
+.service-num::after{content:'';width:23px;height:1px;background:currentColor}.service-num::before{display:none}
+.service-name{max-width:10ch;margin:clamp(70px,8vw,112px) 0 22px;color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:clamp(2.15rem,3.15vw,3.35rem);font-weight:300;line-height:.95;letter-spacing:-.035em;text-wrap:balance}
 .service-name em{font-style:italic;color:var(--gold-l)}
-.service-desc{max-width:30ch;margin:0 0 30px;color:rgba(245,241,229,.72);font-size:.83rem;line-height:1.86}
-.service-link{display:flex;align-items:center;justify-content:space-between;gap:18px;width:100%;margin-top:auto;padding-top:22px;border-top:1px solid rgba(205,177,151,.34);color:var(--gold-l);font-size:.59rem;font-weight:500;letter-spacing:.19em;line-height:1.45;text-decoration:none;text-transform:uppercase;transition:color .3s ease,border-color .3s ease}
-.service-link::after{content:'→';display:grid;flex:0 0 32px;place-items:center;width:32px;height:32px;border:1px solid rgba(226,205,181,.42);border-radius:50%;font-size:.9rem;letter-spacing:0;transition:transform .3s ease,background .3s ease,color .3s ease}
-.service-link:hover,.service-link:focus-visible{border-color:var(--gold-l);color:var(--cream);outline:0}.service-link:hover::after,.service-link:focus-visible::after{background:var(--gold-l);color:var(--bg2);transform:translateX(4px)}
+.service-desc{max-width:28ch;margin:0;color:rgba(245,241,229,.84);font-size:clamp(.76rem,.9vw,.9rem);line-height:1.88;font-weight:400}
+.service-link{display:flex;align-items:center;justify-content:space-between;gap:13px;width:100%;min-height:56px;margin-top:auto;padding:8px 9px 8px 27px;border:1px solid rgba(226,205,181,.52);border-radius:999px;background:rgba(245,241,229,.92);color:var(--bg2);font-size:.56rem;font-weight:600;letter-spacing:.18em;line-height:1.35;text-decoration:none;text-transform:uppercase;transition:transform .32s ease,background .32s ease,border-color .32s ease,color .32s ease}
+.service-link::after{content:'→';display:grid;flex:0 0 39px;place-items:center;width:39px;height:39px;border:1px solid rgba(30,51,56,.55);border-radius:50%;font-size:1rem;font-weight:400;letter-spacing:0;transition:transform .32s ease,background .32s ease,color .32s ease}
+.service-link:hover,.service-link:focus-visible{border-color:var(--gold-l);background:var(--gold-l);color:var(--bg2);outline:0;transform:translateY(-3px)}.service-link:hover::after,.service-link:focus-visible::after{background:var(--bg2);border-color:var(--bg2);color:var(--cream);transform:translateX(3px)}
 
 /* EXPERIENCIAS: carrusel editorial conectado al calendario público */
 .popup-section{background:var(--bg);position:relative;overflow:hidden}
@@ -432,13 +437,17 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
   .manifest-portrait--josue{left:-102px;--portrait-shift:-14px}
   .manifest-portrait--david{right:-102px;--portrait-shift:14px}
   .manifest-portrait img{filter:brightness(.9) saturate(.84) contrast(1.03);-webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 11%,#000 69%,rgba(0,0,0,.58) 83%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 0%,#000 11%,#000 69%,rgba(0,0,0,.58) 83%,transparent 100%)}
-  .services{padding:84px 20px}
-  .services-header{margin-bottom:42px}
-  .services-grid{grid-template-columns:1fr}
-  .service-card{min-height:0;padding:42px 30px 28px}
-  .service-card+.service-card{border-top:1px solid rgba(205,177,151,.22);border-left:0}
-  .service-num{margin-bottom:30px}
-  .service-name{max-width:none;font-size:2.22rem}
+  .services{padding:94px 20px 106px}
+  .services-header{margin-bottom:48px}
+  .services-header .section-title{font-size:clamp(2.8rem,12vw,4rem)}
+  .services-grid{grid-template-columns:1fr;gap:22px;max-width:460px}
+  .service-card{min-height:550px;padding:42px 30px 25px;border-radius:46% 46% 42% 42% / 14% 14% 23% 23%}
+  .service-card+.service-card{border-left:1px solid rgba(226,205,181,.36)}
+  .service-num{margin:0 auto}
+  .service-name{max-width:11ch;margin:70px 0 18px;font-size:2.65rem}
+  .service-desc{font-size:.79rem;line-height:1.8}
+  .service-link{min-height:52px;padding-left:22px;font-size:.52rem}
+  .service-link::after{flex-basis:35px;width:35px;height:35px}
   .experience-carousel-track,.experience-carousel-empty,.experience-carousel-loading,.celebrate-inner,.finca-inner{grid-template-columns:1fr}
   .celebrate-inner,.finca-inner{padding:0 24px;gap:48px}
   .experience-carousel{min-height:0}
@@ -573,20 +582,20 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
     <h2 class="section-title reveal reveal-delay-1">Formas de vivir <em>Perigallo</em></h2>
   </div>
   <div class="services-grid">
-    <div class="service-card reveal">
-      <span class="service-num">— 01</span>
+    <div class="service-card service-card--weddings reveal">
+      <span class="service-num">01</span>
       <h3 class="service-name">Bodas <em>gastronómicas</em></h3>
       <p class="service-desc">Gastronomía personalizada, producción y servicio para una boda que habla de vuestra historia y del lugar en el que queréis celebrar.</p>
       <a href="/bodas-alicante/" class="service-link">Descubrir bodas Perigallo</a>
     </div>
-    <div class="service-card reveal reveal-delay-1">
-      <span class="service-num">— 02</span>
+    <div class="service-card service-card--celebrations reveal reveal-delay-1">
+      <span class="service-num">02</span>
       <h3 class="service-name">Celebraciones y <em>eventos</em></h3>
       <p class="service-desc">Comuniones, bautizos, aniversarios, eventos privados y encuentros de empresa con una propuesta hecha para compartir.</p>
       <a href="/celebraciones-familiares-alicante/" class="service-link">Descubrir celebraciones y eventos</a>
     </div>
-    <div class="service-card reveal reveal-delay-2">
-      <span class="service-num">— 03</span>
+    <div class="service-card service-card--experiences reveal reveal-delay-2">
+      <span class="service-num">03</span>
       <h3 class="service-name">Experiencias <em>pop-up</em></h3>
       <p class="service-desc">Fechas concretas, menús especiales y experiencias gastronómicas abiertas al público. Una forma distinta de vivir la cocina de Perigallo.</p>
       <a href="/experiencias/" class="service-link">Descubrir próximas experiencias</a>
