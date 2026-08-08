@@ -79,11 +79,16 @@ nav.scrolled .nav-logo-img{width:50px;height:50px}
 .hero-path span{font-size:.56rem;line-height:1.55;letter-spacing:.12em;text-transform:uppercase;color:rgba(245,241,229,.62)}
 .hero-path:hover{background:rgba(205,177,151,.12);color:var(--gold-l)}
 .hero-path:focus-visible{outline:1px solid var(--gold);outline-offset:4px}
-.btn-primary{font-size:.61rem;letter-spacing:.2em;text-transform:uppercase;color:var(--bg2);background:var(--gold-l);text-decoration:none;padding:17px 31px;transition:transform .32s ease,background .32s ease,box-shadow .32s ease;display:inline-block;border:1px solid var(--gold-l);cursor:pointer;font-family:inherit;font-weight:600}
-.btn-primary:hover{background:var(--cream);transform:translateY(-2px);box-shadow:0 12px 28px rgba(4,13,16,.25)}
+.btn-primary,.btn-ghost{min-height:56px;border-radius:999px;align-items:center;justify-content:center;gap:17px;padding:9px 10px 9px 27px;font-size:.59rem;letter-spacing:.19em;text-transform:uppercase;text-decoration:none;transition:transform .32s ease,background .32s ease,border-color .32s ease,box-shadow .32s ease;display:inline-flex;cursor:pointer;font-family:inherit;font-weight:600}
+.btn-primary{color:var(--bg2);background:var(--gold-l);border:1px solid var(--gold-l)}
+.btn-primary::after,.btn-ghost::after{content:'→';width:34px;height:34px;border-radius:50%;display:inline-grid;place-items:center;font-size:.92rem;line-height:1;letter-spacing:0;transition:transform .32s ease,background .32s ease,color .32s ease}
+.btn-primary::after{background:rgba(30,51,56,.12);color:var(--bg2)}
+.btn-primary:hover{background:var(--cream);transform:translateY(-3px);box-shadow:0 14px 30px rgba(4,13,16,.26)}
+.btn-primary:hover::after,.btn-ghost:hover::after{transform:translateX(3px)}
 .btn-primary:disabled{opacity:.55;cursor:not-allowed;filter:saturate(.8)}
-.btn-ghost{font-size:.61rem;letter-spacing:.2em;text-transform:uppercase;color:var(--cream);text-decoration:none;padding:17px 31px;border:1px solid rgba(245,241,229,.38);transition:transform .32s ease,border-color .32s ease,color .32s ease,background .32s ease;display:inline-block;background:rgba(21,45,50,.18);cursor:pointer;font-family:inherit;font-weight:500}
-.btn-ghost:hover{border-color:var(--gold-l);color:var(--gold-l);background:rgba(18,41,46,.42);transform:translateY(-2px)}
+.btn-ghost{color:var(--cream);background:#29474d;border:1px solid rgba(226,205,181,.74)}
+.btn-ghost::after{background:rgba(226,205,181,.12);color:var(--gold-l);border:1px solid rgba(226,205,181,.32)}
+.btn-ghost:hover{border-color:var(--gold-l);background:#365861;transform:translateY(-3px);box-shadow:0 14px 30px rgba(4,13,16,.24)}
 .btn-primary:focus-visible,.btn-ghost:focus-visible,.form-input:focus-visible,.form-select:focus-visible,.form-textarea:focus-visible{outline:1px solid var(--gold);outline-offset:4px}
 .scroll-indicator{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);z-index:2;display:flex;flex-direction:column;align-items:center;gap:11px;opacity:0;animation:fadeUp 1s ease 2.3s forwards;text-decoration:none}
 .scroll-indicator span{font-size:.56rem;letter-spacing:.28em;text-transform:uppercase;color:rgba(245,241,229,.75);font-weight:500}
@@ -346,8 +351,9 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 .booking-frame-placeholder p{max-width:460px;font-size:.78rem;line-height:1.85;color:#56676A}
 .booking-frame-eyebrow{font-size:.58rem;letter-spacing:.32em;text-transform:uppercase;color:#8E7653}
 .booking-frame-actions{display:flex;gap:14px;margin-top:30px;flex-wrap:wrap;justify-content:center}
-.booking-frame-placeholder .btn-ghost{color:#17272B;border-color:rgba(23,39,43,.22)}
-.booking-frame-placeholder .btn-ghost:hover{color:#8E7653;border-color:#8E7653}
+.booking-frame-placeholder .btn-ghost{color:#17272B;background:#fff;border-color:rgba(23,39,43,.22)}
+.booking-frame-placeholder .btn-ghost::after{color:#17272B;background:rgba(23,39,43,.08);border-color:rgba(23,39,43,.16)}
+.booking-frame-placeholder .btn-ghost:hover{color:#17272B;background:#F4EFE5;border-color:#8E7653}
 .booking-frame-note{margin-top:20px;font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:#8E7653}
 .booking-fallback{padding:20px 34px;border-top:1px solid rgba(205,177,151,.16);display:flex;justify-content:space-between;gap:18px;align-items:center;background:rgba(13,26,30,.5);color:rgba(245,241,229,.66);font-size:.68rem;line-height:1.7;position:relative;z-index:1}
 .booking-fallback button,.booking-fallback a{font-family:'Montserrat',sans-serif;font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);text-decoration:none;font-weight:500;background:transparent;border:0;padding:0;cursor:pointer}

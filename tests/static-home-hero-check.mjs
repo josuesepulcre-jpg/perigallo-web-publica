@@ -13,6 +13,8 @@ const required = [
   'assets/images/gastronomy-carousel/fortune-cookie.jpg',
   'assets/images/gastronomy-carousel/croqueta-rellena.jpg',
   'id="heroSlideCurrent"',
+  'border-radius:999px',
+  'background:#29474d',
 ];
 
 for (const fragment of required) {
