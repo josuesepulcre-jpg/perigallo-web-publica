@@ -39,6 +39,8 @@ const required = [
   '.nav-button--finca',
   '.nav-button--contact',
   'left:clamp(188px,20vw,396px)',
+  'https://www.instagram.com/perigallo/',
+  'aria-label="Instagram de Perigallo"',
   'background:#29474d',
   'favicon.svg?v=perigallo-monogram-20260808',
   '<section class="manifest" id="quienes-somos" aria-labelledby="about-title">',
