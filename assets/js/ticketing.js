@@ -687,6 +687,7 @@
     var appliedDiscount = null;
     var discountFingerprint = "";
     var isSubmitting = false;
+    var paymentPreparationError = "";
     if ((!preview && !slug) || (preview && !previewId)) {
       status.textContent = "Falta el evento.";
       return;
@@ -1049,7 +1050,7 @@
           input.disabled = isSubmitting || input.dataset.unavailable === "true";
         });
       }
-      status.textContent = isSubmitting ? "Preparando el pago seguro..." : validation.message;
+      status.textContent = isSubmitting ? "Preparando el pago seguro..." : (paymentPreparationError || validation.message);
       submit.disabled = isSubmitting || !validation.valid;
       submit.innerHTML = isSubmitting
         ? 'Conectando con el TPV <span aria-hidden="true">→</span>'
@@ -1063,6 +1064,7 @@
       var selected = selectedTicketInputs();
       var validation = checkoutValidation(form, selected, attendeeState);
       if (!validation.valid || isSubmitting) {
+        paymentPreparationError = "";
         form.querySelectorAll(".checkout-field input").forEach(function (input) { updateCheckoutField(input, true); });
         status.textContent = validation.message;
         focusInvalidCheckoutStep(validation);
@@ -1094,6 +1096,7 @@
         renderCheckoutPreview(form, payload, form.dataset.eventTitle || "Este evento", layout, confirmation, appliedDiscount);
         return;
       }
+      paymentPreparationError = "";
       isSubmitting = true;
       refreshCheckout();
       request(api + "/orders", {
@@ -1107,7 +1110,7 @@
         }
         submitPaymentForm(data.payment);
       }).catch(function (error) {
-        status.textContent = error.message;
+        paymentPreparationError = error && error.message ? error.message : "No se pudo preparar el pago. Inténtalo de nuevo.";
         isSubmitting = false;
         refreshCheckout();
       });
