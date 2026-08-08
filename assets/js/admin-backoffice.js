@@ -56,6 +56,7 @@
     var path = window.location.pathname;
     if (path.indexOf("/admin/eventos") === 0) return "events";
     if (path.indexOf("/admin/ventas") === 0) return "sales";
+    if (path.indexOf("/admin/facturacion") === 0) return "billing";
     if (path.indexOf("/admin/descuentos") === 0) return "discounts";
     if (path.indexOf("/admin/formulario") === 0) return "lead_form";
     if (path.indexOf("/admin/analitica") === 0) return "analytics";
@@ -83,6 +84,7 @@
             '<span class="admin-nav-label">Gestión</span>' +
             '<a href="/admin/eventos/" data-admin-nav-item="events">Eventos</a>' +
             '<a href="/admin/ventas/" data-admin-nav-item="sales">Pedidos y ventas</a>' +
+            (sessionData.is_owner ? '<a href="/admin/facturacion/" data-admin-nav-item="billing">Facturación</a>' : '') +
             '<a href="/admin/formulario/" data-admin-nav-item="lead_form">Formulario</a>' +
             '<a href="/admin/descuentos/" data-admin-nav-item="discounts">Códigos de descuento</a>' +
             '<a href="/admin/analitica/" data-admin-nav-item="analytics">Analítica</a>' +
@@ -361,6 +363,103 @@
           jsonRequest(url, method, body).then(function () { reload(); }).catch(function (error) { renderPageError(error.message); }).finally(function () { button.disabled = false; });
         });
       }).catch(function (error) { renderPageError(error.message); });
+    });
+  }
+
+  function holdedStatus(status) {
+    return ({
+      not_required: { label: "No requerido", tone: "neutral" },
+      pending: { label: "Pendiente", tone: "pending" },
+      processing: { label: "Procesando", tone: "pending" },
+      synced: { label: "Sincronizado", tone: "synced" },
+      error: { label: "Reintento programado", tone: "error" },
+      requires_review: { label: "Revisión necesaria", tone: "review" }
+    })[status] || { label: status || "Sin estado", tone: "neutral" };
+  }
+
+  function isFiscalOrder(order) {
+    return Number(order.is_test) !== 1 && order.environment === "production" && (order.payment_status === "paid" || order.status === "paid");
+  }
+
+  function billingOrderRow(order) {
+    var fiscal = holdedStatus(order.holded_status);
+    var reference = order.redsys_order || order.test_reference || ("Pedido " + order.id);
+    var documentType = order.holded_document_type === "invoice" ? "Factura" : order.holded_document_type === "salesreceipt" ? "Recibo simplificado" : "Pendiente de determinar";
+    var document = order.holded_document_number ? documentType + " · " + order.holded_document_number : documentType;
+    var detail = order.holded_last_error
+      ? '<small class="admin-billing-detail is-warning">' + escapeHtml(order.holded_last_error) + '</small>'
+      : order.holded_synced_at
+        ? '<small class="admin-billing-detail">Sincronizado ' + escapeHtml(formatDate(order.holded_synced_at, true)) + '</small>'
+        : order.holded_next_attempt_at
+          ? '<small class="admin-billing-detail">Próximo intento ' + escapeHtml(formatDate(order.holded_next_attempt_at, true)) + '</small>'
+          : '';
+    var retry = order.holded_status !== "synced"
+      ? '<button type="button" class="text-action" data-billing-retry="' + Number(order.id) + '">Preparar reintento</button>'
+      : '';
+    return '<article class="admin-billing-row">' +
+      '<div><strong>' + escapeHtml(order.name || "Comprador sin nombre") + '</strong><small>' + escapeHtml(order.event_title || "Evento por asignar") + ' · ' + escapeHtml(reference) + ' · Cobrado ' + escapeHtml(formatDate(order.paid_at, true)) + '</small>' + detail + '</div>' +
+      '<span>' + escapeHtml(document) + (Number(order.billing_requested) ? '<small>Datos fiscales solicitados</small>' : '<small>Venta de entrada</small>') + '</span>' +
+      '<span class="admin-billing-amount">' + escapeHtml(formatMoney(order.total_cents)) + '</span>' +
+      '<span class="admin-billing-status is-' + escapeHtml(fiscal.tone) + '">' + escapeHtml(fiscal.label) + '</span>' +
+      '<div class="admin-billing-actions"><a class="text-action" href="/admin/ventas/?order=' + Number(order.id) + '">Ver venta</a>' + retry + '</div>' +
+    '</article>';
+  }
+
+  function renderBilling(root, health, orders, filter) {
+    var fiscalOrders = orders.filter(isFiscalOrder);
+    var counts = fiscalOrders.reduce(function (total, order) {
+      var key = order.holded_status || "not_required";
+      total[key] = (total[key] || 0) + 1;
+      return total;
+    }, {});
+    var activeFilter = filter || "all";
+    var rows = fiscalOrders.filter(function (order) { return activeFilter === "all" || order.holded_status === activeFilter; });
+    var integration = health.configuration || {};
+    var integrationState = integration.enabled && !integration.dry_run && integration.configured
+      ? "Conexión operativa"
+      : integration.dry_run ? "Modo seguro · sin emisión" : "Configuración pendiente";
+    var missing = integration.missing && integration.missing.length
+      ? '<p class="admin-billing-warning">Faltan variables: ' + escapeHtml(integration.missing.join(", ")) + '</p>'
+      : '';
+    var filters = [["all", "Todas"], ["pending", "Pendientes"], ["synced", "Sincronizadas"], ["requires_review", "Revisión"], ["error", "Errores"]];
+    root.innerHTML =
+      '<header class="admin-page-heading admin-page-heading-compact"><div><span class="ticket-eyebrow">Administración financiera</span><h1>Facturación y <em>Holded.</em></h1><p>Cada venta real de entradas se refleja aquí y se sincroniza de forma asíncrona con Holded. El cobro en Redsys no depende de esta sincronización.</p></div><a class="ticket-btn" href="/admin/ventas/">Ver pedidos y ventas</a></header>' +
+      '<section class="admin-billing-health"><div><span class="ticket-eyebrow">Estado de integración</span><strong>' + escapeHtml(integrationState) + '</strong><p>Entorno Holded: ' + escapeHtml(integration.environment || "production") + ' · ' + (integration.configured ? "Configuración completa" : "Revisión de configuración requerida") + '</p>' + missing + '</div><div><span class="ticket-eyebrow">Flujo de venta</span><p>Redsys confirma el pago → Perigallo registra el pedido → la cola crea el documento en Holded → el cron registra el pago.</p><small>Los reintentos no emiten documentos desde el navegador.</small></div></section>' +
+      '<section class="admin-stat-grid admin-billing-stats" aria-label="Resumen de facturación"><article><span>Ventas cobradas</span><strong>' + fiscalOrders.length + '</strong><small>Pedidos reales en producción</small></article><article><span>Sincronizadas</span><strong>' + Number(counts.synced || 0) + '</strong><small>Documento y pago registrados</small></article><article><span>Pendientes</span><strong>' + (Number(counts.pending || 0) + Number(counts.processing || 0)) + '</strong><small>Esperan al cron de Holded</small></article><article><span>Revisión</span><strong>' + (Number(counts.requires_review || 0) + Number(counts.error || 0)) + '</strong><small>Requieren atención administrativa</small></article></section>' +
+      '<section class="admin-dashboard-section"><div class="admin-section-label"><div><span class="ticket-eyebrow">Documentos de ventas</span><h2>Seguimiento fiscal</h2></div><button type="button" class="text-action" data-billing-refresh>Actualizar estado</button></div>' +
+      '<div class="admin-filter-group admin-billing-filters">' + filters.map(function (item) { return '<button type="button" data-billing-filter="' + item[0] + '"' + (activeFilter === item[0] ? ' class="is-active"' : '') + '>' + item[1] + ' <span>' + (item[0] === "all" ? fiscalOrders.length : Number(counts[item[0]] || 0)) + '</span></button>'; }).join("") + '</div>' +
+      '<div class="admin-billing-list">' + (rows.length ? rows.map(billingOrderRow).join("") : '<div class="admin-empty"><strong>No hay ventas en este estado.</strong><span>Las ventas reales cobradas mediante el checkout aparecerán aquí cuando Redsys las confirme.</span></div>') + '</div></section>';
+  }
+
+  function initBilling() {
+    var root = document.querySelector("[data-admin-billing-page]");
+    if (!root) return;
+    requireSession(function (sessionData) {
+      if (!sessionData.is_owner) {
+        root.innerHTML = '<section class="admin-empty"><strong>Acceso restringido.</strong><span>La facturación y la integración con Holded solo están disponibles para la cuenta propietaria.</span></section>';
+        return;
+      }
+      var activeFilter = "all";
+      function reload() {
+        root.setAttribute("aria-busy", "true");
+        Promise.all([request(api + "/admin/holded/health"), request(api + "/admin/orders")]).then(function (result) {
+          state.orders = result[1].orders || [];
+          renderBilling(root, result[0].holded || {}, state.orders, activeFilter);
+        }).catch(function (error) { renderPageError(error.message || "No se ha podido cargar la facturación."); })
+          .finally(function () { root.removeAttribute("aria-busy"); });
+      }
+      root.addEventListener("click", function (event) {
+        var filter = event.target.closest("[data-billing-filter]");
+        if (filter) { activeFilter = filter.getAttribute("data-billing-filter") || "all"; reload(); return; }
+        if (event.target.closest("[data-billing-refresh]")) { reload(); return; }
+        var retry = event.target.closest("[data-billing-retry]");
+        if (!retry) return;
+        var orderId = Number(retry.getAttribute("data-billing-retry"));
+        if (!orderId || !window.confirm("El pedido se volverá a dejar en cola para Holded. No se emitirá ningún documento desde el navegador. ¿Continuar?")) return;
+        retry.disabled = true;
+        jsonRequest(api + "/admin/orders/" + orderId + "/holded/retry", "POST", {}).then(reload).catch(function (error) { renderPageError(error.message); }).finally(function () { retry.disabled = false; });
+      });
+      reload();
     });
   }
 
@@ -801,6 +900,7 @@
   initDashboard();
   initEvents();
   initSales();
+  initBilling();
   initLeadForms();
   initUsers();
   initDiscountCodes();

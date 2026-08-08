@@ -38,6 +38,7 @@ Las solicitudes y reservas externas se abren fuera de la pagina principal para e
 | `/admin/eventos/` | Listado privado de eventos. |
 | `/admin/eventos/ID/editar/` | Editor completo de evento y tipos de entrada. |
 | `/admin/ventas/` | Pedidos y ventas registrados. |
+| `/admin/facturacion/` | Seguimiento fiscal de ventas reales y sincronización con Holded (cuenta propietaria). |
 | `/admin/analitica/` | Analítica first-party, embudo de compra e informes programados. |
 | `/admin/acceso/` | Escáner/verificación privada de accesos. |
 | `/admin/entradas/` | Ruta heredada: redirige al listado de eventos. |
@@ -77,6 +78,7 @@ Endpoints principales:
 - `GET` / `PUT /api/admin/analytics/settings`
 - `POST /api/admin/analytics/send-test-report`
 - `GET /api/admin/orders`
+- `GET /api/admin/holded/health`
 - `GET` / `PUT /api/admin/formulario/settings`
 - `GET /api/admin/formulario/solicitudes`
 - `GET /api/admin/formulario/solicitudes/{id}`

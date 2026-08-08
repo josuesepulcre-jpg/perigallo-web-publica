@@ -14,6 +14,8 @@ const checkoutJs = read("assets/js/ticketing.js");
 const api = read("api/index.php");
 const cron = read("api/cron/holded-sync.php");
 const env = read(".env.example");
+const billingPage = read("admin/facturacion/index.html");
+const adminJs = read("assets/js/admin-backoffice.js");
 
 const cases = [
   ["default disabled", () => assert.match(env, /HOLDED_ENABLED=false/)],
@@ -34,6 +36,9 @@ const cases = [
   ["holded never blocks callback", () => assert.doesNotMatch(ticketing.match(/processRedsysNotification[\s\S]*?public function adminSummary/)?.[0] || "", /createInvoice\(/)],
   ["cron is separately locked", () => assert.match(cron, /LOCK_EX \| LOCK_NB/)],
   ["admin retry is server-protected", () => assert.match(api, /\/holded\/retry/)],
+  ["admin billing route is available", () => assert.match(billingPage, /data-admin-billing-page/)],
+  ["billing uses Holded health only for the owner", () => assert.match(adminJs, /sessionData\.is_owner/) ],
+  ["billing never issues documents from the browser", () => assert.doesNotMatch(billingPage + adminJs, /createInvoice\(|HOLDED_API_KEY/) ],
 ];
 
 for (const [name, check] of cases) {
