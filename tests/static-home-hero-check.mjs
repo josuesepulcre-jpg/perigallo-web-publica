@@ -9,20 +9,27 @@ const required = [
   'Quiero celebrar un evento',
   'Quiero vivir una experiencia Perigallo',
   'href="#about" class="scroll-indicator"',
+  '--color-perigallo-hero: var(--bg)',
+  '<div class="hero-brand-background" aria-hidden="true"></div>',
+  '<div class="hero-media-stage" aria-hidden="true">',
+  'class="hero-media-slot hero-media-slot--a is-visible is-overlay"',
+  'class="hero-media-slot hero-media-slot--b is-underlay"',
+  '<div class="hero-atmosphere" aria-hidden="true"></div>',
   'radial-gradient(ellipse 62% 60% at 50% 43%',
-  'background-blend-mode:color',
-  'background-size:min(48vw,760px) auto',
-  'radial-gradient(ellipse 31% 48% at 50% 51%',
-  'assets/images/gastronomy-carousel/fortune-cookie.jpg',
-  'assets/images/gastronomy-carousel/croqueta-rellena.jpg',
+  '.hero-media-slot{position:absolute;inset:0;display:grid;place-items:center;opacity:0;transition:opacity 1.6s cubic-bezier(.22,1,.36,1);will-change:opacity}',
+  'var heroFadeDuration=1600;',
+  'var heroDisplayDuration=5900;',
+  'function preloadHeroSlide(index)',
+  'image.decode().then',
+  'function advanceHero()',
+  "phase:'settled'",
+  "heroState.phase='preloading'",
+  "heroState.phase='transitioning'",
+  "document.addEventListener('visibilitychange'",
   'id="heroSlideCurrent"',
   'border-radius:999px',
   'background:#29474d',
   'favicon.svg?v=perigallo-monogram-20260808',
-  '.hero-slide{position:absolute;inset:0;z-index:0;overflow:hidden;opacity:0;background:transparent;transition:opacity 1.55s cubic-bezier(.22,1,.36,1);will-change:opacity}',
-  '.hero-slide.active{z-index:2;opacity:1}.hero-slide.is-leaving{z-index:1;opacity:0}',
-  'var heroFadeDuration=1550;',
-  'preloadSlide(1);',
   '<section class="manifest" id="about" aria-label="Quiénes somos">',
   'class="manifest-artwork" src="assets/images/about/quienes-somos-perigallo.png"',
   'width="1672" height="941"',
@@ -39,9 +46,13 @@ if (home.includes('class="cursor"') || home.includes('class="cursor-ring"')) {
   throw new Error('El cursor decorativo no se ha eliminado del hero.');
 }
 
-const carouselSlides = (home.match(/class="hero-slide(?: active)?"/g) ?? []).length;
+const carouselSlides = (home.match(/id:'[a-z-]+',src:'assets\/images\/gastronomy-carousel\/[a-z-]+\.jpg'/g) ?? []).length;
 if (carouselSlides !== 12) {
-  throw new Error(`El carrusel debe incluir las 12 fotografías gastronómicas; incluye ${carouselSlides}.`);
+  throw new Error(`La configuración del carrusel debe incluir 12 fotografías; incluye ${carouselSlides}.`);
+}
+
+if (home.includes('.hero-slide::before') || home.includes('background-blend-mode:color')) {
+  throw new Error('El hero no puede recrear un fondo fotográfico por slide.');
 }
 
 console.log('Home hero static checks passed.');

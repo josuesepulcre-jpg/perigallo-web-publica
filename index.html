@@ -21,6 +21,7 @@
 <style>
 :root {
   --bg:      #274249;
+  --color-perigallo-hero: var(--bg);
   --bg2:     #1E3338;
   --bg3:     #2E4D55;
   --bg4:     #1A2C31;
@@ -58,15 +59,15 @@ nav.scrolled .nav-logo-img{width:50px;height:50px}
 
 /* HERO */
 .hero{min-height:100svh;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:148px 0 132px;isolation:isolate}
-.hero-slides{position:absolute;inset:0;background:radial-gradient(ellipse 70% 82% at 50% 45%,rgba(52,88,93,.58) 0%,rgba(31,62,68,.42) 42%,rgba(18,42,47,.92) 100%),linear-gradient(112deg,#17343a 0%,#10282d 51%,#193a40 100%)}
-.hero-slides::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 48% 72% at 50% 52%,rgba(79,112,111,.21),transparent 70%),linear-gradient(90deg,rgba(14,37,43,.18),transparent 48%,rgba(14,37,43,.18));pointer-events:none}
-.hero-slide{position:absolute;inset:0;z-index:0;overflow:hidden;opacity:0;background:transparent;transition:opacity 1.55s cubic-bezier(.22,1,.36,1);will-change:opacity}
-.hero-slide::before,.hero-slide::after{content:'';position:absolute;inset:0;background-position:center;background-repeat:no-repeat}
-.hero-slide::before{display:block;background-image:linear-gradient(112deg,rgba(11,35,41,.9),rgba(23,53,59,.76)),var(--slide-image);background-size:cover;background-blend-mode:color;filter:blur(54px) saturate(.32) brightness(.62);opacity:.8;transform:scale(1.18)}
-.hero-slide::after{background-image:var(--slide-image);background-size:min(48vw,760px) auto;filter:brightness(.87) saturate(.84) contrast(1.03);-webkit-mask-image:radial-gradient(ellipse 31% 48% at 50% 51%,#000 0%,#000 23%,rgba(0,0,0,.92) 40%,rgba(0,0,0,.58) 56%,rgba(0,0,0,.22) 72%,transparent 92%);mask-image:radial-gradient(ellipse 31% 48% at 50% 51%,#000 0%,#000 23%,rgba(0,0,0,.92) 40%,rgba(0,0,0,.58) 56%,rgba(0,0,0,.22) 72%,transparent 92%)}
-.hero-slide.active{z-index:2;opacity:1}.hero-slide.is-leaving{z-index:1;opacity:0}
-.hero-overlay{position:absolute;inset:0;background:radial-gradient(ellipse 62% 60% at 50% 43%,rgba(28,54,60,.1) 0%,rgba(22,45,51,.5) 66%,rgba(17,35,40,.84) 100%),linear-gradient(90deg,rgba(15,32,37,.58) 0%,rgba(20,44,49,.1) 50%,rgba(15,32,37,.55) 100%),linear-gradient(to bottom,rgba(9,23,27,.56) 0%,rgba(22,47,52,.08) 38%,rgba(19,42,47,.78) 100%)}
-.hero-content{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;text-align:center;width:min(100% - 48px,900px);padding:0}
+.hero-brand-background{position:absolute;inset:0;z-index:0;background:var(--color-perigallo-hero)}
+.hero-media-stage{position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none}
+.hero-media-slot{position:absolute;inset:0;display:grid;place-items:center;opacity:0;transition:opacity 1.6s cubic-bezier(.22,1,.36,1);will-change:opacity}
+.hero-media-slot.is-visible{opacity:1}.hero-media-slot.is-underlay{z-index:0}.hero-media-slot.is-overlay{z-index:1}
+.hero-media-asset{width:min(var(--hero-width),60vw);max-width:82vw;max-height:78svh;height:auto;object-fit:contain;transform:translate3d(var(--hero-offset-x,0),var(--hero-offset-y,0),0) scale(var(--hero-scale,1));transform-origin:center;filter:brightness(var(--hero-brightness,.92)) contrast(var(--hero-contrast,1.02)) saturate(var(--hero-saturation,.9));-webkit-mask-image:radial-gradient(ellipse 46% 48% at var(--hero-focus-x,50%) var(--hero-focus-y,50%),#000 0%,#000 31%,rgba(0,0,0,.93) 48%,rgba(0,0,0,.62) 65%,rgba(0,0,0,.22) 80%,transparent 100%);mask-image:radial-gradient(ellipse 46% 48% at var(--hero-focus-x,50%) var(--hero-focus-y,50%),#000 0%,#000 31%,rgba(0,0,0,.93) 48%,rgba(0,0,0,.62) 65%,rgba(0,0,0,.22) 80%,transparent 100%)}
+.hero-media-slot[data-mask="wide"] .hero-media-asset{-webkit-mask-image:radial-gradient(ellipse 48% 48% at var(--hero-focus-x,50%) var(--hero-focus-y,50%),#000 0%,#000 31%,rgba(0,0,0,.94) 48%,rgba(0,0,0,.6) 65%,rgba(0,0,0,.2) 80%,transparent 100%);mask-image:radial-gradient(ellipse 48% 48% at var(--hero-focus-x,50%) var(--hero-focus-y,50%),#000 0%,#000 31%,rgba(0,0,0,.94) 48%,rgba(0,0,0,.6) 65%,rgba(0,0,0,.2) 80%,transparent 100%)}
+.hero-media-slot[data-mask="vertical"] .hero-media-asset{-webkit-mask-image:radial-gradient(ellipse 42% 48% at var(--hero-focus-x,50%) var(--hero-focus-y,50%),#000 0%,#000 31%,rgba(0,0,0,.94) 48%,rgba(0,0,0,.62) 65%,rgba(0,0,0,.2) 80%,transparent 100%);mask-image:radial-gradient(ellipse 42% 48% at var(--hero-focus-x,50%) var(--hero-focus-y,50%),#000 0%,#000 31%,rgba(0,0,0,.94) 48%,rgba(0,0,0,.62) 65%,rgba(0,0,0,.2) 80%,transparent 100%)}
+.hero-atmosphere{position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(ellipse 62% 60% at 50% 43%,rgba(28,54,60,.1) 0%,rgba(22,45,51,.5) 66%,rgba(17,35,40,.84) 100%),linear-gradient(90deg,rgba(15,32,37,.58) 0%,rgba(20,44,49,.1) 50%,rgba(15,32,37,.55) 100%),linear-gradient(to bottom,rgba(9,23,27,.56) 0%,rgba(22,47,52,.08) 38%,rgba(19,42,47,.78) 100%)}
+.hero-content{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;text-align:center;width:min(100% - 48px,900px);padding:0}
 .hero-eyebrow{display:flex;align-items:center;gap:13px;font-size:.62rem;letter-spacing:.34em;text-transform:uppercase;color:var(--gold-l);margin-bottom:31px;opacity:1;animation:heroSettle .9s ease .12s both;font-weight:500}
 .hero-eyebrow::before,.hero-eyebrow::after{content:'';width:31px;height:1px;background:rgba(226,205,181,.62)}
 .hero-title{font-family:Georgia,'Times New Roman',serif;font-size:clamp(4.85rem,8.8vw,9.1rem);font-weight:400;line-height:.8;letter-spacing:-.08em;margin-bottom:19px;color:var(--cream);opacity:1;animation:heroSettle 1s ease .18s both;text-wrap:balance}
@@ -91,10 +92,10 @@ nav.scrolled .nav-logo-img{width:50px;height:50px}
 .btn-ghost::after{background:rgba(226,205,181,.12);color:var(--gold-l);border:1px solid rgba(226,205,181,.32)}
 .btn-ghost:hover{border-color:var(--gold-l);background:#365861;transform:translateY(-3px);box-shadow:0 14px 30px rgba(4,13,16,.24)}
 .btn-primary:focus-visible,.btn-ghost:focus-visible,.form-input:focus-visible,.form-select:focus-visible,.form-textarea:focus-visible{outline:1px solid var(--gold);outline-offset:4px}
-.scroll-indicator{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);z-index:2;display:flex;flex-direction:column;align-items:center;gap:11px;opacity:0;animation:fadeUp 1s ease 2.3s forwards;text-decoration:none}
+.scroll-indicator{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);z-index:3;display:flex;flex-direction:column;align-items:center;gap:11px;opacity:0;animation:fadeUp 1s ease 2.3s forwards;text-decoration:none}
 .scroll-indicator span{font-size:.56rem;letter-spacing:.28em;text-transform:uppercase;color:rgba(245,241,229,.75);font-weight:500}
 .scroll-line{width:1px;height:44px;background:linear-gradient(to bottom,var(--gold-l),rgba(226,205,181,0));animation:scrollPulse 2.3s ease-in-out infinite}
-.hero-slide-counter{position:absolute;right:clamp(18px,2.2vw,38px);top:50%;z-index:3;display:flex;align-items:center;gap:9px;color:rgba(245,241,229,.72);font-size:.55rem;font-weight:500;letter-spacing:.2em;transform:translateY(-50%) rotate(90deg);transform-origin:center;pointer-events:none}
+.hero-slide-counter{position:absolute;right:clamp(18px,2.2vw,38px);top:50%;z-index:4;display:flex;align-items:center;gap:9px;color:rgba(245,241,229,.72);font-size:.55rem;font-weight:500;letter-spacing:.2em;transform:translateY(-50%) rotate(90deg);transform-origin:center;pointer-events:none}
 .hero-slide-counter::before{content:'';width:31px;height:1px;background:rgba(226,205,181,.58)}
 .hero-slide-counter b{color:var(--gold-l);font-weight:600}
 .hero-slide-counter span:last-child{color:rgba(245,241,229,.48)}
@@ -367,7 +368,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 @keyframes bookingSkeleton{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
 @media(prefers-reduced-motion:reduce){
-  .hero-slide{transition-duration:.01ms!important}
+  .hero-media-slot{transition-duration:300ms!important}
 }
 
 @media(max-width:900px){
@@ -383,8 +384,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
   .nav-logo-img{width:52px;height:52px}
   nav.scrolled .nav-logo-img{width:46px;height:46px}
   .hero{min-height:760px;padding:150px 0 115px}
-  .hero-slide::before{background:radial-gradient(ellipse 72% 64% at 50% 51%,rgba(30,62,67,.52),transparent 82%)}
-  .hero-slide::after{background-size:auto 69%;-webkit-mask-image:radial-gradient(ellipse 88% 78% at 50% 51%,#000 0%,#000 35%,rgba(0,0,0,.83) 50%,rgba(0,0,0,.46) 65%,rgba(0,0,0,.15) 79%,transparent 94%);mask-image:radial-gradient(ellipse 88% 78% at 50% 51%,#000 0%,#000 35%,rgba(0,0,0,.83) 50%,rgba(0,0,0,.46) 65%,rgba(0,0,0,.15) 79%,transparent 94%)}
+  .hero-media-asset{width:min(var(--hero-mobile-width,var(--hero-width)),84vw);max-width:88vw;max-height:59svh;transform:translate3d(var(--hero-mobile-offset-x,0),var(--hero-mobile-offset-y,0),0) scale(var(--hero-mobile-scale,var(--hero-scale,1)))}
   .hero-content{width:min(100% - 40px,560px)}
   .hero-eyebrow{font-size:.54rem;letter-spacing:.27em;gap:9px;margin-bottom:25px;white-space:nowrap}
   .hero-eyebrow::before,.hero-eyebrow::after{width:20px}
@@ -498,21 +498,12 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 
 <!-- HERO -->
 <section class="hero" id="hero">
-  <div class="hero-slides">
-    <div class="hero-slide active" style="--slide-image:url('assets/images/gastronomy-carousel/fortune-cookie.jpg')"></div>
-    <div class="hero-slide" style="--slide-image:url('assets/images/gastronomy-carousel/brioche-braseado.jpg')"></div>
-    <div class="hero-slide" style="--slide-image:url('assets/images/gastronomy-carousel/helado-rosa.jpg')"></div>
-    <div class="hero-slide" style="--slide-image:url('assets/images/gastronomy-carousel/churro-copa.jpg')"></div>
-    <div class="hero-slide" style="--slide-image:url('assets/images/gastronomy-carousel/canape-negro.jpg')"></div>
-    <div class="hero-slide" style="--slide-image:url('assets/images/gastronomy-carousel/postre-rojo.jpg')"></div>
-    <div class="hero-slide" style="--slide-image:url('assets/images/gastronomy-carousel/hojaldre-caviar.jpg')"></div>
-    <div class="hero-slide" style="--slide-image:url('assets/images/gastronomy-carousel/nigiri-atun.jpg')"></div>
-    <div class="hero-slide" style="--slide-image:url('assets/images/gastronomy-carousel/vieiras-espuma.jpg')"></div>
-    <div class="hero-slide" style="--slide-image:url('assets/images/gastronomy-carousel/pollo-cine.jpg')"></div>
-    <div class="hero-slide" style="--slide-image:url('assets/images/gastronomy-carousel/cafe-crema.jpg')"></div>
-    <div class="hero-slide" style="--slide-image:url('assets/images/gastronomy-carousel/croqueta-rellena.jpg')"></div>
+  <div class="hero-brand-background" aria-hidden="true"></div>
+  <div class="hero-media-stage" aria-hidden="true">
+    <div class="hero-media-slot hero-media-slot--a is-visible is-overlay" data-mask="wide"><img class="hero-media-asset" src="assets/images/gastronomy-carousel/fortune-cookie.jpg" alt="" decoding="async"></div>
+    <div class="hero-media-slot hero-media-slot--b is-underlay" data-mask="wide"><img class="hero-media-asset" alt="" decoding="async"></div>
   </div>
-  <div class="hero-overlay"></div>
+  <div class="hero-atmosphere" aria-hidden="true"></div>
   <div class="hero-content">
     <span class="hero-eyebrow">Para celebrar lo irrepetible · Alicante</span>
     <h1 class="hero-title">Perigallo</h1>
@@ -793,17 +784,40 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 window.addEventListener('scroll',function(){
   document.getElementById('navbar').classList.toggle('scrolled',window.scrollY>80);
 });
-var slides=document.querySelectorAll('.hero-slide');
-var cur=0;
-var heroFadeDuration=1550;
+var heroSlides=[
+  {id:'fortune-cookie',src:'assets/images/gastronomy-carousel/fortune-cookie.jpg',mask:'wide',width:'620px',mobileWidth:'350px',brightness:.94,contrast:1.02,saturation:.9},
+  {id:'brioche-braseado',src:'assets/images/gastronomy-carousel/brioche-braseado.jpg',mask:'vertical',width:'505px',mobileWidth:'315px',brightness:.91,contrast:1.03,saturation:.88},
+  {id:'helado-rosa',src:'assets/images/gastronomy-carousel/helado-rosa.jpg',mask:'vertical',width:'460px',mobileWidth:'295px',brightness:.94,contrast:1.02,saturation:.9},
+  {id:'churro-copa',src:'assets/images/gastronomy-carousel/churro-copa.jpg',mask:'vertical',width:'470px',mobileWidth:'300px',brightness:.89,contrast:1.03,saturation:.82},
+  {id:'canape-negro',src:'assets/images/gastronomy-carousel/canape-negro.jpg',mask:'vertical',width:'450px',mobileWidth:'285px',brightness:.96,contrast:1.02,saturation:.88},
+  {id:'postre-rojo',src:'assets/images/gastronomy-carousel/postre-rojo.jpg',mask:'vertical',width:'430px',mobileWidth:'278px',brightness:.98,contrast:1.03,saturation:.9},
+  {id:'hojaldre-caviar',src:'assets/images/gastronomy-carousel/hojaldre-caviar.jpg',mask:'wide',width:'560px',mobileWidth:'335px',brightness:.94,contrast:1.02,saturation:.88},
+  {id:'nigiri-atun',src:'assets/images/gastronomy-carousel/nigiri-atun.jpg',mask:'wide',width:'555px',mobileWidth:'335px',brightness:.91,contrast:1.02,saturation:.86},
+  {id:'vieiras-espuma',src:'assets/images/gastronomy-carousel/vieiras-espuma.jpg',mask:'vertical',width:'475px',mobileWidth:'305px',brightness:.96,contrast:1.02,saturation:.84},
+  {id:'pollo-cine',src:'assets/images/gastronomy-carousel/pollo-cine.jpg',mask:'vertical',width:'485px',mobileWidth:'305px',brightness:.93,contrast:1.02,saturation:.82},
+  {id:'cafe-crema',src:'assets/images/gastronomy-carousel/cafe-crema.jpg',mask:'vertical',width:'390px',mobileWidth:'250px',brightness:.92,contrast:1.03,saturation:.78},
+  {id:'croqueta-rellena',src:'assets/images/gastronomy-carousel/croqueta-rellena.jpg',mask:'vertical',width:'415px',mobileWidth:'265px',brightness:.96,contrast:1.02,saturation:.86}
+];
+var heroSlots=Array.prototype.slice.call(document.querySelectorAll('.hero-media-slot'));
+var heroFadeDuration=1600;
+var heroDisplayDuration=5900;
+var heroState={currentIndex:0,currentSlot:0,phase:'settled',timer:null};
+var heroPreloadPool={};
 var heroSlideCurrent=document.getElementById('heroSlideCurrent');
 var heroSlideTotal=document.getElementById('heroSlideTotal');
-if(heroSlideTotal)heroSlideTotal.textContent=String(slides.length).padStart(2,'0');
-function slideSource(index){var style=slides[index]&&slides[index].getAttribute('style')||'';var match=style.match(/url\(['"]?([^'")]+)['"]?\)/);return match&&match[1]}
-function preloadSlide(index){var source=slideSource((index+slides.length)%slides.length);if(!source)return;var image=new Image();image.src=source}
-function goTo(n){var next=(n+slides.length)%slides.length;if(next===cur)return;var outgoing=slides[cur];var incoming=slides[next];outgoing.classList.remove('active');outgoing.classList.add('is-leaving');incoming.classList.add('active');cur=next;if(heroSlideCurrent)heroSlideCurrent.textContent=String(cur+1).padStart(2,'0');preloadSlide(cur+1);window.setTimeout(function(){outgoing.classList.remove('is-leaving')},heroFadeDuration+80)}
-preloadSlide(1);
-setInterval(function(){goTo(cur+1)},6700);
+if(heroSlideTotal)heroSlideTotal.textContent=String(heroSlides.length).padStart(2,'0');
+function heroIndex(index){return(index+heroSlides.length)%heroSlides.length}
+function applyHeroSlide(slot,index){var slide=heroSlides[heroIndex(index)];var image=slot.querySelector('img');slot.dataset.mask=slide.mask;slot.style.setProperty('--hero-width',slide.width);slot.style.setProperty('--hero-mobile-width',slide.mobileWidth);slot.style.setProperty('--hero-brightness',slide.brightness);slot.style.setProperty('--hero-contrast',slide.contrast);slot.style.setProperty('--hero-saturation',slide.saturation);if(image.getAttribute('src')!==slide.src)image.setAttribute('src',slide.src);return image}
+function preloadHeroSlide(index){var slide=heroSlides[heroIndex(index)];if(heroPreloadPool[slide.src])return heroPreloadPool[slide.src];heroPreloadPool[slide.src]=new Promise(function(resolve,reject){var image=new Image();image.onload=function(){if(image.decode){image.decode().then(function(){resolve(slide)}).catch(function(){resolve(slide)})}else{resolve(slide)}};image.onerror=function(){reject(new Error('No se pudo cargar '+slide.src))};image.src=slide.src});return heroPreloadPool[slide.src]}
+function decodeHeroImage(image){function decode(){return image.decode?image.decode().catch(function(){return Promise.resolve()}):Promise.resolve()}if(image.complete&&image.naturalWidth)return decode();return new Promise(function(resolve,reject){image.addEventListener('load',function(){decode().then(resolve)},{once:true});image.addEventListener('error',function(){reject(new Error('No se pudo decodificar '+image.currentSrc))},{once:true})})}
+function prepareHeroSlot(slot,index){return preloadHeroSlide(index).then(function(){var image=applyHeroSlide(slot,index);return decodeHeroImage(image)}).then(function(){return new Promise(function(resolve){requestAnimationFrame(function(){requestAnimationFrame(resolve)})})})}
+function waitForHeroFade(slot){return new Promise(function(resolve){var done=false;var timer=window.setTimeout(finish,heroFadeDuration+180);function finish(){if(done)return;done=true;window.clearTimeout(timer);slot.removeEventListener('transitionend',onEnd);resolve()}function onEnd(event){if(event.target===slot&&event.propertyName==='opacity')finish()}slot.addEventListener('transitionend',onEnd)})}
+function updateHeroCounter(index){if(heroSlideCurrent)heroSlideCurrent.textContent=String(heroIndex(index)+1).padStart(2,'0')}
+function scheduleHeroAdvance(delay){window.clearTimeout(heroState.timer);if(!document.hidden)heroState.timer=window.setTimeout(advanceHero,delay||heroDisplayDuration)}
+function advanceHero(){if(heroState.phase!=='settled'||document.hidden)return;heroState.phase='preloading';var nextIndex=heroIndex(heroState.currentIndex+1);var outgoing=heroSlots[heroState.currentSlot];var incoming=heroSlots[1-heroState.currentSlot];prepareHeroSlot(incoming,nextIndex).then(function(){incoming.classList.remove('is-overlay');incoming.classList.add('is-underlay');incoming.classList.remove('is-visible');requestAnimationFrame(function(){requestAnimationFrame(function(){incoming.classList.add('is-visible');outgoing.classList.remove('is-visible');updateHeroCounter(nextIndex);heroState.phase='transitioning';waitForHeroFade(outgoing).then(function(){outgoing.classList.remove('is-overlay');outgoing.classList.add('is-underlay');incoming.classList.remove('is-underlay');incoming.classList.add('is-overlay');heroState.currentIndex=nextIndex;heroState.currentSlot=1-heroState.currentSlot;heroState.phase='settled';preloadHeroSlide(heroState.currentIndex+1).catch(function(){});preloadHeroSlide(heroState.currentIndex+2).catch(function(){});scheduleHeroAdvance()})})})}).catch(function(error){console.warn('Perigallo hero:',error.message);heroState.phase='settled';scheduleHeroAdvance(1800)})}
+applyHeroSlide(heroSlots[0],0);preloadHeroSlide(1).catch(function(){});preloadHeroSlide(2).catch(function(){});scheduleHeroAdvance();
+document.addEventListener('visibilitychange',function(){window.clearTimeout(heroState.timer);if(!document.hidden&&heroState.phase==='settled')scheduleHeroAdvance(900)});
+var heroResizeTimer;window.addEventListener('resize',function(){window.clearTimeout(heroResizeTimer);heroResizeTimer=window.setTimeout(function(){applyHeroSlide(heroSlots[heroState.currentSlot],heroState.currentIndex);applyHeroSlide(heroSlots[1-heroState.currentSlot],heroIndex(heroState.currentIndex+1))},120)});
 var observer=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting)e.target.classList.add('visible')})},{threshold:0.1});
 document.querySelectorAll('.reveal').forEach(function(el){observer.observe(el)});
 document.querySelectorAll('a[href^="#"]').forEach(function(a){
