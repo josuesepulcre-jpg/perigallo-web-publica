@@ -115,21 +115,25 @@ section{position:relative}
 .manifest{margin:0;padding:0;background:#18373d;line-height:0}
 .manifest-artwork{display:block;width:100%;max-width:1672px;height:auto;margin:0 auto}
 
-/* QUÉ HACEMOS */
-.services{padding:120px 0;background:var(--bg2)}
-.services-header{text-align:center;max-width:680px;margin:0 auto 80px;padding:0 40px}
-.services-grid{display:grid;grid-template-columns:repeat(3,1fr);max-width:1200px;margin:0 auto;padding:0 60px;gap:1px}
-.service-card{position:relative;padding:64px 56px;background:var(--bg);overflow:hidden;transition:background .4s;display:flex;flex-direction:column;min-height:340px}
-.service-card:hover{background:var(--bg3)}
-.service-card::after{content:'';position:absolute;bottom:0;left:0;width:0;height:1px;background:var(--gold);transition:width .6s}
-.service-card:hover::after{width:100%}
-.service-num{font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--gold);letter-spacing:.2em;margin-bottom:24px;display:block;font-style:italic}
-.service-name{font-family:'Cormorant Garamond',serif;font-size:1.9rem;font-weight:400;margin-bottom:14px;color:var(--cream)}
+/* QUÉ HACEMOS — tres caminos dentro de una misma escena */
+.services{position:relative;isolation:isolate;overflow:hidden;padding:clamp(108px,11vw,172px) clamp(24px,5vw,84px);background:var(--bg2)}
+.services::before{content:'';position:absolute;z-index:-1;inset:0;background:radial-gradient(ellipse 54% 66% at 50% 53%,rgba(71,111,112,.18),transparent 72%),linear-gradient(180deg,rgba(44,80,87,.2),transparent 26%,rgba(8,26,30,.16) 100%)}
+.services-header{text-align:center;max-width:760px;margin:0 auto clamp(52px,6vw,84px);padding:0 18px}
+.services-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));max-width:1320px;margin:0 auto;border:1px solid rgba(205,177,151,.36);background:rgba(205,177,151,.13);box-shadow:0 28px 72px rgba(5,18,22,.16)}
+.service-card{position:relative;display:flex;flex-direction:column;min-height:438px;padding:clamp(38px,4vw,64px) clamp(30px,4vw,54px) 32px;overflow:hidden;background:linear-gradient(145deg,rgba(50,84,91,.92),rgba(36,70,77,.96));transition:transform .45s cubic-bezier(.22,1,.36,1),background .45s ease,box-shadow .45s ease}
+.service-card+.service-card{border-left:1px solid rgba(8,27,32,.48)}
+.service-card::before{content:'';position:absolute;top:0;right:0;left:0;height:1px;background:linear-gradient(90deg,transparent,rgba(226,205,181,.82),transparent);opacity:.38;transition:opacity .45s ease}
+.service-card::after{content:'';position:absolute;right:0;bottom:0;left:0;height:4px;background:linear-gradient(90deg,var(--gold),var(--gold-l),transparent 72%);transform:scaleX(0);transform-origin:left;transition:transform .55s cubic-bezier(.22,1,.36,1)}
+.service-card:hover{z-index:1;background:linear-gradient(145deg,#365b63,#284951);transform:translateY(-9px);box-shadow:0 24px 52px rgba(5,18,22,.22)}
+.service-card:hover::before{opacity:.9}.service-card:hover::after{transform:scaleX(1)}
+.service-num{display:flex;align-items:center;gap:12px;margin-bottom:clamp(38px,4vw,56px);color:var(--gold);font-family:inherit;font-size:.58rem;font-style:normal;font-weight:500;letter-spacing:.26em;text-transform:uppercase}
+.service-num::before{content:'';width:22px;height:1px;background:currentColor}
+.service-name{max-width:12ch;margin:0 0 18px;color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,2.5vw,2.55rem);font-weight:400;line-height:.94;letter-spacing:-.025em}
 .service-name em{font-style:italic;color:var(--gold-l)}
-.service-desc{font-size:.82rem;line-height:1.85;color:var(--muted-2);margin-bottom:28px;flex:1}
-.service-link{font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);text-decoration:none;display:inline-flex;align-items:center;gap:10px;transition:gap .3s;align-self:flex-start}
-.service-link:hover{gap:16px}
-.service-link::after{content:'→'}
+.service-desc{max-width:30ch;margin:0 0 30px;color:rgba(245,241,229,.72);font-size:.83rem;line-height:1.86}
+.service-link{display:flex;align-items:center;justify-content:space-between;gap:18px;width:100%;margin-top:auto;padding-top:22px;border-top:1px solid rgba(205,177,151,.34);color:var(--gold-l);font-size:.59rem;font-weight:500;letter-spacing:.19em;line-height:1.45;text-decoration:none;text-transform:uppercase;transition:color .3s ease,border-color .3s ease}
+.service-link::after{content:'→';display:grid;flex:0 0 32px;place-items:center;width:32px;height:32px;border:1px solid rgba(226,205,181,.42);border-radius:50%;font-size:.9rem;letter-spacing:0;transition:transform .3s ease,background .3s ease,color .3s ease}
+.service-link:hover,.service-link:focus-visible{border-color:var(--gold-l);color:var(--cream);outline:0}.service-link:hover::after,.service-link:focus-visible::after{background:var(--gold-l);color:var(--bg2);transform:translateX(4px)}
 
 /* EXPERIENCIAS: carrusel editorial conectado al calendario público */
 .popup-section{background:var(--bg);position:relative;overflow:hidden}
@@ -395,8 +399,13 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
   .scroll-line{height:31px}
   .hero-paths{grid-template-columns:1fr;margin-top:26px;max-width:320px}
   .hero-path{padding:15px 16px}
-  .services-grid{grid-template-columns:1fr;padding:0 20px}
-  .service-card{padding:48px 36px;min-height:auto}
+  .services{padding:84px 20px}
+  .services-header{margin-bottom:42px}
+  .services-grid{grid-template-columns:1fr}
+  .service-card{min-height:0;padding:42px 30px 28px}
+  .service-card+.service-card{border-top:1px solid rgba(205,177,151,.22);border-left:0}
+  .service-num{margin-bottom:30px}
+  .service-name{max-width:none;font-size:2.22rem}
   .experience-carousel-track,.experience-carousel-empty,.experience-carousel-loading,.celebrate-inner,.finca-inner{grid-template-columns:1fr}
   .celebrate-inner,.finca-inner{padding:0 24px;gap:48px}
   .experience-carousel{min-height:0}
@@ -541,13 +550,13 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
       <span class="service-num">— 02</span>
       <h3 class="service-name">Celebraciones y <em>eventos</em></h3>
       <p class="service-desc">Comuniones, bautizos, aniversarios, eventos privados y encuentros de empresa con una propuesta hecha para compartir.</p>
-      <a href="/celebraciones-familiares-alicante/" class="service-link">Ver celebraciones y eventos</a>
+      <a href="/celebraciones-familiares-alicante/" class="service-link">Descubrir celebraciones y eventos</a>
     </div>
     <div class="service-card reveal reveal-delay-2">
       <span class="service-num">— 03</span>
       <h3 class="service-name">Experiencias <em>pop-up</em></h3>
       <p class="service-desc">Fechas concretas, menús especiales y experiencias gastronómicas abiertas al público. Una forma distinta de vivir la cocina de Perigallo.</p>
-      <a href="/experiencias/" class="service-link">Ver próximas experiencias</a>
+      <a href="/experiencias/" class="service-link">Descubrir próximas experiencias</a>
     </div>
   </div>
 </section>
