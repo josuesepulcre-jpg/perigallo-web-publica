@@ -8,7 +8,7 @@ const required = [
   'Diseñamos cocina, servicio y puesta en escena para celebraciones irrepetibles.',
   'Quiero celebrar un evento',
   'Quiero vivir una experiencia Perigallo',
-  'href="#about" class="scroll-indicator"',
+  'href="#quienes-somos" class="scroll-indicator"',
   '--color-perigallo-hero: var(--bg)',
   '<div class="hero-brand-background" aria-hidden="true"></div>',
   '<div class="hero-media-stage" aria-hidden="true">',
@@ -30,7 +30,7 @@ const required = [
   'border-radius:999px',
   'background:#29474d',
   'favicon.svg?v=perigallo-monogram-20260808',
-  '<section class="manifest" id="about" aria-labelledby="about-title">',
+  '<section class="manifest" id="quienes-somos" aria-labelledby="about-title">',
   'class="manifest-portrait manifest-portrait--josue reveal"',
   'src="assets/images/about/josue-about-v2.jpg"',
   'class="manifest-portrait manifest-portrait--david reveal"',
@@ -40,6 +40,11 @@ const required = [
   'class="manifest-copy manifest-copy--closing reveal reveal-delay-3"',
   '.manifest-portrait img{display:block;width:100%;height:auto;',
   'prefers-reduced-motion:reduce',
+  'href="/#descubre-perigallo">Descubre Perigallo</a>',
+  'href="/#quienes-somos">Quiénes somos</a>',
+  '<section class="services" id="descubre-perigallo">',
+  '#quienes-somos,#descubre-perigallo{scroll-margin-top:var(--header-anchor-offset)}',
+  "document.querySelectorAll('a[href^=\"#\"],a[href^=\"/#\"]')",
 ];
 
 for (const fragment of required) {
@@ -50,6 +55,12 @@ for (const fragment of required) {
 
 if (home.includes('class="cursor"') || home.includes('class="cursor-ring"')) {
   throw new Error('El cursor decorativo no se ha eliminado del hero.');
+}
+
+for (const obsoleteLabel of ['>Bodas</a>', '>Celebraciones</a>', '>Experiencias</a>']) {
+  if (home.includes(obsoleteLabel)) {
+    throw new Error(`La navegación principal conserva el enlace obsoleto: ${obsoleteLabel}`);
+  }
 }
 
 const carouselSlides = (home.match(/id:'[a-z-]+',src:'assets\/images\/gastronomy-carousel\/[a-z-]+\.jpg'/g) ?? []).length;

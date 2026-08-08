@@ -32,16 +32,17 @@
   --muted:   rgba(245,241,229,0.55);
   --muted-2: rgba(245,241,229,0.78);
   --border:  rgba(205,177,151,0.18);
+  --header-anchor-offset: 116px;
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--cream);font-family:'Montserrat',sans-serif;font-weight:300;overflow-x:hidden}
 
 /* NAV */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:25px clamp(26px,4.4vw,76px);border-bottom:1px solid rgba(245,241,229,.13);background:linear-gradient(to bottom,rgba(12,28,33,.56),rgba(12,28,33,0));transition:background .45s,padding .4s,border-color .4s,box-shadow .4s}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;padding:25px clamp(26px,4.4vw,76px);border-bottom:1px solid rgba(245,241,229,.13);background:linear-gradient(to bottom,rgba(12,28,33,.56),rgba(12,28,33,0));transition:background .45s,padding .4s,border-color .4s,box-shadow .4s}
 nav.scrolled{background:rgba(24,47,53,.94);backdrop-filter:blur(18px);padding:13px clamp(26px,4.4vw,76px);border-color:rgba(205,177,151,.2);box-shadow:0 14px 36px rgba(4,13,16,.18)}
 .nav-links-left{display:flex;gap:clamp(22px,2.5vw,42px);list-style:none}
-.nav-links-right{display:flex;gap:clamp(20px,2.2vw,38px);list-style:none;justify-content:flex-end;align-items:center}
+.nav-links-right{display:flex;gap:clamp(20px,2.2vw,38px);margin-left:auto;list-style:none;justify-content:flex-end;align-items:center}
 .nav-links-left a,.nav-links-right a{position:relative;font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--cream);text-decoration:none;opacity:.82;transition:opacity .3s,color .3s;font-weight:500;white-space:nowrap}
 .nav-links-left a::after,.nav-links-right a::after{content:'';position:absolute;left:0;right:.2em;bottom:-8px;height:1px;background:var(--gold);transform:scaleX(0);transform-origin:left;transition:transform .32s ease}
 .nav-links-left a:hover,.nav-links-right a:hover{opacity:1;color:var(--gold-l)}
@@ -53,9 +54,10 @@ nav.scrolled{background:rgba(24,47,53,.94);backdrop-filter:blur(18px);padding:13
 .nav-social-mobile{display:none}
 .mobile-quick-nav{display:none}
 .mobile-quick-nav a:focus-visible{outline:1px solid var(--gold);outline-offset:3px}
-.nav-logo{display:flex;flex-direction:column;align-items:center;text-decoration:none}
+.nav-logo{position:absolute;left:50%;display:flex;flex-direction:column;align-items:center;text-decoration:none;transform:translateX(-50%)}
 .nav-logo-img{width:82px;height:82px;object-fit:contain;transition:width .4s,height .4s,filter .4s;filter:brightness(1.1) drop-shadow(0 6px 16px rgba(0,0,0,.18))}
 nav.scrolled .nav-logo-img{width:50px;height:50px}
+#quienes-somos,#descubre-perigallo{scroll-margin-top:var(--header-anchor-offset)}
 
 /* HERO */
 .hero{min-height:100svh;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:148px 0 132px;isolation:isolate}
@@ -389,12 +391,12 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 @media(max-width:900px){
   nav{padding:13px 20px;grid-template-columns:1fr auto 1fr;background:rgba(20,44,49,.68);border-color:rgba(245,241,229,.15)}
   .nav-links-left,.nav-links-right{display:none}
+  .nav-logo{position:static;grid-column:2;grid-row:1;transform:none}
   .nav-social-mobile{display:inline-flex;justify-self:end;grid-column:3;grid-row:1;width:36px;height:36px}
   .nav-social-mobile svg{width:15px;height:15px}
   .mobile-quick-nav{position:fixed;top:76px;left:14px;right:14px;z-index:99;display:flex;gap:8px;justify-content:flex-start;overflow-x:auto;padding:8px;background:rgba(24,47,53,.88);border:1px solid rgba(205,177,151,.22);backdrop-filter:blur(16px);box-shadow:0 18px 48px rgba(0,0,0,.16);scrollbar-width:none}
   .mobile-quick-nav::-webkit-scrollbar{display:none}
   .mobile-quick-nav a{flex:0 0 auto;font-size:.5rem;letter-spacing:.18em;text-transform:uppercase;color:var(--cream);text-decoration:none;border:1px solid rgba(245,241,229,.18);padding:9px 10px;background:rgba(245,241,229,.04);white-space:nowrap}
-  .mobile-quick-nav a:first-child{background:var(--gold);color:var(--bg2);border-color:var(--gold);font-weight:500}
   nav.scrolled + .mobile-quick-nav{top:68px}
   .nav-logo-img{width:52px;height:52px}
   nav.scrolled .nav-logo-img{width:46px;height:46px}
@@ -502,23 +504,21 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 <body>
 <nav id="navbar">
   <ul class="nav-links-left">
-    <li><a href="/bodas-alicante/">Bodas</a></li>
-    <li><a href="/celebraciones-familiares-alicante/">Celebraciones</a></li>
+    <li><a href="/#descubre-perigallo">Descubre Perigallo</a></li>
   </ul>
-  <a href="#hero" class="nav-logo">
+  <a href="/" class="nav-logo">
     <img class="nav-logo-img" src="assets/images/perigallo-logo-original.png" alt="Perigallo">
   </a>
   <ul class="nav-links-right">
-    <li><a href="/experiencias/">Experiencias</a></li>
+    <li><a href="/#quienes-somos">Quiénes somos</a></li>
     <li><a href="/finca-la-llaguna/">La Finca</a></li>
     <li><a href="/contacto/">Contacto</a></li>
   </ul>
 </nav>
 
 <div class="mobile-quick-nav" aria-label="Navegación rápida">
-  <a href="https://suite.perigallo.com/solicitud?origen=web-perigallo" target="_blank" rel="noopener noreferrer">Propuesta</a>
-  <a href="/experiencias/">Experiencias</a>
-  <a href="/bodas-alicante/">Bodas</a>
+  <a href="/#descubre-perigallo">Descubre Perigallo</a>
+  <a href="/#quienes-somos">Quiénes somos</a>
   <a href="/finca-la-llaguna/">Finca</a>
   <a href="/contacto/">Contacto</a>
 </div>
@@ -543,11 +543,11 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
     </div>
   </div>
   <div class="hero-slide-counter" aria-hidden="true"><b id="heroSlideCurrent">01</b><span>/</span><span id="heroSlideTotal">12</span></div>
-  <a href="#about" class="scroll-indicator" aria-label="Descubrir Perigallo"><span>Descubrir</span><div class="scroll-line"></div></a>
+  <a href="#quienes-somos" class="scroll-indicator" aria-label="Descubrir Perigallo"><span>Descubrir</span><div class="scroll-line"></div></a>
 </section>
 
 <!-- QUIÉNES SOMOS -->
-<section class="manifest" id="about" aria-labelledby="about-title">
+<section class="manifest" id="quienes-somos" aria-labelledby="about-title">
   <figure class="manifest-portrait manifest-portrait--josue reveal" aria-label="Josué, cofundador de Perigallo">
     <img src="assets/images/about/josue-about-v2.jpg" alt="Josué, cofundador de Perigallo" width="470" height="700" loading="lazy" decoding="async">
   </figure>
@@ -563,7 +563,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 </section>
 
 <!-- QUÉ HACEMOS -->
-<section class="services" id="services">
+<section class="services" id="descubre-perigallo">
   <div class="services-header">
     <span class="section-eyebrow reveal">Elige tu camino</span>
     <h2 class="section-title reveal reveal-delay-1">Formas de vivir <em>Perigallo</em></h2>
@@ -858,8 +858,8 @@ document.addEventListener('visibilitychange',function(){window.clearTimeout(hero
 var heroResizeTimer;window.addEventListener('resize',function(){window.clearTimeout(heroResizeTimer);heroResizeTimer=window.setTimeout(function(){applyHeroSlide(heroSlots[heroState.currentSlot],heroState.currentIndex);applyHeroSlide(heroSlots[1-heroState.currentSlot],heroIndex(heroState.currentIndex+1))},120)});
 var observer=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting)e.target.classList.add('visible')})},{threshold:0.1});
 document.querySelectorAll('.reveal').forEach(function(el){observer.observe(el)});
-document.querySelectorAll('a[href^="#"]').forEach(function(a){
-  a.addEventListener('click',function(e){var t=document.querySelector(a.getAttribute('href'));if(t){e.preventDefault();t.scrollIntoView({behavior:'smooth'})}});
+document.querySelectorAll('a[href^="#"],a[href^="/#"]').forEach(function(a){
+  a.addEventListener('click',function(e){var href=a.getAttribute('href');var hash=href&&href.indexOf('/#')===0?href.slice(1):href;var t=hash&&document.querySelector(hash);if(t&&window.location.pathname==='/'){e.preventDefault();t.scrollIntoView({behavior:'smooth'});window.history.replaceState(null,'',hash)}});
 });
 </script>
 </body>
