@@ -69,7 +69,7 @@ nav.scrolled{height:76px;background:rgba(34,61,68,.975);border-color:rgba(226,20
 .nav-logo-img{width:64px;height:64px;object-fit:contain;transition:width .4s ease,height .4s ease,filter .4s ease;filter:brightness(1.06) drop-shadow(0 4px 12px rgba(14,34,39,.14))}
 nav.scrolled .nav-logo{transform:translate(-50%,5px)}
 nav.scrolled .nav-logo-img{width:50px;height:50px}
-#quienes-somos,#descubre-perigallo,#finca,#fechas{scroll-margin-top:var(--header-anchor-offset)}
+#quienes-somos,#descubre-perigallo,#finca,#fechas,#contact{scroll-margin-top:var(--header-anchor-offset)}
 
 /* HERO */
 .hero{min-height:100svh;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:148px 0 132px;isolation:isolate}
@@ -286,14 +286,17 @@ section{position:relative}
 .finca-badge{position:absolute;top:24px;left:24px;background:rgba(26,44,49,.85);backdrop-filter:blur(10px);padding:10px 16px;font-size:.55rem;letter-spacing:.26em;text-transform:uppercase;color:var(--gold);border:1px solid var(--border)}
 .finca-quote{font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-style:italic;color:var(--gold-l);line-height:1.75;margin:32px 0 40px;padding-left:22px;border-left:1px solid var(--gold);opacity:.85}
 
-/* CONTACT */
-.contact{padding:150px 60px;text-align:center;background:var(--bg4);position:relative;overflow:hidden}
-.contact::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(205,177,151,.06) 0%,transparent 70%);pointer-events:none}
-.contact-pattern{position:absolute;inset:0;opacity:.025;background-image:linear-gradient(var(--gold) 1px,transparent 1px),linear-gradient(90deg,var(--gold) 1px,transparent 1px);background-size:58px 58px}
-.contact-inner{position:relative;max-width:980px;margin:0 auto}
-.contact-title{font-family:'Cormorant Garamond',serif;font-size:clamp(2.6rem,5vw,4.6rem);font-weight:300;line-height:1.05;margin-bottom:24px}
-.contact-title em{font-style:italic;color:var(--gold)}
-.contact-subtitle{font-size:.84rem;line-height:1.85;color:var(--muted-2);max-width:480px;margin:0 auto 48px}
+/* CONTACTO — cierre editorial de la portada */
+.contact{position:relative;isolation:isolate;overflow:hidden;padding:clamp(100px,11vw,166px) clamp(24px,5vw,84px) clamp(84px,9vw,130px);background:linear-gradient(180deg,#223e45 0%,var(--bg2) 46%,#19343a 100%)}
+.contact::before{content:'';position:absolute;z-index:-2;inset:0;pointer-events:none;background:radial-gradient(ellipse 45% 64% at 50% 18%,rgba(205,177,151,.13),transparent 71%),radial-gradient(ellipse 48% 72% at 14% 78%,rgba(74,112,111,.14),transparent 77%),radial-gradient(ellipse 48% 72% at 88% 70%,rgba(205,177,151,.075),transparent 77%)}
+.contact::after{content:'';position:absolute;z-index:-1;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(10,31,36,.14),transparent 28%,transparent 72%,rgba(10,31,36,.14)),linear-gradient(180deg,rgba(245,241,229,.025),transparent 17%,transparent 82%,rgba(8,27,32,.13))}
+.contact-pattern{position:absolute;inset:0;opacity:.16;background:repeating-linear-gradient(90deg,transparent 0 calc(8.333% - 1px),rgba(226,205,181,.06) calc(8.333% - 1px) 8.333%),repeating-linear-gradient(0deg,transparent 0 calc(14.285% - 1px),rgba(226,205,181,.042) calc(14.285% - 1px) 14.285%);mask-image:radial-gradient(ellipse 66% 75% at 50% 50%,#000,transparent 88%)}
+.contact-inner{position:relative;width:min(100%,1120px);margin:0 auto}
+.contact-head{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(250px,.65fr);gap:clamp(30px,7vw,112px);align-items:end;margin-bottom:clamp(46px,5vw,72px)}
+.contact-heading{max-width:640px}.contact-heading .section-eyebrow{display:inline-flex;flex-direction:column;gap:13px;margin-bottom:20px}.contact-heading .section-eyebrow::after{content:'';width:42px;height:1px;background:var(--gold)}
+.contact-title{font-family:'Cormorant Garamond',serif;font-size:clamp(3.45rem,6.2vw,6.4rem);font-weight:300;line-height:.9;letter-spacing:-.045em;margin:0;color:var(--cream);text-wrap:balance}.contact-title em{font-style:italic;color:var(--gold-l)}
+.contact-side-note{margin:0 0 6px;padding:19px 0 0 21px;border-left:1px solid var(--gold);color:var(--muted-2);font-family:'Cormorant Garamond',serif;font-size:clamp(1.12rem,1.55vw,1.38rem);font-style:italic;line-height:1.48}.contact-side-note strong{display:block;margin-top:12px;color:var(--gold-l);font-family:'Montserrat',sans-serif;font-size:.52rem;font-style:normal;font-weight:500;letter-spacing:.22em;text-transform:uppercase}
+.contact-subtitle{max-width:580px;margin:28px 0 0;color:var(--muted-2);font-size:clamp(.79rem,1vw,.91rem);font-weight:400;line-height:1.88}
 
 /* FORM */
 .form{max-width:680px;margin:60px auto 0;text-align:left;display:grid;grid-template-columns:1fr 1fr;gap:24px 28px;position:relative}
@@ -308,22 +311,21 @@ section{position:relative}
 .form-submit{grid-column:span 2;justify-self:start;margin-top:14px}
 .form-disclaimer{grid-column:span 2;font-size:.65rem;color:var(--muted);line-height:1.7}
 
-.contact-info{display:flex;justify-content:center;gap:50px;margin-top:80px;padding-top:56px;border-top:1px solid var(--border);flex-wrap:wrap}
+.contact-info{display:flex;justify-content:center;gap:clamp(28px,6vw,82px);margin-top:clamp(56px,7vw,90px);padding-top:clamp(35px,5vw,54px);border-top:1px solid rgba(205,177,151,.28);flex-wrap:wrap}
 .contact-detail-label{font-size:.56rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:7px}
 .contact-detail-value{font-family:'Cormorant Garamond',serif;font-size:1.05rem;color:var(--cream)}
 .contact-detail-value a{color:var(--cream);text-decoration:none;transition:color .3s}
 .contact-detail-value a:hover{color:var(--gold)}
-.proposal-entry{max-width:820px;margin:58px auto 0;text-align:left;display:grid;grid-template-columns:1.1fr .9fr;gap:34px;align-items:center;padding:38px;border:1px solid rgba(205,177,151,.24);background:linear-gradient(135deg,rgba(245,241,229,.055),rgba(205,177,151,.025));box-shadow:0 26px 70px rgba(0,0,0,.22);position:relative;overflow:hidden}
-.proposal-entry::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 80% 10%,rgba(205,177,151,.11),transparent 36%);pointer-events:none}
+.proposal-entry{position:relative;overflow:hidden;display:grid;grid-template-columns:minmax(0,1.02fr) minmax(290px,.98fr);gap:clamp(34px,6vw,82px);align-items:center;padding:clamp(30px,5vw,64px);border:1px solid rgba(205,177,151,.35);background:linear-gradient(135deg,rgba(245,241,229,.09),rgba(205,177,151,.025) 48%,rgba(20,49,55,.35));box-shadow:0 30px 80px rgba(0,0,0,.2)}
+.proposal-entry::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 38% 80% at 100% 0%,rgba(205,177,151,.16),transparent 74%),linear-gradient(90deg,transparent 49.9%,rgba(205,177,151,.16) 50%,transparent 50.1%);pointer-events:none}
 .proposal-copy,.proposal-side{position:relative;z-index:1}
-.proposal-kicker{font-size:.55rem;letter-spacing:.34em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:16px}
-.proposal-title{font-family:'Cormorant Garamond',serif;font-size:clamp(1.75rem,3vw,2.7rem);font-weight:300;line-height:1.05;color:var(--cream);margin-bottom:18px}
+.proposal-kicker{font-size:.55rem;font-weight:500;letter-spacing:.34em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:18px}
+.proposal-title{max-width:430px;font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,3.3vw,3.35rem);font-weight:300;line-height:.95;letter-spacing:-.025em;color:var(--cream);margin-bottom:20px}
 .proposal-title em{font-style:italic;color:var(--gold)}
-.proposal-text{font-size:.83rem;line-height:1.85;color:var(--muted-2);max-width:460px}
-.proposal-meta{list-style:none;display:grid;gap:12px;margin:0 0 26px;padding:0}
-.proposal-meta li{display:flex;align-items:center;justify-content:space-between;gap:18px;padding-bottom:12px;border-bottom:1px solid rgba(205,177,151,.16);font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
-.proposal-meta strong{font-family:'Cormorant Garamond',serif;font-size:1.18rem;font-weight:300;letter-spacing:0;text-transform:none;color:var(--cream);white-space:nowrap}
+.proposal-text{font-size:.84rem;line-height:1.86;color:var(--muted-2);max-width:450px}
+.proposal-steps{list-style:none;display:grid;gap:14px;margin:0 0 30px;padding:0}.proposal-steps li{display:grid;grid-template-columns:28px 1fr;gap:13px;align-items:start;padding-bottom:14px;border-bottom:1px solid rgba(205,177,151,.16)}.proposal-step-number{padding-top:2px;color:var(--gold);font-size:.54rem;font-weight:500;letter-spacing:.16em}.proposal-step-copy{color:var(--muted-2);font-size:.74rem;line-height:1.6}.proposal-step-copy strong{display:block;margin-bottom:2px;color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:1.12rem;font-weight:400}
 .proposal-actions{display:flex;gap:14px;flex-wrap:wrap}
+.proposal-disclaimer{margin-top:16px;color:var(--muted);font-size:.58rem;letter-spacing:.06em;line-height:1.6}
 
 /* FOOTER */
 footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--border)}
@@ -441,10 +443,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
   .finca-visual{height:340px;order:-1}
   .catering{padding:90px 22px}
   .catering-list{grid-template-columns:repeat(2,1fr)}
-  .contact{padding:90px 22px}
-  .contact-info{flex-direction:column;gap:28px}
-  .proposal-entry{grid-template-columns:1fr;padding:28px 22px;gap:28px}
-  .proposal-meta li{align-items:flex-start;flex-direction:column;gap:4px}
+  .contact{padding:94px 22px 74px}.contact-head{grid-template-columns:1fr;gap:26px;margin-bottom:42px}.contact-title{font-size:clamp(3rem,14vw,4.3rem)}.contact-side-note{max-width:360px;margin:0}.contact-info{flex-direction:column;gap:28px;align-items:flex-start}.proposal-entry{grid-template-columns:1fr;padding:30px 23px;gap:30px}.proposal-entry::before{background:radial-gradient(ellipse 65% 46% at 100% 0%,rgba(205,177,151,.13),transparent 78%)}
   .proposal-actions .btn-primary,.proposal-actions .btn-ghost{width:100%;text-align:center}
   .form{grid-template-columns:1fr;gap:24px}
   .form-row-full,.form-submit,.form-disclaimer{grid-column:span 1}
@@ -478,7 +477,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
   <ul class="nav-links-right">
     <li><a class="nav-button--about" href="/#quienes-somos">Quiénes somos</a></li>
     <li><a class="nav-button--finca" href="/#finca">La Finca</a></li>
-    <li><a class="nav-button--contact" href="/contacto/">Contacto</a></li>
+    <li><a class="nav-button--contact" href="/#contact">Contacto</a></li>
   </ul>
 </nav>
 
@@ -487,7 +486,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
   <a href="/#fechas">Reservar</a>
   <a href="/#quienes-somos">Quiénes somos</a>
   <a href="/#finca">Finca</a>
-  <a href="/contacto/">Contacto</a>
+  <a href="/#contact">Contacto</a>
 </div>
 
 <!-- HERO -->
@@ -643,31 +642,38 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 <section class="contact" id="contact">
   <div class="contact-pattern"></div>
   <div class="contact-inner">
-    <span class="section-eyebrow reveal">Contacto · Solicitud de propuesta</span>
-    <h2 class="contact-title reveal reveal-delay-1">Cuéntanos tu<br><em>celebración</em></h2>
-    <p class="contact-subtitle reveal reveal-delay-2">Cada gran historia comienza con una conversación. Comparte tu idea y te enviaremos una propuesta personalizada en menos de 48 horas.</p>
+    <div class="contact-head">
+      <div class="contact-heading">
+        <span class="section-eyebrow reveal">Contacto · Solicitud de propuesta</span>
+        <h2 class="contact-title reveal reveal-delay-1">Cuéntanos tu<br><em>celebración</em></h2>
+        <p class="contact-subtitle reveal reveal-delay-2">Cada gran historia comienza con una conversación. Comparte la vuestra y diseñaremos una propuesta gastronómica que tenga sentido para vuestra fecha, vuestro lugar y vuestra manera de celebrar.</p>
+      </div>
+      <p class="contact-side-note reveal reveal-delay-2">No partimos de un menú cerrado. Empezamos escuchando.<strong>Respuesta personal en menos de 48 horas</strong></p>
+    </div>
 
     <div class="proposal-entry reveal reveal-delay-3" id="form">
       <div class="proposal-copy">
-        <span class="proposal-kicker">Solicitud inicial</span>
-        <h3 class="proposal-title">Abrir la solicitud <em>inicial</em></h3>
-        <p class="proposal-text">Completa una primera solicitud y revisaremos disponibilidad, formato, número de invitados y primeras preferencias para responderte de forma personalizada.</p>
+        <span class="proposal-kicker">Tu propuesta, a medida</span>
+        <h3 class="proposal-title">Empezamos por <em>vuestra historia</em></h3>
+        <p class="proposal-text">En unos minutos puedes contarnos qué imaginas. Revisaremos disponibilidad, formato y número de invitados para volver con una primera propuesta pensada para vosotros.</p>
       </div>
       <div class="proposal-side">
-        <ul class="proposal-meta" aria-label="Detalles del formulario">
-          <li><span>Tipo</span><strong>Solicitud inicial</strong></li>
-          <li><span>Uso</span><strong>Primer contacto</strong></li>
-          <li><span>Destino</span><strong>Equipo Perigallo</strong></li>
+        <ul class="proposal-steps" aria-label="Cómo funciona la solicitud">
+          <li><span class="proposal-step-number">01</span><span class="proposal-step-copy"><strong>Comparte tu idea</strong>Fecha aproximada, formato y las personas con las que quieres celebrarlo.</span></li>
+          <li><span class="proposal-step-number">02</span><span class="proposal-step-copy"><strong>Diseñamos el primer enfoque</strong>El equipo revisa los detalles y prepara una respuesta personalizada.</span></li>
+          <li><span class="proposal-step-number">03</span><span class="proposal-step-copy"><strong>Hablamos contigo</strong>Construimos juntos una experiencia que se sienta vuestra.</span></li>
         </ul>
         <div class="proposal-actions">
           <a href="https://suite.perigallo.com/solicitud?origen=web-perigallo" target="_blank" rel="noopener noreferrer" class="btn-primary">Solicitar disponibilidad y propuesta</a>
-          </div>
+        </div>
+        <p class="proposal-disclaimer">Sin compromiso. Solo el punto de partida para imaginar algo irrepetible.</p>
       </div>
     </div>
 
     <div class="contact-info reveal reveal-delay-4">
       <div><span class="contact-detail-label">Teléfono</span><span class="contact-detail-value"><a href="tel:+34691499985">+34 691 499 985</a></span></div>
       <div><span class="contact-detail-label">Base</span><span class="contact-detail-value">Crevillent, Alicante</span></div>
+      <div><span class="contact-detail-label">Primera respuesta</span><span class="contact-detail-value">En menos de 48 horas</span></div>
     </div>
   </div>
 </section>
@@ -693,7 +699,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
         <li><a href="/experiencias/">Próximas experiencias</a></li>
         <li><a href="/finca-la-llaguna/">Finca La Llaguna</a></li>
         <li><a href="/sobre-perigallo/">Sobre Perigallo</a></li>
-        <li><a href="/contacto/">Contacto</a></li>
+        <li><a href="/#contact">Contacto</a></li>
         <li><a href="/politica-privacidad/">Política de privacidad</a></li>
         <li><a href="/aviso-legal/">Aviso legal</a></li>
         <li><a href="/cookies/">Cookies</a></li>
