@@ -47,6 +47,8 @@ nav.scrolled{height:76px;background:rgba(34,61,68,.975);border-color:rgba(226,20
 .nav-links-left a,.nav-links-right a{position:relative;font-size:.61rem;letter-spacing:.22em;text-transform:uppercase;color:var(--cream);text-decoration:none;opacity:.8;transition:opacity .32s ease,color .32s ease,letter-spacing .32s ease,background .32s ease,border-color .32s ease,transform .32s ease;font-weight:500;white-space:nowrap}
 .nav-links-left a{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:0 16px;border:1px solid rgba(226,205,181,.3);border-radius:999px;background:rgba(31,66,73,.4);font-size:.54rem;letter-spacing:.17em;opacity:1}
 .nav-links-left a::after{display:none}
+.nav-links-left .nav-button--reserve{background:var(--gold-l);border-color:var(--gold-l);color:#1d353b}
+.nav-links-left .nav-button--reserve:hover{background:#f4efe5;border-color:#f4efe5;color:#172c31}
 .nav-links-left a:hover{background:rgba(42,82,89,.76);border-color:rgba(226,205,181,.48);color:#fff;letter-spacing:.17em;transform:translateY(-1px)}
 .nav-links-right a{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:0 14px;border:1px solid rgba(226,205,181,.23);border-radius:999px;font-size:.54rem;letter-spacing:.17em;opacity:1}
 .nav-links-right a:hover{transform:translateY(-1px);letter-spacing:.17em}
@@ -67,7 +69,7 @@ nav.scrolled{height:76px;background:rgba(34,61,68,.975);border-color:rgba(226,20
 .nav-logo-img{width:64px;height:64px;object-fit:contain;transition:width .4s ease,height .4s ease,filter .4s ease;filter:brightness(1.06) drop-shadow(0 4px 12px rgba(14,34,39,.14))}
 nav.scrolled .nav-logo{transform:translate(-50%,5px)}
 nav.scrolled .nav-logo-img{width:50px;height:50px}
-#quienes-somos,#descubre-perigallo{scroll-margin-top:var(--header-anchor-offset)}
+#quienes-somos,#descubre-perigallo,#finca,#fechas{scroll-margin-top:var(--header-anchor-offset)}
 
 /* HERO */
 .hero{min-height:100svh;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:148px 0 132px;isolation:isolate}
@@ -467,6 +469,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 <nav id="navbar">
   <ul class="nav-links-left">
     <li><a href="/#descubre-perigallo">Descubre Perigallo</a></li>
+    <li><a class="nav-button--reserve" href="/#fechas">Reservar</a></li>
     <li><a class="nav-social-link" href="https://www.instagram.com/perigallo/" target="_blank" rel="noopener noreferrer" aria-label="Instagram de Perigallo"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"></circle></svg><span class="nav-social-label">Instagram</span></a></li>
   </ul>
   <a href="/" class="nav-logo">
@@ -474,15 +477,16 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
   </a>
   <ul class="nav-links-right">
     <li><a class="nav-button--about" href="/#quienes-somos">Quiénes somos</a></li>
-    <li><a class="nav-button--finca" href="/finca-la-llaguna/">La Finca</a></li>
+    <li><a class="nav-button--finca" href="/#finca">La Finca</a></li>
     <li><a class="nav-button--contact" href="/contacto/">Contacto</a></li>
   </ul>
 </nav>
 
 <div class="mobile-quick-nav" aria-label="Navegación rápida">
   <a href="/#descubre-perigallo">Descubre Perigallo</a>
+  <a href="/#fechas">Reservar</a>
   <a href="/#quienes-somos">Quiénes somos</a>
-  <a href="/finca-la-llaguna/">Finca</a>
+  <a href="/#finca">Finca</a>
   <a href="/contacto/">Contacto</a>
 </div>
 
