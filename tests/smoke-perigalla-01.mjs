@@ -60,6 +60,8 @@ for (const marker of [
   "needs-audio-recovery",
   "NotAllowedError",
   "story-audio-recovery",
+  "volumeDescriptor",
+  "__perigalloNarrationEndedSource",
 ]) {
   if (!mobileAudioGuard.includes(marker)) throw new Error(`The mobile narration guard is missing ${marker}.`);
 }
