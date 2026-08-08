@@ -15,6 +15,7 @@ const required = [
   'id="heroSlideCurrent"',
   'border-radius:999px',
   'background:#29474d',
+  'favicon.svg?v=perigallo-monogram-20260808',
 ];
 
 for (const fragment of required) {
