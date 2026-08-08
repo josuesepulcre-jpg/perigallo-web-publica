@@ -491,13 +491,15 @@
     var price = Math.max(0, Number(input(form, "price").value || 0));
     var fee = Math.max(0, Number(input(form, "fee").value || 0));
     var tax = Math.max(0, Number(input(form, "tax_rate").value || 0));
-    target.textContent = money.format(price + Math.round(price * tax) / 100 + fee);
+    var taxAmount = Math.round(price * tax) / 100;
+    target.innerHTML = money.format(price + taxAmount + fee) + '<small>Base ' + money.format(price) + (taxAmount ? ' · IVA ' + money.format(taxAmount) : '') + (fee ? ' · Gestión ' + money.format(fee) : '') + '</small>';
   }
 
   function fillTicketForm(ticket) {
     var form = document.querySelector("[data-ticket-type-form]");
     if (!form) return;
     form.reset();
+    if (!ticket) input(form, "tax_rate").value = "10";
     Object.keys(ticket || {}).forEach(function (key) {
       var field = input(form, key);
       if (!field) return;

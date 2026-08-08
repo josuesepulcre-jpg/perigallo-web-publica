@@ -26,7 +26,7 @@ final class HoldedClient
     {
         $required = [
             'HOLDED_API_KEY', 'HOLDED_PAYMENT_METHOD_ID', 'HOLDED_SALES_ACCOUNT_ID',
-            'HOLDED_DEFAULT_TAX_ID', 'HOLDED_TREASURY_ID', 'HOLDED_INVOICE_SERIES_ID',
+            'HOLDED_DEFAULT_TAX_ID', 'HOLDED_DEFAULT_TAX_RATE', 'HOLDED_TREASURY_ID', 'HOLDED_INVOICE_SERIES_ID',
             'HOLDED_SALES_RECEIPT_SERIES_ID',
         ];
         return array_values(array_filter($required, static fn (string $key): bool => !env_value($key)));

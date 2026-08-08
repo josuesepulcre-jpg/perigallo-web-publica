@@ -31,6 +31,7 @@ const required = [
   "database/migrations/019_public_lead_form.sql",
   "database/migrations/020_holded_fiscal_sync.sql",
   "database/migrations/021_holded_invoice_delivery.sql",
+  "database/migrations/023_ticket_order_tax_breakdown.sql",
   "database/migrations/022_checkout_runtime_compatibility.sql",
   "api/scripts/apply-migration.php",
   "api/scripts/purge-test-ticketing-data.php",
@@ -284,6 +285,16 @@ for (const marker of ["HOLDED_ENABLED=false", "HOLDED_DRY_RUN=true", "HOLDED_API
 }
 for (const marker of ["holded_status", "holded_sync_logs", "holded_contacts", "holded_refund_requests", "requires_review"]) {
   if (!holdedMigration.includes(marker)) throw new Error(`Holded migration is missing ${marker}.`);
+}
+const taxBreakdownMigration = readFileSync(join(root, "database/migrations/023_ticket_order_tax_breakdown.sql"), "utf8");
+for (const marker of ["unit_base_cents", "unit_tax_cents", "tax_rate", "unit_fee_cents"]) {
+  if (!taxBreakdownMigration.includes(marker)) throw new Error(`Order tax breakdown migration is missing ${marker}.`);
+}
+for (const marker of ["unit_base_cents", "holded_tax_mapping", "unit_fee_cents"]) {
+  if (!holdedSync.includes(marker)) throw new Error(`Holded tax breakdown missing ${marker}.`);
+}
+if (!ticketing.includes('tt.price_cents + ROUND(tt.price_cents * tt.tax_rate / 100) + tt.fee_cents')) {
+  throw new Error('Public event cards must use the final ticket price including taxes and fees.');
 }
 for (const marker of ["https://api.holded.com/api/v2", "Authorization: Bearer", "HOLDED_DRY_RUN", "recordInvoicePayment", "createSalesReceipt", "createCreditNote"]) {
   if (!holdedClient.includes(marker)) throw new Error(`Holded client contract is missing ${marker}.`);

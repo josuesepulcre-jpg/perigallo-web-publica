@@ -29,6 +29,8 @@ pedido. Este enlace no guarda el PDF en la web ni expone la API Key de Holded.
    una entrada.
 2. Completar las variables `HOLDED_*` en `.env` directamente en el servidor.
    Nunca guardarlas en Git ni en JavaScript público.
+   `HOLDED_DEFAULT_TAX_RATE` debe coincidir con el impuesto seleccionado en
+   `HOLDED_DEFAULT_TAX_ID` (por ejemplo, `10` con `s_iva_10`).
 3. Ejecutar `php api/scripts/holded-health.php`: solo informa de configuración y
    recuentos; no hace peticiones a Holded ni escribe datos.
 4. Validar con datos de prueba y una cuenta/entorno autorizado por Holded.
@@ -54,6 +56,18 @@ factura. Este umbral es `HOLDED_SIMPLIFIED_MAX_CENTS` y debe ser revisado por la
 asesoría. Los recibos simplificados no crean contacto fiscal salvo necesidad
 posterior; las facturas guardan un mapa local hash de NIF primero y correo
 después para evitar contactos duplicados.
+
+## Desglose de precios e impuestos
+
+En el editor de entradas, el precio es siempre la **base imponible**. El IVA y
+los gastos de gestión se calculan en Perigallo y se muestran al comprador
+antes de pagar. El pedido conserva ese desglose; al sincronizar, Holded recibe
+la base y el impuesto por separado, por lo que su total debe coincidir con el
+cobro de Redsys.
+
+La integración utiliza un único impuesto de Holded. Si una entrada tiene un
+IVA distinto de `HOLDED_DEFAULT_TAX_RATE`, se detiene en revisión en lugar de
+emitir un documento con un impuesto incorrecto.
 
 ## Endpoints oficiales utilizados
 

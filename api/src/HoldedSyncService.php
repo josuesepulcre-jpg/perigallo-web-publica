@@ -261,18 +261,38 @@ final class HoldedSyncService
 
     private function issueDocument(array $order, string $documentType): array
     {
-        $items = $this->pdo->prepare('SELECT ticket_type_name, quantity, unit_price_cents FROM ticket_order_items WHERE order_id = ? ORDER BY id ASC');
+        $items = $this->pdo->prepare('SELECT ticket_type_name, quantity, unit_base_cents, unit_tax_cents, tax_rate, unit_fee_cents FROM ticket_order_items WHERE order_id = ? ORDER BY id ASC');
         $items->execute([(int) $order['id']]);
         $payloadItems = [];
         foreach ($items->fetchAll() as $item) {
-            $payloadItems[] = [
+            $taxRate = (float) ($item['tax_rate'] ?? 0);
+            $line = [
                 'name' => clean_string((string) $item['ticket_type_name'], 255),
                 'type' => 'service',
                 'units' => (int) $item['quantity'],
-                'price' => $this->policy->amount((int) $item['unit_price_cents']),
-                'taxes' => [(string) env_value('HOLDED_DEFAULT_TAX_ID')],
+                'price' => $this->policy->amount((int) $item['unit_base_cents']),
                 'account_id' => (string) env_value('HOLDED_SALES_ACCOUNT_ID'),
             ];
+            if ($taxRate > 0) {
+                $expectedRate = (float) (env_value('HOLDED_DEFAULT_TAX_RATE', '0') ?? '0');
+                if (abs($taxRate - $expectedRate) > 0.001) {
+                    throw new HoldedException('El IVA del pedido no coincide con el impuesto configurado en Holded.', null, null, false, 'holded_tax_mapping');
+                }
+                $line['taxes'] = [(string) env_value('HOLDED_DEFAULT_TAX_ID')];
+            }
+            $payloadItems[] = $line;
+
+            // Los gastos de gestión se cobran por separado y nunca se incluyen
+            // silenciosamente en la base imponible de la entrada.
+            if ((int) $item['unit_fee_cents'] > 0) {
+                $payloadItems[] = [
+                    'name' => 'Gastos de gestión · ' . clean_string((string) $item['ticket_type_name'], 220),
+                    'type' => 'service',
+                    'units' => (int) $item['quantity'],
+                    'price' => $this->policy->amount((int) $item['unit_fee_cents']),
+                    'account_id' => (string) env_value('HOLDED_SALES_ACCOUNT_ID'),
+                ];
+            }
         }
         $common = [
             'date' => (new DateTimeImmutable((string) $order['paid_at']))->format('Y-m-d'),

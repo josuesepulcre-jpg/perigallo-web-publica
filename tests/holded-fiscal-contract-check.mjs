@@ -19,6 +19,7 @@ const adminJs = read("assets/js/admin-backoffice.js");
 
 const cases = [
   ["default disabled", () => assert.match(env, /HOLDED_ENABLED=false/)],
+  ["Holded tax rate is configured", () => assert.match(env, /HOLDED_DEFAULT_TAX_RATE=/)],
   ["default dry run", () => assert.match(env, /HOLDED_DRY_RUN=true/)],
   ["no fiscal secret in browser", () => assert.doesNotMatch(checkout + checkoutJs, /HOLDED_API_KEY|Authorization: Bearer/)],
   ["fiscal migration persists request", () => assert.match(migration, /billing_requested/)],
@@ -39,6 +40,8 @@ const cases = [
   ["admin billing route is available", () => assert.match(billingPage, /data-admin-billing-page/)],
   ["billing uses Holded health only for the owner", () => assert.match(adminJs, /sessionData\.is_owner/) ],
   ["billing never issues documents from the browser", () => assert.doesNotMatch(billingPage + adminJs, /createInvoice\(|HOLDED_API_KEY/) ],
+  ["Holded stores the taxable base separately", () => assert.match(sync, /unit_base_cents/)],
+  ["Holded prevents a mismatched tax mapping", () => assert.match(sync, /holded_tax_mapping/)],
 ];
 
 for (const [name, check] of cases) {

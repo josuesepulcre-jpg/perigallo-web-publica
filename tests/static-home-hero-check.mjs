@@ -42,7 +42,7 @@ const required = [
   '.nav-button--reserve',
   '.nav-button--contact',
   'left:clamp(188px,20vw,396px)',
-  'https://www.instagram.com/perigallo/',
+  'https://www.instagram.com/perigallo_popup/',
   'aria-label="Instagram de Perigallo"',
   '.nav-links-left .nav-social-link{width:36px;height:36px;min-height:36px;padding:0;',
   '.nav-links-left .nav-social-link svg{width:17px;height:17px;display:block;overflow:visible;stroke:currentColor;',

@@ -50,7 +50,7 @@ final class Ticketing
     {
         $stmt = $this->pdo->query(
             'SELECT e.*,
-                    (SELECT MIN(tt.price_cents)
+                    (SELECT MIN(tt.price_cents + ROUND(tt.price_cents * tt.tax_rate / 100) + tt.fee_cents)
                      FROM ticket_types tt
                      WHERE tt.event_id = e.id AND tt.active = 1 AND tt.visible = 1) AS price_from_cents
                     ,(SELECT MIN(tt.reference_price_cents)
@@ -214,9 +214,13 @@ final class Ticketing
                 if ($quantity > $available) {
                     throw new RuntimeException('No quedan suficientes entradas para ' . $type['name'] . '.');
                 }
-                // El importe de compra incorpora IVA y gastos de gestión mostrados al cliente.
-                $taxCents = (int) round((int) $type['price_cents'] * (float) ($type['tax_rate'] ?? 0) / 100);
-                $unitPrice = (int) $type['price_cents'] + $taxCents + (int) ($type['fee_cents'] ?? 0);
+                // El precio administrado es la base imponible. El importe cobrado
+                // y enviado a Redsys siempre incluye el IVA y los gastos visibles.
+                $unitBase = (int) $type['price_cents'];
+                $taxRate = max(0, (float) ($type['tax_rate'] ?? 0));
+                $taxCents = (int) round($unitBase * $taxRate / 100);
+                $unitFee = (int) ($type['fee_cents'] ?? 0);
+                $unitPrice = $unitBase + $taxCents + $unitFee;
                 $lineTotal = $quantity * $unitPrice;
                 $subtotal += $lineTotal;
                 $selectedItems++;
@@ -225,10 +229,10 @@ final class Ticketing
                 $pricedItems[] = ['ticket_type_id' => $typeId, 'quantity' => $quantity, 'unit_price_cents' => $unitPrice];
                 $itemStmt = $this->pdo->prepare(
                     'INSERT INTO ticket_order_items
-                     (order_id, event_id, ticket_type_id, ticket_type_name, quantity, unit_price_cents, reference_unit_price_cents, reference_total_cents, promotional_label, show_reference_price, total_cents, created_at)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+                     (order_id, event_id, ticket_type_id, ticket_type_name, quantity, unit_price_cents, unit_base_cents, unit_tax_cents, tax_rate, unit_fee_cents, reference_unit_price_cents, reference_total_cents, promotional_label, show_reference_price, total_cents, created_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
                 );
-                $itemStmt->execute([$orderId, $event['id'], $typeId, $type['name'], $quantity, $unitPrice, $referenceUnitPrice, $referenceUnitPrice ? $quantity * $referenceUnitPrice : null, $this->promotionalLabel($type), $referenceUnitPrice ? 1 : 0, $lineTotal]);
+                $itemStmt->execute([$orderId, $event['id'], $typeId, $type['name'], $quantity, $unitPrice, $unitBase, $taxCents, $taxRate, $unitFee, $referenceUnitPrice, $referenceUnitPrice ? $quantity * $referenceUnitPrice : null, $this->promotionalLabel($type), $referenceUnitPrice ? 1 : 0, $lineTotal]);
                 $orderItems[] = ['id' => (int) $this->pdo->lastInsertId(), 'quantity' => $quantity];
             }
 
@@ -2311,6 +2315,8 @@ final class Ticketing
                 'name' => $type['name'],
                 'description' => $type['description'],
                 'price_cents' => (int) $type['price_cents'],
+                'tax_rate' => (float) ($type['tax_rate'] ?? 0),
+                'tax_cents' => (int) round((int) $type['price_cents'] * (float) ($type['tax_rate'] ?? 0) / 100),
                 'reference_price_cents' => $this->visibleReferencePrice($type, (int) $type['price_cents'] + (int) round((int) $type['price_cents'] * (float) ($type['tax_rate'] ?? 0) / 100) + (int) ($type['fee_cents'] ?? 0)),
                 'promotional_label' => $this->promotionalLabel($type),
                 'show_reference_price' => !empty($type['show_reference_price']),

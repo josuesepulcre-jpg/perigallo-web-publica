@@ -82,11 +82,15 @@
 
   function commercialPriceMarkup(type, salePrice, className) {
     var reference = referencePrice(type.reference_price_cents, salePrice, type.show_reference_price);
+    var base = Number(type.price_cents || 0);
+    var tax = Number(type.tax_cents != null ? type.tax_cents : Math.round(base * Number(type.tax_rate || 0) / 100));
+    var fee = Number(type.fee_cents || 0);
+    var breakdown = tax || fee ? ' · Base ' + cents(base) + (tax ? ' + IVA ' + cents(tax) : '') + (fee ? ' + gestión ' + cents(fee) : '') : '';
     return '<div class="' + className + '">' +
       (reference ? '<span class="ticket-reference-price"><span>Valor de la experiencia</span><del>' + cents(reference) + '</del></span>' : '') +
       '<strong>' + cents(salePrice) + '</strong>' +
       '<span class="ticket-promo-label">' +
-        escapeHtml(reference ? promotionalLabel(type.promotional_label) : 'Precio por persona') + ' por persona</span>' +
+        escapeHtml(reference ? promotionalLabel(type.promotional_label) : 'Precio por persona') + ' por persona' + breakdown + '</span>' +
     '</div>';
   }
 
@@ -140,7 +144,7 @@
       target.setAttribute("aria-busy", "true");
       request(api + "/events").then(function (data) {
         if (!data.events.length) {
-          target.innerHTML = '<div class="ticket-panel experience-empty"><span class="ticket-eyebrow">Próximamente</span><h2>La próxima experiencia está en camino</h2><p class="ticket-copy">Estamos ultimando la siguiente edición Perigallo. Síguenos para descubrirla antes que nadie.</p><a class="ticket-btn primary" href="https://www.instagram.com/perigallo" target="_blank" rel="noopener noreferrer">Seguir novedades</a></div>';
+          target.innerHTML = '<div class="ticket-panel experience-empty"><span class="ticket-eyebrow">Próximamente</span><h2>La próxima experiencia está en camino</h2><p class="ticket-copy">Estamos ultimando la siguiente edición Perigallo. Síguenos para descubrirla antes que nadie.</p><a class="ticket-btn primary" href="https://www.instagram.com/perigallo_popup/" target="_blank" rel="noopener noreferrer">Seguir novedades</a></div>';
           return;
         }
         target.innerHTML = data.events.map(eventCard).join("");
@@ -1226,6 +1230,10 @@
 
   function checkoutTicketMarkup(type) {
     var price = Number(type.final_price_cents != null ? type.final_price_cents : type.price_cents || 0);
+    var base = Number(type.price_cents || 0);
+    var tax = Number(type.tax_cents || 0);
+    var fee = Number(type.fee_cents || 0);
+    var taxRate = Number(type.tax_rate || 0);
     var reference = referencePrice(type.reference_price_cents, price, type.show_reference_price);
     var available = Math.max(0, Number(type.available || 0));
     var max = Math.max(0, Math.min(available, Number(type.max_per_order || available)));
@@ -1238,7 +1246,8 @@
       '<div class="checkout-ticket-meta"><span>' + escapeHtml(availability) + '</span>' + (type.requires_promo ? '<span>Código necesario</span>' : '') + '</div></div>',
       '<div class="checkout-ticket-controls">' + commercialPriceMarkup(type, price, 'checkout-ticket-price'),
       '<div class="quantity-stepper"><output data-quantity-output aria-live="polite">0</output><div class="quantity-stepper-actions"><button type="button" data-quantity-action="increase" aria-label="Añadir una entrada de ' + escapeAttr(type.name) + '"' + (unavailable ? ' disabled' : '') + '>+</button><button type="button" data-quantity-action="decrease" aria-label="Restar una entrada de ' + escapeAttr(type.name) + '" disabled>−</button></div></div>',
-      '<input class="checkout-quantity-input" min="0" max="' + max + '" value="0" type="number" name="ticket_' + type.id + '" data-ticket-type="' + type.id + '" data-ticket-name="' + escapeAttr(type.name) + '" data-ticket-price="' + price + '" data-ticket-reference-price="' + reference + '">',
+      '<small class="checkout-ticket-tax">Base ' + cents(base) + (tax ? ' + IVA ' + taxRate.toFixed(2).replace(/\\.00$/, '') + '% (' + cents(tax) + ')' : '') + (fee ? ' + gestión ' + cents(fee) : '') + '</small>',
+      '<input class="checkout-quantity-input" min="0" max="' + max + '" value="0" type="number" name="ticket_' + type.id + '" data-ticket-type="' + type.id + '" data-ticket-name="' + escapeAttr(type.name) + '" data-ticket-price="' + price + '" data-ticket-base="' + base + '" data-ticket-tax="' + tax + '" data-ticket-fee="' + fee + '" data-ticket-reference-price="' + reference + '">',
       '<div class="checkout-ticket-subtotal" data-ticket-subtotal></div></div></article>'
     ].join("");
   }
@@ -1291,6 +1300,9 @@
     var subtotal = totals && Number.isFinite(totals.subtotal) ? totals.subtotal : selected.reduce(function (sum, input) { return sum + Number(input.value || 0) * Number(input.dataset.ticketPrice || 0); }, 0);
     var discount = totals ? Number(totals.discount || 0) : 0;
     var total = totals && Number.isFinite(totals.total) ? totals.total : subtotal - discount;
+    var baseTotal = selected.reduce(function (sum, input) { return sum + Number(input.value || 0) * Number(input.dataset.ticketBase || input.dataset.ticketPrice || 0); }, 0);
+    var taxTotal = selected.reduce(function (sum, input) { return sum + Number(input.value || 0) * Number(input.dataset.ticketTax || 0); }, 0);
+    var feeTotal = selected.reduce(function (sum, input) { return sum + Number(input.value || 0) * Number(input.dataset.ticketFee || 0); }, 0);
     var referenceTotal = selected.reduce(function (sum, input) { return sum + Number(input.value || 0) * Number(input.dataset.ticketReferencePrice || 0); }, 0);
     var savings = referenceTotal > total ? referenceTotal - total : 0;
     var attendees = Array.isArray(totals && totals.attendees) ? totals.attendees : [];
@@ -1303,7 +1315,7 @@
       var price = Number(input.dataset.ticketPrice || 0);
       var reference = Number(input.dataset.ticketReferencePrice || 0);
       return '<li class="checkout-summary-item"><span><strong>' + escapeHtml(input.dataset.ticketName) + '</strong><small>' + quantity + ' × ' + cents(price) + '</small>' + (reference ? '<small class="checkout-summary-reference">Valor: <del>' + cents(reference) + '</del></small>' : '') + '</span><strong>' + cents(quantity * price) + '</strong></li>';
-    }).join("") + '</ul>' + (referenceTotal ? '<div class="checkout-summary-reference-total"><span>Valor de la experiencia</span><del>' + cents(referenceTotal) + '</del></div>' : '') + (discount ? '<div class="checkout-summary-subtotal"><span>Subtotal especial</span><strong>' + cents(subtotal) + '</strong></div><div class="checkout-summary-discount"><span>Descuento' + (totals.code ? ' · ' + escapeHtml(totals.code) : '') + '</span><strong>−' + cents(discount) + '</strong></div>' : '') + attendeeSummary + '<div class="checkout-summary-total"><span>Total a pagar</span><strong>' + cents(total) + '</strong></div>' + (savings ? '<div class="checkout-summary-saving">Ahorro en esta reserva: <strong>' + cents(savings) + '</strong></div>' : '');
+    }).join("") + '</ul>' + (referenceTotal ? '<div class="checkout-summary-reference-total"><span>Valor de la experiencia</span><del>' + cents(referenceTotal) + '</del></div>' : '') + '<div class="checkout-summary-breakdown"><div><span>Base imponible</span><strong>' + cents(baseTotal) + '</strong></div>' + (taxTotal ? '<div><span>IVA</span><strong>' + cents(taxTotal) + '</strong></div>' : '') + (feeTotal ? '<div><span>Gastos de gestión</span><strong>' + cents(feeTotal) + '</strong></div>' : '') + '</div>' + (discount ? '<div class="checkout-summary-subtotal"><span>Subtotal antes de descuento</span><strong>' + cents(subtotal) + '</strong></div><div class="checkout-summary-discount"><span>Descuento' + (totals.code ? ' · ' + escapeHtml(totals.code) : '') + '</span><strong>−' + cents(discount) + '</strong></div>' : '') + attendeeSummary + '<div class="checkout-summary-total"><span>Total a pagar</span><strong>' + cents(total) + '</strong></div>' + (savings ? '<div class="checkout-summary-saving">Ahorro en esta reserva: <strong>' + cents(savings) + '</strong></div>' : '');
   }
 
   function renderCheckoutPreview(form, payload, eventTitle, layout, confirmation, appliedDiscount) {
