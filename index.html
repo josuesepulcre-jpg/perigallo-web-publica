@@ -32,20 +32,21 @@
   --muted:   rgba(245,241,229,0.55);
   --muted-2: rgba(245,241,229,0.78);
   --border:  rgba(205,177,151,0.18);
-  --header-anchor-offset: 116px;
+  --header-desktop-height: 88px;
+  --header-anchor-offset: 100px;
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{background:var(--bg);color:var(--cream);font-family:'Montserrat',sans-serif;font-weight:300;overflow-x:hidden}
 
 /* NAV */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;padding:25px clamp(26px,4.4vw,76px);border-bottom:1px solid rgba(245,241,229,.13);background:linear-gradient(to bottom,rgba(12,28,33,.56),rgba(12,28,33,0));transition:background .45s,padding .4s,border-color .4s,box-shadow .4s}
-nav.scrolled{background:rgba(24,47,53,.94);backdrop-filter:blur(18px);padding:13px clamp(26px,4.4vw,76px);border-color:rgba(205,177,151,.2);box-shadow:0 14px 36px rgba(4,13,16,.18)}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;height:var(--header-desktop-height);padding:0 clamp(26px,4.4vw,76px);border-bottom:1px solid rgba(226,205,181,.08);background:linear-gradient(180deg,rgba(39,66,73,.98),rgba(39,66,73,.88));transition:height .4s ease,background .4s ease,border-color .4s ease}
+nav.scrolled{height:76px;background:rgba(35,61,68,.96);border-color:rgba(226,205,181,.11);box-shadow:none}
 .nav-links-left{display:flex;gap:clamp(22px,2.5vw,42px);list-style:none}
 .nav-links-right{display:flex;gap:clamp(20px,2.2vw,38px);margin-left:auto;list-style:none;justify-content:flex-end;align-items:center}
-.nav-links-left a,.nav-links-right a{position:relative;font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--cream);text-decoration:none;opacity:.82;transition:opacity .3s,color .3s;font-weight:500;white-space:nowrap}
-.nav-links-left a::after,.nav-links-right a::after{content:'';position:absolute;left:0;right:.2em;bottom:-8px;height:1px;background:var(--gold);transform:scaleX(0);transform-origin:left;transition:transform .32s ease}
-.nav-links-left a:hover,.nav-links-right a:hover{opacity:1;color:var(--gold-l)}
+.nav-links-left a,.nav-links-right a{position:relative;font-size:.61rem;letter-spacing:.22em;text-transform:uppercase;color:var(--cream);text-decoration:none;opacity:.8;transition:opacity .32s ease,color .32s ease,letter-spacing .32s ease;font-weight:500;white-space:nowrap}
+.nav-links-left a::after,.nav-links-right a::after{content:'';position:absolute;left:.05em;right:.25em;bottom:-9px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-l),transparent);opacity:.75;transform:scaleX(0);transform-origin:center;transition:transform .34s cubic-bezier(.22,1,.36,1)}
+.nav-links-left a:hover,.nav-links-right a:hover{opacity:1;color:var(--gold-l);letter-spacing:.235em}
 .nav-links-left a:hover::after,.nav-links-right a:hover::after{transform:scaleX(1)}
 .nav-social-link{width:31px;height:31px;border:1px solid rgba(245,241,229,.24);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:var(--cream);opacity:.68;transition:opacity .3s,color .3s,border-color .3s,background .3s}
 .nav-social-link:hover{opacity:1;color:var(--gold);border-color:var(--gold);background:rgba(205,177,151,.06)}
@@ -54,21 +55,23 @@ nav.scrolled{background:rgba(24,47,53,.94);backdrop-filter:blur(18px);padding:13
 .nav-social-mobile{display:none}
 .mobile-quick-nav{display:none}
 .mobile-quick-nav a:focus-visible{outline:1px solid var(--gold);outline-offset:3px}
-.nav-logo{position:absolute;left:50%;display:flex;flex-direction:column;align-items:center;text-decoration:none;transform:translateX(-50%)}
-.nav-logo-img{width:82px;height:82px;object-fit:contain;transition:width .4s,height .4s,filter .4s;filter:brightness(1.1) drop-shadow(0 6px 16px rgba(0,0,0,.18))}
+.nav-logo{position:absolute;left:50%;display:flex;flex-direction:column;align-items:center;text-decoration:none;transform:translate(-50%,7px)}
+.nav-logo-img{width:64px;height:64px;object-fit:contain;transition:width .4s ease,height .4s ease,filter .4s ease;filter:brightness(1.06) drop-shadow(0 4px 12px rgba(14,34,39,.14))}
+nav.scrolled .nav-logo{transform:translate(-50%,4px)}
 nav.scrolled .nav-logo-img{width:50px;height:50px}
 #quienes-somos,#descubre-perigallo{scroll-margin-top:var(--header-anchor-offset)}
 
 /* HERO */
 .hero{min-height:100svh;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:148px 0 132px;isolation:isolate}
 .hero-brand-background{position:absolute;inset:0;z-index:0;background:var(--color-perigallo-hero)}
-.hero-media-stage{position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none;background:radial-gradient(ellipse 36% 54% at 50% 48%,rgba(7,23,26,.36) 0%,rgba(20,56,61,.15) 42%,transparent 76%),radial-gradient(ellipse 62% 86% at 50% 54%,rgba(95,118,105,.1),transparent 73%)}
-.hero-media-stage::before{content:'';position:absolute;inset:8% 12%;background:radial-gradient(ellipse 28% 46% at 50% 48%,rgba(224,171,92,.13),rgba(224,171,92,.035) 37%,transparent 73%);filter:blur(18px);opacity:.9}
+.hero-media-stage{position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none;background:radial-gradient(ellipse 35% 56% at 50% 48%,rgba(12,39,44,.3) 0%,rgba(31,73,78,.12) 45%,transparent 78%),radial-gradient(ellipse 64% 88% at 50% 55%,rgba(90,116,108,.065),transparent 74%)}
+.hero-media-stage::before{content:'';position:absolute;inset:8% 12%;background:radial-gradient(ellipse 28% 46% at 50% 48%,rgba(224,171,92,.075),rgba(224,171,92,.022) 39%,transparent 74%);filter:blur(20px);opacity:.82}
 .hero-media-slot{position:absolute;inset:0;display:grid;place-items:center;opacity:0;transition:opacity 1.6s cubic-bezier(.22,1,.36,1);will-change:opacity}
 .hero-media-slot.is-visible{opacity:1}.hero-media-slot.is-underlay{z-index:0}.hero-media-slot.is-overlay{z-index:1}
-.hero-media-asset{position:relative;z-index:1;width:min(var(--hero-width),60vw);max-width:82vw;max-height:78svh;height:auto;object-fit:contain;transform:translate3d(var(--hero-offset-x,0),var(--hero-offset-y,0),0) scale(var(--hero-scale,1));transform-origin:center;filter:brightness(var(--hero-brightness,.96)) contrast(var(--hero-contrast,1.01)) saturate(var(--hero-saturation,.94)) drop-shadow(0 18px 34px rgba(5,19,22,.24)) drop-shadow(0 0 30px rgba(224,171,92,.11));-webkit-mask-image:none;mask-image:none}
-.hero-atmosphere{position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(ellipse 52% 65% at 50% 44%,rgba(11,35,39,.13) 0%,rgba(19,57,61,.1) 49%,transparent 78%),linear-gradient(90deg,rgba(19,54,59,.18) 0%,transparent 28%,transparent 72%,rgba(19,54,59,.18) 100%),linear-gradient(to bottom,rgba(20,53,58,.22) 0%,transparent 29%,transparent 73%,rgba(18,49,54,.2) 100%)}
-.hero-content{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;text-align:center;width:min(100% - 48px,900px);padding:0}
+.hero-media-asset{position:relative;z-index:1;width:min(var(--hero-width),60vw);max-width:82vw;max-height:78svh;height:auto;object-fit:contain;transform:translate3d(var(--hero-offset-x,0),var(--hero-offset-y,0),0) scale(var(--hero-scale,1));transform-origin:center;filter:brightness(var(--hero-brightness,.96)) contrast(var(--hero-contrast,1.035)) saturate(var(--hero-saturation,.91)) drop-shadow(0 18px 34px rgba(5,19,22,.28)) drop-shadow(0 0 28px rgba(224,171,92,.075));-webkit-mask-image:none;mask-image:none}
+.hero-atmosphere{position:absolute;inset:-3%;z-index:2;pointer-events:none;will-change:transform;background:radial-gradient(ellipse 52% 64% at 50% 43%,rgba(16,49,54,.32) 0%,rgba(23,63,68,.16) 47%,transparent 78%),radial-gradient(ellipse 38% 55% at 18% 72%,rgba(74,105,104,.065),transparent 76%),radial-gradient(ellipse 40% 52% at 77% 82%,rgba(193,160,109,.035),transparent 80%),linear-gradient(90deg,rgba(22,57,62,.16) 0%,transparent 29%,transparent 71%,rgba(22,57,62,.16) 100%),linear-gradient(to bottom,rgba(22,56,61,.16) 0%,transparent 28%,transparent 74%,rgba(19,50,56,.18) 100%);animation:heroAtmosphereDrift 22s ease-in-out infinite alternate}
+.hero-content{position:relative;z-index:3;isolation:isolate;display:flex;flex-direction:column;align-items:center;text-align:center;width:min(100% - 48px,900px);padding:0}
+.hero-content::before{content:'';position:absolute;z-index:-1;top:50%;left:50%;width:min(920px,112vw);height:clamp(500px,64svh,690px);pointer-events:none;transform:translate(-50%,-50%);background:radial-gradient(ellipse 49% 50% at 50% 42%,rgba(31,71,76,.72) 0%,rgba(33,74,79,.48) 38%,rgba(35,75,79,.18) 63%,transparent 82%)}
 .hero-eyebrow{display:flex;align-items:center;gap:13px;font-size:.62rem;letter-spacing:.34em;text-transform:uppercase;color:var(--gold-l);margin-bottom:31px;opacity:1;animation:heroSettle .9s ease .12s both;font-weight:500}
 .hero-eyebrow::before,.hero-eyebrow::after{content:'';width:31px;height:1px;background:rgba(226,205,181,.62)}
 .hero-title{font-family:Georgia,'Times New Roman',serif;font-size:clamp(4.85rem,8.8vw,9.1rem);font-weight:400;line-height:.8;letter-spacing:-.08em;margin-bottom:19px;color:var(--cream);opacity:1;animation:heroSettle 1s ease .18s both;text-wrap:balance}
@@ -380,22 +383,25 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 @keyframes heroSettle{from{transform:translateY(12px)}to{transform:translateY(0)}}
 @keyframes scrollPulse{0%,100%{opacity:.35}50%{opacity:1}}
 @keyframes bookingSkeleton{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@keyframes heroAtmosphereDrift{0%{transform:translate3d(-9px,-5px,0) scale(1)}100%{transform:translate3d(10px,7px,0) scale(1.025)}}
 
 @media(prefers-reduced-motion:reduce){
   .hero-media-slot{transition-duration:300ms!important}
+  .hero-atmosphere{animation:none!important}
   .manifest-portrait,.manifest-inner .reveal{transition-duration:1ms!important}
 }
 
 @media(max-width:900px){
-  nav{padding:13px 20px;grid-template-columns:1fr auto 1fr;background:rgba(20,44,49,.68);border-color:rgba(245,241,229,.15)}
+  nav{height:76px;padding:0 20px;grid-template-columns:1fr auto 1fr;background:rgba(39,66,73,.94);border-color:rgba(226,205,181,.1)}
   .nav-links-left,.nav-links-right{display:none}
-  .nav-logo{position:static;grid-column:2;grid-row:1;transform:none}
+  .nav-logo{position:static;grid-column:2;grid-row:1;transform:translateY(4px)}
+  nav.scrolled .nav-logo{transform:translateY(4px)}
   .nav-social-mobile{display:inline-flex;justify-self:end;grid-column:3;grid-row:1;width:36px;height:36px}
   .nav-social-mobile svg{width:15px;height:15px}
   .mobile-quick-nav{position:fixed;top:76px;left:14px;right:14px;z-index:99;display:flex;gap:8px;justify-content:flex-start;overflow-x:auto;padding:8px;background:rgba(24,47,53,.88);border:1px solid rgba(205,177,151,.22);backdrop-filter:blur(16px);box-shadow:0 18px 48px rgba(0,0,0,.16);scrollbar-width:none}
   .mobile-quick-nav::-webkit-scrollbar{display:none}
   .mobile-quick-nav a{flex:0 0 auto;font-size:.5rem;letter-spacing:.18em;text-transform:uppercase;color:var(--cream);text-decoration:none;border:1px solid rgba(245,241,229,.18);padding:9px 10px;background:rgba(245,241,229,.04);white-space:nowrap}
-  nav.scrolled + .mobile-quick-nav{top:68px}
+  nav.scrolled + .mobile-quick-nav{top:76px}
   .nav-logo-img{width:52px;height:52px}
   nav.scrolled .nav-logo-img{width:46px;height:46px}
   .hero{min-height:760px;padding:150px 0 115px}
@@ -821,18 +827,18 @@ window.addEventListener('scroll',function(){
   document.getElementById('navbar').classList.toggle('scrolled',window.scrollY>80);
 });
 var heroSlides=[
-  {id:'fortune-cookie',src:'assets/images/gastronomy-carousel/foreground/fortune-cookie.webp',width:'620px',mobileWidth:'350px',brightness:.98,contrast:1.01,saturation:.98},
-  {id:'brioche-braseado',src:'assets/images/gastronomy-carousel/foreground/brioche-braseado.webp',width:'505px',mobileWidth:'315px',brightness:.96,contrast:1.02,saturation:.96},
-  {id:'helado-rosa',src:'assets/images/gastronomy-carousel/foreground/helado-rosa.webp',width:'460px',mobileWidth:'295px',brightness:.98,contrast:1.01,saturation:.98},
-  {id:'churro-copa',src:'assets/images/gastronomy-carousel/foreground/churro-copa.webp',width:'470px',mobileWidth:'300px',brightness:.95,contrast:1.02,saturation:.94},
-  {id:'canape-negro',src:'assets/images/gastronomy-carousel/foreground/canape-negro.webp',width:'450px',mobileWidth:'285px',brightness:1,contrast:1.01,saturation:.97},
-  {id:'postre-rojo',src:'assets/images/gastronomy-carousel/foreground/postre-rojo.webp',width:'430px',mobileWidth:'278px',brightness:1,contrast:1.02,saturation:.98},
-  {id:'hojaldre-caviar',src:'assets/images/gastronomy-carousel/foreground/hojaldre-caviar.webp',width:'560px',mobileWidth:'335px',brightness:.98,contrast:1.01,saturation:.96},
-  {id:'nigiri-atun',src:'assets/images/gastronomy-carousel/foreground/nigiri-atun.webp',width:'555px',mobileWidth:'335px',brightness:.96,contrast:1.02,saturation:.94},
-  {id:'vieiras-espuma',src:'assets/images/gastronomy-carousel/foreground/vieiras-espuma.webp',width:'475px',mobileWidth:'305px',brightness:1,contrast:1.01,saturation:.93},
-  {id:'pollo-cine',src:'assets/images/gastronomy-carousel/foreground/pollo-cine.webp',width:'485px',mobileWidth:'305px',brightness:.97,contrast:1.01,saturation:.94},
-  {id:'cafe-crema',src:'assets/images/gastronomy-carousel/foreground/cafe-crema.webp',width:'390px',mobileWidth:'250px',brightness:.98,contrast:1.02,saturation:.91},
-  {id:'croqueta-rellena',src:'assets/images/gastronomy-carousel/foreground/croqueta-rellena.webp',width:'415px',mobileWidth:'265px',brightness:1,contrast:1.01,saturation:.96}
+  {id:'fortune-cookie',src:'assets/images/gastronomy-carousel/foreground/fortune-cookie.webp',width:'620px',mobileWidth:'350px',brightness:.9,contrast:1.03,saturation:.94},
+  {id:'brioche-braseado',src:'assets/images/gastronomy-carousel/foreground/brioche-braseado.webp',width:'505px',mobileWidth:'315px',brightness:.88,contrast:1.04,saturation:.92},
+  {id:'helado-rosa',src:'assets/images/gastronomy-carousel/foreground/helado-rosa.webp',width:'460px',mobileWidth:'295px',brightness:.9,contrast:1.03,saturation:.94},
+  {id:'churro-copa',src:'assets/images/gastronomy-carousel/foreground/churro-copa.webp',width:'470px',mobileWidth:'300px',brightness:.87,contrast:1.04,saturation:.9},
+  {id:'canape-negro',src:'assets/images/gastronomy-carousel/foreground/canape-negro.webp',width:'450px',mobileWidth:'285px',brightness:.9,contrast:1.03,saturation:.93},
+  {id:'postre-rojo',src:'assets/images/gastronomy-carousel/foreground/postre-rojo.webp',width:'430px',mobileWidth:'278px',brightness:.91,contrast:1.04,saturation:.94},
+  {id:'hojaldre-caviar',src:'assets/images/gastronomy-carousel/foreground/hojaldre-caviar.webp',width:'560px',mobileWidth:'335px',brightness:.89,contrast:1.03,saturation:.92},
+  {id:'nigiri-atun',src:'assets/images/gastronomy-carousel/foreground/nigiri-atun.webp',width:'555px',mobileWidth:'335px',brightness:.87,contrast:1.04,saturation:.9},
+  {id:'vieiras-espuma',src:'assets/images/gastronomy-carousel/foreground/vieiras-espuma.webp',width:'475px',mobileWidth:'305px',brightness:.9,contrast:1.03,saturation:.89},
+  {id:'pollo-cine',src:'assets/images/gastronomy-carousel/foreground/pollo-cine.webp',width:'485px',mobileWidth:'305px',brightness:.88,contrast:1.03,saturation:.9},
+  {id:'cafe-crema',src:'assets/images/gastronomy-carousel/foreground/cafe-crema.webp',width:'390px',mobileWidth:'250px',brightness:.89,contrast:1.04,saturation:.88},
+  {id:'croqueta-rellena',src:'assets/images/gastronomy-carousel/foreground/croqueta-rellena.webp',width:'415px',mobileWidth:'265px',brightness:.91,contrast:1.03,saturation:.92}
 ];
 var heroSlots=Array.prototype.slice.call(document.querySelectorAll('.hero-media-slot'));
 var heroFadeDuration=1600;
