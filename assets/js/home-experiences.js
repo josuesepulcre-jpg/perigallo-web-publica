@@ -4,7 +4,7 @@
   var root = document.querySelector("[data-experience-carousel]");
   if (!root) return;
 
-  var fallbackImage = "/assets/images/perigallo-hero-original-03.jpg";
+  var fallbackImage = "/assets/images/perigalla-01/hero-desktop.webp";
   var activeIndex = 0;
   var experiences = [];
   var touchStartX = null;
@@ -28,18 +28,21 @@
   function formatDate(value) {
     var date = eventDate(value);
     if (!date) return "Por anunciar";
-    return new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "long", year: "numeric" }).format(date);
+    return new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "short", year: "numeric" })
+      .format(date)
+      .replace(".", "")
+      .toUpperCase();
   }
 
   function formatTime(value) {
     var date = eventDate(value);
     if (!date) return "Por confirmar";
-    return new Intl.DateTimeFormat("es-ES", { hour: "2-digit", minute: "2-digit", hour12: false }).format(date) + " h";
+    return new Intl.DateTimeFormat("es-ES", { hour: "2-digit", minute: "2-digit", hour12: false }).format(date) + " H";
   }
 
   function formatPrice(value) {
     if (!Number(value)) return "";
-    return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(Number(value) / 100);
+    return new Intl.NumberFormat("es-ES", { maximumFractionDigits: 0 }).format(Number(value) / 100) + " €";
   }
 
   function publicEvents(events) {
@@ -54,17 +57,11 @@
   }
 
   function availability(event) {
-    if (event.status === "sold_out") return "Completo";
-    return "Plazas limitadas";
+    return event.status === "sold_out" ? "Completo" : "Plazas limitadas";
   }
 
   function eventLink(event) {
     return "/experiencias/" + encodeURIComponent(event.slug) + "/";
-  }
-
-  function eventDescription(event) {
-    var copy = event.short_description || event.description || "Una edición Perigallo creada para una fecha, una mesa y una atmósfera irrepetibles.";
-    return String(copy).replace(/\s+/g, " ").trim();
   }
 
   function imageUrl(event) {
@@ -75,29 +72,33 @@
     return /la\s+perigalla\s*0?1/i.test(String(event.title || ""));
   }
 
-  function priceMarkup(event, price) {
-    var reference = formatPrice(event.reference_price_from_cents);
-    var hasReferencePrice = Number(event.reference_price_from_cents) > Number(event.price_from_cents || 0);
-    return [
-      '<div class="experience-carousel-price">',
-      hasReferencePrice ? '<span class="experience-carousel-price-reference">Valor de la experiencia <del>' + escapeHtml(reference) + '</del></span>' : '<span class="experience-carousel-price-reference">Precio de la experiencia</span>',
-      '<strong>' + escapeHtml(price) + '</strong>',
-      '<small>' + (isPerigalla01(event) ? 'Precio cerrado por persona' : 'Precio por persona') + '</small>',
-      '</div>'
-    ].join("");
+  function eventDescription(event) {
+    if (isPerigalla01(event)) {
+      return "Una boda ficticia convertida en experiencia gastronómica inmersiva. Una noche de blanco, cocina, relato y celebración.";
+    }
+    return String(event.short_description || event.description || "Una edición Perigallo creada para una fecha, una mesa y una atmósfera irrepetibles.")
+      .replace(/\s+/g, " ")
+      .trim();
   }
 
-  function dressCodeMarkup(event) {
-    if (!event.dress_code) return "";
-    if (isPerigalla01(event)) {
-      return [
-        '<aside class="experience-carousel-dress-code" aria-label="Código de vestimenta obligatorio: Total White">',
-        '<span class="experience-carousel-dress-kicker">Código de vestimenta obligatorio <b>· Total White</b></span>',
-        '<p>Es obligatorio acudir vestido íntegramente de blanco. <strong>No se permitirá el acceso</strong> a quienes no cumplan este código de vestimenta.</p>',
-        '</aside>'
-      ].join("");
-    }
-    return '<aside class="experience-carousel-dress-code"><span class="experience-carousel-dress-kicker">Código de vestimenta</span><p>' + escapeHtml(event.dress_code) + '</p></aside>';
+  function locationMarkup(event) {
+    var place = String(event.location || "Perigallo");
+    if (isPerigalla01(event) && !/alicante/i.test(place)) place += " · Alicante";
+    return place;
+  }
+
+  function microDetail(event) {
+    if (isPerigalla01(event)) return "Total White · +18";
+    return event.dress_code ? String(event.dress_code).replace(/\s+/g, " ").trim() : "Edición limitada";
+  }
+
+  function priceMarkup(price) {
+    return [
+      '<div class="experience-carousel-price">',
+      '<strong>' + escapeHtml(price) + '</strong>',
+      '<small>Por persona</small>',
+      '</div>'
+    ].join("");
   }
 
   function renderEmpty() {
@@ -107,11 +108,11 @@
     root.innerHTML = [
       '<div class="experience-carousel-visual" aria-hidden="true"></div>',
       '<div class="experience-carousel-content">',
-      '<span class="experience-carousel-kicker">Experiencias Perigallo</span>',
-      '<h2 class="experience-carousel-title" id="experiences-carousel-heading">Próxima experiencia<br><em>en camino</em></h2>',
+      '<span class="experience-carousel-kicker">Próxima edición</span>',
+      '<h3 class="experience-carousel-title">La próxima experiencia<br><em>está en camino</em></h3>',
       '<p class="experience-carousel-subtitle">Una nueva fecha está tomando forma.</p>',
-      '<p class="experience-carousel-desc">Estamos preparando la siguiente experiencia Perigallo. Muy pronto anunciaremos una nueva fecha, su menú y todos los detalles para vivirla.</p>',
-      '<div class="experience-carousel-footer"><a class="btn-primary" href="/experiencias/">Descubrir Perigallo</a></div>',
+      '<p class="experience-carousel-desc">Estamos preparando la siguiente experiencia Perigallo. Muy pronto anunciaremos una nueva fecha y todo lo necesario para vivirla.</p>',
+      '<div class="experience-carousel-footer"><div class="experience-carousel-actions"><a class="btn-primary" href="/experiencias/">Descubrir experiencias</a></div></div>',
       '</div>'
     ].join("");
   }
@@ -123,25 +124,20 @@
     root.innerHTML = [
       '<div class="experience-carousel-visual" aria-hidden="true"></div>',
       '<div class="experience-carousel-content">',
-      '<span class="experience-carousel-kicker">Experiencias Perigallo</span>',
-      '<h2 class="experience-carousel-title" id="experiences-carousel-heading">Las experiencias<br><em>están por llegar</em></h2>',
-      '<p class="experience-carousel-desc">No hemos podido consultar el calendario en este momento. Puedes descubrir todas las experiencias publicadas desde la agenda.</p>',
-      '<div class="experience-carousel-footer"><a class="btn-primary" href="/experiencias/">Ver experiencias</a></div>',
+      '<span class="experience-carousel-kicker">Agenda Perigallo</span>',
+      '<h3 class="experience-carousel-title">Las experiencias<br><em>están por llegar</em></h3>',
+      '<p class="experience-carousel-desc">No hemos podido consultar el calendario en este momento. Puedes descubrir todas las experiencias desde la agenda.</p>',
+      '<div class="experience-carousel-footer"><div class="experience-carousel-actions"><a class="btn-primary" href="/experiencias/">Ver experiencias</a></div></div>',
       '</div>'
     ].join("");
   }
 
   function render() {
     var event = experiences[activeIndex];
-    var price = formatPrice(event.price_from_cents);
     var image = imageUrl(event);
+    var price = formatPrice(event.price_from_cents);
     var isSingle = experiences.length === 1;
-    var meta = [
-      ["Fecha", formatDate(event.starts_at)],
-      ["Hora", event.ends_at ? formatTime(event.starts_at) + " - " + formatTime(event.ends_at) : formatTime(event.starts_at)],
-      ["Lugar", event.location || "Perigallo"],
-      ["Estado", availability(event)]
-    ];
+    var time = event.ends_at ? formatTime(event.starts_at) + " — " + formatTime(event.ends_at) : formatTime(event.starts_at);
 
     root.className = "experience-carousel" + (isSingle ? " is-single" : "");
     root.removeAttribute("aria-busy");
@@ -153,26 +149,28 @@
       '<span class="experience-carousel-badge">' + escapeHtml(availability(event)) + '</span>',
       '</div>',
       '<div class="experience-carousel-content">',
-      '<span class="experience-carousel-kicker">Experiencias Perigallo · ' + String(activeIndex + 1).padStart(2, "0") + " / " + String(experiences.length).padStart(2, "0") + '</span>',
-      '<h2 class="experience-carousel-title" id="experiences-carousel-heading">' + escapeHtml(event.title) + '</h2>',
+      '<span class="experience-carousel-kicker">Experiencia Perigallo · ' + String(activeIndex + 1).padStart(2, "0") + '</span>',
+      '<h3 class="experience-carousel-title">' + escapeHtml(event.title) + '</h3>',
       event.subtitle ? '<p class="experience-carousel-subtitle">' + escapeHtml(event.subtitle) + '</p>' : "",
       '<div class="experience-carousel-meta">',
-      meta.map(function (item) { return '<div class="experience-carousel-meta-item"><span class="experience-carousel-meta-label">' + item[0] + '</span><span class="experience-carousel-meta-value">' + escapeHtml(item[1]) + '</span></div>'; }).join(""),
+      '<div class="experience-carousel-meta-item"><span class="experience-carousel-meta-label">Fecha</span><span class="experience-carousel-meta-value">' + escapeHtml(formatDate(event.starts_at)) + '</span></div>',
+      '<div class="experience-carousel-meta-item"><span class="experience-carousel-meta-label">Hora</span><span class="experience-carousel-meta-value">' + escapeHtml(time) + '</span></div>',
+      '<div class="experience-carousel-meta-item"><span class="experience-carousel-meta-label">Lugar</span><span class="experience-carousel-meta-value">' + escapeHtml(locationMarkup(event)) + '</span></div>',
       '</div>',
-      dressCodeMarkup(event),
+      '<p class="experience-carousel-microdetail">' + escapeHtml(microDetail(event)) + '</p>',
       '<p class="experience-carousel-desc">' + escapeHtml(eventDescription(event)) + '</p>',
       '<div class="experience-carousel-footer">',
-      price ? priceMarkup(event, price) : '<span class="experience-carousel-meta-value">Precio por anunciar</span>',
-      '<div class="experience-carousel-actions"><a class="btn-ghost" href="/experiencias/">Ver todas</a><a class="btn-primary" href="' + eventLink(event) + '">Ver experiencia</a></div>',
+      price ? priceMarkup(price) : '<span class="experience-carousel-meta-value">Precio por anunciar</span>',
+      '<div class="experience-carousel-actions"><a class="btn-primary" href="' + eventLink(event) + '">Descubrir la experiencia</a><a class="experience-carousel-all-link" href="/experiencias/">Ver todas las experiencias</a></div>',
       '</div>',
       '</div>',
       '</div>',
       '<div class="experience-carousel-navigation" aria-label="Navegación entre experiencias">',
       '<button class="experience-carousel-control" type="button" data-experience-previous aria-label="Experiencia anterior">&#8592;</button>',
-      '<button class="experience-carousel-control" type="button" data-experience-next aria-label="Experiencia siguiente">&#8594;</button>',
       '<div class="experience-carousel-dots" aria-label="Seleccionar experiencia">',
       experiences.map(function (item, index) { return '<button class="experience-carousel-dot" type="button" data-experience-index="' + index + '" aria-label="Ver ' + escapeAttribute(item.title) + '" aria-current="' + String(index === activeIndex) + '"></button>'; }).join(""),
       '</div>',
+      '<button class="experience-carousel-control" type="button" data-experience-next aria-label="Experiencia siguiente">&#8594;</button>',
       '</div>'
     ].join("");
   }
@@ -185,7 +183,7 @@
     window.setTimeout(function () {
       render();
       window.requestAnimationFrame(function () { root.classList.remove("is-changing"); });
-    }, 150);
+    }, 220);
   }
 
   root.addEventListener("click", function (event) {
@@ -221,10 +219,7 @@
     })
     .then(function (data) {
       experiences = publicEvents(Array.isArray(data.events) ? data.events : []);
-      if (!experiences.length) {
-        renderEmpty();
-        return;
-      }
+      if (!experiences.length) return renderEmpty();
       render();
     })
     .catch(renderError);

@@ -275,8 +275,11 @@ for (const marker of ["dressCodeNotice", "perigallaDressCodeFact", "Código de v
 }
 
 const homeExperiences = readFileSync(join(root, "assets/js/home-experiences.js"), "utf8");
-for (const marker of ["reference_price_from_cents", "Precio cerrado por persona", "Código de vestimenta obligatorio", "No se permitirá el acceso"]) {
-  if (!homeExperiences.includes(marker)) throw new Error(`Missing clear home experience card marker: ${marker}`);
+for (const marker of ["Total White · +18", "Por persona", "Descubrir la experiencia", "Ver todas las experiencias"]) {
+  if (!homeExperiences.includes(marker)) throw new Error(`Missing editorial home experience marker: ${marker}`);
+}
+for (const forbiddenMarker of ["reference_price_from_cents", "Código de vestimenta obligatorio", "No se permitirá el acceso"]) {
+  if (homeExperiences.includes(forbiddenMarker)) throw new Error(`La agenda de la home conserva un detalle operativo: ${forbiddenMarker}`);
 }
 for (const marker of ["adminRequest", "data-start-test-payment", "submitPaymentForm", "Redsys TEST", "MODO DE PRUEBAS", "initPaymentResult", "data-payment-result"]) {
   if (!publicJs.includes(marker)) throw new Error(`Missing sandbox checkout marker: ${marker}`);

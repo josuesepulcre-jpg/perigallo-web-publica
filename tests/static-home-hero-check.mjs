@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const home = readFileSync(resolve('index.html'), 'utf8');
+const experienceScript = readFileSync(resolve('assets/js/home-experiences.js'), 'utf8');
 const required = [
   '<h1 class="hero-title">Perigallo</h1>',
   'Gastronomía inmersiva',
@@ -72,6 +73,23 @@ const required = [
   'propuesta creada a medida.',
   'Otra forma de vivir Perigallo.',
   '#quienes-somos,#descubre-perigallo{scroll-margin-top:var(--header-anchor-offset)}',
+  '<section class="popup-section" id="proximas-experiencias"',
+  'Agenda Perigallo',
+  'Próximas <em>experiencias</em>',
+  'href="#proximas-experiencias" class="service-link">Descubrir próximas experiencias</a>',
+  'clip-path:ellipse(66% 64% at 47% 51%)',
+  'experience-carousel-microdetail',
+  'agendaVisual',
+  'agendaContent',
+  'home-experiences.js?v=20260808-agenda-v3',
+  '<section class="booking-bridge" id="fechas" aria-labelledby="booking-bridge-title">',
+  'Reservas Perigallo',
+  'Elige tu fecha.<em>Nosotros hacemos el resto.</em>',
+  'Consulta la disponibilidad real y reserva directamente en nuestro portal oficial.',
+  'https://reservas.perigallo.com/reservar?source=web',
+  'Disponibilidad real</li>',
+  'Confirmación directa</li>',
+  'Reserva oficial</li>',
   "document.querySelectorAll('a[href^=\"#\"],a[href^=\"/#\"]')",
 ];
 
@@ -81,8 +99,37 @@ for (const fragment of required) {
   }
 }
 
+for (const fragment of [
+  'Una boda ficticia convertida en experiencia gastronómica inmersiva.',
+  'Total White · +18',
+  'Descubrir la experiencia',
+  'Ver todas las experiencias',
+  'assets/images/perigalla-01/hero-desktop.webp',
+  'function changeTo(nextIndex)',
+]) {
+  if (!experienceScript.includes(fragment)) {
+    throw new Error(`La agenda editorial no conserva: ${fragment}`);
+  }
+}
+
+if (experienceScript.includes('Código de vestimenta obligatorio') || experienceScript.includes('Valor de la experiencia')) {
+  throw new Error('La agenda de la home conserva contenido operativo que solo pertenece a la ficha.');
+}
+
 if (home.includes('class="cursor"') || home.includes('class="cursor-ring"')) {
   throw new Error('El cursor decorativo no se ha eliminado del hero.');
+}
+
+for (const obsoleteBookingBlock of [
+  'booking-frame-placeholder',
+  'booking-widget-area',
+  'booking-aside-title',
+  'Tu reserva en<br><em>tres pasos</em>',
+  'Ver eventos con entrada',
+]) {
+  if (home.includes(obsoleteBookingBlock)) {
+    throw new Error(`La portada conserva una simulación de reservas obsoleta: ${obsoleteBookingBlock}`);
+  }
 }
 
 for (const obsoleteLabel of ['>Bodas</a>', '>Celebraciones</a>', '>Experiencias</a>']) {
