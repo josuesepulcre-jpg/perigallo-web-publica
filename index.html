@@ -113,22 +113,21 @@ section{position:relative}
 .section-title em{font-style:italic;color:var(--gold-l)}
 .section-body{font-size:.84rem;line-height:1.95;color:var(--muted-2);max-width:480px;font-weight:300}
 
-/* QUIÉNES SOMOS — retratos y relato editorial */
-.manifest{position:relative;isolation:isolate;min-height:100svh;overflow:hidden;display:grid;place-items:center;padding:clamp(118px,12vw,174px) clamp(24px,5vw,84px);background:radial-gradient(ellipse 38% 62% at 50% 48%,rgba(57,94,99,.24),transparent 72%),radial-gradient(ellipse 46% 70% at 7% 46%,rgba(7,21,25,.42),transparent 72%),radial-gradient(ellipse 46% 70% at 93% 46%,rgba(7,21,25,.42),transparent 72%),linear-gradient(180deg,var(--bg) 0%,#203b41 52%,var(--bg2) 100%)}
-.manifest::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(90deg,rgba(16,34,39,.58),transparent 30%,transparent 70%,rgba(16,34,39,.58)),linear-gradient(180deg,rgba(14,31,36,.3),transparent 23%,rgba(14,31,36,.28))}
-.manifest-inner{position:relative;z-index:1;width:min(100%,700px);margin:0 auto;text-align:center}
-.manifest-eyebrow{display:inline-flex;flex-direction:column;align-items:center;gap:17px;margin:0 0 clamp(34px,4vw,52px);color:var(--gold);font-size:.58rem;font-weight:500;letter-spacing:.42em;line-height:1.2;text-transform:uppercase}
+/* QUIÉNES SOMOS — una sola composición editorial */
+.manifest{position:relative;isolation:isolate;height:calc(100svh - var(--header-anchor-offset));min-height:640px;overflow:hidden;display:grid;place-items:center;padding:clamp(90px,10svh,126px) clamp(24px,5vw,84px) clamp(44px,6svh,76px);background:radial-gradient(ellipse 42% 64% at 50% 43%,rgba(61,100,105,.26),transparent 72%),radial-gradient(ellipse 55% 84% at 0% 52%,rgba(5,18,22,.56),transparent 71%),radial-gradient(ellipse 55% 84% at 100% 52%,rgba(5,18,22,.56),transparent 71%),linear-gradient(180deg,#244047 0%,var(--bg) 38%,#213d43 100%)}
+.manifest::before{content:'';position:absolute;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 36% 56% at 50% 43%,rgba(39,66,73,.82),rgba(39,66,73,.24) 63%,transparent 100%),linear-gradient(180deg,rgba(13,30,35,.1),transparent 27%,rgba(14,31,36,.28))}
+.manifest-inner{position:relative;z-index:2;width:min(100%,780px);margin:0 auto;text-align:center;transform:translateY(-5svh)}
+.manifest-eyebrow{display:inline-flex;flex-direction:column;align-items:center;gap:14px;margin:0 0 clamp(22px,2.6vw,34px);color:var(--gold);font-size:.58rem;font-weight:500;letter-spacing:.42em;line-height:1.2;text-transform:uppercase}
 .manifest-eyebrow::after{content:'';width:54px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
-.manifest-title{margin:0;color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:clamp(2.7rem,4.1vw,4.35rem);font-weight:300;letter-spacing:-.025em;line-height:1.02;text-wrap:balance}
+.manifest-title{max-width:780px;margin:0 auto;color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:clamp(2.65rem,4.2vw,4.25rem);font-weight:300;letter-spacing:-.025em;line-height:1.01;text-wrap:balance}
 .manifest-title em,.manifest-copy em{font-style:italic;color:var(--gold-l)}
-.manifest-copy{margin:clamp(30px,3.3vw,43px) auto 0;max-width:620px;color:var(--muted-2);font-family:'Cormorant Garamond',serif;font-size:clamp(1.45rem,2.15vw,2.12rem);font-weight:300;letter-spacing:-.012em;line-height:1.2;text-wrap:balance}
-.manifest-copy--closing{margin-top:clamp(28px,3vw,39px);max-width:660px;color:var(--cream)}
-.manifest-portrait{position:absolute;z-index:0;bottom:-42px;width:clamp(230px,29vw,470px);margin:0;opacity:0;transform:translate3d(var(--portrait-shift,0),24px,0);transition:opacity 1.05s cubic-bezier(.22,1,.36,1),transform 1.05s cubic-bezier(.22,1,.36,1);pointer-events:none}
+.manifest-copy{margin:clamp(20px,2.2vw,28px) auto 0;max-width:660px;color:var(--muted-2);font-family:'Cormorant Garamond',serif;font-size:clamp(1.18rem,1.65vw,1.62rem);font-weight:300;letter-spacing:-.012em;line-height:1.25;text-wrap:balance}
+.manifest-copy--closing{margin-top:clamp(20px,2.35vw,31px);max-width:700px;color:var(--cream)}
+.manifest-portrait{position:absolute;z-index:1;top:clamp(76px,10svh,120px);bottom:auto;height:clamp(525px,80svh,850px);margin:0;opacity:0;transform:translate3d(var(--portrait-shift,0),18px,0);transition:opacity 1.05s cubic-bezier(.22,1,.36,1),transform 1.05s cubic-bezier(.22,1,.36,1);pointer-events:none}
 .manifest-portrait.visible{opacity:1;transform:translate3d(var(--portrait-shift,0),0,0)}
-.manifest-portrait img{display:block;width:100%;height:auto;filter:brightness(.88) saturate(.82) contrast(1.03);-webkit-mask-image:radial-gradient(ellipse 68% 74% at 50% 46%,#000 25%,rgba(0,0,0,.94) 53%,rgba(0,0,0,.62) 74%,transparent 100%);mask-image:radial-gradient(ellipse 68% 74% at 50% 46%,#000 25%,rgba(0,0,0,.94) 53%,rgba(0,0,0,.62) 74%,transparent 100%)}
-.manifest-portrait--josue{left:clamp(-92px,-4vw,-28px);--portrait-shift:-28px}
-.manifest-portrait--david{right:clamp(-92px,-4vw,-28px);--portrait-shift:28px}
-.manifest-portrait--josue img{-webkit-mask-image:radial-gradient(ellipse 70% 74% at 45% 46%,#000 25%,rgba(0,0,0,.94) 53%,rgba(0,0,0,.62) 74%,transparent 100%);mask-image:radial-gradient(ellipse 70% 74% at 45% 46%,#000 25%,rgba(0,0,0,.94) 53%,rgba(0,0,0,.62) 74%,transparent 100%)}
+.manifest-portrait img{display:block;width:auto;height:100%;filter:brightness(.96) saturate(.87) contrast(1.03);-webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 10%,#000 69%,rgba(0,0,0,.68) 82%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 0%,#000 10%,#000 69%,rgba(0,0,0,.68) 82%,transparent 100%)}
+.manifest-portrait--josue{left:clamp(-160px,-7vw,-52px);--portrait-shift:-24px}
+.manifest-portrait--david{right:clamp(-160px,-7vw,-52px);--portrait-shift:24px}
 .manifest-inner .reveal{transition-duration:1s;transition-timing-function:cubic-bezier(.22,1,.36,1)}
 
 /* QUÉ HACEMOS — tres caminos dentro de una misma escena */
@@ -415,18 +414,18 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
   .scroll-line{height:31px}
   .hero-paths{grid-template-columns:1fr;margin-top:26px;max-width:320px}
   .hero-path{padding:15px 16px}
-  .manifest{min-height:0;padding:100px 22px 0;display:block}
-  .manifest::before{background:linear-gradient(180deg,rgba(14,31,36,.18),transparent 26%,rgba(14,31,36,.38))}
+  .manifest{height:auto;min-height:920px;padding:106px 20px 0;display:block}
+  .manifest::before{background:radial-gradient(ellipse 70% 48% at 50% 34%,rgba(39,66,73,.78),transparent 78%),linear-gradient(180deg,rgba(14,31,36,.16),transparent 28%,rgba(14,31,36,.38))}
   .manifest-inner{width:min(100%,620px)}
-  .manifest-eyebrow{margin-bottom:30px;gap:14px;font-size:.55rem;letter-spacing:.34em}
-  .manifest-title{font-size:clamp(2.45rem,10vw,3.5rem);line-height:1.04}
-  .manifest-copy{max-width:520px;margin-top:26px;font-size:clamp(1.28rem,5.1vw,1.72rem);line-height:1.24}
-  .manifest-copy--closing{margin-top:24px}
-  .manifest-portrait{position:relative;bottom:-24px;width:clamp(165px,43vw,265px);margin:38px 0 0;transform:translate3d(var(--portrait-shift,0),18px,0)}
-  .manifest-portrait--josue{left:-10px;float:left;--portrait-shift:-16px}
-  .manifest-portrait--david{right:-10px;float:right;--portrait-shift:16px}
-  .manifest-portrait img{filter:brightness(.82) saturate(.78) contrast(1.03);-webkit-mask-image:radial-gradient(ellipse 72% 76% at 50% 45%,#000 23%,rgba(0,0,0,.92) 56%,rgba(0,0,0,.54) 78%,transparent 100%);mask-image:radial-gradient(ellipse 72% 76% at 50% 45%,#000 23%,rgba(0,0,0,.92) 56%,rgba(0,0,0,.54) 78%,transparent 100%)}
-  .manifest::after{content:'';display:block;clear:both}
+  .manifest-inner{transform:none}
+  .manifest-eyebrow{margin-bottom:22px;gap:13px;font-size:.55rem;letter-spacing:.34em}
+  .manifest-title{font-size:clamp(2.35rem,10vw,3.35rem);line-height:1.03}
+  .manifest-copy{max-width:520px;margin-top:20px;font-size:clamp(1.12rem,4.7vw,1.45rem);line-height:1.26}
+  .manifest-copy--closing{margin-top:21px}
+  .manifest-portrait{top:auto;bottom:-54px;height:clamp(360px,48svh,465px);margin:0;transform:translate3d(var(--portrait-shift,0),14px,0)}
+  .manifest-portrait--josue{left:-102px;--portrait-shift:-14px}
+  .manifest-portrait--david{right:-102px;--portrait-shift:14px}
+  .manifest-portrait img{filter:brightness(.9) saturate(.84) contrast(1.03);-webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 11%,#000 69%,rgba(0,0,0,.58) 83%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 0%,#000 11%,#000 69%,rgba(0,0,0,.58) 83%,transparent 100%)}
   .services{padding:84px 20px}
   .services-header{margin-bottom:42px}
   .services-grid{grid-template-columns:1fr}
@@ -548,7 +547,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 <!-- QUIÉNES SOMOS -->
 <section class="manifest" id="quienes-somos" aria-labelledby="about-title">
   <figure class="manifest-portrait manifest-portrait--josue reveal" aria-label="Josué, cofundador de Perigallo">
-    <img src="assets/images/about/josue-about-v2.jpg" alt="Josué, cofundador de Perigallo" width="470" height="700" loading="lazy" decoding="async">
+    <img src="assets/images/about/josue-portrait.png" alt="Josué, cofundador de Perigallo" width="1024" height="1536" loading="lazy" decoding="async">
   </figure>
   <div class="manifest-inner">
     <p class="manifest-eyebrow reveal">Quiénes somos</p>
@@ -557,7 +556,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
     <p class="manifest-copy manifest-copy--closing reveal reveal-delay-3">Creamos celebraciones, pop-ups y experiencias a medida donde la cocina se convierte en <em>relato</em> y cada encuentro se vive como algo <em>irrepetible</em>.</p>
   </div>
   <figure class="manifest-portrait manifest-portrait--david reveal" aria-label="David, cofundador de Perigallo">
-    <img src="assets/images/about/david-about-v2.jpg" alt="David, cofundador de Perigallo" width="472" height="700" loading="lazy" decoding="async">
+    <img src="assets/images/about/david-portrait.png" alt="David, cofundador de Perigallo" width="1024" height="1536" loading="lazy" decoding="async">
   </figure>
 </section>
 

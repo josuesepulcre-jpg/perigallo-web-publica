@@ -34,13 +34,14 @@ const required = [
   'favicon.svg?v=perigallo-monogram-20260808',
   '<section class="manifest" id="quienes-somos" aria-labelledby="about-title">',
   'class="manifest-portrait manifest-portrait--josue reveal"',
-  'src="assets/images/about/josue-about-v2.jpg"',
+  'src="assets/images/about/josue-portrait.png"',
   'class="manifest-portrait manifest-portrait--david reveal"',
-  'src="assets/images/about/david-about-v2.jpg"',
+  'src="assets/images/about/david-portrait.png"',
   'class="manifest-eyebrow reveal">Quiénes somos</p>',
   'id="about-title">Perigallo nace de la visión',
   'class="manifest-copy manifest-copy--closing reveal reveal-delay-3"',
-  '.manifest-portrait img{display:block;width:100%;height:auto;',
+  'height:calc(100svh - var(--header-anchor-offset))',
+  '.manifest-portrait img{display:block;width:auto;height:100%;',
   'prefers-reduced-motion:reduce',
   'href="/#descubre-perigallo">Descubre Perigallo</a>',
   'href="/#quienes-somos">Quiénes somos</a>',
@@ -78,10 +79,14 @@ if (home.includes('manifest-artwork') || home.includes('quienes-somos-perigallo.
   throw new Error('Quiénes somos debe usar retratos y contenido HTML, no una composición plana.');
 }
 
-for (const asset of ['assets/images/about/josue-about-v2.jpg', 'assets/images/about/david-about-v2.jpg']) {
+for (const asset of ['assets/images/about/josue-portrait.png', 'assets/images/about/david-portrait.png']) {
   if (!existsSync(resolve(asset))) {
     throw new Error(`Falta el retrato independiente: ${asset}`);
   }
+}
+
+if (home.includes('josue-about-v2.jpg') || home.includes('david-about-v2.jpg')) {
+  throw new Error('Quiénes somos aún carga los retratos provisionales.');
 }
 
 const foregroundAssets = [...home.matchAll(/assets\/images\/gastronomy-carousel\/foreground\/([a-z-]+)\.webp/g)].map((match) => match[0]);
