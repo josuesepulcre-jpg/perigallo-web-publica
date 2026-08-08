@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 
 const home = readFileSync(resolve('index.html'), 'utf8');
 const experienceScript = readFileSync(resolve('assets/js/home-experiences.js'), 'utf8');
+const celebrationScript = readFileSync(resolve('assets/js/home-celebrations.js'), 'utf8');
 const required = [
   '<h1 class="hero-title">Perigallo</h1>',
   'Gastronomía inmersiva',
@@ -97,6 +98,11 @@ const required = [
   'Confirmación directa</li>',
   'Reserva oficial</li>',
   "document.querySelectorAll('a[href^=\"#\"],a[href^=\"/#\"]')",
+  'data-celebration-carousel',
+  'data-celebration-current',
+  'data-celebration-total',
+  'assets/js/home-celebrations.js?v=20260808-celebrations-v1',
+  'clip-path:ellipse(67% 63% at 48% 52%)',
 ];
 
 for (const fragment of required) {
@@ -120,6 +126,19 @@ for (const fragment of [
 
 if (experienceScript.includes('Código de vestimenta obligatorio') || experienceScript.includes('Valor de la experiencia')) {
   throw new Error('La agenda de la home conserva contenido operativo que solo pertenece a la ficha.');
+}
+
+for (const fragment of [
+  'perigallo-wedding-table-at-dusk.png',
+  'finca-la-llaguna-principal.jpg',
+  'hero-desktop.webp',
+  'function advance()',
+  'IntersectionObserver',
+  'prefers-reduced-motion',
+]) {
+  if (!celebrationScript.includes(fragment)) {
+    throw new Error(`El carrusel de celebraciones no conserva: ${fragment}`);
+  }
 }
 
 if (home.includes('class="cursor"') || home.includes('class="cursor-ring"')) {

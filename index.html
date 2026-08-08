@@ -248,17 +248,20 @@ section{position:relative}
 .story-act-foot{font-size:.55rem;letter-spacing:.26em;text-transform:uppercase;color:var(--muted);margin-top:34px}
 .story-closing{margin:54px auto 0;max-width:760px;text-align:center;font-family:'Cormorant Garamond',serif;font-size:1.35rem;line-height:1.65;color:var(--gold-l);font-style:italic}
 
-/* CELEBRACIONES */
-.celebrate{padding:140px 0;background:var(--bg)}
-.celebrate-inner{max-width:1200px;margin:0 auto;padding:0 60px;display:grid;grid-template-columns:1fr 1fr;gap:90px;align-items:center}
-.celebrate-visual{position:relative;height:580px}
-.celebrate-img-main{position:absolute;right:0;top:0;width:82%;height:84%;background-size:cover;background-position:center}
-.celebrate-img-accent{position:absolute;left:0;bottom:0;width:48%;height:44%;background-size:cover;background-position:center;border:2px solid var(--border);z-index:2}
-.celebrate-gold-line{position:absolute;left:30%;top:-18px;width:1px;height:70px;background:var(--gold);opacity:.45}
-.celebrate-tags{display:flex;flex-wrap:wrap;gap:8px;margin:32px 0 36px}
-.celebrate-tag{font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;padding:7px 14px;border:1px solid var(--border);color:var(--muted-2);transition:all .3s}
-.celebrate-tag:hover{border-color:var(--gold);color:var(--gold)}
-.celebrate-quote{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-style:italic;color:var(--gold-l);line-height:1.65;margin:30px 0 38px;padding-left:22px;border-left:2px solid var(--gold)}
+/* CELEBRACIONES — una escena cambiante, conectada con la dirección de la home */
+.celebrate{position:relative;isolation:isolate;overflow:hidden;padding:clamp(96px,10vw,154px) clamp(24px,5vw,84px);background:linear-gradient(180deg,#223e45 0%,var(--bg) 48%,#203d44 100%)}
+.celebrate::before{content:'';position:absolute;z-index:-1;inset:0;pointer-events:none;background:radial-gradient(ellipse 42% 58% at 25% 54%,rgba(205,177,151,.09),transparent 73%),radial-gradient(ellipse 46% 64% at 78% 45%,rgba(82,124,122,.16),transparent 76%),linear-gradient(90deg,rgba(13,35,40,.13),transparent 34%,transparent 68%,rgba(13,35,40,.14))}
+.celebrate-inner{position:relative;width:min(100%,1280px);margin:0 auto;display:grid;grid-template-columns:minmax(0,1.02fr) minmax(330px,.82fr);gap:clamp(34px,7vw,108px);align-items:center}
+.celebrate-visual{position:relative;min-height:clamp(460px,44vw,600px);overflow:hidden;background:radial-gradient(ellipse at center,rgba(205,177,151,.18),transparent 45%),var(--bg4);clip-path:ellipse(67% 63% at 48% 52%);isolation:isolate}
+.celebrate-media{position:absolute;inset:-5%;z-index:0;background-size:cover;background-position:center;opacity:0;transform:scale(1.055);filter:brightness(.71) contrast(1.04) saturate(.78);transition:opacity 1.45s cubic-bezier(.22,1,.36,1),transform 6.8s cubic-bezier(.22,1,.36,1);will-change:opacity,transform}
+.celebrate-media.is-active{opacity:1;transform:scale(1.015)}
+.celebrate-visual::after{content:'';position:absolute;z-index:1;inset:0;pointer-events:none;background:radial-gradient(ellipse 57% 70% at 45% 46%,transparent 0%,rgba(19,48,54,.14) 55%,rgba(31,61,68,.88) 100%),linear-gradient(90deg,rgba(25,56,62,.04),rgba(25,56,62,.03) 42%,var(--bg) 98%),linear-gradient(0deg,var(--bg) 0%,transparent 38%,rgba(15,36,41,.2) 100%)}
+.celebrate-visual::before{content:'';position:absolute;z-index:2;left:clamp(21px,3vw,42px);top:clamp(24px,3vw,42px);width:1px;height:clamp(45px,5vw,72px);background:linear-gradient(to bottom,var(--gold),transparent);opacity:.75}
+.celebrate-slide-status{position:absolute;z-index:3;left:clamp(21px,3vw,42px);bottom:clamp(24px,3vw,38px);display:flex;align-items:center;gap:10px;color:var(--gold-l);font-size:.55rem;font-weight:500;letter-spacing:.23em;text-transform:uppercase}.celebrate-slide-status::before{content:'';width:29px;height:1px;background:var(--gold)}.celebrate-slide-status span:last-child{color:rgba(245,241,229,.48)}
+.celebrate-carousel-controls{position:absolute;z-index:3;right:clamp(21px,3vw,42px);bottom:clamp(21px,3vw,38px);display:flex;gap:8px}.celebrate-carousel-control{width:37px;height:37px;border:1px solid rgba(226,205,181,.45);border-radius:50%;display:grid;place-items:center;background:rgba(29,58,64,.52);color:var(--cream);font:400 1rem/1 'Cormorant Garamond',serif;cursor:pointer;transition:transform .28s ease,background .28s ease,color .28s ease,border-color .28s ease}.celebrate-carousel-control:hover{transform:translateY(-2px);background:var(--gold-l);border-color:var(--gold-l);color:var(--bg2)}.celebrate-carousel-control:focus-visible{outline:1px solid var(--cream);outline-offset:4px}
+.celebrate-text{position:relative;z-index:2;max-width:540px;padding:clamp(12px,2vw,30px) 0}.celebrate-text .section-eyebrow{display:inline-flex;flex-direction:column;gap:13px;margin-bottom:20px}.celebrate-text .section-eyebrow::after{content:'';width:35px;height:1px;background:var(--gold)}.celebrate-text .section-title{font-size:clamp(3.1rem,5vw,5rem);line-height:.91;letter-spacing:-.04em}.celebrate-text .section-body{max-width:49ch;font-size:clamp(.78rem,.95vw,.91rem);line-height:1.88}
+.celebrate-tags{display:flex;flex-wrap:wrap;gap:8px;margin:28px 0 34px}.celebrate-tag{font-size:.53rem;font-weight:500;letter-spacing:.19em;text-transform:uppercase;padding:8px 12px;border:1px solid rgba(205,177,151,.32);border-radius:999px;color:var(--muted-2);background:rgba(27,59,65,.3);transition:background .3s ease,border-color .3s ease,color .3s ease}.celebrate-tag:hover{border-color:var(--gold);color:var(--gold-l);background:rgba(205,177,151,.1)}
+.celebrate-quote{max-width:42ch;font-family:'Cormorant Garamond',serif;font-size:clamp(1.12rem,1.65vw,1.48rem);font-style:italic;color:var(--gold-l);line-height:1.5;margin:0 0 28px;padding-left:20px;border-left:1px solid var(--gold)}
 
 /* CATERING */
 .catering{padding:130px 60px;background:var(--bg4);text-align:center;position:relative;overflow:hidden}
@@ -357,6 +360,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 
 @media(prefers-reduced-motion:reduce){
   .hero-media-slot{transition-duration:300ms!important}
+  .celebrate-media{transition-duration:1ms!important}
   .hero-atmosphere{animation:none!important}
   .manifest-portrait,.manifest-inner .reveal{transition-duration:1ms!important}
   .experience-carousel-visual,.experience-carousel-content{animation:none!important;transition-duration:1ms!important}
@@ -431,7 +435,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
   .story-art{min-height:320px}
   .story-flow{grid-template-columns:1fr}
   .story-act{min-height:auto;padding:30px 26px}
-  .celebrate-visual{height:380px;order:-1}
+  .celebrate{padding:86px 20px 98px}.celebrate-inner{gap:31px}.celebrate-visual{order:-1;min-height:0;height:clamp(310px,72vw,430px);clip-path:ellipse(76% 63% at 50% 49%)}.celebrate-media{inset:-7%}.celebrate-visual::after{background:radial-gradient(ellipse 77% 69% at 50% 42%,transparent 5%,rgba(31,61,68,.2) 60%,var(--bg) 100%),linear-gradient(0deg,var(--bg),transparent 48%,rgba(17,42,48,.18))}.celebrate-text{max-width:none;padding:0}.celebrate-text .section-title{font-size:clamp(2.7rem,12vw,4rem)}.celebrate-quote{margin-bottom:23px}.celebrate-tags{margin:24px 0 30px}.celebrate-tag{font-size:.48rem;padding:7px 10px}.celebrate-slide-status{left:19px;bottom:23px}.celebrate-carousel-controls{right:18px;bottom:20px}
   .finca-visual{height:340px;order:-1}
   .catering{padding:90px 22px}
   .catering-list{grid-template-columns:repeat(2,1fr)}
@@ -583,10 +587,13 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 <!-- CELEBRACIONES -->
 <section class="celebrate" id="celebrate">
   <div class="celebrate-inner">
-    <div class="celebrate-visual reveal">
-      <div class="celebrate-gold-line"></div>
-      <div class="celebrate-img-main" style="background-image:url('assets/images/perigallo-hero-original-03.jpg');background-size:cover;background-position:center"></div>
-      <div class="celebrate-img-accent" style="background-image:url('assets/images/perigallo-hero-original-03.jpg');background-size:cover;background-position:center"></div>
+    <div class="celebrate-visual reveal" data-celebration-carousel aria-label="Galería de celebraciones Perigallo">
+      <div class="celebrate-media is-active" style="background-image:url('assets/images/perigallo-wedding-table-at-dusk.png')"></div>
+      <div class="celebrate-slide-status" aria-live="polite"><span data-celebration-current>01</span><span>/</span><span data-celebration-total>06</span></div>
+      <div class="celebrate-carousel-controls" aria-label="Navegación de imágenes">
+        <button class="celebrate-carousel-control" type="button" data-celebration-previous aria-label="Imagen anterior">←</button>
+        <button class="celebrate-carousel-control" type="button" data-celebration-next aria-label="Imagen siguiente">→</button>
+      </div>
     </div>
     <div class="celebrate-text">
       <span class="section-eyebrow reveal">Celebraciones</span>
@@ -705,6 +712,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 
 <script src="/assets/js/analytics.js" defer></script>
 <script src="assets/js/home-experiences.js?v=20260808-agenda-v3" defer></script>
+<script src="assets/js/home-celebrations.js?v=20260808-celebrations-v1" defer></script>
 <script>
 window.addEventListener('scroll',function(){
   document.getElementById('navbar').classList.toggle('scrolled',window.scrollY>80);
