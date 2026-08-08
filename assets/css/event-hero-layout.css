@@ -694,11 +694,12 @@ body.ticketing-page .ticket-access-unavailable {
   justify-content: center;
   width: 100%;
   min-height: 4rem;
-  padding: 1rem 1.5rem;
+  gap: 14px;
+  padding: 0.7rem 0.8rem 0.7rem 1.5rem;
   color: var(--event-ivory);
   background: var(--event-ink);
   border: 1px solid var(--event-ink);
-  border-radius: 0;
+  border-radius: 999px;
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.18em;
@@ -717,14 +718,12 @@ body.ticketing-page .ticket-access-action .ticket-btn:focus-visible {
 }
 
 body.ticketing-page .ticket-access-action .ticket-btn span {
-  display: inline-block;
-  margin-left: 0.45rem;
-  transition: transform 220ms ease;
+  display: none;
 }
 
 body.ticketing-page .ticket-access-action .ticket-btn:hover span,
 body.ticketing-page .ticket-access-action .ticket-btn:focus-visible span {
-  transform: translateX(0.25rem);
+  transform: none;
 }
 
 body.ticketing-page .ticket-preview-note {
