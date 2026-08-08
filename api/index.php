@@ -597,7 +597,7 @@ try {
 } catch (InvalidArgumentException $e) {
     json_response(['ok' => false, 'error' => $e->getMessage()], 422);
 } catch (RuntimeException $e) {
-    if (in_array($e->getCode(), [409, 429], true)) {
+    if (in_array($e->getCode(), [409, 422, 429], true)) {
         json_response(['ok' => false, 'error' => $e->getMessage()], $e->getCode());
         return;
     }

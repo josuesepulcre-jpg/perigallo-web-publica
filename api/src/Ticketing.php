@@ -139,9 +139,13 @@ final class Ticketing
             throw new RuntimeException('Selecciona al menos una entrada.');
         }
         $billing = $this->normaliseBilling($data);
+        // Si un despliegue deja el esquema incompleto, debemos poder indicar al
+        // comprador la fase afectada sin mostrar detalles internos ni secretos.
+        $checkoutStage = 'validar la reserva';
 
         $this->pdo->beginTransaction();
         try {
+            $checkoutStage = 'comprobar el evento y la forma de pago';
             $event = $this->findEventForSale((string) $data['event_slug']);
             $paymentMethod = $this->redsys->paymentMethod((string) ($data['payment_method'] ?? 'card'));
             $reservationMinutes = max(5, (int) (env_value('TICKET_RESERVATION_MINUTES', '30') ?? '30'));
@@ -159,6 +163,7 @@ final class Ticketing
             $email = mb_strtolower(clean_string((string) $data['email'], 190));
             $phone = clean_string((string) $data['phone'], 60);
             $name = trim($firstName . ' ' . $lastName);
+            $checkoutStage = 'guardar los datos de la reserva';
             $orderStmt->execute([
                 $publicToken,
                 $redsysOrder,
@@ -189,6 +194,7 @@ final class Ticketing
             $quantityTotal = 0;
             $orderItems = [];
             $pricedItems = [];
+            $checkoutStage = 'reservar las entradas';
             foreach ($data['items'] as $item) {
                 $typeId = (int) ($item['ticket_type_id'] ?? 0);
                 $quantity = (int) ($item['quantity'] ?? 0);
@@ -230,12 +236,14 @@ final class Ticketing
                 throw new RuntimeException('El pedido no contiene entradas validas.');
             }
 
+            $checkoutStage = 'guardar la información de los asistentes';
             $this->persistAttendees(
                 $orderId,
                 $orderItems,
                 $this->normaliseAttendees($data['attendees'] ?? null, $quantityTotal, $name)
             );
 
+            $checkoutStage = 'calcular el importe';
             $discount = $this->discounts()->quote(
                 (string) ($data['discount_code'] ?? ''),
                 (int) $event['id'],
@@ -270,6 +278,7 @@ final class Ticketing
                 $this->generateTicketsOnce($orderId);
                 $this->discounts()->consumeForOrder($orderId);
                 $this->pdo->commit();
+                $checkoutStage = 'confirmar la reserva gratuita';
                 $this->sendConfirmation($orderId);
                 return [
                     'order' => $this->getOrderByToken($publicToken),
@@ -280,7 +289,9 @@ final class Ticketing
                 ];
             }
 
+            $checkoutStage = 'comprobar la conexión con Redsys';
             $this->redsys->assertConfigured();
+            $checkoutStage = 'registrar el intento de pago';
             $this->pdo->prepare(
                 'INSERT INTO payment_attempts
                  (order_id, redsys_order, environment, amount_cents, currency, signature_version, payment_method, status, created_at, updated_at)
@@ -300,6 +311,7 @@ final class Ticketing
 
             $this->pdo->commit();
 
+            $checkoutStage = 'preparar la redirección segura a Redsys';
             return [
                 'order' => $this->getOrderByToken($publicToken),
                 'payment' => $this->redsysForm($redsysOrder, $total, $event, $publicToken, $paymentMethod),
@@ -308,7 +320,11 @@ final class Ticketing
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
             }
-            throw $e;
+            if ($e instanceof InvalidArgumentException) {
+                throw $e;
+            }
+            error_log('Perigallo checkout preparation failed at ' . $checkoutStage . ': ' . $e->getMessage());
+            throw new RuntimeException('No se pudo preparar el pedido al ' . $checkoutStage . '.', 422, $e);
         }
     }
 
