@@ -14,13 +14,16 @@ use RuntimeException;
 final class HoldedSyncService
 {
     private HoldedFiscalPolicy $policy;
+    private Mailer $mailer;
 
     public function __construct(
         private PDO $pdo,
         private HoldedClient $client,
-        ?HoldedFiscalPolicy $policy = null
+        ?HoldedFiscalPolicy $policy = null,
+        ?Mailer $mailer = null
     ) {
         $this->policy = $policy ?? new HoldedFiscalPolicy();
+        $this->mailer = $mailer ?? new Mailer();
     }
 
     public function queuePaidProductionOrder(int $orderId, string $paymentEnvironment, bool $isTest): void
@@ -63,12 +66,15 @@ final class HoldedSyncService
              ORDER BY COALESCE(holded_next_attempt_at, created_at) ASC
              LIMIT ' . $limit
         )->fetchAll();
-        $result = ['processed' => 0, 'synced' => 0, 'pending' => 0, 'requires_review' => 0, 'errors' => 0];
+        $result = ['processed' => 0, 'synced' => 0, 'pending' => 0, 'requires_review' => 0, 'errors' => 0, 'invoice_emails_sent' => 0, 'invoice_email_errors' => 0];
         foreach ($rows as $row) {
             $result['processed']++;
             $status = $this->syncOrder((int) $row['id']);
             if (isset($result[$status])) $result[$status]++;
         }
+        $invoiceDelivery = $this->deliverDueInvoiceEmails($limit);
+        $result['invoice_emails_sent'] = $invoiceDelivery['sent'];
+        $result['invoice_email_errors'] = $invoiceDelivery['errors'];
         $this->markStaleProcessingForReview();
         return $result;
     }
@@ -129,7 +135,30 @@ final class HoldedSyncService
             $paymentResponse = $documentType === 'invoice'
                 ? $this->client->recordInvoicePayment($documentId, $payment)
                 : $this->client->recordSalesReceiptPayment($documentId, $payment);
-            $this->pdo->prepare('UPDATE ticket_orders SET holded_status = "synced", holded_document_id = ?, holded_document_number = ?, holded_payment_id = ?, holded_synced_at = NOW(), holded_last_error = NULL, updated_at = NOW() WHERE id = ?')->execute([$documentId, $this->documentNumber($document), $this->externalId($paymentResponse), $orderId]);
+            $this->pdo->prepare(
+                'UPDATE ticket_orders
+                 SET holded_status = "synced",
+                     holded_document_id = ?,
+                     holded_document_number = ?,
+                     holded_payment_id = ?,
+                     holded_pdf_available = 0,
+                     holded_invoice_delivery_status = IF(? = "invoice", "pending", "not_required"),
+                     holded_invoice_delivery_attempts = 0,
+                     holded_invoice_delivery_sent_at = NULL,
+                     holded_invoice_delivery_next_attempt_at = IF(? = "invoice", NOW(), NULL),
+                     holded_invoice_delivery_last_error = NULL,
+                     holded_synced_at = NOW(),
+                     holded_last_error = NULL,
+                     updated_at = NOW()
+                 WHERE id = ?'
+            )->execute([
+                $documentId,
+                $this->documentNumber($document),
+                $this->externalId($paymentResponse),
+                $documentType,
+                $documentType,
+                $orderId,
+            ]);
             $this->log($orderId, 'payment_' . $documentType, 'succeeded', (int) $order['holded_sync_attempts'], null, $documentId, null, null);
             return 'synced';
         } catch (HoldedException $error) {
@@ -143,6 +172,90 @@ final class HoldedSyncService
     {
         $counts = $this->pdo->query('SELECT holded_status, COUNT(*) AS total FROM ticket_orders WHERE is_test = 0 GROUP BY holded_status')->fetchAll();
         return ['configuration' => $this->client->health(), 'orders' => $counts, 'legal_review_required' => true];
+    }
+
+    /** @return array{sent:int,errors:int} */
+    private function deliverDueInvoiceEmails(int $limit): array
+    {
+        if (!filter_var(env_value('HOLDED_AUTO_SEND_EMAIL', 'false'), FILTER_VALIDATE_BOOLEAN)) {
+            return ['sent' => 0, 'errors' => 0];
+        }
+        $rows = $this->pdo->query(
+            'SELECT id, public_token, billing_name, billing_email, email, holded_document_number, holded_invoice_delivery_attempts
+             FROM ticket_orders
+             WHERE is_test = 0 AND environment = "production" AND status = "paid"
+               AND holded_status = "synced" AND holded_document_type = "invoice"
+               AND holded_invoice_delivery_status IN ("pending", "failed")
+               AND (holded_invoice_delivery_next_attempt_at IS NULL OR holded_invoice_delivery_next_attempt_at <= NOW())
+             ORDER BY COALESCE(holded_invoice_delivery_next_attempt_at, holded_synced_at) ASC
+             LIMIT ' . $limit
+        )->fetchAll();
+
+        $result = ['sent' => 0, 'errors' => 0];
+        foreach ($rows as $order) {
+            $orderId = (int) $order['id'];
+            $sent = $this->pdo->prepare(
+                'SELECT 1 FROM email_deliveries
+                 WHERE order_id = ? AND subject = "Tu factura Perigallo está disponible" AND status = "sent"
+                 LIMIT 1'
+            );
+            $sent->execute([$orderId]);
+            if ($sent->fetchColumn()) {
+                $this->markInvoiceEmailSent($orderId);
+                continue;
+            }
+
+            $attempt = (int) $order['holded_invoice_delivery_attempts'] + 1;
+            $email = (string) ($order['billing_email'] ?: $order['email']);
+            $name = (string) ($order['billing_name'] ?: 'cliente');
+            $link = app_base_url() . '/api/orders/' . rawurlencode((string) $order['public_token']) . '/invoice';
+            $status = $this->mailer->queueInvoiceEmail($this->pdo, $orderId, $email, $name, (string) ($order['holded_document_number'] ?? ''), $link);
+            if ($status === 'sent') {
+                $this->markInvoiceEmailSent($orderId);
+                $this->log($orderId, 'invoice_email', 'succeeded', $attempt, null, null, null, null);
+                $result['sent']++;
+                continue;
+            }
+
+            $nextAttempt = $attempt >= 5 ? null : 900;
+            if ($nextAttempt === null) {
+                $this->pdo->prepare(
+                    'UPDATE ticket_orders
+                     SET holded_invoice_delivery_status = "failed",
+                         holded_invoice_delivery_attempts = ?,
+                         holded_invoice_delivery_next_attempt_at = NULL,
+                         holded_invoice_delivery_last_error = "invoice_email_failed",
+                         updated_at = NOW()
+                     WHERE id = ?'
+                )->execute([$attempt, $orderId]);
+            } else {
+                $this->pdo->prepare(
+                    'UPDATE ticket_orders
+                     SET holded_invoice_delivery_status = "failed",
+                         holded_invoice_delivery_attempts = ?,
+                         holded_invoice_delivery_next_attempt_at = DATE_ADD(NOW(), INTERVAL 15 MINUTE),
+                         holded_invoice_delivery_last_error = "invoice_email_failed",
+                         updated_at = NOW()
+                     WHERE id = ?'
+                )->execute([$attempt, $orderId]);
+            }
+            $this->log($orderId, 'invoice_email', 'retry_scheduled', $attempt, null, null, 'invoice_email_failed', null);
+            $result['errors']++;
+        }
+        return $result;
+    }
+
+    private function markInvoiceEmailSent(int $orderId): void
+    {
+        $this->pdo->prepare(
+            'UPDATE ticket_orders
+             SET holded_invoice_delivery_status = "sent",
+                 holded_invoice_delivery_sent_at = NOW(),
+                 holded_invoice_delivery_next_attempt_at = NULL,
+                 holded_invoice_delivery_last_error = NULL,
+                 updated_at = NOW()
+             WHERE id = ?'
+        )->execute([$orderId]);
     }
 
     private function issueDocument(array $order, string $documentType): array

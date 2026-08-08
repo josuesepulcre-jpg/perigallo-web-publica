@@ -41,15 +41,15 @@ final class Mailer
         }
     }
 
-    public function queueOrderEmail(PDO $pdo, int $orderId, string $email, string $subject, string $body, ?string $htmlBody = null): void
+    public function queueOrderEmail(PDO $pdo, int $orderId, string $email, string $subject, string $body, ?string $htmlBody = null): string
     {
-        $this->queue($pdo, $orderId, $email, $subject, $body, $htmlBody ?? $this->basicOrderHtml($subject, $body));
+        return $this->queue($pdo, $orderId, $email, $subject, $body, $htmlBody ?? $this->basicOrderHtml($subject, $body));
     }
 
-    public function queueOrderRecoveryEmail(PDO $pdo, int $orderId, string $email, string $name, string $link): void
+    public function queueOrderRecoveryEmail(PDO $pdo, int $orderId, string $email, string $name, string $link): string
     {
         $body = "Hola {$name},\n\nHemos recibido una solicitud para acceder a tus entradas. Puedes abrirlas desde este enlace seguro:\n{$link}\n\nSi no has solicitado este acceso, puedes ignorar este mensaje.\n\nEquipo Perigallo\n";
-        $this->queue(
+        return $this->queue(
             $pdo,
             $orderId,
             $email,
@@ -59,7 +59,21 @@ final class Mailer
         );
     }
 
-    private function queue(PDO $pdo, int $orderId, string $email, string $subject, string $body, ?string $htmlBody = null): void
+    public function queueInvoiceEmail(PDO $pdo, int $orderId, string $email, string $name, string $invoiceNumber, string $link): string
+    {
+        $number = $invoiceNumber !== '' ? ' ' . $invoiceNumber : '';
+        $body = "Hola {$name},\n\nTu factura{$number} ya está disponible. Puedes descargarla desde este enlace seguro:\n{$link}\n\nEste enlace está asociado a tu pedido. Si no has solicitado esta factura, ignora este mensaje.\n\nEquipo Perigallo\n";
+        return $this->queue(
+            $pdo,
+            $orderId,
+            $email,
+            'Tu factura Perigallo está disponible',
+            $body,
+            $this->basicOrderHtml('Tu factura está disponible', $body, 'Descargar factura')
+        );
+    }
+
+    private function queue(PDO $pdo, int $orderId, string $email, string $subject, string $body, ?string $htmlBody = null): string
     {
         $stmt = $pdo->prepare(
             'INSERT INTO email_deliveries (order_id, recipient_email, subject, body, status, created_at, updated_at)
@@ -100,9 +114,10 @@ final class Mailer
             'UPDATE email_deliveries SET status = ?, error_message = ?, sent_at = IF(? = \'sent\', NOW(), sent_at), updated_at = NOW() WHERE id = LAST_INSERT_ID()'
         );
         $update->execute([$status, $error, $status]);
+        return $status;
     }
 
-    private function basicOrderHtml(string $subject, string $body): string
+    private function basicOrderHtml(string $subject, string $body, string $buttonLabel = 'Descargar mis entradas'): string
     {
         preg_match('#https?://\S+#', $body, $linkMatch);
         $link = (string) ($linkMatch[0] ?? '');
@@ -110,7 +125,7 @@ final class Mailer
         $escapedBody = nl2br(htmlspecialchars($copy, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
         $safeSubject = htmlspecialchars($subject, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $brandLogo = htmlspecialchars(app_base_url() . '/assets/images/perigallo-logo-original.png', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        $button = $link === '' ? '' : '<p style="margin:26px 0 0"><a href="' . htmlspecialchars($link, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '" style="display:inline-block;background:#cdb197;color:#173236;padding:15px 20px;font-size:12px;font-weight:bold;letter-spacing:1px;text-decoration:none;text-transform:uppercase">Descargar mis entradas →</a></p>';
+        $button = $link === '' ? '' : '<p style="margin:26px 0 0"><a href="' . htmlspecialchars($link, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '" style="display:inline-block;background:#cdb197;color:#173236;padding:15px 20px;font-size:12px;font-weight:bold;letter-spacing:1px;text-decoration:none;text-transform:uppercase">' . htmlspecialchars($buttonLabel, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . ' →</a></p>';
 
         return '<!doctype html><html lang="es"><body style="margin:0;padding:0;background:#eef0ed">'
             . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#eef0ed"><tr><td align="center" style="padding:32px 16px">'

@@ -1331,6 +1331,12 @@
   function renderOrderStatus(root, order, token, allowResend) {
       allowResend = allowResend !== false;
       var tickets = order.tickets || [];
+      var invoice = order.invoice || {};
+      var invoiceAction = invoice.available && token
+        ? '<a class="ticket-btn" href="' + api + '/orders/' + encodeURIComponent(token) + '/invoice">Descargar factura' + (invoice.number ? ' ' + escapeHtml(invoice.number) : '') + '</a>'
+        : invoice.requested
+          ? '<p class="ticket-delivery-note">Tu factura se está preparando. Te avisaremos por correo cuando esté disponible.</p>'
+          : '';
       root.innerHTML = [
         '<div class="ticket-panel">',
         order.is_test ? '<p class="ticket-environment">Entorno de pruebas · No se realiza ningun cargo real</p>' : '',
@@ -1338,7 +1344,7 @@
         '<h1 class="ticket-title">Tus entradas están <em>listas</em></h1>',
         '<p class="ticket-copy">' + escapeHtml(order.name) + ', hemos preparado ' + tickets.length + ' ' + (tickets.length === 1 ? 'entrada' : 'entradas') + ' para tu experiencia. Guárdalas en tu teléfono o descárgalas ahora.</p>',
         '<dl class="ticket-order-summary"><div><dt>Pedido</dt><dd>' + escapeHtml(order.reference || '—') + '</dd></div>' + (Number(order.reference_total_cents || 0) > Number(order.total_cents || 0) ? '<div><dt>Valor de la experiencia</dt><dd><del>' + cents(order.reference_total_cents) + '</del></dd></div>' : '') + '<div><dt>Importe pagado</dt><dd>' + cents(order.total_cents) + '</dd></div><div><dt>Correo</dt><dd>' + escapeHtml(deliveryLabel(order, "email")) + '</dd></div><div><dt>WhatsApp</dt><dd>' + escapeHtml(deliveryLabel(order, "whatsapp")) + '</dd></div></dl>',
-        '<div class="ticket-actions ticket-delivery-actions"><button class="ticket-btn primary" type="button" data-download-all>Descargar todas las entradas</button>' + (allowResend ? '<button class="ticket-btn" type="button" data-resend-email>Enviar de nuevo por correo</button><button class="ticket-btn" type="button" data-resend-whatsapp>Enviar por WhatsApp</button>' : '') + '<a class="ticket-btn" href="#entradas">Ver detalles del pedido</a></div>',
+        '<div class="ticket-actions ticket-delivery-actions"><button class="ticket-btn primary" type="button" data-download-all>Descargar todas las entradas</button>' + invoiceAction + (allowResend ? '<button class="ticket-btn" type="button" data-resend-email>Enviar de nuevo por correo</button><button class="ticket-btn" type="button" data-resend-whatsapp>Enviar por WhatsApp</button>' : '') + '<a class="ticket-btn" href="#entradas">Ver detalles del pedido</a></div>',
         '<p class="ticket-delivery-note">Las entradas se han preparado para <strong>' + escapeHtml(order.email) + '</strong>. Presenta el QR en el acceso: cada código es válido para una sola entrada.</p>',
         '<div class="ticket-list" id="entradas">' + tickets.map(function (ticket, index) { return ticketPass(ticket, order.is_test, index + 1); }).join("") + '</div>',
         '</div>'

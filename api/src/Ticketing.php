@@ -387,7 +387,35 @@ final class Ticketing
             'tickets' => $ticketRows,
             'deliveries' => $delivery->fetchAll(),
             'email_delivery' => $emailDelivery->fetch() ?: null,
+            'invoice' => [
+                'requested' => !empty($order['billing_requested']),
+                'available' => $order['holded_status'] === 'synced'
+                    && $order['holded_document_type'] === 'invoice'
+                    && !empty($order['holded_document_id']),
+                'number' => $order['holded_document_type'] === 'invoice' ? $order['holded_document_number'] : null,
+                'delivery_status' => $order['holded_invoice_delivery_status'] ?? 'not_required',
+            ],
         ];
+    }
+
+    /** @return array{content:string,filename:string}|null */
+    public function invoicePdfByToken(string $token): ?array
+    {
+        $order = $this->getOrderRecordByToken($token);
+        if (!$order
+            || $this->effectiveOrderStatus($order) !== 'paid'
+            || empty($order['billing_requested'])
+            || ($order['holded_status'] ?? '') !== 'synced'
+            || ($order['holded_document_type'] ?? '') !== 'invoice'
+            || empty($order['holded_document_id'])) {
+            return null;
+        }
+
+        $content = (new HoldedClient())->invoicePdf((string) $order['holded_document_id']);
+        $this->pdo->prepare('UPDATE ticket_orders SET holded_pdf_available = 1, updated_at = NOW() WHERE id = ?')
+            ->execute([(int) $order['id']]);
+        $number = preg_replace('/[^A-Za-z0-9._-]+/', '-', (string) ($order['holded_document_number'] ?: $order['redsys_order'])) ?: 'factura';
+        return ['content' => $content, 'filename' => 'factura-' . $number . '.pdf'];
     }
 
     /**

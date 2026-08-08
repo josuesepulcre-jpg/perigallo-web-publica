@@ -30,6 +30,7 @@ const required = [
   "database/migrations/018_order_access_conditions.sql",
   "database/migrations/019_public_lead_form.sql",
   "database/migrations/020_holded_fiscal_sync.sql",
+  "database/migrations/021_holded_invoice_delivery.sql",
   "api/scripts/apply-migration.php",
   "api/scripts/purge-test-ticketing-data.php",
   "api/scripts/holded-health.php",
@@ -154,6 +155,10 @@ for (const marker of [
   if (!(api + ticketing).includes(marker)) {
     throw new Error(`Missing event editor contract: ${marker}`);
   }
+}
+const holdedInvoiceDeliveryMigration = readFileSync(join(root, "database/migrations/021_holded_invoice_delivery.sql"), "utf8");
+for (const marker of ["holded_invoice_delivery_status", "holded_invoice_delivery_attempts", "idx_ticket_orders_holded_invoice_delivery"]) {
+  if (!holdedInvoiceDeliveryMigration.includes(marker)) throw new Error(`Holded invoice-delivery migration is missing ${marker}.`);
 }
 
 const publicTicketing = readFileSync(join(root, "assets/js/ticketing.js"), "utf8");
@@ -430,6 +435,9 @@ const ticketDelivery = readFileSync(join(root, "api/src/TicketDeliveryService.ph
 for (const marker of ["multipart/alternative", "Content-Type: text/html", "basicOrderHtml", "recoveryOrderHtml", "perigallo-logo-original.png"]) {
   if (!mailer.includes(marker)) throw new Error(`Missing HTML email delivery support: ${marker}.`);
 }
+for (const marker of ["deliverDueInvoiceEmails", "queueInvoiceEmail", "holded_invoice_delivery_status"]) {
+  if (!(holdedSync + mailer).includes(marker)) throw new Error(`Missing Holded invoice-delivery behavior: ${marker}.`);
+}
 for (const marker of ["Accede de nuevo a tus entradas", "Abrir mis entradas", "Tus entradas siguen aquí"]) {
   if (!mailer.includes(marker)) throw new Error(`Missing premium recovery email marker: ${marker}.`);
 }
@@ -440,6 +448,9 @@ const envExample = readFileSync(join(root, ".env.example"), "utf8");
 const redsys = readFileSync(join(root, "api/src/Redsys.php"), "utf8");
 for (const marker of ["function terminal", "str_pad", "str_replace(' ', '+', $value)"]) {
   if (!redsys.includes(marker)) throw new Error(`Missing Redsys terminal or Base64 normalization: ${marker}`);
+}
+for (const marker of ["invoicePdfByToken", "/orders/([A-Za-z0-9_-]+)/invoice", "Descargar factura"]) {
+  if (!(ticketing + api + publicJs).includes(marker)) throw new Error(`Missing secure invoice download contract: ${marker}.`);
 }
 for (const marker of ["function secretKey", "REDSYS_TEST_SECRET_KEY", "REDSYS_PRODUCTION_SECRET_KEY"]) {
   if (!redsys.includes(marker)) throw new Error(`Missing Redsys environment-specific secret-key handling: ${marker}`);

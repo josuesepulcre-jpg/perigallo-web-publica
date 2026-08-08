@@ -47,7 +47,14 @@ final class HoldedClient
     public function createInvoice(array $payload): array { return $this->request('POST', '/invoices', $payload); }
     public function approveInvoice(string $id): array { return $this->request('POST', '/invoices/' . rawurlencode($id) . '/approve'); }
     public function recordInvoicePayment(string $id, array $payload): array { return $this->request('POST', '/invoices/' . rawurlencode($id) . '/payments', $payload); }
-    public function invoicePdf(string $id): array { return $this->request('GET', '/invoices/' . rawurlencode($id) . '/pdf'); }
+    public function invoicePdf(string $id): string
+    {
+        $pdf = $this->request('GET', '/invoices/' . rawurlencode($id) . '/pdf', null, true);
+        if (!is_string($pdf) || !str_starts_with($pdf, '%PDF-')) {
+            throw new HoldedException('Holded no devolvió un PDF de factura válido.', null, null, true, 'holded_invalid_pdf');
+        }
+        return $pdf;
+    }
     public function createSalesReceipt(array $payload): array { return $this->request('POST', '/sales-receipts', $payload); }
     public function recordSalesReceiptPayment(string $id, array $payload): array { return $this->request('POST', '/sales-receipts/' . rawurlencode($id) . '/payments', $payload); }
     public function createCreditNote(array $payload): array { return $this->request('POST', '/receipt-notes', $payload); }
@@ -55,7 +62,8 @@ final class HoldedClient
     public function taxes(): array { return $this->request('GET', '/taxes'); }
     public function numberingSeries(string $type): array { return $this->request('GET', '/numbering-series/' . rawurlencode($type)); }
 
-    private function request(string $method, string $path, ?array $payload = null): array
+    /** @return array<string, mixed>|string */
+    private function request(string $method, string $path, ?array $payload = null, bool $binary = false): array|string
     {
         if (!$this->enabled() || $this->dryRun()) {
             throw new HoldedException('La integración Holded está desactivada o en modo seguro.', null, null, false, 'holded_not_active');
@@ -101,6 +109,9 @@ final class HoldedClient
             $retryable = $status === 429 || $status >= 500;
             $code = in_array($status, [401, 403], true) ? 'holded_authorization' : ($status === 429 ? 'holded_rate_limit' : 'holded_http');
             throw new HoldedException('Holded ha rechazado la operación (' . $status . ').', $status, $retryAfter, $retryable, $code);
+        }
+        if ($binary) {
+            return $body;
         }
         return is_array($decoded) ? $decoded : [];
     }

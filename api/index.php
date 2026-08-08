@@ -114,6 +114,20 @@ try {
         return;
     }
 
+    if ($method === 'GET' && preg_match('#^/orders/([A-Za-z0-9_-]+)/invoice$#', $path, $m)) {
+        $invoice = $ticketing->invoicePdfByToken($m[1]);
+        if (!$invoice) {
+            json_response(['ok' => false, 'error' => 'La factura todavía no está disponible.'], 404);
+            return;
+        }
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . $invoice['filename'] . '"');
+        header('Content-Length: ' . strlen($invoice['content']));
+        header('Cache-Control: private, no-store');
+        echo $invoice['content'];
+        return;
+    }
+
     if ($method === 'POST' && preg_match('#^/orders/([A-Za-z0-9_-]+)/resend-email$#', $path, $m)) {
         json_response(['ok' => true] + $ticketing->resendOrderEmail($m[1]));
         return;

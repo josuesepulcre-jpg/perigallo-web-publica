@@ -1,8 +1,8 @@
 # Preparación Holded (inactiva por defecto)
 
 La integración se ha diseñado para que Holded sea el sistema fiscal maestro. La
-web no genera numeración fiscal propia, no envía documentos al cliente y no
-llama a Holded desde el retorno del navegador.
+web no genera numeración fiscal propia ni llama a Holded desde el retorno del
+navegador.
 
 ## Estado seguro inicial
 
@@ -16,6 +16,12 @@ El callback firmado de Redsys solo encola un pedido real cobrado en producción.
 sincronización interrumpida pasan a `requires_review`; no se reintenta a ciegas
 para evitar duplicar documentos.
 
+Cuando el comprador solicita factura, la sincronización crea el contacto y la
+factura nominal en Holded. Con `HOLDED_AUTO_SEND_EMAIL=true`, el mismo cron
+envía al correo fiscal un enlace privado para descargar el PDF; el comprador
+también podrá descargarlo desde su pedido. Este enlace no guarda el PDF en la
+web ni expone la API Key de Holded.
+
 ## Configuración antes de activar
 
 1. Confirmar con asesoría el impuesto, series y tratamiento de precios en
@@ -28,6 +34,17 @@ para evitar duplicar documentos.
 4. Validar con datos de prueba y una cuenta/entorno autorizado por Holded.
 5. Revisar textos legales de facturación, conservación de datos y rectificativas
    con asesoría antes de cambiar `HOLDED_ENABLED`.
+6. Aplicar `database/migrations/021_holded_invoice_delivery.sql` antes de activar
+   el correo automático de facturas.
+
+## Cron de facturación
+
+El mismo cron procesa la cola fiscal y la entrega de facturas. Configurarlo en
+Plesk cada 5 minutos, desde el directorio activo de la web:
+
+```bash
+cd /var/www/vhosts/perigallo.com/perigallo.com && php api/cron/holded-sync.php 20
+```
 
 ## Regla documental
 
