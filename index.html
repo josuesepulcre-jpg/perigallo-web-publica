@@ -151,14 +151,14 @@ section{position:relative}
 .service-card{position:relative;isolation:isolate;display:flex;flex-direction:column;min-height:clamp(555px,47vw,680px);padding:clamp(44px,4vw,66px) clamp(31px,3.2vw,54px) 28px;overflow:hidden;border:1px solid rgba(226,205,181,.36);background-color:#203f45;background-image:linear-gradient(180deg,rgba(13,37,41,.24) 0%,rgba(17,48,53,.48) 38%,rgba(13,36,41,.92) 78%,rgba(13,36,41,.97) 100%),var(--service-image);background-position:center;background-size:cover;box-shadow:0 28px 62px rgba(5,19,22,.15);transition:transform .5s cubic-bezier(.22,1,.36,1),border-color .4s ease,box-shadow .5s ease}
 .service-card::before{content:'';position:absolute;z-index:-1;inset:0;background:radial-gradient(ellipse 78% 50% at 50% 43%,rgba(31,73,76,.1),transparent 62%),linear-gradient(90deg,rgba(20,56,61,.18),transparent 34%,transparent 66%,rgba(20,56,61,.2));transition:background .5s ease}
 .service-card::after{content:'';position:absolute;z-index:-1;inset:13px;border:1px solid rgba(226,205,181,.13);border-radius:inherit;pointer-events:none;transition:inset .45s ease,border-color .45s ease}
-.service-card--weddings{--service-image:url('assets/images/perigalla-01/scene-18-desktop.jpg');border-radius:50% 50% 47% 48% / 18% 18% 26% 27%}
+.service-card--weddings{--service-image:url('assets/images/perigallo-wedding-table-at-dusk.png');border-radius:50% 50% 47% 48% / 18% 18% 26% 27%}
 .service-card--celebrations{--service-image:url('assets/images/finca-la-llaguna-principal.jpg');border-radius:48% 48% 45% 45% / 18% 18% 25% 25%}
 .service-card--experiences{--service-image:url('assets/images/perigallo-hero-original-02.jpg');border-radius:48% 48% 48% 48% / 18% 18% 25% 25%}
 .service-card:hover{z-index:1;transform:translateY(-10px);border-color:rgba(226,205,181,.62);box-shadow:0 34px 76px rgba(5,19,22,.25)}
 .service-card:hover::before{background:radial-gradient(ellipse 78% 50% at 50% 43%,rgba(67,108,108,.16),transparent 62%),linear-gradient(90deg,rgba(20,56,61,.11),transparent 34%,transparent 66%,rgba(20,56,61,.13))}.service-card:hover::after{inset:10px;border-color:rgba(226,205,181,.26)}
 .service-num{display:flex;flex-direction:column;align-items:center;gap:10px;margin:0 auto;color:var(--gold-l);font-family:'Cormorant Garamond',serif;font-size:clamp(1.55rem,2vw,2rem);font-style:normal;font-weight:300;letter-spacing:0;line-height:1}
 .service-num::after{content:'';width:23px;height:1px;background:currentColor}.service-num::before{display:none}
-.service-name{max-width:10ch;margin:clamp(70px,8vw,112px) 0 22px;color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:clamp(2.15rem,3.15vw,3.35rem);font-weight:300;line-height:.95;letter-spacing:-.035em;text-wrap:balance}
+.service-name{max-width:10ch;margin:clamp(78px,8.5vw,120px) 0 28px;color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:clamp(2.3rem,3.35vw,3.55rem);font-weight:300;line-height:.95;letter-spacing:-.035em;text-wrap:balance}
 .service-name em{font-style:italic;color:var(--gold-l)}
 .service-desc{max-width:28ch;margin:0;color:rgba(245,241,229,.84);font-size:clamp(.76rem,.9vw,.9rem);line-height:1.88;font-weight:400}
 .service-link{display:flex;align-self:flex-start;align-items:center;justify-content:space-between;gap:13px;width:fit-content;max-width:100%;min-height:56px;margin-top:auto;margin-bottom:clamp(42px,4vw,64px);padding:8px 9px 8px 24px;border:1px solid rgba(226,205,181,.52);border-radius:999px;background:rgba(245,241,229,.94);color:var(--bg2);font-size:.54rem;font-weight:600;letter-spacing:.17em;line-height:1.35;text-decoration:none;text-transform:uppercase;white-space:nowrap;transition:transform .32s ease,background .32s ease,border-color .32s ease,color .32s ease}
@@ -451,7 +451,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
   .service-card{min-height:550px;padding:42px 30px 25px;border-radius:46% 46% 42% 42% / 14% 14% 23% 23%}
   .service-card+.service-card{border-left:1px solid rgba(226,205,181,.36)}
   .service-num{margin:0 auto}
-  .service-name{max-width:11ch;margin:70px 0 18px;font-size:2.65rem}
+  .service-name{max-width:11ch;margin:74px 0 24px;font-size:2.75rem}
   .service-desc{font-size:.79rem;line-height:1.8}
   .service-link{min-height:52px;margin-bottom:42px;padding-left:20px;font-size:.5rem;letter-spacing:.15em}
   .service-link::after{flex-basis:35px;width:35px;height:35px}
@@ -591,20 +591,20 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
   <div class="services-grid">
     <div class="service-card service-card--weddings reveal">
       <span class="service-num">01</span>
-      <h3 class="service-name">Bodas <em>gastronómicas</em></h3>
-      <p class="service-desc">Gastronomía personalizada, producción y servicio para una boda que habla de vuestra historia y del lugar en el que queréis celebrar.</p>
+      <h3 class="service-name">Bodas <em>inmersivas</em></h3>
+      <p class="service-desc">Convertimos vuestra historia en una celebración irrepetible, cuidando la gastronomía, la estética y cada detalle.</p>
       <a href="/bodas-alicante/" class="service-link">Descubrir bodas Perigallo</a>
     </div>
     <div class="service-card service-card--celebrations reveal reveal-delay-1">
       <span class="service-num">02</span>
       <h3 class="service-name">Celebraciones y <em>eventos</em></h3>
-      <p class="service-desc">Comuniones, bautizos, aniversarios, eventos privados y encuentros de empresa con una propuesta hecha para compartir.</p>
+      <p class="service-desc">Comuniones, bautizos, aniversarios, eventos privados y encuentros de empresa con una propuesta creada a medida.</p>
       <a href="/celebraciones-familiares-alicante/" class="service-link">Descubrir celebraciones y eventos</a>
     </div>
     <div class="service-card service-card--experiences reveal reveal-delay-2">
       <span class="service-num">03</span>
       <h3 class="service-name">Experiencias <em>pop-up</em></h3>
-      <p class="service-desc">Fechas concretas, menús especiales y experiencias gastronómicas abiertas al público. Una forma distinta de vivir la cocina de Perigallo.</p>
+      <p class="service-desc">Fechas concretas, menús especiales y experiencias gastronómicas abiertas al público. Otra forma de vivir Perigallo.</p>
       <a href="/experiencias/" class="service-link">Descubrir próximas experiencias</a>
     </div>
   </div>
