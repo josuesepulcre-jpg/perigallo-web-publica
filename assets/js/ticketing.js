@@ -682,6 +682,8 @@
     var attendeesBox = form.querySelector("[data-checkout-attendees]");
     var attendeeProgress = form.querySelector("[data-checkout-attendee-progress]");
     var attendeeState = [];
+    var billingToggle = form.querySelector("[name=\"billing_requested\"]");
+    var billingFields = form.querySelector("[data-billing-fields]");
     var appliedDiscount = null;
     var discountFingerprint = "";
     var isSubmitting = false;
@@ -800,6 +802,19 @@
       input.addEventListener("blur", function () { updateCheckoutField(input, true); refreshCheckout(); });
     });
     form.querySelectorAll(".checkout-check input, .checkout-access-check input").forEach(function (input) { input.addEventListener("change", refreshCheckout); });
+    if (billingToggle && billingFields) {
+      billingToggle.addEventListener("change", function () {
+        billingFields.hidden = !billingToggle.checked;
+        billingFields.querySelectorAll("input").forEach(function (input) {
+          input.required = billingToggle.checked;
+          if (!billingToggle.checked) {
+            input.removeAttribute("aria-invalid");
+            input.closest(".checkout-field").classList.remove("has-error");
+          }
+        });
+        refreshCheckout();
+      });
+    }
     if (paymentMethodsBox) paymentMethodsBox.addEventListener("change", refreshCheckout);
     if (discountInput) discountInput.addEventListener("input", function () {
       if (appliedDiscount && String(appliedDiscount.code || "").toUpperCase() !== discountInput.value.trim().toUpperCase()) clearDiscount("El código ha cambiado. Aplícalo de nuevo para actualizar el total.");
@@ -1059,6 +1074,7 @@
         last_name: form.last_name.value,
         email: form.email.value,
         phone: form.phone.value,
+        billing_requested: !!(billingToggle && billingToggle.checked),
         age_requirement_accepted: form.age_requirement_accepted.checked,
         dress_code_accepted: form.dress_code_accepted.checked,
         privacy_accepted: form.privacy_accepted.checked,
@@ -1069,6 +1085,11 @@
         items: selectedItemsPayload(),
         attendees: attendeesPayload()
       };
+      if (billingToggle && billingToggle.checked) {
+        ["billing_name", "billing_tax_id", "billing_email", "billing_address", "billing_postal_code", "billing_city", "billing_province", "billing_country"].forEach(function (name) {
+          payload[name] = form[name].value.trim();
+        });
+      }
       if (preview) {
         renderCheckoutPreview(form, payload, form.dataset.eventTitle || "Este evento", layout, confirmation, appliedDiscount);
         return;
@@ -1170,6 +1191,11 @@
     if (!selected.length) return { valid: false, message: "Selecciona al menos una entrada para continuar." };
     var requiredFields = [form.first_name, form.last_name, form.email, form.phone];
     if (requiredFields.some(function (input) { return !checkoutFieldValid(input); })) return { valid: false, message: "Completa los datos obligatorios para continuar." };
+    if (form.billing_requested && form.billing_requested.checked) {
+      var billingFields = [form.billing_name, form.billing_tax_id, form.billing_email, form.billing_address, form.billing_postal_code, form.billing_city, form.billing_province, form.billing_country];
+      var billingInvalid = billingFields.find(function (input) { return !checkoutFieldValid(input); });
+      if (billingInvalid || !/^[A-Za-z]{2}$/.test(form.billing_country.value.trim())) return { valid: false, message: "Completa los datos fiscales para solicitar factura.", focus: billingInvalid || form.billing_country };
+    }
     if (!form.age_requirement_accepted.checked) return { valid: false, message: "Confirma que eres mayor de 18 años.", focus: form.age_requirement_accepted };
     if (!form.dress_code_accepted.checked) return { valid: false, message: "Debes aceptar el código de vestimenta Total White para continuar.", focus: form.dress_code_accepted };
     attendees = Array.isArray(attendees) ? attendees : [];
@@ -1194,7 +1220,7 @@
     var field = input.closest(".checkout-field");
     var error = field.querySelector(".checkout-field-error");
     if (!touched) return;
-    var valid = checkoutFieldValid(input);
+    var valid = !input.required || checkoutFieldValid(input);
     field.classList.toggle("has-error", !valid);
     input.setAttribute("aria-invalid", String(!valid));
     if (error) error.textContent = valid ? "" : (input.type === "email" && input.value.trim() ? "Introduce un correo electrónico válido." : "Este campo es obligatorio.");

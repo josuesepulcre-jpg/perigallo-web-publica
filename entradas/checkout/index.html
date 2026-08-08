@@ -45,6 +45,20 @@
                   <div class="checkout-field"><label for="phone">Teléfono o WhatsApp</label><input id="phone" name="phone" autocomplete="tel" inputmode="tel" required aria-describedby="phone_error"><small id="phone_error" class="checkout-field-error"></small></div>
                 </div>
               </section>
+              <section class="checkout-section checkout-billing" data-checkout-billing>
+                <div class="checkout-section-head"><span class="ticket-eyebrow">03 · Facturación</span><h2>¿Necesitas factura?</h2><p>Solo completa estos datos si necesitas una factura con tus datos fiscales. Para el resto de compras no son necesarios.</p></div>
+                <label class="checkout-check checkout-billing-toggle"><input id="billing_requested" type="checkbox" name="billing_requested"><span class="checkout-check-mark" aria-hidden="true"></span><span>Necesito factura con mis datos fiscales.</span></label>
+                <div class="checkout-fields" data-billing-fields hidden>
+                  <div class="checkout-field"><label for="billing_name">Nombre fiscal o razón social</label><input id="billing_name" name="billing_name" autocomplete="organization"><small class="checkout-field-error"></small></div>
+                  <div class="checkout-field"><label for="billing_tax_id">NIF, CIF o VAT</label><input id="billing_tax_id" name="billing_tax_id" autocomplete="off"><small class="checkout-field-error"></small></div>
+                  <div class="checkout-field"><label for="billing_email">Correo de facturación</label><input id="billing_email" name="billing_email" type="email" autocomplete="email"><small class="checkout-field-error"></small></div>
+                  <div class="checkout-field"><label for="billing_address">Dirección fiscal</label><input id="billing_address" name="billing_address" autocomplete="street-address"><small class="checkout-field-error"></small></div>
+                  <div class="checkout-field"><label for="billing_postal_code">Código postal</label><input id="billing_postal_code" name="billing_postal_code" autocomplete="postal-code"><small class="checkout-field-error"></small></div>
+                  <div class="checkout-field"><label for="billing_city">Localidad</label><input id="billing_city" name="billing_city" autocomplete="address-level2"><small class="checkout-field-error"></small></div>
+                  <div class="checkout-field"><label for="billing_province">Provincia</label><input id="billing_province" name="billing_province" autocomplete="address-level1"><small class="checkout-field-error"></small></div>
+                  <div class="checkout-field"><label for="billing_country">País</label><input id="billing_country" name="billing_country" value="ES" maxlength="2" autocomplete="country" aria-describedby="billing_country_help"><small id="billing_country_help" class="checkout-field-error">Código ISO de dos letras. Ej.: ES.</small></div>
+                </div>
+              </section>
               <section class="checkout-section checkout-access-conditions" data-checkout-access-conditions aria-labelledby="checkout-access-conditions-title">
                 <div class="checkout-section-head"><span class="ticket-eyebrow">03 · Condiciones de acceso</span><h2 id="checkout-access-conditions-title">Condiciones de acceso</h2><p>Antes de continuar, necesitamos que confirmes las condiciones esenciales de acceso a esta experiencia.</p></div>
                 <div class="checkout-access-condition-list">

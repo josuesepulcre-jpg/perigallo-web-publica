@@ -8,6 +8,8 @@ use Perigallo\Ticketing\Analytics;
 use Perigallo\Ticketing\Database;
 use Perigallo\Ticketing\Mailer;
 use Perigallo\Ticketing\LeadForms;
+use Perigallo\Ticketing\HoldedClient;
+use Perigallo\Ticketing\HoldedSyncService;
 use Perigallo\Ticketing\Redsys;
 use Perigallo\Ticketing\Ticketing;
 
@@ -24,6 +26,7 @@ try {
     $mailer = new Mailer();
     $ticketing = new Ticketing(Database::pdo(), new Redsys(), $mailer);
     $analytics = new Analytics(Database::pdo(), $mailer);
+    $holded = new HoldedSyncService(Database::pdo(), new HoldedClient());
 
     if ($method === 'POST' && $path === '/analytics/events') {
         $length = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
@@ -257,6 +260,12 @@ try {
         return;
     }
 
+    if ($method === 'GET' && $path === '/admin/holded/health') {
+        AdminAuth::requireOwnerSession();
+        json_response(['ok' => true, 'holded' => $holded->health()]);
+        return;
+    }
+
     if ($method === 'GET' && $path === '/admin/formulario/settings') {
         AdminAuth::require();
         $leadForms = new LeadForms(Database::pdo(), $mailer);
@@ -367,6 +376,12 @@ try {
             throw new InvalidArgumentException('Confirma que el abono se ha realizado fuera de esta aplicación.');
         }
         json_response(['ok' => true, 'order' => $ticketing->adminRecordRefund((int) $m[1], AdminAuth::operatorName(), (string) ($data['reason'] ?? ''))]);
+        return;
+    }
+
+    if ($method === 'POST' && preg_match('#^/admin/orders/([0-9]+)/holded/retry$#', $path, $m)) {
+        AdminAuth::requireOwner();
+        json_response(['ok' => true, 'holded' => $holded->retry((int) $m[1])]);
         return;
     }
 

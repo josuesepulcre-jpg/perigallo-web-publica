@@ -28,8 +28,14 @@ const required = [
   "database/migrations/017_ticket_attendee_allergies.sql",
   "database/migrations/018_order_access_conditions.sql",
   "database/migrations/019_public_lead_form.sql",
+  "database/migrations/020_holded_fiscal_sync.sql",
   "api/scripts/apply-migration.php",
   "api/scripts/purge-test-ticketing-data.php",
+  "api/scripts/holded-health.php",
+  "api/cron/holded-sync.php",
+  "api/src/HoldedClient.php",
+  "api/src/HoldedSyncService.php",
+  "api/src/HoldedFiscalPolicy.php",
   "api/src/Analytics.php",
   "api/cron/analytics-report.php",
   "assets/js/analytics.js",
@@ -121,6 +127,10 @@ for (const file of activeFiles) {
 const api = readFileSync(join(root, "api/index.php"), "utf8");
 const ticketing = readFileSync(join(root, "api/src/Ticketing.php"), "utf8");
 const testDataPurge = readFileSync(join(root, "api/scripts/purge-test-ticketing-data.php"), "utf8");
+const holdedClient = readFileSync(join(root, "api/src/HoldedClient.php"), "utf8");
+const holdedSync = readFileSync(join(root, "api/src/HoldedSyncService.php"), "utf8");
+const holdedPolicy = readFileSync(join(root, "api/src/HoldedFiscalPolicy.php"), "utf8");
+const holdedMigration = readFileSync(join(root, "database/migrations/020_holded_fiscal_sync.sql"), "utf8");
 const whatsAppDelivery = readFileSync(join(root, "api/src/WhatsAppDeliveryService.php"), "utf8");
 for (const marker of [
   "/admin/events/([0-9]+)/preview",
@@ -257,6 +267,21 @@ for (const marker of ["/admin/orders/([0-9]+)/cancel", "/admin/orders/([0-9]+)/r
 
 for (const marker of ["--confirm", "WHERE is_test = 1", "adminPurgeTestOrder", "Limpieza inicial por terminal"]) {
   if (!testDataPurge.includes(marker)) throw new Error(`Test-data purge command is missing ${marker}.`);
+}
+for (const marker of ["HOLDED_ENABLED=false", "HOLDED_DRY_RUN=true", "HOLDED_API_KEY=", "HOLDED_DEFAULT_TAX_ID=", "HOLDED_TREASURY_ID="]) {
+  if (!readFileSync(join(root, ".env.example"), "utf8").includes(marker)) throw new Error(`Holded safe configuration missing ${marker}.`);
+}
+for (const marker of ["holded_status", "holded_sync_logs", "holded_contacts", "holded_refund_requests", "requires_review"]) {
+  if (!holdedMigration.includes(marker)) throw new Error(`Holded migration is missing ${marker}.`);
+}
+for (const marker of ["https://api.holded.com/api/v2", "Authorization: Bearer", "HOLDED_DRY_RUN", "recordInvoicePayment", "createSalesReceipt", "createCreditNote"]) {
+  if (!holdedClient.includes(marker)) throw new Error(`Holded client contract is missing ${marker}.`);
+}
+for (const marker of ["queuePaidProductionOrder", "holded_status = \"processing\"", "requires_review", "holded_sync_logs", "HOLDED_SIMPLIFIED_MAX_CENTS"]) {
+  if (!(holdedSync + ticketing + holdedPolicy).includes(marker)) throw new Error(`Holded sync contract is missing ${marker}.`);
+}
+for (const marker of ["billing_requested", "normaliseBilling", "queuePaidProductionOrder", "/admin/holded/health", "/holded/retry"]) {
+  if (!(ticketing + api + readFileSync(join(root, "assets/js/ticketing.js"), "utf8") + adminBackoffice).includes(marker)) throw new Error(`Holded checkout/admin contract is missing ${marker}.`);
 }
 const parseFaqSource = adminJs.match(/function parseFaq\(value\) \{[\s\S]*?\n  \}\n\n  function formData/);
 if (!parseFaqSource) throw new Error("Unable to locate the FAQ parser.");

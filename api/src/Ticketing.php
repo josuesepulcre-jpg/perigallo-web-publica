@@ -138,6 +138,7 @@ final class Ticketing
         if (!is_array($data['items']) || count($data['items']) === 0) {
             throw new RuntimeException('Selecciona al menos una entrada.');
         }
+        $billing = $this->normaliseBilling($data);
 
         $this->pdo->beginTransaction();
         try {
@@ -150,8 +151,8 @@ final class Ticketing
 
             $orderStmt = $this->pdo->prepare(
                 'INSERT INTO ticket_orders
-                 (public_token, redsys_order, first_name, last_name, name, email, phone, age_requirement_accepted, age_requirement_accepted_at, dress_code_accepted, dress_code_accepted_at, dress_code_version, subtotal_cents, total_cents, currency, status, reservation_expires_at, ip_address, user_agent, created_at, updated_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW(), 1, NOW(), ?, 0, 0, ?, "pending", ?, ?, ?, NOW(), NOW())'
+                 (public_token, redsys_order, first_name, last_name, name, email, phone, age_requirement_accepted, age_requirement_accepted_at, dress_code_accepted, dress_code_accepted_at, dress_code_version, billing_requested, billing_name, billing_tax_id, billing_address, billing_postal_code, billing_city, billing_province, billing_country, billing_email, subtotal_cents, total_cents, currency, status, reservation_expires_at, ip_address, user_agent, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW(), 1, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, "pending", ?, ?, ?, NOW(), NOW())'
             );
             $firstName = clean_string((string) $data['first_name'], 120);
             $lastName = clean_string((string) $data['last_name'], 160);
@@ -167,6 +168,15 @@ final class Ticketing
                 $email,
                 $phone,
                 self::DRESS_CODE_VERSION,
+                $billing['requested'],
+                $billing['name'],
+                $billing['tax_id'],
+                $billing['address'],
+                $billing['postal_code'],
+                $billing['city'],
+                $billing['province'],
+                $billing['country'],
+                $billing['email'],
                 env_value('REDSYS_CURRENCY', '978'),
                 $expires,
                 client_ip(),
@@ -756,6 +766,13 @@ final class Ticketing
 
             $this->pdo->commit();
             if ($accepted && $order['status'] !== 'paid') {
+                // Solo el callback firmado y validado puede dejar una tarea fiscal.
+                // No hay comunicación remota con Holded en esta ruta crítica.
+                (new HoldedSyncService($this->pdo, new HoldedClient()))->queuePaidProductionOrder(
+                    (int) $order['id'],
+                    (string) ($attempt['environment'] ?? ''),
+                    $isTestOrder
+                );
                 if ($isTestOrder) {
                     $this->sendTestConfirmation((int) $order['id']);
                 } else {
@@ -773,9 +790,10 @@ final class Ticketing
     public function adminSummary(): array
     {
         $orders = $this->pdo->query('SELECT status, COUNT(*) AS total, COALESCE(SUM(total_cents),0) AS amount FROM ticket_orders WHERE is_test = 0 GROUP BY status')->fetchAll();
+        $holded = $this->pdo->query('SELECT holded_status, COUNT(*) AS total FROM ticket_orders WHERE is_test = 0 GROUP BY holded_status')->fetchAll();
         $events = $this->adminListEvents();
         $latestOrders = $this->adminOrders(6);
-        return ['orders' => $orders, 'events' => $events, 'latest_orders' => $latestOrders];
+        return ['orders' => $orders, 'events' => $events, 'latest_orders' => $latestOrders, 'holded' => $holded];
     }
 
     public function adminDiscountCodes(array $filters = []): array
@@ -835,6 +853,7 @@ final class Ticketing
             'SELECT o.id, o.public_token, o.redsys_order, o.test_reference, o.is_test, o.environment,
                     o.order_status, o.payment_status, o.delivery_status, o.name, o.email, o.phone,
                     o.subtotal_cents, o.discount_code, o.discount_amount_cents, o.total_cents, o.status, o.reservation_expires_at, o.paid_at, o.created_at,
+                    o.billing_requested, o.holded_status, o.holded_document_type, o.holded_document_number, o.holded_last_error, o.holded_next_attempt_at,
                     CASE WHEN o.status IN ("cancelled", "refunded") THEN o.status ELSE COALESCE(o.payment_status, o.status) END AS display_status,
                     COALESCE((SELECT pa.payment_method FROM payment_attempts pa WHERE pa.order_id = o.id ORDER BY pa.id DESC LIMIT 1), "card") AS payment_method,
                     COALESCE(items.ticket_quantity, 0) AS ticket_quantity,
@@ -2468,6 +2487,32 @@ final class Ticketing
      * Validates health-related attendee data on the server. It is never returned
      * in public order or ticket payloads.
      */
+    /** @return array{requested:int,name:?string,tax_id:?string,address:?string,postal_code:?string,city:?string,province:?string,country:?string,email:?string} */
+    private function normaliseBilling(array $data): array
+    {
+        $requested = !empty($data['billing_requested']);
+        $empty = ['requested' => 0, 'name' => null, 'tax_id' => null, 'address' => null, 'postal_code' => null, 'city' => null, 'province' => null, 'country' => null, 'email' => null];
+        if (!$requested) return $empty;
+        $fields = [
+            'name' => ['billing_name', 255], 'tax_id' => ['billing_tax_id', 64],
+            'address' => ['billing_address', 255], 'postal_code' => ['billing_postal_code', 24],
+            'city' => ['billing_city', 120], 'province' => ['billing_province', 120],
+        ];
+        $result = ['requested' => 1];
+        foreach ($fields as $key => [$input, $limit]) {
+            $value = clean_string((string) ($data[$input] ?? ''), $limit);
+            if ($value === '') throw new InvalidArgumentException('Completa los datos fiscales para solicitar factura.');
+            $result[$key] = $value;
+        }
+        $email = mb_strtolower(clean_string((string) ($data['billing_email'] ?? $data['email'] ?? ''), 190));
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) throw new InvalidArgumentException('Introduce un correo electrónico fiscal válido.');
+        $country = strtoupper(clean_string((string) ($data['billing_country'] ?? 'ES'), 2));
+        if (!preg_match('/^[A-Z]{2}$/', $country)) throw new InvalidArgumentException('Indica el país fiscal con código de dos letras.');
+        $result['email'] = $email;
+        $result['country'] = $country;
+        return $result;
+    }
+
     private function normaliseAttendees(mixed $value, int $quantity, string $buyerName): array
     {
         if (!is_array($value) || count($value) !== $quantity) {

@@ -183,6 +183,7 @@
     if (!root) return;
     var data = metrics(summary.events || [], orders || []);
     var featured = data.upcoming[0] || (summary.events || [])[0];
+    var holdedReview = (summary.holded || []).reduce(function (total, row) { return total + (row.holded_status === "requires_review" ? Number(row.total || 0) : 0); }, 0);
     root.innerHTML =
       '<section class="admin-page-heading"><div><span class="ticket-eyebrow">Administración Perigallo</span><h1>Todo lo que ocurre, <em>conectado.</em></h1><p>Gestiona experiencias, ventas y acceso desde un único lugar.</p></div><a class="ticket-btn primary" href="/admin/eventos/?new=1">Crear evento</a></section>' +
       '<section class="admin-stat-grid" aria-label="Resumen de actividad">' +
@@ -190,6 +191,7 @@
         '<article><span>Entradas vendidas</span><strong>' + data.sold + '</strong><small>En todos los eventos</small></article>' +
         '<article><span>Ingresos cobrados</span><strong>' + formatMoney(data.revenue) + '</strong><small>Pedidos confirmados</small></article>' +
         '<article><span>Capacidad pendiente</span><strong>' + data.pending + '</strong><small>Plazas aún disponibles</small></article>' +
+        '<article><span>Holded · revisión</span><strong>' + holdedReview + '</strong><small>' + (holdedReview ? 'Pedidos que requieren revisión' : 'Sin alertas fiscales') + '</small></article>' +
       '</section>' +
       (featured ? '<section class="admin-dashboard-section"><div class="admin-section-label"><span class="ticket-eyebrow">Próximo evento</span><a class="text-action" href="/admin/eventos/">Ver todos los eventos</a></div>' + eventCard(featured, true) + '</section>' : '<section class="admin-empty"><strong>Todavía no hay eventos.</strong><span>Crea la primera experiencia para empezar a vender entradas.</span><a class="ticket-btn primary" href="/admin/eventos/?new=1">Crear evento</a></section>') +
       '<section class="admin-dashboard-section"><div class="admin-section-label"><div><span class="ticket-eyebrow">Actividad reciente</span><h2>Últimos pedidos</h2></div><a class="text-action" href="/admin/ventas/">Ver ventas</a></div><div class="admin-recent-orders">' + renderOrdersRows(orders.slice(0, 6), true) + '</div></section>';
@@ -203,6 +205,7 @@
     if (Number(order.allergy_attendee_count || 0)) actions += '<button type="button" class="text-action" data-order-allergies data-order-id="' + Number(order.id) + '">Alergias (' + Number(order.allergy_attendee_count) + ')</button>';
     if (!isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="cancel" data-order-id="' + Number(order.id) + '">Cancelar</button>';
     if (!isClosedOrder(order) && (order.payment_status === "paid" || order.status === "paid")) actions += '<button type="button" class="text-action" data-order-action="refund" data-order-id="' + Number(order.id) + '">Registrar devolución</button>';
+    if (state.session.is_owner && !Number(order.is_test) && (order.payment_status === "paid" || order.status === "paid") && order.holded_status && order.holded_status !== "synced") actions += '<button type="button" class="text-action" data-order-action="holded-retry" data-order-id="' + Number(order.id) + '">Reintentar Holded</button>';
     if (state.session.is_owner && Number(order.is_test)) actions += '<button type="button" class="text-action danger" data-order-action="purge-test" data-order-id="' + Number(order.id) + '">Eliminar prueba</button>';
     return actions + '</div>';
   }
@@ -218,7 +221,8 @@
         ? '<strong><s>' + formatMoney(order.subtotal_cents) + '</s> ' + formatMoney(order.total_cents) + '</strong><small class="admin-order-discount">Cupón ' + escapeHtml(order.discount_code || "") + ' · −' + formatMoney(discount) + '</small>'
         : '<strong>' + formatMoney(order.total_cents) + '</strong>';
       var allergySummary = Number(order.allergy_attendee_count || 0) ? ' · ' + Number(order.allergy_attendee_count) + ' alergia' + (Number(order.allergy_attendee_count) === 1 ? '' : 's') + ' comunicada' + (Number(order.allergy_attendee_count) === 1 ? '' : 's') : '';
-      return '<article class="admin-order-row"><div><strong>' + escapeHtml(order.name || "Comprador sin nombre") + '</strong><small>' + escapeHtml(order.event_title || "Evento por asignar") + ' · ' + escapeHtml(reference) + ' · ' + paymentMethod + allergySummary + (Number(order.is_test) ? ' · Prueba' : '') + '</small></div><span>' + Number(order.ticket_quantity || 0) + ' entrada' + (Number(order.ticket_quantity || 0) === 1 ? "" : "s") + '</span><span class="status-pill status-' + escapeHtml(displayStatus) + '">' + escapeHtml(statusLabel(displayStatus)) + '</span><span class="admin-order-amount">' + amount + '</span>' + (compact ? "" : orderActions(order)) + '</article>';
+      var holded = !Number(order.is_test) && order.holded_status ? '<small class="admin-order-holded">Holded: ' + escapeHtml({not_required:"No requerido",pending:"Pendiente",processing:"Procesando",synced:"Sincronizado",error:"Reintento programado",requires_review:"Revisión necesaria"}[order.holded_status] || order.holded_status) + (order.holded_document_number ? ' · ' + escapeHtml(order.holded_document_number) : '') + '</small>' : '';
+      return '<article class="admin-order-row"><div><strong>' + escapeHtml(order.name || "Comprador sin nombre") + '</strong><small>' + escapeHtml(order.event_title || "Evento por asignar") + ' · ' + escapeHtml(reference) + ' · ' + paymentMethod + allergySummary + (Number(order.is_test) ? ' · Prueba' : '') + '</small>' + holded + '</div><span>' + Number(order.ticket_quantity || 0) + ' entrada' + (Number(order.ticket_quantity || 0) === 1 ? "" : "s") + '</span><span class="status-pill status-' + escapeHtml(displayStatus) + '">' + escapeHtml(statusLabel(displayStatus)) + '</span><span class="admin-order-amount">' + amount + '</span>' + (compact ? "" : orderActions(order)) + '</article>';
     }).join("");
   }
 
@@ -322,6 +326,7 @@
       function actionMessage(action) {
         if (action === "cancel") return "Cancelar las entradas de este pedido impedirá su acceso. No realiza ningún abono. ¿Continuar?";
         if (action === "refund") return "Registra la devolución solo cuando el abono ya se haya realizado en Redsys/TPV. Esta acción revoca las entradas, pero no devuelve dinero automáticamente. ¿Confirmar?";
+        if (action === "holded-retry") return "Se volverá a dejar el pedido en cola para Holded. No se emitirá ningún documento desde el navegador. ¿Continuar?";
         return "Eliminarás definitivamente este pedido de prueba y todas sus entradas. No se puede deshacer. ¿Continuar?";
       }
       request(api + "/admin/orders").then(function (data) {
@@ -350,7 +355,7 @@
           var id = Number(button.getAttribute("data-order-id"));
           if (!id || !window.confirm(actionMessage(action))) return;
           button.disabled = true;
-          var url = api + "/admin/orders/" + id + (action === "cancel" ? "/cancel" : action === "refund" ? "/record-refund" : "/test");
+          var url = api + "/admin/orders/" + id + (action === "cancel" ? "/cancel" : action === "refund" ? "/record-refund" : action === "holded-retry" ? "/holded/retry" : "/test");
           var method = action === "purge-test" ? "DELETE" : "POST";
           var body = action === "refund" ? { confirmed: true } : {};
           jsonRequest(url, method, body).then(function () { reload(); }).catch(function (error) { renderPageError(error.message); }).finally(function () { button.disabled = false; });
