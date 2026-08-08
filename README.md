@@ -159,6 +159,7 @@ node --check assets/js/ticketing-admin.js
 node --check assets/js/site.js
 node --check assets/js/analytics.js
 node tests/static-ticketing-check.mjs
+php tests/redsys-secret-key-test.php
 node tests/smoke-public-form.mjs https://perigallo.com/formulario/
 ```
 

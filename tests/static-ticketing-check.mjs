@@ -10,6 +10,7 @@ const required = [
   "api/src/WhatsAppDeliveryService.php",
   "api/src/DiscountCodes.php",
   "api/src/Redsys.php",
+  "tests/redsys-secret-key-test.php",
   "database/migrations/001_ticketing_schema.sql",
   "database/migrations/002_event_editor.sql",
   "database/migrations/003_suite_experience_integration.sql",
@@ -435,9 +436,22 @@ for (const marker of ["Accede de nuevo a tus entradas", "Abrir mis entradas", "T
 for (const marker of ["Descargar mis entradas", "Tu experiencia está confirmada", "orderEmailHtml", "El enlace abre tu pedido", "perigallo-logo-original.png"]) {
   if (!ticketDelivery.includes(marker)) throw new Error(`Missing premium ticket email marker: ${marker}.`);
 }
+const envExample = readFileSync(join(root, ".env.example"), "utf8");
 const redsys = readFileSync(join(root, "api/src/Redsys.php"), "utf8");
 for (const marker of ["function terminal", "str_pad", "str_replace(' ', '+', $value)"]) {
   if (!redsys.includes(marker)) throw new Error(`Missing Redsys terminal or Base64 normalization: ${marker}`);
+}
+for (const marker of ["function secretKey", "REDSYS_TEST_SECRET_KEY", "REDSYS_PRODUCTION_SECRET_KEY"]) {
+  if (!redsys.includes(marker)) throw new Error(`Missing Redsys environment-specific secret-key handling: ${marker}`);
+}
+if (!/REDSYS_PRODUCTION_SECRET_KEY[\s\S]*?throw new RuntimeException/.test(redsys)) {
+  throw new Error("Redsys production configuration must reject a missing production key.");
+}
+if (!envExample.includes("REDSYS_TEST_SECRET_KEY=") || !envExample.includes("REDSYS_PRODUCTION_SECRET_KEY=")) {
+  throw new Error("Redsys environment-specific secret keys are missing from .env.example.");
+}
+if (redsys.includes("error_log(")) {
+  throw new Error("Redsys must not write secret-bearing configuration to logs.");
 }
 const bizumMigration = readFileSync(join(root, "database/migrations/012_payment_methods_bizum.sql"), "utf8");
 for (const marker of ["payment_method", "ENUM('card','bizum')", "idx_payment_attempts_method"]) {
@@ -461,7 +475,6 @@ for (const marker of ["function quote", "function reserve", "function consumeFor
 for (const marker of ["/discounts/validate", "/admin/discount-codes", "adminSaveDiscountCode", "adminDeleteUnusedDiscountCode", "adminDiscountCodeHistory", "validateTestDiscount"]) {
   if (!(api + ticketing).includes(marker)) throw new Error(`Discount API contract is missing ${marker}.`);
 }
-const envExample = readFileSync(join(root, ".env.example"), "utf8");
 if (!envExample.includes("REDSYS_BIZUM_ENABLED=false")) throw new Error("Bizum feature flag is missing from .env.example.");
 
 const checkout = readFileSync(join(root, "entradas/checkout/index.html"), "utf8");

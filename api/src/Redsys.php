@@ -32,16 +32,15 @@ final class Redsys
 
     public function assertConfigured(): void
     {
-        $environment = env_value('REDSYS_ENV', 'test');
-        if (!in_array($environment, ['test', 'production'], true)) {
-            throw new RuntimeException('REDSYS_ENV debe ser test o production.');
-        }
-        if (!env_value('REDSYS_MERCHANT_CODE') || !env_value('REDSYS_SECRET_KEY')) {
+        $this->environment();
+        if (!env_value('REDSYS_MERCHANT_CODE')) {
             throw new RuntimeException('Faltan las credenciales configuradas de Redsys para abrir la pasarela.');
         }
-        if (!str_starts_with($this->paymentUrl(), 'https://')) {
+        $this->terminal();
+        if (!str_starts_with(strtolower($this->paymentUrl()), 'https://')) {
             throw new RuntimeException('La URL de Redsys debe utilizar HTTPS.');
         }
+        $this->secretKey();
     }
 
     public function assertSandboxConfigured(): void
@@ -57,7 +56,7 @@ final class Redsys
 
     public function paymentUrl(): string
     {
-        return env_value('REDSYS_ENV', 'test') === 'production'
+        return $this->environment() === 'production'
             ? (env_value('REDSYS_PRODUCTION_URL') ?: 'https://sis.redsys.es/sis/realizarPago')
             : (env_value('REDSYS_TEST_URL') ?: 'https://sis-t.redsys.es:25443/sis/realizarPago');
     }
@@ -124,10 +123,7 @@ final class Redsys
 
     private function deriveKey(string $order): string
     {
-        $secret = env_value('REDSYS_SECRET_KEY');
-        if (!$secret) {
-            throw new RuntimeException('Clave Redsys no configurada.');
-        }
+        $secret = $this->secretKey();
         $key = base64_decode($secret, true);
         if ($key === false) {
             $key = $secret;
@@ -148,6 +144,36 @@ final class Redsys
             throw new RuntimeException('No se pudo derivar la clave Redsys.');
         }
         return $derived;
+    }
+
+    private function environment(): string
+    {
+        $environment = env_value('REDSYS_ENV', 'test');
+        if (!in_array($environment, ['test', 'production'], true)) {
+            throw new RuntimeException('REDSYS_ENV debe ser test o production.');
+        }
+        return $environment;
+    }
+
+    private function secretKey(): string
+    {
+        if ($this->environment() === 'production') {
+            $secret = trim((string) env_value('REDSYS_PRODUCTION_SECRET_KEY'));
+            if ($secret === '') {
+                throw new RuntimeException('Falta la clave de produccion de Redsys para abrir la pasarela.');
+            }
+            return $secret;
+        }
+
+        $secret = trim((string) env_value('REDSYS_TEST_SECRET_KEY'));
+        if ($secret === '') {
+            // Compatibilidad temporal durante la migracion. REDSYS_SECRET_KEY esta deprecada.
+            $secret = trim((string) env_value('REDSYS_SECRET_KEY'));
+        }
+        if ($secret === '') {
+            throw new RuntimeException('Falta la clave de pruebas de Redsys para abrir la pasarela.');
+        }
+        return $secret;
     }
 
     private function normalize(array $params): array
