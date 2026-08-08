@@ -111,37 +111,9 @@ section{position:relative}
 .section-title em{font-style:italic;color:var(--gold-l)}
 .section-body{font-size:.84rem;line-height:1.95;color:var(--muted-2);max-width:480px;font-weight:300}
 
-/* QUIÉNES SOMOS — una única escena editorial */
-.manifest{position:relative;isolation:isolate;overflow:hidden;padding:0 48px;background:#1b383e;text-align:center}
-.manifest::before,.manifest::after{content:'';position:absolute;inset:0;pointer-events:none}
-.manifest::before{z-index:-2;background:radial-gradient(ellipse 43% 62% at 50% 43%,rgba(70,109,111,.24),transparent 73%),radial-gradient(ellipse 32% 78% at 0% 53%,rgba(7,24,29,.65),transparent 73%),radial-gradient(ellipse 32% 78% at 100% 53%,rgba(7,24,29,.65),transparent 73%),linear-gradient(180deg,#1b363c 0%,#203f45 53%,#17353b 100%)}
-.manifest::after{z-index:-1;background:linear-gradient(180deg,rgba(9,27,32,.1),transparent 18%,rgba(9,26,31,.3) 100%)}
-.manifest-scene{position:relative;min-height:clamp(760px,57vw,940px);max-width:1700px;margin:0 auto;display:flex;justify-content:center;align-items:flex-start}
-.manifest-inner{position:relative;z-index:2;width:min(100%,650px);margin:0 auto;padding:clamp(94px,8vw,132px) 0 0}
-.manifest-mark{display:block;width:74px;height:74px;object-fit:contain;margin:0 auto 48px;opacity:.9;filter:drop-shadow(0 8px 22px rgba(0,0,0,.2))}
-.manifest-heading{font-family:inherit;font-size:.61rem;font-weight:500;letter-spacing:.4em;text-transform:uppercase;color:var(--gold);margin:0 0 29px}
-.manifest-copy{font-family:'Cormorant Garamond',serif;font-size:clamp(1.65rem,2.42vw,2.38rem);font-weight:300;line-height:1.26;letter-spacing:-.014em;color:var(--cream)}
-.manifest-copy p{margin:0 auto}.manifest-lede{max-width:520px;font-size:clamp(1.96rem,3.05vw,2.92rem);line-height:1.13}
-.manifest-copy-main{max-width:570px;margin-top:30px!important;color:rgba(245,241,229,.91)}
-.manifest-closing{max-width:620px;margin-top:31px!important;color:rgba(245,241,229,.93)}
-.manifest-copy em{font-style:italic;color:var(--gold-l)}
-.manifest-meta{position:relative;display:inline-block;margin-top:59px;padding:0 19px;font-size:.57rem;font-weight:500;letter-spacing:.29em;line-height:1.7;text-transform:uppercase;color:var(--gold)}
-.manifest-meta::before{content:'';position:absolute;top:50%;right:100%;width:86px;height:1px;background:linear-gradient(90deg,transparent,rgba(205,177,151,.72))}
-.manifest-meta::after{content:'';position:absolute;top:50%;left:100%;width:86px;height:1px;background:linear-gradient(90deg,rgba(205,177,151,.72),transparent)}
-.manifest-portraits{position:absolute;inset:0;z-index:1;pointer-events:none}
-.manifest-portrait{position:absolute;bottom:0;width:clamp(315px,31vw,540px);height:clamp(620px,50vw,835px);margin:0;opacity:0;transform:translateY(18px);transition:opacity .9s ease,transform .9s cubic-bezier(.22,.61,.36,1);overflow:hidden}
-.manifest-portrait.visible{opacity:1;transform:translateY(0)}
-.manifest-portrait img{display:block;width:100%;height:100%;object-fit:cover;filter:saturate(.48) contrast(1.04) brightness(.59)}
-.manifest-portrait::after{content:'';position:absolute;inset:0;pointer-events:none}
-.manifest-portrait--josue{left:-48px;-webkit-mask-image:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.42) 11%,#000 27%,#000 68%,rgba(0,0,0,.56) 84%,transparent 100%);mask-image:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.42) 11%,#000 27%,#000 68%,rgba(0,0,0,.56) 84%,transparent 100%)}
-.manifest-portrait--josue img{object-position:58% 42%}.manifest-portrait--josue::after{background:linear-gradient(90deg,rgba(27,56,62,.2) 0%,transparent 38%,rgba(27,56,62,.42) 57%,#203f45 100%),linear-gradient(0deg,rgba(23,53,59,.66),transparent 35%)}
-.manifest-portrait--david{right:-48px;-webkit-mask-image:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.42) 11%,#000 27%,#000 68%,rgba(0,0,0,.56) 84%,transparent 100%);mask-image:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.42) 11%,#000 27%,#000 68%,rgba(0,0,0,.56) 84%,transparent 100%)}
-.manifest-portrait--david img{object-position:42% 42%}.manifest-portrait--david::after{background:linear-gradient(90deg,#203f45 0%,rgba(27,56,62,.42) 43%,transparent 62%,rgba(27,56,62,.2) 100%),linear-gradient(0deg,rgba(23,53,59,.66),transparent 35%)}
-.manifest-portrait figcaption{position:absolute;z-index:1;right:16%;bottom:63px;display:flex;flex-direction:column;align-items:flex-end;gap:13px;color:rgba(245,241,229,.82);font-size:.59rem;font-weight:500;letter-spacing:.36em;text-transform:uppercase}
-.manifest-portrait figcaption::before{content:'';width:108px;height:1px;background:rgba(205,177,151,.56)}
-.manifest-portrait--david figcaption{right:auto;left:16%;align-items:flex-start}
-.manifest .reveal{transform:translateY(14px);transition-duration:.74s}
-.manifest-mark.reveal{transition-delay:.04s}.manifest-heading.reveal{transition-delay:.12s}.manifest-lede.reveal{transition-delay:.22s}.manifest-copy-main.reveal{transition-delay:.34s}.manifest-closing.reveal{transition-delay:.46s}.manifest-meta.reveal{transition-delay:.6s}
+/* QUIÉNES SOMOS — composición original aprobada */
+.manifest{margin:0;padding:0;background:#18373d;line-height:0}
+.manifest-artwork{display:block;width:100%;max-width:1672px;height:auto;margin:0 auto}
 
 /* QUÉ HACEMOS */
 .services{padding:120px 0;background:var(--bg2)}
@@ -392,7 +364,6 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 
 @media(prefers-reduced-motion:reduce){
   .hero-slide{transition-duration:.01ms!important}
-  .manifest .reveal,.manifest-portrait{transition-duration:.01ms!important;transition-delay:0s!important}
 }
 
 @media(max-width:900px){
@@ -454,19 +425,6 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
   .proposal-actions .btn-primary,.proposal-actions .btn-ghost{width:100%;text-align:center}
   .form{grid-template-columns:1fr;gap:24px}
   .form-row-full,.form-submit,.form-disclaimer{grid-column:span 1}
-  .manifest{padding:88px 20px 54px;background:linear-gradient(180deg,#1b363c 0%,#203f45 28%,var(--bg) 100%)}
-  .manifest-scene{display:flex;min-height:0;flex-direction:column;align-items:center}
-  .manifest-inner{width:min(100%,610px);padding:0}
-  .manifest-heading{font-size:.57rem;letter-spacing:.31em;margin-bottom:23px}
-  .manifest-copy{font-size:1.42rem;line-height:1.31}
-  .manifest-lede{font-size:clamp(1.9rem,9vw,2.48rem);line-height:1.13}
-  .manifest-copy-main{margin-top:25px!important}.manifest-closing{margin-top:25px!important}
-  .manifest-meta{max-width:330px;margin-top:39px;padding:0 12px;font-size:.52rem;letter-spacing:.21em}
-  .manifest-meta::before,.manifest-meta::after{width:22px}
-  .manifest-portraits{position:relative;inset:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%;height:250px;margin-top:47px}
-  .manifest-portrait{position:relative;inset:auto!important;width:100%;height:250px;-webkit-mask-image:linear-gradient(180deg,#000 0%,#000 65%,transparent 100%)!important;mask-image:linear-gradient(180deg,#000 0%,#000 65%,transparent 100%)!important}
-  .manifest-portrait--josue img{object-position:68% 25%}.manifest-portrait--david img{object-position:35% 25%}
-  .manifest-portrait figcaption{right:14px;bottom:25px;gap:8px;font-size:.48rem;letter-spacing:.24em}.manifest-portrait figcaption::before{width:38px}.manifest-portrait--david figcaption{right:auto;left:14px}
   .dates-section{padding:96px 0}
   .dates-section::before{left:22px;right:22px;top:42px}
   .dates-header{grid-template-columns:1fr;gap:24px;padding:0 22px;margin-bottom:34px}
@@ -562,29 +520,8 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 </section>
 
 <!-- QUIÉNES SOMOS -->
-<section class="manifest" id="about" aria-labelledby="about-title">
-  <div class="manifest-scene">
-    <div class="manifest-inner">
-      <img class="manifest-mark reveal" src="assets/images/perigallo-logo-original.png" alt="" width="74" height="74" decoding="async">
-      <h2 id="about-title" class="manifest-heading reveal">Quiénes somos</h2>
-      <div class="manifest-copy">
-        <p class="manifest-lede reveal">Perigallo nace de la visión compartida de <em>David y Josué</em>.</p>
-        <p class="manifest-copy-main reveal">Dos miradas unidas por la gastronomía, la sensibilidad estética y el cuidado por cada detalle.</p>
-        <p class="manifest-closing reveal">Creamos celebraciones, pop-ups y experiencias a medida donde la cocina se convierte en <em>relato</em> y cada encuentro se vive como algo <em>irrepetible</em>.</p>
-      </div>
-      <span class="manifest-meta reveal">Cocina con relato · Producción cuidada · Experiencias a medida</span>
-    </div>
-    <div class="manifest-portraits">
-      <figure class="manifest-portrait manifest-portrait--josue reveal">
-        <img src="assets/images/about/josue-perigallo.jpg" alt="Retrato de Josué, cofundador de Perigallo" width="440" height="880" loading="lazy" decoding="async">
-        <figcaption>Josué</figcaption>
-      </figure>
-      <figure class="manifest-portrait manifest-portrait--david reveal reveal-delay-1">
-        <img src="assets/images/about/david-perigallo.jpg" alt="Retrato de David, cofundador de Perigallo" width="440" height="880" loading="lazy" decoding="async">
-        <figcaption>David</figcaption>
-      </figure>
-    </div>
-  </div>
+<section class="manifest" id="about" aria-label="Quiénes somos">
+  <img class="manifest-artwork" src="assets/images/about/quienes-somos-perigallo.png" alt="Quiénes somos: Perigallo nace de la visión compartida de David y Josué" width="1672" height="941" decoding="async">
 </section>
 
 <!-- QUÉ HACEMOS -->

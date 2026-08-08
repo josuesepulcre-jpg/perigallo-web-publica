@@ -23,11 +23,10 @@ const required = [
   '.hero-slide.active{z-index:2;opacity:1}.hero-slide.is-leaving{z-index:1;opacity:0}',
   'var heroFadeDuration=1550;',
   'preloadSlide(1);',
-  'id="about-title" class="manifest-heading reveal">Quiénes somos</h2>',
-  'Perigallo nace de la visión compartida de <em>David y Josué</em>.',
-  'assets/images/about/josue-perigallo.jpg',
-  'assets/images/about/david-perigallo.jpg',
-  'Cocina con relato · Producción cuidada · Experiencias a medida',
+  '<section class="manifest" id="about" aria-label="Quiénes somos">',
+  'class="manifest-artwork" src="assets/images/about/quienes-somos-perigallo.png"',
+  'width="1672" height="941"',
+  '.manifest-artwork{display:block;width:100%;max-width:1672px;height:auto;margin:0 auto}',
 ];
 
 for (const fragment of required) {
