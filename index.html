@@ -62,13 +62,12 @@ nav.scrolled .nav-logo-img{width:50px;height:50px}
 /* HERO */
 .hero{min-height:100svh;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:148px 0 132px;isolation:isolate}
 .hero-brand-background{position:absolute;inset:0;z-index:0;background:var(--color-perigallo-hero)}
-.hero-media-stage{position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none}
+.hero-media-stage{position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none;background:radial-gradient(ellipse 36% 54% at 50% 48%,rgba(7,23,26,.36) 0%,rgba(20,56,61,.15) 42%,transparent 76%),radial-gradient(ellipse 62% 86% at 50% 54%,rgba(95,118,105,.1),transparent 73%)}
+.hero-media-stage::before{content:'';position:absolute;inset:8% 12%;background:radial-gradient(ellipse 28% 46% at 50% 48%,rgba(224,171,92,.13),rgba(224,171,92,.035) 37%,transparent 73%);filter:blur(18px);opacity:.9}
 .hero-media-slot{position:absolute;inset:0;display:grid;place-items:center;opacity:0;transition:opacity 1.6s cubic-bezier(.22,1,.36,1);will-change:opacity}
 .hero-media-slot.is-visible{opacity:1}.hero-media-slot.is-underlay{z-index:0}.hero-media-slot.is-overlay{z-index:1}
-.hero-media-asset{width:min(var(--hero-width),60vw);max-width:82vw;max-height:78svh;height:auto;object-fit:contain;transform:translate3d(var(--hero-offset-x,0),var(--hero-offset-y,0),0) scale(var(--hero-scale,1));transform-origin:center;filter:brightness(var(--hero-brightness,.92)) contrast(var(--hero-contrast,1.02)) saturate(var(--hero-saturation,.9));-webkit-mask-image:radial-gradient(ellipse 46% 48% at var(--hero-focus-x,50%) var(--hero-focus-y,50%),#000 0%,#000 31%,rgba(0,0,0,.93) 48%,rgba(0,0,0,.62) 65%,rgba(0,0,0,.22) 80%,transparent 100%);mask-image:radial-gradient(ellipse 46% 48% at var(--hero-focus-x,50%) var(--hero-focus-y,50%),#000 0%,#000 31%,rgba(0,0,0,.93) 48%,rgba(0,0,0,.62) 65%,rgba(0,0,0,.22) 80%,transparent 100%)}
-.hero-media-slot[data-mask="wide"] .hero-media-asset{-webkit-mask-image:radial-gradient(ellipse 48% 48% at var(--hero-focus-x,50%) var(--hero-focus-y,50%),#000 0%,#000 31%,rgba(0,0,0,.94) 48%,rgba(0,0,0,.6) 65%,rgba(0,0,0,.2) 80%,transparent 100%);mask-image:radial-gradient(ellipse 48% 48% at var(--hero-focus-x,50%) var(--hero-focus-y,50%),#000 0%,#000 31%,rgba(0,0,0,.94) 48%,rgba(0,0,0,.6) 65%,rgba(0,0,0,.2) 80%,transparent 100%)}
-.hero-media-slot[data-mask="vertical"] .hero-media-asset{-webkit-mask-image:radial-gradient(ellipse 42% 48% at var(--hero-focus-x,50%) var(--hero-focus-y,50%),#000 0%,#000 31%,rgba(0,0,0,.94) 48%,rgba(0,0,0,.62) 65%,rgba(0,0,0,.2) 80%,transparent 100%);mask-image:radial-gradient(ellipse 42% 48% at var(--hero-focus-x,50%) var(--hero-focus-y,50%),#000 0%,#000 31%,rgba(0,0,0,.94) 48%,rgba(0,0,0,.62) 65%,rgba(0,0,0,.2) 80%,transparent 100%)}
-.hero-atmosphere{position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(ellipse 62% 60% at 50% 43%,rgba(28,54,60,.1) 0%,rgba(22,45,51,.5) 66%,rgba(17,35,40,.84) 100%),linear-gradient(90deg,rgba(15,32,37,.58) 0%,rgba(20,44,49,.1) 50%,rgba(15,32,37,.55) 100%),linear-gradient(to bottom,rgba(9,23,27,.56) 0%,rgba(22,47,52,.08) 38%,rgba(19,42,47,.78) 100%)}
+.hero-media-asset{position:relative;z-index:1;width:min(var(--hero-width),60vw);max-width:82vw;max-height:78svh;height:auto;object-fit:contain;transform:translate3d(var(--hero-offset-x,0),var(--hero-offset-y,0),0) scale(var(--hero-scale,1));transform-origin:center;filter:brightness(var(--hero-brightness,.96)) contrast(var(--hero-contrast,1.01)) saturate(var(--hero-saturation,.94)) drop-shadow(0 18px 34px rgba(5,19,22,.24)) drop-shadow(0 0 30px rgba(224,171,92,.11));-webkit-mask-image:none;mask-image:none}
+.hero-atmosphere{position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(ellipse 52% 65% at 50% 44%,rgba(11,35,39,.13) 0%,rgba(19,57,61,.1) 49%,transparent 78%),linear-gradient(90deg,rgba(19,54,59,.18) 0%,transparent 28%,transparent 72%,rgba(19,54,59,.18) 100%),linear-gradient(to bottom,rgba(20,53,58,.22) 0%,transparent 29%,transparent 73%,rgba(18,49,54,.2) 100%)}
 .hero-content{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;text-align:center;width:min(100% - 48px,900px);padding:0}
 .hero-eyebrow{display:flex;align-items:center;gap:13px;font-size:.62rem;letter-spacing:.34em;text-transform:uppercase;color:var(--gold-l);margin-bottom:31px;opacity:1;animation:heroSettle .9s ease .12s both;font-weight:500}
 .hero-eyebrow::before,.hero-eyebrow::after{content:'';width:31px;height:1px;background:rgba(226,205,181,.62)}
@@ -527,8 +526,8 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 <section class="hero" id="hero">
   <div class="hero-brand-background" aria-hidden="true"></div>
   <div class="hero-media-stage" aria-hidden="true">
-    <div class="hero-media-slot hero-media-slot--a is-visible is-overlay" data-mask="wide"><img class="hero-media-asset" src="assets/images/gastronomy-carousel/fortune-cookie.jpg" alt="" decoding="async"></div>
-    <div class="hero-media-slot hero-media-slot--b is-underlay" data-mask="wide"><img class="hero-media-asset" alt="" decoding="async"></div>
+    <div class="hero-media-slot hero-media-slot--a is-visible is-overlay" data-foreground="true"><img class="hero-media-asset" src="assets/images/gastronomy-carousel/foreground/fortune-cookie.webp" alt="" decoding="async"></div>
+    <div class="hero-media-slot hero-media-slot--b is-underlay" data-foreground="true"><img class="hero-media-asset" alt="" decoding="async"></div>
   </div>
   <div class="hero-atmosphere" aria-hidden="true"></div>
   <div class="hero-content">
@@ -823,18 +822,18 @@ window.addEventListener('scroll',function(){
   document.getElementById('navbar').classList.toggle('scrolled',window.scrollY>80);
 });
 var heroSlides=[
-  {id:'fortune-cookie',src:'assets/images/gastronomy-carousel/fortune-cookie.jpg',mask:'wide',width:'620px',mobileWidth:'350px',brightness:.94,contrast:1.02,saturation:.9},
-  {id:'brioche-braseado',src:'assets/images/gastronomy-carousel/brioche-braseado.jpg',mask:'vertical',width:'505px',mobileWidth:'315px',brightness:.91,contrast:1.03,saturation:.88},
-  {id:'helado-rosa',src:'assets/images/gastronomy-carousel/helado-rosa.jpg',mask:'vertical',width:'460px',mobileWidth:'295px',brightness:.94,contrast:1.02,saturation:.9},
-  {id:'churro-copa',src:'assets/images/gastronomy-carousel/churro-copa.jpg',mask:'vertical',width:'470px',mobileWidth:'300px',brightness:.89,contrast:1.03,saturation:.82},
-  {id:'canape-negro',src:'assets/images/gastronomy-carousel/canape-negro.jpg',mask:'vertical',width:'450px',mobileWidth:'285px',brightness:.96,contrast:1.02,saturation:.88},
-  {id:'postre-rojo',src:'assets/images/gastronomy-carousel/postre-rojo.jpg',mask:'vertical',width:'430px',mobileWidth:'278px',brightness:.98,contrast:1.03,saturation:.9},
-  {id:'hojaldre-caviar',src:'assets/images/gastronomy-carousel/hojaldre-caviar.jpg',mask:'wide',width:'560px',mobileWidth:'335px',brightness:.94,contrast:1.02,saturation:.88},
-  {id:'nigiri-atun',src:'assets/images/gastronomy-carousel/nigiri-atun.jpg',mask:'wide',width:'555px',mobileWidth:'335px',brightness:.91,contrast:1.02,saturation:.86},
-  {id:'vieiras-espuma',src:'assets/images/gastronomy-carousel/vieiras-espuma.jpg',mask:'vertical',width:'475px',mobileWidth:'305px',brightness:.96,contrast:1.02,saturation:.84},
-  {id:'pollo-cine',src:'assets/images/gastronomy-carousel/pollo-cine.jpg',mask:'vertical',width:'485px',mobileWidth:'305px',brightness:.93,contrast:1.02,saturation:.82},
-  {id:'cafe-crema',src:'assets/images/gastronomy-carousel/cafe-crema.jpg',mask:'vertical',width:'390px',mobileWidth:'250px',brightness:.92,contrast:1.03,saturation:.78},
-  {id:'croqueta-rellena',src:'assets/images/gastronomy-carousel/croqueta-rellena.jpg',mask:'vertical',width:'415px',mobileWidth:'265px',brightness:.96,contrast:1.02,saturation:.86}
+  {id:'fortune-cookie',src:'assets/images/gastronomy-carousel/foreground/fortune-cookie.webp',width:'620px',mobileWidth:'350px',brightness:.98,contrast:1.01,saturation:.98},
+  {id:'brioche-braseado',src:'assets/images/gastronomy-carousel/foreground/brioche-braseado.webp',width:'505px',mobileWidth:'315px',brightness:.96,contrast:1.02,saturation:.96},
+  {id:'helado-rosa',src:'assets/images/gastronomy-carousel/foreground/helado-rosa.webp',width:'460px',mobileWidth:'295px',brightness:.98,contrast:1.01,saturation:.98},
+  {id:'churro-copa',src:'assets/images/gastronomy-carousel/foreground/churro-copa.webp',width:'470px',mobileWidth:'300px',brightness:.95,contrast:1.02,saturation:.94},
+  {id:'canape-negro',src:'assets/images/gastronomy-carousel/foreground/canape-negro.webp',width:'450px',mobileWidth:'285px',brightness:1,contrast:1.01,saturation:.97},
+  {id:'postre-rojo',src:'assets/images/gastronomy-carousel/foreground/postre-rojo.webp',width:'430px',mobileWidth:'278px',brightness:1,contrast:1.02,saturation:.98},
+  {id:'hojaldre-caviar',src:'assets/images/gastronomy-carousel/foreground/hojaldre-caviar.webp',width:'560px',mobileWidth:'335px',brightness:.98,contrast:1.01,saturation:.96},
+  {id:'nigiri-atun',src:'assets/images/gastronomy-carousel/foreground/nigiri-atun.webp',width:'555px',mobileWidth:'335px',brightness:.96,contrast:1.02,saturation:.94},
+  {id:'vieiras-espuma',src:'assets/images/gastronomy-carousel/foreground/vieiras-espuma.webp',width:'475px',mobileWidth:'305px',brightness:1,contrast:1.01,saturation:.93},
+  {id:'pollo-cine',src:'assets/images/gastronomy-carousel/foreground/pollo-cine.webp',width:'485px',mobileWidth:'305px',brightness:.97,contrast:1.01,saturation:.94},
+  {id:'cafe-crema',src:'assets/images/gastronomy-carousel/foreground/cafe-crema.webp',width:'390px',mobileWidth:'250px',brightness:.98,contrast:1.02,saturation:.91},
+  {id:'croqueta-rellena',src:'assets/images/gastronomy-carousel/foreground/croqueta-rellena.webp',width:'415px',mobileWidth:'265px',brightness:1,contrast:1.01,saturation:.96}
 ];
 var heroSlots=Array.prototype.slice.call(document.querySelectorAll('.hero-media-slot'));
 var heroFadeDuration=1600;
@@ -845,7 +844,7 @@ var heroSlideCurrent=document.getElementById('heroSlideCurrent');
 var heroSlideTotal=document.getElementById('heroSlideTotal');
 if(heroSlideTotal)heroSlideTotal.textContent=String(heroSlides.length).padStart(2,'0');
 function heroIndex(index){return(index+heroSlides.length)%heroSlides.length}
-function applyHeroSlide(slot,index){var slide=heroSlides[heroIndex(index)];var image=slot.querySelector('img');slot.dataset.mask=slide.mask;slot.style.setProperty('--hero-width',slide.width);slot.style.setProperty('--hero-mobile-width',slide.mobileWidth);slot.style.setProperty('--hero-brightness',slide.brightness);slot.style.setProperty('--hero-contrast',slide.contrast);slot.style.setProperty('--hero-saturation',slide.saturation);if(image.getAttribute('src')!==slide.src)image.setAttribute('src',slide.src);return image}
+function applyHeroSlide(slot,index){var slide=heroSlides[heroIndex(index)];var image=slot.querySelector('img');slot.dataset.foreground='true';slot.style.setProperty('--hero-width',slide.width);slot.style.setProperty('--hero-mobile-width',slide.mobileWidth);slot.style.setProperty('--hero-brightness',slide.brightness);slot.style.setProperty('--hero-contrast',slide.contrast);slot.style.setProperty('--hero-saturation',slide.saturation);if(image.getAttribute('src')!==slide.src)image.setAttribute('src',slide.src);return image}
 function preloadHeroSlide(index){var slide=heroSlides[heroIndex(index)];if(heroPreloadPool[slide.src])return heroPreloadPool[slide.src];heroPreloadPool[slide.src]=new Promise(function(resolve,reject){var image=new Image();image.onload=function(){if(image.decode){image.decode().then(function(){resolve(slide)}).catch(function(){resolve(slide)})}else{resolve(slide)}};image.onerror=function(){reject(new Error('No se pudo cargar '+slide.src))};image.src=slide.src});return heroPreloadPool[slide.src]}
 function decodeHeroImage(image){function decode(){return image.decode?image.decode().catch(function(){return Promise.resolve()}):Promise.resolve()}if(image.complete&&image.naturalWidth)return decode();return new Promise(function(resolve,reject){image.addEventListener('load',function(){decode().then(resolve)},{once:true});image.addEventListener('error',function(){reject(new Error('No se pudo decodificar '+image.currentSrc))},{once:true})})}
 function prepareHeroSlot(slot,index){return preloadHeroSlide(index).then(function(){var image=applyHeroSlide(slot,index);return decodeHeroImage(image)}).then(function(){return new Promise(function(resolve){requestAnimationFrame(function(){requestAnimationFrame(resolve)})})})}

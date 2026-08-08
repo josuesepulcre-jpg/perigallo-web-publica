@@ -15,7 +15,9 @@ const required = [
   'class="hero-media-slot hero-media-slot--a is-visible is-overlay"',
   'class="hero-media-slot hero-media-slot--b is-underlay"',
   '<div class="hero-atmosphere" aria-hidden="true"></div>',
-  'radial-gradient(ellipse 62% 60% at 50% 43%',
+  'data-foreground="true"',
+  'assets/images/gastronomy-carousel/foreground/fortune-cookie.webp',
+  'filter:brightness(var(--hero-brightness,.96))',
   '.hero-media-slot{position:absolute;inset:0;display:grid;place-items:center;opacity:0;transition:opacity 1.6s cubic-bezier(.22,1,.36,1);will-change:opacity}',
   'var heroFadeDuration=1600;',
   'var heroDisplayDuration=5900;',
@@ -63,9 +65,9 @@ for (const obsoleteLabel of ['>Bodas</a>', '>Celebraciones</a>', '>Experiencias<
   }
 }
 
-const carouselSlides = (home.match(/id:'[a-z-]+',src:'assets\/images\/gastronomy-carousel\/[a-z-]+\.jpg'/g) ?? []).length;
+const carouselSlides = (home.match(/id:'[a-z-]+',src:'assets\/images\/gastronomy-carousel\/foreground\/[a-z-]+\.webp'/g) ?? []).length;
 if (carouselSlides !== 12) {
-  throw new Error(`La configuración del carrusel debe incluir 12 fotografías; incluye ${carouselSlides}.`);
+  throw new Error(`La configuración del carrusel debe incluir 12 sujetos WebP transparentes; incluye ${carouselSlides}.`);
 }
 
 if (home.includes('.hero-slide::before') || home.includes('background-blend-mode:color')) {
@@ -79,6 +81,13 @@ if (home.includes('manifest-artwork') || home.includes('quienes-somos-perigallo.
 for (const asset of ['assets/images/about/josue-about-v2.jpg', 'assets/images/about/david-about-v2.jpg']) {
   if (!existsSync(resolve(asset))) {
     throw new Error(`Falta el retrato independiente: ${asset}`);
+  }
+}
+
+const foregroundAssets = [...home.matchAll(/assets\/images\/gastronomy-carousel\/foreground\/([a-z-]+)\.webp/g)].map((match) => match[0]);
+for (const asset of new Set(foregroundAssets)) {
+  if (!existsSync(resolve(asset))) {
+    throw new Error(`Falta el sujeto transparente del hero: ${asset}`);
   }
 }
 
