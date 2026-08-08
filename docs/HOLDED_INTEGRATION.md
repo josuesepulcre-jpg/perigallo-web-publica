@@ -17,10 +17,10 @@ sincronización interrumpida pasan a `requires_review`; no se reintenta a ciegas
 para evitar duplicar documentos.
 
 Cuando el comprador solicita factura, la sincronización crea el contacto y la
-factura nominal en Holded. Con `HOLDED_AUTO_SEND_EMAIL=true`, el mismo cron
-envía al correo fiscal un enlace privado para descargar el PDF; el comprador
-también podrá descargarlo desde su pedido. Este enlace no guarda el PDF en la
-web ni expone la API Key de Holded.
+factura nominal en Holded. Con `HOLDED_AUTO_APPROVE=true` y
+`HOLDED_AUTO_SEND_EMAIL=true`, el mismo cron envía al correo fiscal un enlace
+privado para descargar el PDF; el comprador también podrá descargarlo desde su
+pedido. Este enlace no guarda el PDF en la web ni expone la API Key de Holded.
 
 ## Configuración antes de activar
 

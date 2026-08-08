@@ -177,7 +177,8 @@ final class HoldedSyncService
     /** @return array{sent:int,errors:int} */
     private function deliverDueInvoiceEmails(int $limit): array
     {
-        if (!filter_var(env_value('HOLDED_AUTO_SEND_EMAIL', 'false'), FILTER_VALIDATE_BOOLEAN)) {
+        if (!filter_var(env_value('HOLDED_AUTO_SEND_EMAIL', 'false'), FILTER_VALIDATE_BOOLEAN)
+            || !filter_var(env_value('HOLDED_AUTO_APPROVE', 'false'), FILTER_VALIDATE_BOOLEAN)) {
             return ['sent' => 0, 'errors' => 0];
         }
         $rows = $this->pdo->query(
