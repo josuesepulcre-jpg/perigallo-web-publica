@@ -7,7 +7,7 @@
 <meta name="description" content="Perigallo diseña experiencias gastronómicas para bodas, celebraciones privadas y eventos pop-up en Alicante y Finca La Llaguna.">
 <link rel="canonical" href="https://perigallo.com/">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="preload" as="image" href="/assets/images/perigallo-hero-original-01.jpg">
+<link rel="preload" as="image" href="/assets/images/gastronomy-carousel/fortune-cookie.jpg">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Perigallo | Bodas, celebraciones y experiencias gastronómicas en Alicante">
 <meta property="og:description" content="Cocina, servicio y puesta en escena para bodas, celebraciones y experiencias pop-up.">
@@ -59,7 +59,10 @@ nav.scrolled .nav-logo-img{width:50px;height:50px}
 /* HERO */
 .hero{min-height:100svh;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:148px 0 132px;isolation:isolate}
 .hero-slides{position:absolute;inset:0}
-.hero-slide{position:absolute;inset:0;opacity:0;transition:opacity 1.6s ease-in-out,transform 10s cubic-bezier(.22,.61,.36,1);background-size:cover;background-position:center;transform:scale(1.055)}
+.hero-slide{position:absolute;inset:0;overflow:hidden;opacity:0;background:var(--bg4);transition:opacity 1.6s ease-in-out,transform 10s cubic-bezier(.22,.61,.36,1);transform:scale(1.055);will-change:opacity,transform}
+.hero-slide::before,.hero-slide::after{content:'';position:absolute;inset:0;background-image:var(--slide-image);background-position:center;background-repeat:no-repeat}
+.hero-slide::before{inset:-36px;background-size:cover;filter:blur(28px) brightness(.42) saturate(.72);transform:scale(1.08)}
+.hero-slide::after{background-size:contain;filter:brightness(.78) saturate(.9) contrast(1.04)}
 .hero-slide.active{opacity:1;transform:scale(1)}
 .hero-overlay{position:absolute;inset:0;background:radial-gradient(ellipse 62% 60% at 50% 43%,rgba(28,54,60,.1) 0%,rgba(22,45,51,.5) 66%,rgba(17,35,40,.84) 100%),linear-gradient(90deg,rgba(15,32,37,.58) 0%,rgba(20,44,49,.1) 50%,rgba(15,32,37,.55) 100%),linear-gradient(to bottom,rgba(9,23,27,.56) 0%,rgba(22,47,52,.08) 38%,rgba(19,42,47,.78) 100%)}
 .hero-content{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;text-align:center;width:min(100% - 48px,900px);padding:0}
@@ -85,9 +88,10 @@ nav.scrolled .nav-logo-img{width:50px;height:50px}
 .scroll-indicator{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);z-index:2;display:flex;flex-direction:column;align-items:center;gap:11px;opacity:0;animation:fadeUp 1s ease 2.3s forwards;text-decoration:none}
 .scroll-indicator span{font-size:.56rem;letter-spacing:.28em;text-transform:uppercase;color:rgba(245,241,229,.75);font-weight:500}
 .scroll-line{width:1px;height:44px;background:linear-gradient(to bottom,var(--gold-l),rgba(226,205,181,0));animation:scrollPulse 2.3s ease-in-out infinite}
-.hero-dots{position:absolute;right:clamp(18px,2.2vw,38px);top:50%;transform:translateY(-50%);z-index:3;display:flex;flex-direction:column;gap:12px}
-.hero-dot{width:5px;height:5px;border-radius:50%;background:rgba(245,241,229,.32);cursor:pointer;transition:transform .3s ease,background .3s ease;border:none;padding:0}
-.hero-dot.active{background:var(--gold-l);transform:scale(1.65)}
+.hero-slide-counter{position:absolute;right:clamp(18px,2.2vw,38px);top:50%;z-index:3;display:flex;align-items:center;gap:9px;color:rgba(245,241,229,.72);font-size:.55rem;font-weight:500;letter-spacing:.2em;transform:translateY(-50%) rotate(90deg);transform-origin:center;pointer-events:none}
+.hero-slide-counter::before{content:'';width:31px;height:1px;background:rgba(226,205,181,.58)}
+.hero-slide-counter b{color:var(--gold-l);font-weight:600}
+.hero-slide-counter span:last-child{color:rgba(245,241,229,.48)}
 
 /* REVEAL */
 .reveal{opacity:0;transform:translateY(36px);transition:opacity .9s ease,transform .9s ease}
@@ -377,7 +381,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
   .hero-divider{margin-bottom:30px}
   .hero-actions{width:100%;gap:10px}
   .hero-actions .btn-primary,.hero-actions .btn-ghost{width:100%;max-width:360px;text-align:center;padding:16px 20px}
-  .hero-dots{display:none}
+  .hero-slide-counter{display:none}
   .scroll-indicator{bottom:20px}
   .scroll-line{height:31px}
   .hero-paths{grid-template-columns:1fr;margin-top:26px;max-width:320px}
@@ -478,9 +482,18 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
 <!-- HERO -->
 <section class="hero" id="hero">
   <div class="hero-slides">
-    <div class="hero-slide active" style="background-image:url('assets/images/perigallo-hero-original-01.jpg');background-size:cover;background-position:center"></div>
-    <div class="hero-slide" style="background-image:url('assets/images/perigallo-hero-original-02.jpg');background-size:cover;background-position:center"></div>
-    <div class="hero-slide" style="background-image:url('assets/images/perigallo-hero-original-03.jpg');background-size:cover;background-position:center"></div>
+    <div class="hero-slide active" style="--slide-image:url('assets/images/gastronomy-carousel/fortune-cookie.jpg')"></div>
+    <div class="hero-slide" style="--slide-image:url('assets/images/gastronomy-carousel/brioche-braseado.jpg')"></div>
+    <div class="hero-slide" style="--slide-image:url('assets/images/gastronomy-carousel/helado-rosa.jpg')"></div>
+    <div class="hero-slide" style="--slide-image:url('assets/images/gastronomy-carousel/churro-copa.jpg')"></div>
+    <div class="hero-slide" style="--slide-image:url('assets/images/gastronomy-carousel/canape-negro.jpg')"></div>
+    <div class="hero-slide" style="--slide-image:url('assets/images/gastronomy-carousel/postre-rojo.jpg')"></div>
+    <div class="hero-slide" style="--slide-image:url('assets/images/gastronomy-carousel/hojaldre-caviar.jpg')"></div>
+    <div class="hero-slide" style="--slide-image:url('assets/images/gastronomy-carousel/nigiri-atun.jpg')"></div>
+    <div class="hero-slide" style="--slide-image:url('assets/images/gastronomy-carousel/vieiras-espuma.jpg')"></div>
+    <div class="hero-slide" style="--slide-image:url('assets/images/gastronomy-carousel/pollo-cine.jpg')"></div>
+    <div class="hero-slide" style="--slide-image:url('assets/images/gastronomy-carousel/cafe-crema.jpg')"></div>
+    <div class="hero-slide" style="--slide-image:url('assets/images/gastronomy-carousel/croqueta-rellena.jpg')"></div>
   </div>
   <div class="hero-overlay"></div>
   <div class="hero-content">
@@ -494,11 +507,7 @@ footer{padding:60px 60px 30px;background:var(--bg4);border-top:1px solid var(--b
       <a href="/experiencias/" class="btn-ghost">Quiero vivir una experiencia Perigallo</a>
     </div>
   </div>
-  <div class="hero-dots">
-    <button class="hero-dot active" data-index="0" aria-label="Slide 1"></button>
-    <button class="hero-dot" data-index="1" aria-label="Slide 2"></button>
-    <button class="hero-dot" data-index="2" aria-label="Slide 3"></button>
-  </div>
+  <div class="hero-slide-counter" aria-hidden="true"><b id="heroSlideCurrent">01</b><span>/</span><span id="heroSlideTotal">12</span></div>
   <a href="#about" class="scroll-indicator" aria-label="Descubrir Perigallo"><span>Descubrir</span><div class="scroll-line"></div></a>
 </section>
 
@@ -775,10 +784,11 @@ window.addEventListener('scroll',function(){
   document.getElementById('navbar').classList.toggle('scrolled',window.scrollY>80);
 });
 var slides=document.querySelectorAll('.hero-slide');
-var dots=document.querySelectorAll('.hero-dot');
 var cur=0;
-function goTo(n){slides[cur].classList.remove('active');dots[cur].classList.remove('active');cur=n%slides.length;slides[cur].classList.add('active');dots[cur].classList.add('active')}
-dots.forEach(function(d){d.addEventListener('click',function(){goTo(parseInt(d.dataset.index))})});
+var heroSlideCurrent=document.getElementById('heroSlideCurrent');
+var heroSlideTotal=document.getElementById('heroSlideTotal');
+if(heroSlideTotal)heroSlideTotal.textContent=String(slides.length).padStart(2,'0');
+function goTo(n){slides[cur].classList.remove('active');cur=(n+slides.length)%slides.length;slides[cur].classList.add('active');if(heroSlideCurrent)heroSlideCurrent.textContent=String(cur+1).padStart(2,'0')}
 setInterval(function(){goTo(cur+1)},6500);
 var observer=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting)e.target.classList.add('visible')})},{threshold:0.1});
 document.querySelectorAll('.reveal').forEach(function(el){observer.observe(el)});
