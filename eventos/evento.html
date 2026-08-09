@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="/assets/css/weddings-page.css?v=20260808-weddings-v2">
   <link rel="stylesheet" href="/assets/css/ticketing.css?v=20260805-event-hero-v1">
   <link rel="stylesheet" href="/assets/css/event-hero-layout.css?v=20260809-perigallo-system-v1">
+  <link rel="stylesheet" href="/assets/css/perigalla-experience-prototype.css?v=20260809-local-v1">
 </head>
 <body class="ticketing-page">
   <a class="wedding-skip" href="#contenido">Saltar al contenido</a>
@@ -23,12 +24,26 @@
       </a>
     </div>
     <a class="wedding-nav__logo" href="/" aria-label="Inicio Perigallo"><img src="/assets/images/perigallo-logo-original.png" alt="Perigallo"></a>
-    <nav class="wedding-nav__right" aria-label="Principal">
-      <a href="/experiencias/">Experiencias</a>
-      <a href="/finca-la-llaguna/">La Finca</a>
-      <a class="wedding-nav__contact" href="#reservar">Comprar entradas</a>
+    <button class="event-nav-toggle" type="button" aria-expanded="false" aria-controls="eventMobileNavigation">Menú <span aria-hidden="true">☰</span></button>
+    <nav class="wedding-nav__right event-page-navigation" aria-label="Principal">
+      <a href="#perigallo">Bienvenidos</a>
+      <a href="#experiencia">La experiencia</a>
+      <a href="#historia">Historia</a>
+      <a href="#gastronomia">Gastronomía</a>
+      <a href="#finca">La finca</a>
+      <a class="wedding-nav__contact" href="#entradas">Entradas</a>
+      <a href="#info">+ Info</a>
     </nav>
   </header>
+  <nav class="event-mobile-navigation" id="eventMobileNavigation" aria-label="Navegación móvil" hidden>
+    <a href="#perigallo"><span>01</span> Bienvenidos</a>
+    <a href="#experiencia"><span>02</span> La experiencia</a>
+    <a href="#historia"><span>03</span> Conocer la historia</a>
+    <a href="#gastronomia"><span>04</span> Gastronomía</a>
+    <a href="#finca"><span>05</span> La finca</a>
+    <a href="#entradas"><span>06</span> Comprar entradas</a>
+    <a href="#info"><span>07</span> + Información</a>
+  </nav>
 
   <main class="ticketing-main" id="contenido">
     <section class="event-detail-section">
@@ -43,6 +58,8 @@
     <div><a href="/">Inicio</a><a href="/experiencias/">Experiencias</a><a href="/finca-la-llaguna/">La Finca</a><a href="/#contact">Contacto</a></div>
   </footer>
   <script src="/assets/js/weddings-page.js?v=20260808-weddings-v3" defer></script>
-  <script src="/assets/js/ticketing.js?v=20260807-attendees-v1" defer></script>
+  <script src="/assets/js/perigalla01-gastronomy.js?v=20260809-local-v1" defer></script>
+  <script src="/assets/js/ticketing.js?v=20260809-perigalla-landing-v1" defer></script>
+  <script src="/assets/js/perigalla-experience-prototype.js?v=20260809-local-v1" defer></script>
 </body>
 </html>

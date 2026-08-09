@@ -184,9 +184,14 @@
         setEventSchema(event, publicUrl);
       }
       root.innerHTML = renderEventDetail(event, preview);
+      document.body.classList.toggle("perigalla-landing-page", isPerigalla01Event(event));
       initEventPurchaseControls(root);
       initExperienceAccordions(root);
       initIncludedInformationLink(root);
+      if (window.location.hash) {
+        var anchorTarget = root.querySelector(window.location.hash);
+        if (anchorTarget) window.setTimeout(function () { anchorTarget.scrollIntoView({ block: "start" }); }, 120);
+      }
       if (window.PerigalloAnalytics && window.PerigalloAnalytics.refresh) window.PerigalloAnalytics.refresh();
     }).catch(function (error) {
       root.innerHTML = '<p class="ticket-status">' + escapeHtml(error.message) + '</p>';
@@ -224,11 +229,59 @@
     document.head.appendChild(script);
   }
 
+  function isPerigalla01Event(event) {
+    return /la\s+perigalla\s*0?1/i.test(String(event.title || ""));
+  }
+
+  function perigallaGastronomyItems(dishes, startIndex) {
+    return dishes.map(function (dish, index) {
+      var number = startIndex + index + 1;
+      return '<li class="perigalla-gastronomy-item"><button type="button" data-gastronomy-open data-gastronomy-index="' + (number - 1) + '" aria-label="Ver plato: ' + escapeAttr(dish.dish) + '"><span class="perigalla-gastronomy-number">' + String(number).padStart(2, "0") + '</span><span class="perigalla-gastronomy-copy"><strong>' + escapeHtml(dish.scene) + '</strong><span>' + escapeHtml(dish.dish) + '</span></span><span class="perigalla-gastronomy-view">Ver plato <b aria-hidden="true">↗</b></span></button></li>';
+    }).join("");
+  }
+
+  function perigallaGastronomyMarkup() {
+    var dishes = Array.isArray(window.Perigalla01Gastronomy) ? window.Perigalla01Gastronomy : [];
+    var firstJourney = dishes.slice(0, 10);
+    var secondJourney = dishes.slice(10);
+    return '<div class="perigalla-gastronomy-journeys">' +
+      '<article class="perigalla-gastronomy-journey"><header><span>01 · El primer viaje</span><h3>Cuando se conocieron</h3><p>Las primeras paradas de Sofía y Carlos por la isla.</p></header><ol>' + perigallaGastronomyItems(firstJourney, 0) + '</ol></article>' +
+      '<article class="perigalla-gastronomy-journey"><header><span>02 · El segundo viaje</span><h3>Cuando volvieron juntos</h3><p>Los recuerdos que regresan y la historia que cambia.</p></header><ol>' + perigallaGastronomyItems(secondJourney, firstJourney.length) + '</ol></article>' +
+      '</div><footer class="perigalla-gastronomy-finale"><span>Y cuando el recorrido termina…</span><h3>Más sorpresas, dulces, espectáculo, fiesta y resopón.</h3><p>La historia continúa hasta las dos de la mañana.</p></footer>';
+  }
+
+  function renderPerigalla01Landing(event, preview) {
+    var types = event.ticket_types || [];
+    var experienceImageUrl = "/assets/images/perigalla-01/sofia-carlos-experience.png";
+    var ticketCards = types.length ? types.map(function (type) { return ticketTypeRow(type, event, preview); }).join("") : '<p class="ticket-status event-access-empty">Próximamente anunciaremos las entradas.</p>';
+    var information = experienceInformation(event);
+    return [
+      '<div class="event-detail-layout perigalla-landing">',
+      '<section class="perigalla-welcome" id="perigallo" data-analytics-section="bienvenida">',
+      '<div class="perigalla-welcome-media"><img src="/la-perigalla-01/media/storytelling/perigalla-01/hosts/hosts-hero-cover.png" alt="David y Josué, anfitriones de La Perigalla 01" width="2048" height="1152" loading="eager" fetchpriority="high"></div>',
+      '<div class="perigalla-welcome-content"><span class="ticket-eyebrow">Experiencia gastronómica · artística · escénica</span><h1>Bienvenidos a <em>La Perigalla 01</em></h1><p>David y Josué os damos la bienvenida a una experiencia donde la gastronomía, el arte y la escena cobran vida.</p><aside class="perigalla-welcome-story" aria-label="El hilo conductor de la historia"><span>La primera vez llegaron por separado y se marcharon juntos.</span><span>La segunda volvieron juntos y se marcharon prometidos.</span><strong>La tercera vez, la historia será compartida contigo.</strong></aside></div>',
+      '</section>',
+      '<section class="perigalla-experience" id="experiencia" data-analytics-section="experiencia">',
+      '<figure class="perigalla-experience-poster"><img loading="lazy" src="' + escapeAttr(experienceImageUrl) + '" alt="Sofía y Carlos en La Perigalla 01"><figcaption><span>La Perigalla 01</span><span>' + escapeHtml(event.location || "Finca La Llaguna") + '</span></figcaption></figure>',
+      '<div class="perigalla-experience-copy"><h2>' + escapeHtml(event.title) + '</h2>' + (event.subtitle ? '<p class="perigalla-experience-subtitle">' + escapeHtml(event.subtitle) + '</p>' : '') + '<div class="ticket-copy">' + textParagraphs(event.short_description || event.description) + '</div><ul class="ticket-access-facts event-hero-facts" aria-label="Datos principales de la experiencia">' + accessFacts(event) + '</ul></div>',
+      '</section>',
+      '<section class="perigalla-timeline" id="historia" aria-labelledby="perigalla-timeline-title" data-analytics-section="historia"><header><h2 id="perigalla-timeline-title">Recorrido de la <em>experiencia</em></h2><p>Una noche que avanza en cuatro capítulos: de la primera bienvenida al último brindis.</p></header><ol><li><span>01 · 19:00</span><strong>Apertura de puertas</strong><p>Recepción de invitados y bienvenida.</p></li><li><span>02 · 20:00</span><strong>Ceremonia</strong><p>Comienza la historia y la puesta en escena.</p></li><li><span>03 · 21:00</span><strong>Recorrido gastronómico</strong><p>Diecinueve piezas que recorren la isla y sus sabores.</p></li><li><span>04 · 23:00–02:00</span><strong>Sorpresas, fiesta y resopón</strong><p>Celebración hasta el final de la noche.</p></li></ol><aside class="perigalla-timeline-story"><div><span class="ticket-eyebrow">La historia de Sofía y Carlos</span><h3>¿Quieres vivirla desde el principio?</h3><p>Entra directamente en el cuento y vuelve a la celebración cuando quieras.</p></div><button class="wedding-button wedding-button--solid" type="button" data-story-overlay-open><span>Conocer la historia</span></button></aside></section>',
+      '<section class="perigalla-gastronomy" id="gastronomia" data-analytics-section="gastronomia"><header><span class="ticket-eyebrow">04 · Gastronomía</span><h2>La isla en <em>diecinueve piezas</em></h2><p>Dos viajes, diecinueve paradas y una misma historia por compartir.</p></header>' + perigallaGastronomyMarkup() + '</section>',
+      '<section class="perigalla-venue" id="finca" data-analytics-section="finca"><div><span class="ticket-eyebrow">05 · El escenario</span><h2>Finca <em>La Llaguna</em></h2><p>Crevillent · Alicante</p><a class="wedding-button wedding-button--outline" href="https://fincalallaguna.com/" target="_blank" rel="noopener noreferrer"><span>Descubrir la finca</span></a></div><figure><img loading="lazy" src="/assets/images/finca-la-llaguna-principal.jpg" alt="Finca La Llaguna"></figure></section>',
+      '<section class="event-access perigalla-ticketing" id="entradas" data-analytics-section="entradas"><header><span class="ticket-eyebrow">06 · Entradas</span><h2>Reserva tu lugar en la historia</h2></header><div class="ticket-types">' + ticketCards + '</div></section>',
+      information ? '<section class="event-public-information event-public-information-accordions perigalla-information" id="info" data-analytics-section="detalles"><div class="event-chapter-inner event-details-layout"><header class="experience-information-heading"><span class="ticket-eyebrow">07 · Información</span><h2>Todo lo que necesitas saber</h2><p>Horarios, ubicación, acceso, recomendaciones y preguntas frecuentes.</p></header><div class="event-details-body">' + information + '</div></div></section>' : '',
+      '<div class="perigalla-story-overlay" data-story-overlay hidden aria-hidden="true" role="dialog" aria-modal="true" aria-label="La historia de La Perigalla 01"><div class="perigalla-story-overlay-bar"><span>La Perigalla 01</span><button type="button" data-story-overlay-close>Cerrar <b aria-hidden="true">×</b></button></div><div class="perigalla-story-frame" data-story-frame></div></div>',
+      '<div class="perigalla-gastronomy-dialog" data-gastronomy-dialog hidden aria-hidden="true" role="dialog" aria-modal="true" aria-label="Detalle del plato"><button type="button" data-gastronomy-close aria-label="Cerrar detalle">×</button><figure><img data-gastronomy-image alt=""></figure><div><span data-gastronomy-index-label></span><h2 data-gastronomy-title></h2><p data-gastronomy-dish></p><p class="perigalla-gastronomy-allergens" data-gastronomy-allergens></p></div></div>',
+      '</div>'
+    ].join("");
+  }
+
   function renderEventDetail(event, preview) {
       var types = event.ticket_types || [];
       var gallery = (event.gallery || []).filter(Boolean).map(function (url) { return '<img loading="lazy" src="' + escapeAttr(previewAssetUrl(url, preview)) + '" alt="Detalle de ' + escapeHtml(event.title) + '">'; }).join("");
       var imageUrl = previewAssetUrl(event.image_url || "/assets/images/finca-la-llaguna-principal.jpg", preview);
       var isPerigalla01 = /la\s+perigalla\s*0?1/i.test(String(event.title || ""));
+      if (isPerigalla01) return renderPerigalla01Landing(event, preview);
       var experienceName = isPerigalla01 ? "La Perigalla 01" : event.title;
       var experienceUrl = isPerigalla01 ? "/la-perigalla-01/" : "/experiencias/" + encodeURIComponent(event.slug) + "/";
       var storyCtaUrl = isPerigalla01 ? experienceUrl : "#experiencia";
