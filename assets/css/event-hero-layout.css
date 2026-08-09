@@ -1,19 +1,19 @@
 /*
  * Public event experience
  *
- * This stylesheet is intentionally self-contained. The public experience has
- * its own editorial grid and must not inherit layout experiments from the
- * editor, checkout, or ticket preview screens.
+ * The public experience reuses the Perigallo brand tokens and components,
+ * while keeping its editorial grid isolated from the editor, checkout, and
+ * ticket-preview screens.
  */
 
 body.ticketing-page {
-  --event-ink: #092d31;
-  --event-ink-deep: #031719;
-  --event-paper: #f0d8b4;
-  --event-paper-soft: #f7e8cd;
-  --event-ivory: #fff8eb;
-  --event-gold: #d6b17f;
-  --event-line: rgba(228, 203, 164, 0.3);
+  --event-ink: var(--wedding-bg);
+  --event-ink-deep: var(--wedding-deep);
+  --event-paper: var(--wedding-gold-light);
+  --event-paper-soft: var(--wedding-cream);
+  --event-ivory: var(--wedding-cream);
+  --event-gold: var(--wedding-gold);
+  --event-line: var(--wedding-line);
   --event-gutter: clamp(1.25rem, 4vw, 5rem);
   background: var(--event-ink);
   color: var(--event-ivory);
@@ -36,77 +36,13 @@ body.ticketing-page .event-detail-container {
   padding: 0;
 }
 
+body.ticketing-page .ticketing-main {
+  padding-top: 5.5rem;
+}
+
 body.ticketing-page .event-detail-container > .ticket-panel {
   width: min(100% - (var(--event-gutter) * 2), 46rem);
   margin: 6rem auto;
-}
-
-body.ticketing-page .event-page-nav {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  width: 100%;
-  min-height: 5.5rem;
-  margin: 0;
-  padding: 0 var(--event-gutter);
-  background: var(--event-ink-deep);
-  border: 0;
-  border-bottom: 1px solid rgba(228, 203, 164, 0.2);
-}
-
-body.ticketing-page .event-nav-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  max-width: 112rem;
-  min-height: 5.5rem;
-  margin: 0 auto;
-  gap: 2rem;
-}
-
-body.ticketing-page .event-page-nav .ticketing-logo {
-  display: block;
-  width: 3.5rem;
-  height: auto;
-  max-height: 3.75rem;
-  object-fit: contain;
-}
-
-body.ticketing-page .event-page-nav nav {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: clamp(0.75rem, 1.7vw, 2.25rem);
-}
-
-body.ticketing-page .event-page-nav nav a {
-  color: rgba(255, 248, 235, 0.82);
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.2em;
-  line-height: 1;
-  text-decoration: none;
-  text-transform: uppercase;
-  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease;
-}
-
-body.ticketing-page .event-page-nav nav a:hover,
-body.ticketing-page .event-page-nav nav a:focus-visible {
-  color: var(--event-paper);
-}
-
-body.ticketing-page .event-page-nav .event-nav-reserve {
-  padding: 0.85rem 1.1rem;
-  border: 1px solid rgba(214, 177, 127, 0.55);
-}
-
-body.ticketing-page .event-page-nav .event-nav-reserve:hover,
-body.ticketing-page .event-page-nav .event-nav-reserve:focus-visible {
-  background: var(--event-paper);
-  border-color: var(--event-paper);
-  color: var(--event-ink-deep);
 }
 
 body.ticketing-page .event-chapter {
@@ -227,7 +163,7 @@ body.ticketing-page .event-story h2,
 body.ticketing-page .event-details-layout h2,
 body.ticketing-page .ticket-access-copy h3 {
   color: var(--event-ivory);
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: "Cormorant Garamond", Georgia, serif;
   font-weight: 400;
   letter-spacing: 0;
 }
@@ -243,7 +179,7 @@ body.ticketing-page .event-hero-subtitle {
   max-width: 31rem;
   margin: 1rem 0 0;
   color: var(--event-paper);
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: "Cormorant Garamond", Georgia, serif;
   font-size: clamp(1.45rem, 2vw, 2.25rem);
   line-height: 1.1;
 }
@@ -391,7 +327,7 @@ body.ticketing-page .ticket-access-copy {
 }
 
 body.ticketing-page .ticket-access-eyebrow {
-  color: #8d6033;
+  color: var(--event-gold);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.22em;
@@ -420,7 +356,7 @@ body.ticketing-page .ticket-access-includes-summary {
 
 body.ticketing-page .ticket-access-includes-summary > span {
   display: block;
-  color: #8d6033;
+  color: var(--event-gold);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.18em;
@@ -447,7 +383,7 @@ body.ticketing-page .ticket-access-includes-summary li {
 
 body.ticketing-page .ticket-access-includes-summary li::before {
   content: "✓";
-  color: #8d6033;
+  color: var(--event-gold);
   font-weight: 700;
   font-size: 0.75rem;
 }
@@ -474,7 +410,7 @@ body.ticketing-page .ticket-access-includes {
 }
 
 body.ticketing-page .ticket-access-includes b {
-  color: #8d6033;
+  color: var(--event-gold);
   font-size: 1.35rem;
   font-weight: 400;
   line-height: 1;
@@ -487,8 +423,8 @@ body.ticketing-page .ticket-access-includes.is-open b {
 
 body.ticketing-page .ticket-access-includes:hover,
 body.ticketing-page .ticket-access-includes:focus-visible {
-  color: #8d6033;
-  border-color: #8d6033;
+  color: var(--event-gold);
+  border-color: var(--event-gold);
   padding-right: 0.25rem;
 }
 
@@ -525,7 +461,7 @@ body.ticketing-page .ticket-access-decision-kicker {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  color: #8d6033;
+  color: var(--event-gold);
   font-size: 0.64rem;
   font-weight: 700;
   letter-spacing: 0.2em;
@@ -573,7 +509,7 @@ body.ticketing-page .ticket-type-price > strong {
   display: block;
   margin-top: 0.7rem;
   color: var(--event-ink);
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: "Cormorant Garamond", Georgia, serif;
   font-size: clamp(4.1rem, 5.25vw, 5.9rem);
   font-weight: 400;
   letter-spacing: -0.045em;
@@ -585,7 +521,7 @@ body.ticketing-page .ticket-promo-label {
   display: block;
   max-width: 20rem;
   margin-top: 1rem;
-  color: #8d6033;
+  color: var(--event-gold);
   font-size: 0.6rem;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -672,7 +608,7 @@ body.ticketing-page .event-quantity-total {
 
 body.ticketing-page .event-quantity-total strong {
   color: var(--event-ink);
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: "Cormorant Garamond", Georgia, serif;
   margin-left: 0.25rem;
   font-size: 1.4rem;
   font-weight: 400;
@@ -693,37 +629,48 @@ body.ticketing-page .ticket-access-unavailable {
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 4rem;
-  gap: 14px;
-  padding: 0.7rem 0.8rem 0.7rem 1.5rem;
-  color: var(--event-ivory);
-  background: var(--event-ink);
-  border: 1px solid var(--event-ink);
+  min-height: 3.5rem;
+  gap: 1.06rem;
+  padding: 0.56rem 0.62rem 0.56rem 1.69rem;
+  color: var(--wedding-deep);
+  background: var(--wedding-gold-light);
+  border: 1px solid var(--wedding-gold-light);
   border-radius: 999px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
+  font-size: 0.59rem;
+  font-weight: 600;
+  letter-spacing: 0.19em;
   line-height: 1.3;
   text-align: center;
   text-decoration: none;
   text-transform: uppercase;
-  transition: background-color 220ms ease, color 220ms ease, border-color 220ms ease;
+  transition: transform .3s ease, background .3s ease, border-color .3s ease, box-shadow .3s ease;
 }
 
 body.ticketing-page .ticket-access-action .ticket-btn:hover,
 body.ticketing-page .ticket-access-action .ticket-btn:focus-visible {
-  color: var(--event-ink);
-  background: rgba(255, 248, 235, 0.5);
-  border-color: var(--event-ink);
+  color: var(--wedding-deep);
+  background: var(--wedding-cream);
+  border-color: var(--wedding-cream);
+  box-shadow: 0 14px 30px rgba(4, 13, 16, .24);
+  transform: translateY(-3px);
 }
 
 body.ticketing-page .ticket-access-action .ticket-btn span {
   display: none;
+  place-items: center;
+  width: 2.13rem;
+  height: 2.13rem;
+  border-radius: 50%;
+  background: rgba(30, 51, 56, .12);
+  font-size: .95rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  transition: transform .3s ease;
 }
 
 body.ticketing-page .ticket-access-action .ticket-btn:hover span,
 body.ticketing-page .ticket-access-action .ticket-btn:focus-visible span {
-  transform: none;
+  transform: translateX(3px);
 }
 
 body.ticketing-page .ticket-preview-note {
@@ -758,7 +705,7 @@ body.ticketing-page .ticket-access-dress {
 }
 
 body.ticketing-page .ticket-access-dress .ticket-access-icon {
-  color: #9b6a39;
+  color: var(--event-gold);
 }
 
 body.ticketing-page .ticket-access-dress-content,
@@ -768,7 +715,7 @@ body.ticketing-page .ticket-access-dress > span:last-child {
 
 body.ticketing-page .ticket-access-dress-title {
   display: block;
-  color: #8d6033;
+  color: var(--event-gold);
   font-size: 0.58rem;
   font-weight: 700;
   letter-spacing: 0.15em;
@@ -779,7 +726,7 @@ body.ticketing-page .ticket-access-dress-title {
 body.ticketing-page .ticket-access-dress-badge {
   display: block;
   margin-top: 0.22rem;
-  color: #73461f;
+  color: var(--event-ink);
   font-size: 0.74rem;
   font-weight: 750;
   letter-spacing: 0.13em;
@@ -823,7 +770,7 @@ body.ticketing-page .ticket-access-status-dot {
   width: 0.42rem;
   height: 0.42rem;
   border-radius: 50%;
-  background: #8e693e;
+  background: var(--event-gold);
 }
 
 body.ticketing-page .ticket-access-minor {
@@ -928,53 +875,69 @@ body.ticketing-page .event-story-poster:hover img {
 
 body.ticketing-page .event-story-poster-wrap figcaption {
   display: flex;
-  min-height: 10rem;
+  min-height: 0;
   margin-top: 0;
   padding: clamp(1.25rem, 2.5vw, 2rem) 0 0;
   border-top: 1px solid var(--event-line);
 }
 
-body.ticketing-page .event-story-poster-wrap .event-story-discover {
+body.ticketing-page .event-story-poster-wrap .event-story-discover,
+body.ticketing-page .event-story-venue .event-story-venue-cta {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
-  gap: 1rem;
-  min-height: 7.2rem;
-  padding: 1.5rem clamp(1.35rem, 3vw, 2.35rem);
-  color: var(--event-ink);
-  background: var(--event-paper);
-  border: 1px solid rgba(255, 248, 235, 0.46);
-  box-shadow: inset 0 0 0 1px rgba(9, 45, 49, 0.08);
-  font-size: clamp(0.76rem, 1vw, 0.9rem);
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  line-height: 1.45;
+  gap: 1.06rem;
+  min-height: 3.5rem;
+  padding: 0.56rem 0.62rem 0.56rem 1.69rem;
+  color: var(--wedding-cream);
+  background: rgba(31, 66, 73, .42);
+  border: 1px solid var(--wedding-gold-light);
+  border-radius: 999px;
+  font-size: .59rem;
+  font-weight: 600;
+  letter-spacing: .19em;
+  line-height: 1.3;
   text-align: left;
   text-transform: uppercase;
-  transition: background-color 220ms ease, border-color 220ms ease, color 220ms ease, transform 220ms ease;
+  text-decoration: none;
+  transition: transform .3s ease, background .3s ease, border-color .3s ease, box-shadow .3s ease;
 }
 
-body.ticketing-page .event-story-poster-wrap .event-story-discover b {
+body.ticketing-page .event-story-poster-wrap .event-story-discover { width: 100%; }
+
+body.ticketing-page .event-story-poster-wrap .event-story-discover b,
+body.ticketing-page .event-story-venue .event-story-venue-cta b {
   flex: 0 0 auto;
-  color: var(--event-ink);
-  font-size: 1.85rem;
+  display: none;
+  width: 2.13rem;
+  height: 2.13rem;
+  place-items: center;
+  color: var(--wedding-gold-light);
+  border: 1px solid rgba(226, 205, 181, .32);
+  border-radius: 50%;
+  background: rgba(226, 205, 181, .1);
+  font-size: .95rem;
   font-weight: 400;
   line-height: 1;
   transition: transform 220ms ease;
 }
 
 body.ticketing-page .event-story-poster-wrap .event-story-discover:hover,
-body.ticketing-page .event-story-poster-wrap .event-story-discover:focus-visible {
-  color: var(--event-ink-deep);
-  background: var(--event-paper-soft);
-  border-color: var(--event-paper);
+body.ticketing-page .event-story-poster-wrap .event-story-discover:focus-visible,
+body.ticketing-page .event-story-venue .event-story-venue-cta:hover,
+body.ticketing-page .event-story-venue .event-story-venue-cta:focus-visible {
+  color: var(--wedding-cream);
+  background: rgba(42, 82, 89, .78);
+  border-color: rgba(226, 205, 181, .48);
+  box-shadow: 0 14px 30px rgba(4, 13, 16, .24);
   outline: 0;
   transform: translateY(-0.15rem);
 }
 
 body.ticketing-page .event-story-poster-wrap .event-story-discover:hover b,
-body.ticketing-page .event-story-poster-wrap .event-story-discover:focus-visible b {
+body.ticketing-page .event-story-poster-wrap .event-story-discover:focus-visible b,
+body.ticketing-page .event-story-venue .event-story-venue-cta:hover b,
+body.ticketing-page .event-story-venue .event-story-venue-cta:focus-visible b {
   transform: translateX(0.35rem);
 }
 
@@ -997,7 +960,7 @@ body.ticketing-page .event-story-lede {
   max-width: 25ch;
   margin: 1.45rem 0 0;
   color: var(--event-paper);
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: "Cormorant Garamond", Georgia, serif;
   font-size: clamp(1.55rem, 2.2vw, 2.45rem);
   line-height: 1.12;
 }
@@ -1033,7 +996,7 @@ body.ticketing-page .event-story-venue p {
 
 body.ticketing-page .event-story-venue strong {
   color: var(--event-ivory);
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: "Cormorant Garamond", Georgia, serif;
   font-size: clamp(1.75rem, 2.4vw, 2.35rem);
   font-weight: 400;
   line-height: 1;
@@ -1047,47 +1010,8 @@ body.ticketing-page .event-story-venue p {
 body.ticketing-page .event-story-venue .event-story-venue-cta {
   grid-column: 2;
   grid-row: 1 / span 3;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   align-self: center;
-  gap: 1rem;
-  min-height: 4.9rem;
-  padding: 1rem 1.15rem;
-  color: var(--event-ink);
-  background: var(--event-paper);
-  border: 1px solid rgba(255, 248, 235, 0.46);
-  box-shadow: inset 0 0 0 1px rgba(9, 45, 49, 0.08);
-  font-size: 0.64rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  line-height: 1.4;
-  text-transform: uppercase;
   white-space: nowrap;
-  transition: background-color 220ms ease, border-color 220ms ease, color 220ms ease, transform 220ms ease;
-}
-
-body.ticketing-page .event-story-venue .event-story-venue-cta b {
-  flex: 0 0 auto;
-  color: var(--event-ink);
-  font-size: 1.45rem;
-  font-weight: 400;
-  line-height: 1;
-  transition: transform 220ms ease;
-}
-
-body.ticketing-page .event-story-venue .event-story-venue-cta:hover,
-body.ticketing-page .event-story-venue .event-story-venue-cta:focus-visible {
-  color: var(--event-ink-deep);
-  background: var(--event-paper-soft);
-  border-color: var(--event-paper);
-  outline: 0;
-  transform: translateY(-0.15rem);
-}
-
-body.ticketing-page .event-story-venue .event-story-venue-cta:hover b,
-body.ticketing-page .event-story-venue .event-story-venue-cta:focus-visible b {
-  transform: translateX(0.3rem);
 }
 
 body.ticketing-page .event-story-microdata {
@@ -1284,7 +1208,7 @@ body.ticketing-page .experience-guide-panel .ticket-eyebrow {
 body.ticketing-page .experience-guide-panel h3 {
   margin: 0.85rem 0 0;
   color: var(--event-ivory);
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: "Cormorant Garamond", Georgia, serif;
   font-size: clamp(2rem, 3vw, 3.2rem);
   font-weight: 400;
   line-height: 1;
@@ -1356,7 +1280,7 @@ body.ticketing-page .event-public-information-accordions summary {
   padding: 1.2rem 0;
   color: var(--event-paper);
   cursor: pointer;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: "Cormorant Garamond", Georgia, serif;
   font-size: clamp(1.45rem, 2.2vw, 2.1rem);
   list-style: none;
 }
@@ -1488,13 +1412,8 @@ body.ticketing-page summary:focus-visible {
     --event-gutter: 1.25rem;
   }
 
-  body.ticketing-page .event-page-nav,
-  body.ticketing-page .event-nav-inner {
-    min-height: 4.5rem;
-  }
-
-  body.ticketing-page .event-page-nav nav {
-    display: none;
+  body.ticketing-page .ticketing-main {
+    padding-top: 4.75rem;
   }
 
   body.ticketing-page .event-hero-summary {
@@ -1576,15 +1495,6 @@ body.ticketing-page summary:focus-visible {
 
   body.ticketing-page .ticket-access-minor {
     padding-left: 1rem;
-  }
-
-  body.ticketing-page .event-story-poster-wrap figcaption {
-    min-height: 8rem;
-  }
-
-  body.ticketing-page .event-story-poster-wrap .event-story-discover {
-    min-height: 5.75rem;
-    padding-inline: 1.2rem;
   }
 
   body.ticketing-page .event-story-venue {

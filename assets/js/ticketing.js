@@ -238,9 +238,9 @@
         ? '<p>La Perigalla 01 inaugura una forma de celebrar donde cocina, música y puesta en escena cuentan una misma historia.</p><p>Una noche en Finca La Llaguna, al aire libre y vestida de blanco, creada para vivirla despacio.</p>'
         : textParagraphs(event.short_description || event.description || "");
       var storyVenue = isPerigalla01
-        ? '<aside class="event-story-venue" aria-label="Ubicación de la experiencia"><span>El escenario</span><strong>Finca La Llaguna</strong><p>Crevillent · Alicante</p><a class="event-story-venue-cta" href="https://fincalallaguna.com/" target="_blank" rel="noopener noreferrer"><span>Descubrir la finca</span><b aria-hidden="true">→</b></a></aside><p class="event-story-microdata">29 AGO 2026 <span>·</span> NOCHE <span>·</span> TOTAL WHITE</p>'
+        ? '<aside class="event-story-venue" aria-label="Ubicación de la experiencia"><span>El escenario</span><strong>Finca La Llaguna</strong><p>Crevillent · Alicante</p><a class="event-story-venue-cta wedding-button wedding-button--outline" href="https://fincalallaguna.com/" target="_blank" rel="noopener noreferrer"><span>Descubrir la finca</span><b aria-hidden="true">→</b></a></aside><p class="event-story-microdata">29 AGO 2026 <span>·</span> NOCHE <span>·</span> TOTAL WHITE</p>'
         : '';
-      var storyVisual = '<figure class="event-story-poster-wrap"><a class="event-story-poster" href="' + escapeAttr(experienceUrl) + '" aria-label="Descubrir la experiencia completa de ' + escapeHtml(experienceName) + '"><img loading="lazy" src="' + escapeAttr(storyImageUrl) + '" alt="Cartel de ' + escapeHtml(experienceName) + '"></a><figcaption><a class="event-story-discover" href="' + escapeAttr(experienceUrl) + '"><span>Descubrir la historia</span><b aria-hidden="true">→</b></a></figcaption></figure>';
+      var storyVisual = '<figure class="event-story-poster-wrap"><a class="event-story-poster" href="' + escapeAttr(experienceUrl) + '" aria-label="Descubrir la experiencia completa de ' + escapeHtml(experienceName) + '"><img loading="lazy" src="' + escapeAttr(storyImageUrl) + '" alt="Cartel de ' + escapeHtml(experienceName) + '"></a><figcaption><a class="event-story-discover wedding-button wedding-button--outline" href="' + escapeAttr(experienceUrl) + '"><span>Descubrir la historia</span><b aria-hidden="true">→</b></a></figcaption></figure>';
       var ticketCards = types.length ? types.map(function (type) { return ticketTypeRow(type, event, preview); }).join("") : '<p class="ticket-status event-access-empty">Próximamente anunciaremos las entradas.</p>';
       var editionMatch = String(event.title || "").match(/(?:\s|^)0*(\d+)\s*$/);
       var edition = editionMatch ? " · Edición " + String(editionMatch[1]).padStart(2, "0") : "";
@@ -528,10 +528,10 @@
       : "/entradas/checkout/?event=" + encodeURIComponent(event.slug);
     var attributes = ' data-ticket-checkout-link data-ticket-type-id="' + escapeAttr(type.id) + '"';
     if (preview) {
-      return '<div class="ticket-access-action"><a class="ticket-btn primary"' + attributes + ' href="' + escapeAttr(destination) + '">Probar recorrido de compra <span aria-hidden="true">→</span></a><p class="ticket-preview-note"><span aria-hidden="true">◦</span> Vista privada: el pedido y el pago se ejecutan en modo de pruebas, sin cargos ni aforo real.</p></div>';
+      return '<div class="ticket-access-action"><a class="ticket-btn primary wedding-button wedding-button--solid"' + attributes + ' href="' + escapeAttr(destination) + '">Probar recorrido de compra <span aria-hidden="true">→</span></a><p class="ticket-preview-note"><span aria-hidden="true">◦</span> Vista privada: el pedido y el pago se ejecutan en modo de pruebas, sin cargos ni aforo real.</p></div>';
     }
     if ((type.effective_status || type.status) === "on_sale") {
-      return '<div class="ticket-access-action"><a class="ticket-btn primary"' + attributes + ' href="' + escapeAttr(destination) + '">Comprar entradas <span aria-hidden="true">→</span></a></div>';
+      return '<div class="ticket-access-action"><a class="ticket-btn primary wedding-button wedding-button--solid"' + attributes + ' href="' + escapeAttr(destination) + '">Comprar entradas <span aria-hidden="true">→</span></a></div>';
     }
     return '<p class="ticket-access-unavailable">' + escapeHtml(availabilityText(type)) + '</p>';
   }

@@ -8,23 +8,41 @@
   <link rel="canonical" href="https://perigallo.com/experiencias/">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/weddings-page.css?v=20260808-weddings-v2">
   <link rel="stylesheet" href="/assets/css/ticketing.css?v=20260805-event-hero-v1">
-  <link rel="stylesheet" href="/assets/css/event-hero-layout.css?v=20260807-public-layout-v15">
+  <link rel="stylesheet" href="/assets/css/event-hero-layout.css?v=20260809-perigallo-system-v1">
 </head>
 <body class="ticketing-page">
-  <header class="ticketing-nav event-page-nav">
-    <div class="event-nav-inner">
-      <a href="/experiencias/" aria-label="Volver a experiencias Perigallo"><img class="ticketing-logo" src="/assets/images/perigallo-logo-original.png" alt="Perigallo"></a>
-      <nav aria-label="Navegación de la experiencia"><a href="#entrada">La experiencia</a><a href="#experiencia">La historia</a><a href="#faq">+ Info</a><a class="event-nav-reserve" href="#reservar">Comprar</a></nav>
+  <a class="wedding-skip" href="#contenido">Saltar al contenido</a>
+
+  <header class="wedding-nav" id="weddingNav">
+    <div class="wedding-nav__left">
+      <a href="/#descubre-perigallo">Descubre Perigallo</a>
+      <a class="wedding-nav__instagram" href="https://www.instagram.com/perigallo/" target="_blank" rel="noopener noreferrer" aria-label="Instagram de Perigallo">
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"></circle></svg>
+      </a>
     </div>
+    <a class="wedding-nav__logo" href="/" aria-label="Inicio Perigallo"><img src="/assets/images/perigallo-logo-original.png" alt="Perigallo"></a>
+    <nav class="wedding-nav__right" aria-label="Principal">
+      <a href="/experiencias/">Experiencias</a>
+      <a href="/finca-la-llaguna/">La Finca</a>
+      <a class="wedding-nav__contact" href="#reservar">Comprar entradas</a>
+    </nav>
   </header>
-  <main class="ticketing-main">
+
+  <main class="ticketing-main" id="contenido">
     <section class="event-detail-section">
       <div class="event-detail-container" data-event-detail>
         <div class="ticket-panel">Cargando evento...</div>
       </div>
     </section>
   </main>
+  <footer class="wedding-footer">
+    <img src="/assets/images/perigallo-logo-original.png" alt="Perigallo">
+    <p>Experiencias gastronómicas para celebrar lo irrepetible.</p>
+    <div><a href="/">Inicio</a><a href="/experiencias/">Experiencias</a><a href="/finca-la-llaguna/">La Finca</a><a href="/#contact">Contacto</a></div>
+  </footer>
+  <script src="/assets/js/weddings-page.js?v=20260808-weddings-v3" defer></script>
   <script src="/assets/js/ticketing.js?v=20260807-attendees-v1" defer></script>
 </body>
 </html>
