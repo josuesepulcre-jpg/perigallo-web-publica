@@ -1,0 +1,71 @@
+.gastronomic-route {
+  column-gap: clamp(26px, 3vw, 54px);
+}
+
+.gastronomic-route li {
+  align-items: flex-start;
+  gap: 11px;
+  min-width: 0;
+  padding: 12px 0 13px;
+}
+
+.gastronomic-route__number {
+  padding-top: 5px;
+}
+
+.gastronomic-route li > div {
+  min-width: 0;
+}
+
+.gastronomic-route__scene,
+.gastronomic-route__dish {
+  margin: 0;
+}
+
+.gastronomic-route__scene {
+  color: var(--ink);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(15px, 1.15vw, 18px);
+  line-height: 1.06;
+}
+
+.gastronomic-route__dish {
+  color: rgb(21 52 58 / 72%);
+  letter-spacing: 0.035em;
+  margin-top: 5px;
+  max-width: 48ch;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: clamp(9px, 0.7vw, 11px);
+  font-weight: 400;
+  line-height: 1.32;
+}
+
+@media (width <= 1050px) {
+  .gastronomic-route li {
+    padding-block: 12px;
+  }
+
+  .gastronomic-route__dish {
+    font-size: 10px;
+  }
+}
+
+@media (width <= 650px) {
+  .gastronomic-route {
+    display: block;
+  }
+
+  .gastronomic-route li {
+    gap: 10px;
+    padding-block: 13px;
+  }
+
+  .gastronomic-route__scene {
+    font-size: 17px;
+  }
+
+  .gastronomic-route__dish {
+    font-size: 10px;
+    line-height: 1.38;
+  }
+}
