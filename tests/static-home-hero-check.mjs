@@ -50,9 +50,9 @@ const required = [
   'favicon.svg?v=perigallo-monogram-20260808',
   '<section class="manifest" id="quienes-somos" aria-labelledby="about-title">',
   'class="manifest-portrait manifest-portrait--josue reveal"',
-  'src="assets/images/about/josue-portrait-illustrated-v5.png"',
+  'src="assets/images/about/josue-portrait-illustrated-v6.png"',
   'class="manifest-portrait manifest-portrait--david reveal"',
-  'src="assets/images/about/david-portrait-illustrated-v5.png"',
+  'src="assets/images/about/david-portrait-illustrated-v6.png"',
   'class="manifest-eyebrow reveal">Quiénes somos</p>',
   'id="about-title">Perigallo nace de la visión',
   'class="manifest-copy manifest-copy--closing reveal reveal-delay-3"',
@@ -203,7 +203,7 @@ if (home.includes('manifest-artwork') || home.includes('quienes-somos-perigallo.
   throw new Error('Quiénes somos debe usar retratos y contenido HTML, no una composición plana.');
 }
 
-for (const asset of ['assets/images/about/josue-portrait-illustrated-v5.png', 'assets/images/about/david-portrait-illustrated-v5.png']) {
+for (const asset of ['assets/images/about/josue-portrait-illustrated-v6.png', 'assets/images/about/david-portrait-illustrated-v6.png']) {
   if (!existsSync(resolve(asset))) {
     throw new Error(`Falta el retrato independiente: ${asset}`);
   }
