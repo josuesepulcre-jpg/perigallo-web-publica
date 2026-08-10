@@ -49,7 +49,7 @@
   }
   function loginUrl() { return "/admin/login/?next=" + encodeURIComponent(window.location.pathname + window.location.search); }
   function statusLabel(status) {
-    return ({ draft: "Borrador", scheduled: "Programado", published: "Publicado", sold_out: "Agotado", finished: "Finalizado", cancelled: "Cancelado", archived: "Archivado", paid: "Pagado", pending: "Pendiente", failed: "Fallido", rejected: "Rechazado", refunded: "Reembolsado" })[status] || status || "Sin estado";
+    return ({ draft: "Borrador", scheduled: "Programado", published: "Publicado", sold_out: "Agotado", finished: "Finalizado", cancelled: "Cancelado", archived: "Archivado", paid: "Pagado", pending: "Pendiente", failed: "Fallido", rejected: "Rechazado", refunded: "Reembolsado", blocked: "Pendiente de cobro" })[status] || status || "Sin estado";
   }
 
   function currentNav() {
@@ -205,6 +205,8 @@
     if (!state.session || state.session.role !== "admin") return "";
     var actions = '<div class="admin-order-actions"><a class="text-action" href="/entradas/pedido/?token=' + encodeURIComponent(order.public_token) + '" target="_blank" rel="noopener noreferrer">Ver pedido</a>';
     if (Number(order.allergy_attendee_count || 0)) actions += '<button type="button" class="text-action" data-order-allergies data-order-id="' + Number(order.id) + '">Alergias (' + Number(order.allergy_attendee_count) + ')</button>';
+    if (order.sales_channel === "cash" && order.cash_payment_status !== "paid" && !isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="cash-payment" data-order-id="' + Number(order.id) + '">Registrar cobro</button>';
+    if (order.sales_channel === "cash" && !isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="send-cash" data-order-id="' + Number(order.id) + '">' + (order.cash_payment_status === "paid" ? "Enviar entradas" : "Enviar reserva") + '</button>';
     if (!isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="cancel" data-order-id="' + Number(order.id) + '">Cancelar</button>';
     if (!isClosedOrder(order) && (order.payment_status === "paid" || order.status === "paid")) actions += '<button type="button" class="text-action" data-order-action="refund" data-order-id="' + Number(order.id) + '">Registrar devolución</button>';
     if (state.session.is_owner && !Number(order.is_test) && (order.payment_status === "paid" || order.status === "paid") && order.holded_status && order.holded_status !== "synced") actions += '<button type="button" class="text-action" data-order-action="holded-retry" data-order-id="' + Number(order.id) + '">Reintentar Holded</button>';
@@ -217,14 +219,16 @@
     return orders.map(function (order) {
       var reference = order.redsys_order || order.test_reference || ("Pedido " + order.id);
       var displayStatus = order.display_status || order.payment_status || order.status;
-      var paymentMethod = order.payment_method === "bizum" ? "Bizum" : "Tarjeta";
+      var paymentMethod = order.payment_method === "cash" ? "Efectivo" : (order.payment_method === "bizum" ? "Bizum" : "Tarjeta");
+      var cashStatus = order.sales_channel === "cash" ? ' · ' + (order.cash_payment_status === "paid" ? "Cobrado" : "Reserva pendiente") : "";
       var discount = Number(order.discount_amount_cents || 0);
       var amount = discount
         ? '<strong><s>' + formatMoney(order.subtotal_cents) + '</s> ' + formatMoney(order.total_cents) + '</strong><small class="admin-order-discount">Cupón ' + escapeHtml(order.discount_code || "") + ' · −' + formatMoney(discount) + '</small>'
         : '<strong>' + formatMoney(order.total_cents) + '</strong>';
       var allergySummary = Number(order.allergy_attendee_count || 0) ? ' · ' + Number(order.allergy_attendee_count) + ' alergia' + (Number(order.allergy_attendee_count) === 1 ? '' : 's') + ' comunicada' + (Number(order.allergy_attendee_count) === 1 ? '' : 's') : '';
       var holded = !Number(order.is_test) && order.holded_status ? '<small class="admin-order-holded">Holded: ' + escapeHtml({not_required:"No requerido",pending:"Pendiente",processing:"Procesando",synced:"Sincronizado",error:"Reintento programado",requires_review:"Revisión necesaria"}[order.holded_status] || order.holded_status) + (order.holded_document_number ? ' · ' + escapeHtml(order.holded_document_number) : '') + '</small>' : '';
-      return '<article class="admin-order-row"><div><strong>' + escapeHtml(order.name || "Comprador sin nombre") + '</strong><small>' + escapeHtml(order.event_title || "Evento por asignar") + ' · ' + escapeHtml(reference) + ' · ' + paymentMethod + allergySummary + (Number(order.is_test) ? ' · Prueba' : '') + '</small>' + holded + '</div><span>' + Number(order.ticket_quantity || 0) + ' entrada' + (Number(order.ticket_quantity || 0) === 1 ? "" : "s") + '</span><span class="status-pill status-' + escapeHtml(displayStatus) + '">' + escapeHtml(statusLabel(displayStatus)) + '</span><span class="admin-order-amount">' + amount + '</span>' + (compact ? "" : orderActions(order)) + '</article>';
+      var paymentNote = order.sales_channel === "cash" && order.cash_payment_notes ? '<small class="admin-order-cash-note">Efectivo: ' + escapeHtml(order.cash_payment_notes) + '</small>' : '';
+      return '<article class="admin-order-row"><div><strong>' + escapeHtml(order.name || "Comprador sin nombre") + '</strong><small>' + escapeHtml(order.event_title || "Evento por asignar") + ' · ' + escapeHtml(reference) + ' · ' + paymentMethod + cashStatus + allergySummary + (Number(order.is_test) ? ' · Prueba' : '') + '</small>' + paymentNote + holded + '</div><span>' + Number(order.ticket_quantity || 0) + ' entrada' + (Number(order.ticket_quantity || 0) === 1 ? "" : "s") + '</span><span class="status-pill status-' + escapeHtml(displayStatus) + '">' + escapeHtml(statusLabel(displayStatus)) + '</span><span class="admin-order-amount">' + amount + '</span>' + (compact ? "" : orderActions(order)) + '</article>';
     }).join("");
   }
 
@@ -305,6 +309,21 @@
       var filters = root.querySelectorAll("[data-admin-order-filter]");
       var activeFilter = "active";
       var status = root.querySelector("[data-admin-orders-status]");
+      var modal = root.querySelector("[data-admin-cash-modal]");
+      var form = root.querySelector("[data-admin-cash-order-form]");
+      var cashMeta = { events: [] };
+      function renderSalesSummary() {
+        var summary = root.querySelector("[data-admin-sales-summary]");
+        if (!summary) return;
+        var paid = state.orders.filter(function (order) { return Number(order.is_test) !== 1 && !isClosedOrder(order) && (order.payment_status === "paid" || order.status === "paid"); });
+        var cashPaid = paid.filter(function (order) { return order.sales_channel === "cash"; });
+        var cashReserved = state.orders.filter(function (order) { return Number(order.is_test) !== 1 && !isClosedOrder(order) && order.sales_channel === "cash" && order.cash_payment_status === "reserved"; });
+        function tickets(rows) { return rows.reduce(function (total, order) { return total + Number(order.ticket_quantity || 0); }, 0); }
+        summary.innerHTML = '<article><span>Entradas vendidas · global</span><strong>' + tickets(paid) + '</strong><small>Web y efectivo cobrados</small></article>' +
+          '<article><span>Ingresos cobrados · global</span><strong>' + formatMoney(paid.reduce(function (total, order) { return total + Number(order.total_cents || 0); }, 0)) + '</strong><small>Web y efectivo cobrados</small></article>' +
+          '<article><span>Efectivo cobrado</span><strong>' + tickets(cashPaid) + '</strong><small>' + formatMoney(cashPaid.reduce(function (total, order) { return total + Number(order.total_cents || 0); }, 0)) + '</small></article>' +
+          '<article><span>Reservas en efectivo</span><strong>' + tickets(cashReserved) + '</strong><small>Pendientes de cobro</small></article>';
+      }
       function matchesFilter(order) {
         var displayStatus = order.display_status || order.payment_status || order.status;
         if (activeFilter === "active") return Number(order.is_test) !== 1 && !isClosedOrder(order) && (displayStatus === "paid" || order.status === "paid" || order.payment_status === "paid");
@@ -321,18 +340,63 @@
         });
         root.querySelector("[data-admin-orders-list]").innerHTML = renderOrdersRows(rows, false);
         if (status) status.textContent = rows.length + (rows.length === 1 ? " pedido mostrado" : " pedidos mostrados");
+        renderSalesSummary();
       }
       function reload() {
         request(api + "/admin/orders").then(function (data) { state.orders = data.orders || []; render(search.value); }).catch(function (error) { renderPageError(error.message); });
+      }
+      function setCashStatus(message) {
+        var target = form && form.querySelector("[data-cash-order-status]");
+        if (target) target.textContent = message || "";
+      }
+      function closeCashModal() {
+        if (modal) modal.hidden = true;
+        setCashStatus("");
+      }
+      function setDefaultExpiry() {
+        var input = form && form.querySelector("[data-cash-expiry]");
+        if (!input || input.value) return;
+        var date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+        input.value = date.toISOString().slice(0, 16);
+      }
+      function renderCashTicketLines() {
+        var eventId = Number(form && form.event_id.value);
+        var event = cashMeta.events.filter(function (row) { return Number(row.id) === eventId; })[0];
+        var lines = form && form.querySelector("[data-cash-ticket-lines]");
+        if (!lines) return;
+        if (!event || !(event.ticket_types || []).length) {
+          lines.innerHTML = '<p>No hay tipos de entrada activos para este evento.</p>';
+          return;
+        }
+        lines.innerHTML = (event.ticket_types || []).map(function (type) {
+          var available = Number(type.available || 0);
+          return '<label><span><strong>' + escapeHtml(type.name) + '</strong><small>' + formatMoney(type.final_price_cents) + ' · ' + available + ' disponibles</small></span><input type="number" min="0" max="' + Math.min(available, Number(type.max_per_order || available)) + '" value="0" data-cash-ticket-quantity data-ticket-type-id="' + Number(type.id) + '" ' + (available ? '' : 'disabled') + '></label>';
+        }).join("");
+      }
+      function populateCashEvents() {
+        var select = form && form.querySelector("[data-cash-event]");
+        if (!select) return;
+        select.innerHTML = '<option value="">Selecciona un evento</option>' + cashMeta.events.map(function (event) { return '<option value="' + Number(event.id) + '">' + escapeHtml(event.title) + ' · ' + escapeHtml(formatDate(event.starts_at, true)) + '</option>'; }).join("");
+      }
+      function openCashModal() {
+        if (!modal) return;
+        modal.hidden = false;
+        setDefaultExpiry();
+        form.querySelector('[name="first_name"]').focus();
       }
       function actionMessage(action) {
         if (action === "cancel") return "Cancelar las entradas de este pedido impedirá su acceso. No realiza ningún abono. ¿Continuar?";
         if (action === "refund") return "Registra la devolución solo cuando el abono ya se haya realizado en Redsys/TPV. Esta acción revoca las entradas, pero no devuelve dinero automáticamente. ¿Confirmar?";
         if (action === "holded-retry") return "Se volverá a dejar el pedido en cola para Holded. No se emitirá ningún documento desde el navegador. ¿Continuar?";
+        if (action === "cash-payment") return "¿Confirmas que ya se ha recibido el pago en efectivo? Se activarán las entradas y se sumará a las ventas cobradas.";
+        if (action === "send-cash") return "Se enviará al correo del comprador el enlace de sus entradas o de su reserva. ¿Continuar?";
         return "Eliminarás definitivamente este pedido de prueba y todas sus entradas. No se puede deshacer. ¿Continuar?";
       }
-      request(api + "/admin/orders").then(function (data) {
-        state.orders = data.orders || [];
+      Promise.all([request(api + "/admin/orders"), request(api + "/admin/cash-orders/meta")]).then(function (data) {
+        state.orders = data[0].orders || [];
+        cashMeta = data[1] || { events: [] };
+        populateCashEvents();
         render();
         search.addEventListener("input", function () { render(search.value); });
         filters.forEach(function (button) {
@@ -341,6 +405,31 @@
             filters.forEach(function (node) { node.classList.toggle("is-active", node === button); });
             render(search.value);
           });
+        });
+        root.querySelectorAll("[data-open-cash-order]").forEach(function (button) { button.addEventListener("click", openCashModal); });
+        root.querySelectorAll("[data-close-cash-order]").forEach(function (button) { button.addEventListener("click", closeCashModal); });
+        modal.addEventListener("click", function (event) { if (event.target === modal) closeCashModal(); });
+        form.event_id.addEventListener("change", renderCashTicketLines);
+        form.cash_payment_status.addEventListener("change", function () {
+          var expiry = form.querySelector("[data-cash-expiry-wrap]");
+          var reserved = form.cash_payment_status.value === "reserved";
+          expiry.hidden = !reserved;
+          form.reservation_expires_at.required = reserved;
+          if (reserved) setDefaultExpiry();
+        });
+        form.querySelector("[data-cash-expiry-wrap]").hidden = true;
+        form.addEventListener("submit", function (event) {
+          event.preventDefault();
+          var items = Array.prototype.slice.call(form.querySelectorAll("[data-cash-ticket-quantity]")).map(function (input) { return { ticket_type_id: Number(input.getAttribute("data-ticket-type-id")), quantity: Number(input.value || 0) }; }).filter(function (item) { return item.quantity > 0; });
+          if (!items.length) { setCashStatus("Selecciona al menos una entrada."); return; }
+          var submit = form.querySelector('[type="submit"]');
+          var payload = { event_id: Number(form.event_id.value), first_name: form.first_name.value.trim(), last_name: form.last_name.value.trim(), email: form.email.value.trim(), phone: form.phone.value.trim(), cash_payment_status: form.cash_payment_status.value, reservation_expires_at: form.reservation_expires_at.value, cash_payment_notes: form.cash_payment_notes.value.trim(), items: items };
+          submit.disabled = true;
+          setCashStatus("Generando pedido…");
+          jsonRequest(api + "/admin/cash-orders", "POST", payload).then(function (result) {
+            if (form.send_now.checked) return jsonRequest(api + "/admin/orders/" + Number(result.order.id) + "/send-cash", "POST", {});
+            return result;
+          }).then(function () { form.reset(); renderCashTicketLines(); closeCashModal(); reload(); }).catch(function (error) { setCashStatus(error.message || "No se ha podido generar el pedido."); }).finally(function () { submit.disabled = false; });
         });
         root.addEventListener("click", function (event) {
           var allergiesButton = event.target.closest("[data-order-allergies]");
@@ -357,9 +446,11 @@
           var id = Number(button.getAttribute("data-order-id"));
           if (!id || !window.confirm(actionMessage(action))) return;
           button.disabled = true;
-          var url = api + "/admin/orders/" + id + (action === "cancel" ? "/cancel" : action === "refund" ? "/record-refund" : action === "holded-retry" ? "/holded/retry" : "/test");
+          var url = api + "/admin/orders/" + id + (action === "cancel" ? "/cancel" : action === "refund" ? "/record-refund" : action === "holded-retry" ? "/holded/retry" : action === "cash-payment" ? "/cash-payment" : action === "send-cash" ? "/send-cash" : "/test");
           var method = action === "purge-test" ? "DELETE" : "POST";
-          var body = action === "refund" ? { confirmed: true } : {};
+          var note = action === "cash-payment" ? window.prompt("Apunte del cobro en efectivo (opcional):", "") : null;
+          if (action === "cash-payment" && note === null) { button.disabled = false; return; }
+          var body = action === "refund" ? { confirmed: true } : action === "cash-payment" ? { cash_payment_notes: note || "" } : {};
           jsonRequest(url, method, body).then(function () { reload(); }).catch(function (error) { renderPageError(error.message); }).finally(function () { button.disabled = false; });
         });
       }).catch(function (error) { renderPageError(error.message); });

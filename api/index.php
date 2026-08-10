@@ -274,6 +274,18 @@ try {
         return;
     }
 
+    if ($method === 'GET' && $path === '/admin/cash-orders/meta') {
+        AdminAuth::require();
+        json_response(['ok' => true] + $ticketing->adminCashOrderMeta());
+        return;
+    }
+
+    if ($method === 'POST' && $path === '/admin/cash-orders') {
+        AdminAuth::requireCsrf();
+        json_response(['ok' => true, 'order' => $ticketing->adminCreateCashOrder(read_json_body(), AdminAuth::operatorName())], 201);
+        return;
+    }
+
     if ($method === 'GET' && $path === '/admin/holded/health') {
         AdminAuth::requireOwnerSession();
         json_response(['ok' => true, 'holded' => $holded->health()]);
@@ -390,6 +402,18 @@ try {
             throw new InvalidArgumentException('Confirma que el abono se ha realizado fuera de esta aplicación.');
         }
         json_response(['ok' => true, 'order' => $ticketing->adminRecordRefund((int) $m[1], AdminAuth::operatorName(), (string) ($data['reason'] ?? ''))]);
+        return;
+    }
+
+    if ($method === 'POST' && preg_match('#^/admin/orders/([0-9]+)/cash-payment$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        json_response(['ok' => true, 'order' => $ticketing->adminRecordCashPayment((int) $m[1], read_json_body(), AdminAuth::operatorName())]);
+        return;
+    }
+
+    if ($method === 'POST' && preg_match('#^/admin/orders/([0-9]+)/send-cash$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        json_response(['ok' => true, 'order' => $ticketing->adminSendCashOrder((int) $m[1], AdminAuth::operatorName())]);
         return;
     }
 

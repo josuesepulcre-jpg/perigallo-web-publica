@@ -894,17 +894,160 @@ final class Ticketing
         return ['events' => $events, 'ticket_types' => $types];
     }
 
+    /** Datos de venta disponibles solo para la taquilla interna. */
+    public function adminCashOrderMeta(): array
+    {
+        $events = $this->pdo->query('SELECT id, title, starts_at, status FROM events WHERE status <> "archived" ORDER BY starts_at ASC, id ASC')->fetchAll();
+        $types = $this->pdo->query('SELECT * FROM ticket_types WHERE status <> "archived" AND active = 1 ORDER BY event_id ASC, sort_order ASC, id ASC')->fetchAll();
+        $byEvent = [];
+        foreach ($types as $type) {
+            $type = $this->adminTicketTypeRow($type);
+            $byEvent[(int) $type['event_id']][] = $type;
+        }
+        foreach ($events as &$event) {
+            $event['id'] = (int) $event['id'];
+            $event['ticket_types'] = $byEvent[(int) $event['id']] ?? [];
+        }
+        unset($event);
+        return ['events' => $events];
+    }
+
+    /** Crea una venta o reserva de efectivo sin exponer ninguna ruta pública de compra. */
+    public function adminCreateCashOrder(array $data, string $operator): array
+    {
+        $eventId = (int) ($data['event_id'] ?? 0);
+        if ($eventId <= 0 || !is_array($data['items'] ?? null)) {
+            throw new InvalidArgumentException('Selecciona un evento y al menos una entrada.');
+        }
+        $firstName = clean_string((string) ($data['first_name'] ?? ''), 120);
+        $lastName = clean_string((string) ($data['last_name'] ?? ''), 160);
+        $name = trim($firstName . ' ' . $lastName);
+        $email = mb_strtolower(clean_string((string) ($data['email'] ?? ''), 190));
+        $phone = clean_string((string) ($data['phone'] ?? ''), 60);
+        if ($name === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw new InvalidArgumentException('Indica nombre y un correo electrónico válido para enviar las entradas.');
+        }
+        $cashStatus = (string) ($data['cash_payment_status'] ?? 'reserved');
+        if (!in_array($cashStatus, ['reserved', 'paid'], true)) {
+            throw new InvalidArgumentException('El estado del pago en efectivo no es válido.');
+        }
+        $notes = clean_string((string) ($data['cash_payment_notes'] ?? ''), 1000);
+        $reservationExpiresAt = $cashStatus === 'reserved' ? $this->cashReservationExpiry((string) ($data['reservation_expires_at'] ?? '')) : null;
+
+        $this->pdo->beginTransaction();
+        try {
+            $event = $this->requireAdminEvent($eventId);
+            $orderStmt = $this->pdo->prepare(
+                'INSERT INTO ticket_orders
+                 (public_token, redsys_order, first_name, last_name, name, email, phone, age_requirement_accepted, age_requirement_accepted_at, dress_code_accepted, dress_code_accepted_at, dress_code_version, subtotal_cents, total_cents, currency, status, reservation_expires_at, ip_address, user_agent, is_test, environment, sales_channel, cash_payment_status, cash_payment_notes, cash_payment_recorded_by, cash_payment_recorded_at, order_status, payment_status, delivery_status, paid_at, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW(), 1, NOW(), ?, 0, 0, ?, ?, ?, ?, ?, 0, "production", "cash", ?, ?, ?, ?, ?, ?, "generated", ?, NOW(), NOW())'
+            );
+            $isPaid = $cashStatus === 'paid';
+            $orderStmt->execute([
+                public_token(), $this->nextRedsysOrder(), $firstName, $lastName, $name, $email, $phone, self::DRESS_CODE_VERSION,
+                env_value('REDSYS_CURRENCY', '978'), $isPaid ? 'paid' : 'pending', $reservationExpiresAt, client_ip(), substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255),
+                $cashStatus, $notes ?: null, $isPaid ? $operator : null, $isPaid ? now_mysql() : null, $isPaid ? 'confirmed' : 'pending_payment', $isPaid ? 'paid' : 'pending', $isPaid ? now_mysql() : null,
+            ]);
+            $orderId = (int) $this->pdo->lastInsertId();
+            $itemStmt = $this->pdo->prepare(
+                'INSERT INTO ticket_order_items
+                 (order_id, event_id, ticket_type_id, ticket_type_name, quantity, unit_price_cents, unit_base_cents, unit_tax_cents, tax_rate, unit_fee_cents, reference_unit_price_cents, reference_total_cents, promotional_label, show_reference_price, total_cents, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+            );
+            $subtotal = 0;
+            $quantityTotal = 0;
+            $orderItems = [];
+            foreach ($data['items'] as $item) {
+                $typeId = (int) ($item['ticket_type_id'] ?? 0);
+                $quantity = (int) ($item['quantity'] ?? 0);
+                if ($typeId <= 0 || $quantity <= 0) continue;
+                $type = $this->lockCashTicketType($typeId, $eventId);
+                if (!$type) throw new RuntimeException('Tipo de entrada no disponible para venta interna.');
+                if ($quantity > (int) $type['max_per_order']) throw new RuntimeException('Cantidad no permitida para ' . $type['name'] . '.');
+                if ($quantity > $this->availableForType($typeId, (int) $type['capacity'])) throw new RuntimeException('No quedan suficientes entradas para ' . $type['name'] . '.');
+                $unitBase = (int) $type['price_cents'];
+                $taxRate = max(0, (float) ($type['tax_rate'] ?? 0));
+                $unitTax = (int) round($unitBase * $taxRate / 100);
+                $unitFee = (int) ($type['fee_cents'] ?? 0);
+                $unitPrice = $unitBase + $unitTax + $unitFee;
+                $referenceUnitPrice = $this->visibleReferencePrice($type, $unitPrice);
+                $lineTotal = $quantity * $unitPrice;
+                $itemStmt->execute([$orderId, $eventId, $typeId, $type['name'], $quantity, $unitPrice, $unitBase, $unitTax, $taxRate, $unitFee, $referenceUnitPrice, $referenceUnitPrice ? $quantity * $referenceUnitPrice : null, $this->promotionalLabel($type), $referenceUnitPrice ? 1 : 0, $lineTotal]);
+                $orderItems[] = ['id' => (int) $this->pdo->lastInsertId(), 'quantity' => $quantity];
+                $subtotal += $lineTotal;
+                $quantityTotal += $quantity;
+            }
+            if ($quantityTotal === 0) throw new InvalidArgumentException('Selecciona al menos una entrada.');
+            $this->persistCashAttendees($orderId, $orderItems, $name);
+            $this->pdo->prepare('UPDATE ticket_orders SET subtotal_cents = ?, total_cents = ?, updated_at = NOW() WHERE id = ?')->execute([$subtotal, $subtotal, $orderId]);
+            $this->generateTicketsOnce($orderId, $isPaid ? 'issued' : 'blocked');
+            $this->auditAdminOperation($operator, $isPaid ? 'cash_order_created_paid' : 'cash_order_reserved', $orderId, ['event_id' => $eventId, 'quantity' => $quantityTotal, 'notes' => $notes]);
+            $this->pdo->commit();
+            if ($isPaid) (new HoldedSyncService($this->pdo, new HoldedClient()))->queuePaidProductionOrder($orderId, 'production', false);
+            return $this->adminOrderById($orderId);
+        } catch (\Throwable $error) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            throw $error;
+        }
+    }
+
+    public function adminRecordCashPayment(int $orderId, array $data, string $operator): array
+    {
+        $notes = clean_string((string) ($data['cash_payment_notes'] ?? ''), 1000);
+        $this->pdo->beginTransaction();
+        try {
+            $order = $this->lockedOrder($orderId);
+            if (($order['sales_channel'] ?? 'web') !== 'cash') throw new RuntimeException('Este pedido no pertenece a la operativa de efectivo.');
+            if (in_array((string) $order['status'], ['cancelled', 'refunded'], true)) throw new RuntimeException('No se puede registrar un cobro en un pedido cancelado o devuelto.');
+            if (($order['cash_payment_status'] ?? '') === 'paid') throw new RuntimeException('Este pedido ya figura como cobrado en efectivo.');
+            if (!empty($order['reservation_expires_at']) && strtotime((string) $order['reservation_expires_at']) <= time()) {
+                $items = $this->pdo->prepare('SELECT ticket_type_id, event_id, quantity FROM ticket_order_items WHERE order_id = ?');
+                $items->execute([$orderId]);
+                foreach ($items->fetchAll() as $item) {
+                    $type = $this->lockCashTicketType((int) $item['ticket_type_id'], (int) $item['event_id']);
+                    if (!$type || (int) $item['quantity'] > $this->availableForType((int) $item['ticket_type_id'], (int) $type['capacity'])) throw new RuntimeException('La reserva ha caducado y ya no hay aforo suficiente para confirmarla.');
+                }
+            }
+            $this->pdo->prepare('UPDATE ticket_orders SET status = "paid", order_status = "confirmed", payment_status = "paid", cash_payment_status = "paid", cash_payment_notes = ?, cash_payment_recorded_by = ?, cash_payment_recorded_at = NOW(), reservation_expires_at = NULL, delivery_status = "generated", paid_at = NOW(), updated_at = NOW() WHERE id = ?')->execute([$notes ?: ($order['cash_payment_notes'] ?? null), $operator, $orderId]);
+            $this->pdo->prepare('UPDATE tickets t JOIN ticket_order_items oi ON oi.id = t.order_item_id SET t.status = "issued", t.updated_at = NOW() WHERE oi.order_id = ? AND t.status = "blocked"')->execute([$orderId]);
+            $this->auditAdminOperation($operator, 'cash_payment_recorded', $orderId, ['notes' => $notes]);
+            $this->pdo->commit();
+            (new HoldedSyncService($this->pdo, new HoldedClient()))->queuePaidProductionOrder($orderId, 'production', false);
+            return $this->adminOrderById($orderId);
+        } catch (\Throwable $error) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            throw $error;
+        }
+    }
+
+    public function adminSendCashOrder(int $orderId, string $operator): array
+    {
+        $order = $this->lockedOrder($orderId);
+        if (($order['sales_channel'] ?? 'web') !== 'cash') throw new RuntimeException('Este pedido no pertenece a la operativa de efectivo.');
+        if (($order['cash_payment_status'] ?? '') === 'paid') {
+            $this->sendConfirmation($orderId);
+        } else {
+            $link = app_base_url() . '/entradas/pedido/?token=' . rawurlencode((string) $order['public_token']);
+            $subject = 'Reserva pendiente de pago · Perigallo';
+            $body = "Hola {$order['name']},\n\nHemos reservado tus entradas para pago en efectivo. La reserva queda pendiente de confirmar el cobro.\n\nConsulta los datos de tu reserva: {$link}\n\nEquipo Perigallo\n";
+            $result = $this->mailer->queueOrderEmail($this->pdo, $orderId, (string) $order['email'], $subject, $body);
+            $this->pdo->prepare('UPDATE ticket_orders SET delivery_status = ?, updated_at = NOW() WHERE id = ?')->execute([$result === 'sent' ? 'sent' : 'failed', $orderId]);
+        }
+        $this->auditAdminOperation($operator, 'cash_order_sent', $orderId, []);
+        return $this->adminOrderById($orderId);
+    }
+
     public function adminOrders(int $limit = 200): array
     {
         $limit = max(1, min(200, $limit));
         return $this->pdo->query(
             'SELECT o.id, o.public_token, o.redsys_order, o.test_reference, o.is_test, o.environment,
-                    o.order_status, o.payment_status, o.delivery_status, o.name, o.email, o.phone,
+                    o.order_status, o.payment_status, o.delivery_status, o.sales_channel, o.cash_payment_status, o.cash_payment_notes, o.cash_payment_recorded_by, o.cash_payment_recorded_at, o.name, o.email, o.phone,
                     o.subtotal_cents, o.discount_code, o.discount_amount_cents, o.total_cents, o.status, o.reservation_expires_at, o.paid_at, o.created_at,
                     o.billing_requested, o.holded_status, o.holded_document_type, o.holded_document_id, o.holded_document_number, o.holded_payment_id,
                     o.holded_sync_attempts, o.holded_synced_at, o.holded_last_error, o.holded_next_attempt_at,
                     CASE WHEN o.status IN ("cancelled", "refunded") THEN o.status ELSE COALESCE(o.payment_status, o.status) END AS display_status,
-                    COALESCE((SELECT pa.payment_method FROM payment_attempts pa WHERE pa.order_id = o.id ORDER BY pa.id DESC LIMIT 1), "card") AS payment_method,
+                    CASE WHEN o.sales_channel = "cash" THEN "cash" ELSE COALESCE((SELECT pa.payment_method FROM payment_attempts pa WHERE pa.order_id = o.id ORDER BY pa.id DESC LIMIT 1), "card") END AS payment_method,
                     COALESCE(items.ticket_quantity, 0) AS ticket_quantity,
                     COALESCE(attendee_data.attendee_count, 0) AS attendee_count,
                     COALESCE(attendee_data.allergy_attendee_count, 0) AS allergy_attendee_count,
@@ -1059,10 +1202,10 @@ final class Ticketing
     {
         $statement = $this->pdo->prepare(
             'SELECT o.id, o.public_token, o.redsys_order, o.test_reference, o.is_test, o.environment,
-                    o.order_status, o.payment_status, o.delivery_status, o.name, o.email, o.phone,
+                    o.order_status, o.payment_status, o.delivery_status, o.sales_channel, o.cash_payment_status, o.cash_payment_notes, o.cash_payment_recorded_by, o.cash_payment_recorded_at, o.name, o.email, o.phone,
                     o.total_cents, o.status, o.reservation_expires_at, o.paid_at, o.created_at,
                     CASE WHEN o.status IN ("cancelled", "refunded") THEN o.status ELSE COALESCE(o.payment_status, o.status) END AS display_status,
-                    COALESCE((SELECT pa.payment_method FROM payment_attempts pa WHERE pa.order_id = o.id ORDER BY pa.id DESC LIMIT 1), "card") AS payment_method,
+                    CASE WHEN o.sales_channel = "cash" THEN "cash" ELSE COALESCE((SELECT pa.payment_method FROM payment_attempts pa WHERE pa.order_id = o.id ORDER BY pa.id DESC LIMIT 1), "card") END AS payment_method,
                     COALESCE(items.ticket_quantity, 0) AS ticket_quantity, items.event_title
              FROM ticket_orders o
              LEFT JOIN (
@@ -2422,6 +2565,13 @@ final class Ticketing
         return $type ?: null;
     }
 
+    private function lockCashTicketType(int $typeId, int $eventId): ?array
+    {
+        $stmt = $this->pdo->prepare('SELECT * FROM ticket_types WHERE id = ? AND event_id = ? AND active = 1 AND status <> "archived" FOR UPDATE');
+        $stmt->execute([$typeId, $eventId]);
+        return $stmt->fetch() ?: null;
+    }
+
     private function promoCodeHash(array $data, string $existing = ''): ?string
     {
         if (empty($data['requires_promo'])) {
@@ -2486,6 +2636,22 @@ final class Ticketing
         $stmt->execute([$typeId]);
         $reserved = (int) $stmt->fetchColumn();
         return max(0, $capacity - $reserved);
+    }
+
+    private function cashReservationExpiry(string $value): string
+    {
+        if (trim($value) === '') {
+            return (new DateTimeImmutable('+7 days'))->format('Y-m-d H:i:s');
+        }
+        try {
+            $date = new DateTimeImmutable($value);
+        } catch (\Throwable) {
+            throw new InvalidArgumentException('La fecha límite de la reserva no es válida.');
+        }
+        if ($date->getTimestamp() <= time()) {
+            throw new InvalidArgumentException('La fecha límite de la reserva debe ser futura.');
+        }
+        return $date->format('Y-m-d H:i:s');
     }
 
     private function nextRedsysOrder(): string
@@ -2665,8 +2831,24 @@ final class Ticketing
         }
     }
 
-    private function generateTicketsOnce(int $orderId): void
+    private function persistCashAttendees(int $orderId, array $orderItems, string $buyerName): void
     {
+        $insert = $this->pdo->prepare(
+            'INSERT INTO ticket_attendees (order_id, order_item_id, ticket_sequence, attendee_name, has_allergies, severe_allergy, created_at, updated_at)
+             VALUES (?, ?, ?, ?, 0, 0, NOW(), NOW())'
+        );
+        foreach ($orderItems as $item) {
+            for ($sequence = 1; $sequence <= (int) $item['quantity']; $sequence++) {
+                $insert->execute([$orderId, (int) $item['id'], $sequence, $buyerName]);
+            }
+        }
+    }
+
+    private function generateTicketsOnce(int $orderId, string $ticketStatus = 'issued'): void
+    {
+        if (!in_array($ticketStatus, ['issued', 'blocked'], true)) {
+            throw new InvalidArgumentException('El estado inicial de la entrada no es válido.');
+        }
         $existing = $this->pdo->prepare(
             'SELECT COUNT(*) FROM tickets t JOIN ticket_order_items toi ON toi.id = t.order_item_id WHERE toi.order_id = ?'
         );
@@ -2681,7 +2863,7 @@ final class Ticketing
         $items->execute([$orderId]);
         $insert = $this->pdo->prepare(
             'INSERT INTO tickets (order_item_id, event_id, ticket_type_id, public_code, qr_token_hash, qr_token_ciphertext, status, issued_at, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, "issued", NOW(), NOW(), NOW())'
+             VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW())'
         );
         $attendeeUpdate = $this->pdo->prepare(
             'UPDATE ticket_attendees SET ticket_id = ?, updated_at = NOW() WHERE order_item_id = ? AND ticket_sequence = ?'
@@ -2706,6 +2888,7 @@ final class Ticketing
                     $code,
                     hash('sha256', $token),
                     $ciphertext,
+                    $ticketStatus,
                 ]);
                 $attendeeUpdate->execute([(int) $this->pdo->lastInsertId(), (int) $item['id'], $i + 1]);
             }
