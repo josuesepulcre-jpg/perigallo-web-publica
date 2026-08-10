@@ -92,10 +92,13 @@
     return event.dress_code ? String(event.dress_code).replace(/\s+/g, " ").trim() : "Edición limitada";
   }
 
-  function priceMarkup(price) {
+  function priceMarkup(price, referencePrice) {
     return [
       '<div class="experience-carousel-price">',
+      '<div class="experience-carousel-price-values">',
+      referencePrice ? '<del>' + escapeHtml(referencePrice) + '</del>' : '',
       '<strong>' + escapeHtml(price) + '</strong>',
+      '</div>',
       '<small>Por persona</small>',
       '</div>'
     ].join("");
@@ -136,6 +139,7 @@
     var event = experiences[activeIndex];
     var image = imageUrl(event);
     var price = formatPrice(event.price_from_cents);
+    var referencePrice = formatPrice(event.reference_price_from_cents);
     var isSingle = experiences.length === 1;
     var time = event.ends_at ? formatTime(event.starts_at) + " — " + formatTime(event.ends_at) : formatTime(event.starts_at);
 
@@ -160,7 +164,7 @@
       '<p class="experience-carousel-microdetail">' + escapeHtml(microDetail(event)) + '</p>',
       '<p class="experience-carousel-desc">' + escapeHtml(eventDescription(event)) + '</p>',
       '<div class="experience-carousel-footer">',
-      price ? priceMarkup(price) : '<span class="experience-carousel-meta-value">Precio por anunciar</span>',
+      price ? priceMarkup(price, referencePrice) : '<span class="experience-carousel-meta-value">Precio por anunciar</span>',
       '<div class="experience-carousel-actions"><a class="btn-primary" href="' + eventLink(event) + '">Descubrir la experiencia</a><a class="experience-carousel-all-link" href="/experiencias/">Ver todas las experiencias</a></div>',
       '</div>',
       '</div>',
