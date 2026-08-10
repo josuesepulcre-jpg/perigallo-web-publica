@@ -12,6 +12,7 @@ use RuntimeException;
 final class Ticketing
 {
     private ?DiscountCodes $discountCodes = null;
+    private ?bool $cashOrderSchemaAvailable = null;
     private const FOOD_ALLERGENS = [
         'gluten' => 'Cereales con gluten',
         'crustaceans' => 'Crustáceos',
@@ -915,6 +916,7 @@ final class Ticketing
     /** Crea una venta o reserva de efectivo sin exponer ninguna ruta pública de compra. */
     public function adminCreateCashOrder(array $data, string $operator): array
     {
+        $this->requireCashOrderSchema();
         $eventId = (int) ($data['event_id'] ?? 0);
         if ($eventId <= 0 || !is_array($data['items'] ?? null)) {
             throw new InvalidArgumentException('Selecciona un evento y al menos una entrada.');
@@ -993,6 +995,7 @@ final class Ticketing
 
     public function adminRecordCashPayment(int $orderId, array $data, string $operator): array
     {
+        $this->requireCashOrderSchema();
         $notes = clean_string((string) ($data['cash_payment_notes'] ?? ''), 1000);
         $this->pdo->beginTransaction();
         try {
@@ -1022,6 +1025,7 @@ final class Ticketing
 
     public function adminSendCashOrder(int $orderId, string $operator): array
     {
+        $this->requireCashOrderSchema();
         $order = $this->lockedOrder($orderId);
         if (($order['sales_channel'] ?? 'web') !== 'cash') throw new RuntimeException('Este pedido no pertenece a la operativa de efectivo.');
         if (($order['cash_payment_status'] ?? '') === 'paid') {
@@ -1040,14 +1044,20 @@ final class Ticketing
     public function adminOrders(int $limit = 200): array
     {
         $limit = max(1, min(200, $limit));
+        $cashColumns = $this->cashOrderSchemaAvailable()
+            ? 'o.sales_channel, o.cash_payment_status, o.cash_payment_notes, o.cash_payment_recorded_by, o.cash_payment_recorded_at'
+            : '"web" AS sales_channel, "not_applicable" AS cash_payment_status, NULL AS cash_payment_notes, NULL AS cash_payment_recorded_by, NULL AS cash_payment_recorded_at';
+        $paymentMethod = $this->cashOrderSchemaAvailable()
+            ? 'CASE WHEN o.sales_channel = "cash" THEN "cash" ELSE COALESCE((SELECT pa.payment_method FROM payment_attempts pa WHERE pa.order_id = o.id ORDER BY pa.id DESC LIMIT 1), "card") END'
+            : 'COALESCE((SELECT pa.payment_method FROM payment_attempts pa WHERE pa.order_id = o.id ORDER BY pa.id DESC LIMIT 1), "card")';
         return $this->pdo->query(
             'SELECT o.id, o.public_token, o.redsys_order, o.test_reference, o.is_test, o.environment,
-                    o.order_status, o.payment_status, o.delivery_status, o.sales_channel, o.cash_payment_status, o.cash_payment_notes, o.cash_payment_recorded_by, o.cash_payment_recorded_at, o.name, o.email, o.phone,
+                    o.order_status, o.payment_status, o.delivery_status, ' . $cashColumns . ', o.name, o.email, o.phone,
                     o.subtotal_cents, o.discount_code, o.discount_amount_cents, o.total_cents, o.status, o.reservation_expires_at, o.paid_at, o.created_at,
                     o.billing_requested, o.holded_status, o.holded_document_type, o.holded_document_id, o.holded_document_number, o.holded_payment_id,
                     o.holded_sync_attempts, o.holded_synced_at, o.holded_last_error, o.holded_next_attempt_at,
                     CASE WHEN o.status IN ("cancelled", "refunded") THEN o.status ELSE COALESCE(o.payment_status, o.status) END AS display_status,
-                    CASE WHEN o.sales_channel = "cash" THEN "cash" ELSE COALESCE((SELECT pa.payment_method FROM payment_attempts pa WHERE pa.order_id = o.id ORDER BY pa.id DESC LIMIT 1), "card") END AS payment_method,
+                    ' . $paymentMethod . ' AS payment_method,
                     COALESCE(items.ticket_quantity, 0) AS ticket_quantity,
                     COALESCE(attendee_data.attendee_count, 0) AS attendee_count,
                     COALESCE(attendee_data.allergy_attendee_count, 0) AS allergy_attendee_count,
@@ -1200,12 +1210,18 @@ final class Ticketing
 
     private function adminOrderById(int $orderId): array
     {
+        $cashColumns = $this->cashOrderSchemaAvailable()
+            ? 'o.sales_channel, o.cash_payment_status, o.cash_payment_notes, o.cash_payment_recorded_by, o.cash_payment_recorded_at'
+            : '"web" AS sales_channel, "not_applicable" AS cash_payment_status, NULL AS cash_payment_notes, NULL AS cash_payment_recorded_by, NULL AS cash_payment_recorded_at';
+        $paymentMethod = $this->cashOrderSchemaAvailable()
+            ? 'CASE WHEN o.sales_channel = "cash" THEN "cash" ELSE COALESCE((SELECT pa.payment_method FROM payment_attempts pa WHERE pa.order_id = o.id ORDER BY pa.id DESC LIMIT 1), "card") END'
+            : 'COALESCE((SELECT pa.payment_method FROM payment_attempts pa WHERE pa.order_id = o.id ORDER BY pa.id DESC LIMIT 1), "card")';
         $statement = $this->pdo->prepare(
             'SELECT o.id, o.public_token, o.redsys_order, o.test_reference, o.is_test, o.environment,
-                    o.order_status, o.payment_status, o.delivery_status, o.sales_channel, o.cash_payment_status, o.cash_payment_notes, o.cash_payment_recorded_by, o.cash_payment_recorded_at, o.name, o.email, o.phone,
+                    o.order_status, o.payment_status, o.delivery_status, ' . $cashColumns . ', o.name, o.email, o.phone,
                     o.total_cents, o.status, o.reservation_expires_at, o.paid_at, o.created_at,
                     CASE WHEN o.status IN ("cancelled", "refunded") THEN o.status ELSE COALESCE(o.payment_status, o.status) END AS display_status,
-                    CASE WHEN o.sales_channel = "cash" THEN "cash" ELSE COALESCE((SELECT pa.payment_method FROM payment_attempts pa WHERE pa.order_id = o.id ORDER BY pa.id DESC LIMIT 1), "card") END AS payment_method,
+                    ' . $paymentMethod . ' AS payment_method,
                     COALESCE(items.ticket_quantity, 0) AS ticket_quantity, items.event_title
              FROM ticket_orders o
              LEFT JOIN (
@@ -2652,6 +2668,26 @@ final class Ticketing
             throw new InvalidArgumentException('La fecha límite de la reserva debe ser futura.');
         }
         return $date->format('Y-m-d H:i:s');
+    }
+
+    private function cashOrderSchemaAvailable(): bool
+    {
+        if ($this->cashOrderSchemaAvailable !== null) {
+            return $this->cashOrderSchemaAvailable;
+        }
+        try {
+            $this->pdo->query('SELECT sales_channel, cash_payment_status FROM ticket_orders LIMIT 0');
+            return $this->cashOrderSchemaAvailable = true;
+        } catch (\Throwable) {
+            return $this->cashOrderSchemaAvailable = false;
+        }
+    }
+
+    private function requireCashOrderSchema(): void
+    {
+        if (!$this->cashOrderSchemaAvailable()) {
+            throw new RuntimeException('La operativa de efectivo aún no está preparada en la base de datos. Aplica la migración 024 y vuelve a intentarlo.', 422);
+        }
     }
 
     private function nextRedsysOrder(): string
