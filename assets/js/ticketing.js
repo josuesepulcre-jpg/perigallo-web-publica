@@ -262,7 +262,7 @@
     return [
       '<div class="event-detail-layout perigalla-landing">',
       '<section class="perigalla-welcome" id="perigallo" data-analytics-section="bienvenida">',
-      '<div class="perigalla-welcome-media"><img src="/la-perigalla-01/media/storytelling/perigalla-01/hosts/hosts-hero-v14-user-photo-exact-cutout.png" alt="David y Josué, anfitriones de La Perigalla 01" width="1410" height="1116" loading="eager" fetchpriority="high"></div>',
+      '<div class="perigalla-welcome-media"><img src="/la-perigalla-01/media/storytelling/perigalla-01/hosts/hosts-hero-v17-unified-illustration.png" alt="David y Josué, anfitriones de La Perigalla 01" width="1672" height="941" loading="eager" fetchpriority="high"></div>',
       '<div class="perigalla-welcome-content"><span class="ticket-eyebrow">Experiencia gastronómica · artística · escénica</span><h1>Bienvenidos a <em>La Perigalla 01</em></h1><p>David y Josué os damos la bienvenida a una experiencia donde la gastronomía, el arte y la escena cobran vida.</p><aside class="perigalla-welcome-story" aria-label="El hilo conductor de la historia"><span>La primera vez llegaron por separado y se marcharon juntos.</span><span>La segunda volvieron juntos y se marcharon prometidos.</span><strong>La tercera vez, la historia será compartida contigo.</strong></aside></div>',
       '</section>',
       '<section class="perigalla-experience" id="experiencia" data-analytics-section="experiencia">',
