@@ -107,6 +107,14 @@
   text-transform: uppercase;
 }
 .story-player.needs-audio-recovery .story-audio-recovery { display: inline-flex; }
+.ios-story-start { position: absolute; z-index: 80; inset: 0; display: grid; align-content: center; justify-items: start; gap: 20px; padding: max(48px, env(safe-area-inset-top)) max(26px, env(safe-area-inset-right)) max(48px, env(safe-area-inset-bottom)) max(26px, env(safe-area-inset-left)); background: radial-gradient(ellipse 72% 90% at 86% 50%, rgba(16, 38, 43, .18), rgba(2, 11, 16, .9) 64%), rgba(2, 11, 16, .52); color: var(--cream); text-align: left; }
+.ios-story-start p { margin: 0; color: var(--sun); font-size: 10px; font-weight: 700; letter-spacing: .16em; }
+.ios-story-start h1 { margin: 0; font: 400 clamp(42px, 13vw, 62px)/.94 Georgia, serif; letter-spacing: -.055em; }
+.ios-story-start h1 em { color: var(--sun); }
+.ios-story-start span { max-width: 31ch; color: rgba(244, 239, 229, .82); font-size: 14px; line-height: 1.5; }
+.ios-story-start button { display: inline-flex; align-items: center; justify-content: space-between; gap: 36px; min-width: 236px; margin-top: 8px; padding: 16px 18px; border: 1px solid var(--cream); background: var(--cream); color: var(--ink); font-size: 10px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
+.ios-story-start button b { font-size: 18px; font-weight: 400; }
+.ios-story-start button:disabled { cursor: wait; opacity: .62; }
 .story-player.is-audio-buffering .scene-marker::after {
   content: " · preparando narración";
   color: var(--cream);
