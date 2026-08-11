@@ -13,6 +13,7 @@ final class Ticketing
 {
     private ?DiscountCodes $discountCodes = null;
     private ?bool $cashOrderSchemaAvailable = null;
+    private ?bool $ticketItemTaxBreakdownAvailable = null;
     private const FOOD_ALLERGENS = [
         'gluten' => 'Cereales con gluten',
         'crustaceans' => 'Crustáceos',
@@ -228,13 +229,24 @@ final class Ticketing
                 $quantityTotal += $quantity;
                 $referenceUnitPrice = $this->visibleReferencePrice($type, $unitPrice);
                 $pricedItems[] = ['ticket_type_id' => $typeId, 'quantity' => $quantity, 'unit_price_cents' => $unitPrice];
-                $itemStmt = $this->pdo->prepare(
-                    'INSERT INTO ticket_order_items
-                     (order_id, event_id, ticket_type_id, ticket_type_name, quantity, unit_price_cents, unit_base_cents, unit_tax_cents, tax_rate, unit_fee_cents, reference_unit_price_cents, reference_total_cents, promotional_label, show_reference_price, total_cents, created_at)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
-                );
-                $itemStmt->execute([$orderId, $event['id'], $typeId, $type['name'], $quantity, $unitPrice, $unitBase, $taxCents, $taxRate, $unitFee, $referenceUnitPrice, $referenceUnitPrice ? $quantity * $referenceUnitPrice : null, $this->promotionalLabel($type), $referenceUnitPrice ? 1 : 0, $lineTotal]);
-                $orderItems[] = ['id' => (int) $this->pdo->lastInsertId(), 'quantity' => $quantity];
+                $orderItems[] = [
+                    'id' => $this->insertOrderItem(
+                        $orderId,
+                        (int) $event['id'],
+                        $typeId,
+                        (string) $type['name'],
+                        $quantity,
+                        $unitPrice,
+                        $unitBase,
+                        $taxCents,
+                        $taxRate,
+                        $unitFee,
+                        $referenceUnitPrice,
+                        $lineTotal,
+                        $this->promotionalLabel($type)
+                    ),
+                    'quantity' => $quantity,
+                ];
             }
 
             if ($selectedItems === 0) {
@@ -951,11 +963,6 @@ final class Ticketing
                 $cashStatus, $notes ?: null, $isPaid ? $operator : null, $isPaid ? now_mysql() : null, $isPaid ? 'confirmed' : 'pending_payment', $isPaid ? 'paid' : 'pending', $isPaid ? now_mysql() : null,
             ]);
             $orderId = (int) $this->pdo->lastInsertId();
-            $itemStmt = $this->pdo->prepare(
-                'INSERT INTO ticket_order_items
-                 (order_id, event_id, ticket_type_id, ticket_type_name, quantity, unit_price_cents, unit_base_cents, unit_tax_cents, tax_rate, unit_fee_cents, reference_unit_price_cents, reference_total_cents, promotional_label, show_reference_price, total_cents, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
-            );
             $subtotal = 0;
             $quantityTotal = 0;
             $orderItems = [];
@@ -974,8 +981,24 @@ final class Ticketing
                 $unitPrice = $unitBase + $unitTax + $unitFee;
                 $referenceUnitPrice = $this->visibleReferencePrice($type, $unitPrice);
                 $lineTotal = $quantity * $unitPrice;
-                $itemStmt->execute([$orderId, $eventId, $typeId, $type['name'], $quantity, $unitPrice, $unitBase, $unitTax, $taxRate, $unitFee, $referenceUnitPrice, $referenceUnitPrice ? $quantity * $referenceUnitPrice : null, $this->promotionalLabel($type), $referenceUnitPrice ? 1 : 0, $lineTotal]);
-                $orderItems[] = ['id' => (int) $this->pdo->lastInsertId(), 'quantity' => $quantity];
+                $orderItems[] = [
+                    'id' => $this->insertOrderItem(
+                        $orderId,
+                        $eventId,
+                        $typeId,
+                        (string) $type['name'],
+                        $quantity,
+                        $unitPrice,
+                        $unitBase,
+                        $unitTax,
+                        $taxRate,
+                        $unitFee,
+                        $referenceUnitPrice,
+                        $lineTotal,
+                        $this->promotionalLabel($type)
+                    ),
+                    'quantity' => $quantity,
+                ];
                 $subtotal += $lineTotal;
                 $quantityTotal += $quantity;
             }
@@ -2586,6 +2609,61 @@ final class Ticketing
         $stmt = $this->pdo->prepare('SELECT * FROM ticket_types WHERE id = ? AND event_id = ? AND active = 1 AND status <> "archived" FOR UPDATE');
         $stmt->execute([$typeId, $eventId]);
         return $stmt->fetch() ?: null;
+    }
+
+    /**
+     * Conserva el checkout operativo durante un despliegue en el que todavía
+     * no se haya aplicado la migración fiscal 023. El importe final no cambia:
+     * solo se omite el desglose que la tabla antigua no sabe almacenar.
+     */
+    private function insertOrderItem(
+        int $orderId,
+        int $eventId,
+        int $ticketTypeId,
+        string $ticketTypeName,
+        int $quantity,
+        int $unitPrice,
+        int $unitBase,
+        int $unitTax,
+        float $taxRate,
+        int $unitFee,
+        ?int $referenceUnitPrice,
+        int $lineTotal,
+        ?string $promotionalLabel
+    ): int {
+        if ($this->ticketItemTaxBreakdownAvailable()) {
+            $statement = $this->pdo->prepare(
+                'INSERT INTO ticket_order_items
+                 (order_id, event_id, ticket_type_id, ticket_type_name, quantity, unit_price_cents, unit_base_cents, unit_tax_cents, tax_rate, unit_fee_cents, reference_unit_price_cents, reference_total_cents, promotional_label, show_reference_price, total_cents, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+            );
+            $statement->execute([$orderId, $eventId, $ticketTypeId, $ticketTypeName, $quantity, $unitPrice, $unitBase, $unitTax, $taxRate, $unitFee, $referenceUnitPrice, $referenceUnitPrice ? $quantity * $referenceUnitPrice : null, $promotionalLabel, $referenceUnitPrice ? 1 : 0, $lineTotal]);
+        } else {
+            $statement = $this->pdo->prepare(
+                'INSERT INTO ticket_order_items
+                 (order_id, event_id, ticket_type_id, ticket_type_name, quantity, unit_price_cents, reference_unit_price_cents, reference_total_cents, promotional_label, show_reference_price, total_cents, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+            );
+            $statement->execute([$orderId, $eventId, $ticketTypeId, $ticketTypeName, $quantity, $unitPrice, $referenceUnitPrice, $referenceUnitPrice ? $quantity * $referenceUnitPrice : null, $promotionalLabel, $referenceUnitPrice ? 1 : 0, $lineTotal]);
+        }
+
+        return (int) $this->pdo->lastInsertId();
+    }
+
+    private function ticketItemTaxBreakdownAvailable(): bool
+    {
+        if ($this->ticketItemTaxBreakdownAvailable !== null) {
+            return $this->ticketItemTaxBreakdownAvailable;
+        }
+
+        try {
+            $column = $this->pdo->query("SHOW COLUMNS FROM ticket_order_items LIKE 'unit_base_cents'")->fetch();
+            return $this->ticketItemTaxBreakdownAvailable = (bool) $column;
+        } catch (\Throwable) {
+            // Si la comprobación no estuviera permitida, la inserción antigua
+            // sigue siendo la opción segura y compatible para el cobro.
+            return $this->ticketItemTaxBreakdownAvailable = false;
+        }
     }
 
     private function promoCodeHash(array $data, string $existing = ''): ?string
