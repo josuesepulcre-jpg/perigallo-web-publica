@@ -745,8 +745,122 @@
     var discountFingerprint = "";
     var isSubmitting = false;
     var paymentPreparationError = "";
+    var wizardSteps = Array.from(form.querySelectorAll("[data-checkout-step]"));
+    var currentStep = 1;
+    var nextButton = form.querySelector("[data-checkout-next]");
+    var backButton = form.querySelector("[data-checkout-back]");
+    var progressLabel = document.querySelector("[data-checkout-progress-label]");
+    var progressTitle = document.querySelector("[data-checkout-progress-title]");
+    var progressBar = document.querySelector("[data-checkout-progress-bar]");
+    var progressTrack = progressBar && progressBar.parentElement;
+    var billingChoice = form.querySelector("[data-checkout-billing-choice]");
+    var allergyChoice = form.querySelector("[data-checkout-allergy-choice]");
+    var discountChoice = form.querySelector("[data-checkout-discount-choice]");
+    var attendeesDetail = form.querySelector("[data-checkout-attendees-detail]");
+    var discountDetail = form.querySelector("[data-checkout-discount-detail]");
+    var mobileSummary = form.querySelector("[data-mobile-checkout-summary-content]");
+    var mobileSummaryLabel = form.querySelector("[data-mobile-summary-label]");
+    var mobileSummaryTotal = form.querySelector("[data-mobile-summary-total]");
+    form.dataset.wizardEnabled = "true";
+    function setCheckoutStatus(message) {
+      if (status) status.textContent = message || "";
+    }
+
+    function setDecision(container, value) {
+      if (!container) return;
+      container.dataset.answer = value;
+      container.querySelectorAll("button").forEach(function (button) {
+        var selected = button.dataset.billingChoice === value || button.dataset.allergyChoice === value || button.dataset.discountChoice === value;
+        button.classList.toggle("is-selected", selected);
+        button.setAttribute("aria-pressed", String(selected));
+      });
+    }
+
+    function syncBillingFields() {
+      if (!billingToggle || !billingFields) return;
+      billingFields.hidden = !billingToggle.checked;
+      billingFields.querySelectorAll("input").forEach(function (input) {
+        input.required = billingToggle.checked;
+        if (!billingToggle.checked) {
+          input.removeAttribute("aria-invalid");
+          input.closest(".checkout-field").classList.remove("has-error");
+        }
+      });
+    }
+
+    function applyNoAllergies() {
+      attendeeState.forEach(function (attendee, index) {
+        if (index > 0 && !attendee.name.trim()) attendee.name = "Asistente " + (index + 1);
+        attendee.hasAllergies = false;
+        attendee.allergens = [];
+        attendee.severeAllergy = false;
+        attendee.notes = "";
+        attendee.open = false;
+      });
+    }
+
+    function renderWizard() {
+      var totalSteps = wizardSteps.length || 7;
+      wizardSteps.forEach(function (step) { step.hidden = Number(step.dataset.checkoutStep) !== currentStep; });
+      var activeStep = wizardSteps.find(function (step) { return Number(step.dataset.checkoutStep) === currentStep; });
+      var stepTitle = activeStep ? activeStep.dataset.checkoutStepTitle : "";
+      if (progressLabel) progressLabel.textContent = "Paso " + currentStep + " de " + totalSteps;
+      if (progressTitle) progressTitle.textContent = stepTitle;
+      if (progressBar) progressBar.style.width = (currentStep / totalSteps * 100) + "%";
+      if (progressTrack) progressTrack.setAttribute("aria-valuenow", String(currentStep));
+      if (backButton) backButton.hidden = currentStep === 1;
+      if (nextButton) nextButton.hidden = currentStep === totalSteps;
+      if (submit) submit.hidden = currentStep !== totalSteps;
+      setCheckoutStatus(paymentPreparationError || "");
+    }
+
+    function focusWizardError(validation) {
+      if (validation && validation.focus) {
+        if (validation.focus.matches && validation.focus.matches("input")) updateCheckoutField(validation.focus, true);
+        if (validation.focus.focus) validation.focus.focus();
+      }
+    }
+
+    function wizardStepValidation(step) {
+      var selected = selectedTicketInputs();
+      if (step === 1 && !selected.length) return { valid: false, message: "Selecciona al menos una entrada para continuar.", focus: typesBox };
+      if (step === 2) {
+        var fields = [form.first_name, form.last_name, form.email, form.phone];
+        var invalid = fields.find(function (input) { return !checkoutFieldValid(input); });
+        if (invalid) return { valid: false, message: invalid === form.email ? "Introduce un correo electrónico válido para continuar." : "Completa tus " + (invalid === form.phone ? "teléfono o WhatsApp" : invalid.previousElementSibling.textContent.toLowerCase()) + " para continuar.", focus: invalid };
+        if (!checkoutPhoneValid(form.phone)) return { valid: false, message: "Introduce un teléfono o WhatsApp válido para continuar.", focus: form.phone };
+      }
+      if (step === 3) {
+        if (!form.dataset.billingAnswer) return { valid: false, message: "Indica si necesitas factura para continuar.", focus: billingChoice };
+        if (form.dataset.billingAnswer === "yes") {
+          var billingInputs = [form.billing_name, form.billing_tax_id, form.billing_email, form.billing_address, form.billing_postal_code, form.billing_city, form.billing_province, form.billing_country];
+          var billingInvalid = billingInputs.find(function (input) { return !checkoutFieldValid(input); });
+          if (billingInvalid || !/^[A-Za-z]{2}$/.test(form.billing_country.value.trim())) return { valid: false, message: "Completa los datos fiscales para solicitar factura.", focus: billingInvalid || form.billing_country };
+        }
+      }
+      if (step === 4) {
+        if (!form.age_requirement_accepted.checked) return { valid: false, message: "Confirma que eres mayor de 18 años para continuar.", focus: form.age_requirement_accepted };
+        if (!form.dress_code_accepted.checked) return { valid: false, message: "Acepta el código de vestimenta Total White para continuar.", focus: form.dress_code_accepted };
+      }
+      if (step === 5) {
+        if (!form.dataset.allergyAnswer) return { valid: false, message: "Indica si hay alergias o necesidades alimentarias.", focus: allergyChoice };
+        if (form.dataset.allergyAnswer === "yes") return checkoutAttendeeValidation(selected);
+      }
+      if (step === 6) {
+        if (!form.dataset.discountAnswer) return { valid: false, message: "Indica si tienes un código de descuento.", focus: discountChoice };
+        if (form.dataset.discountAnswer === "yes") {
+          if (!discountInput.value.trim()) return { valid: false, message: "Introduce tu código y aplícalo para continuar.", focus: discountInput };
+          if (!appliedDiscount || discountFingerprint !== selectionFingerprint()) return { valid: false, message: "Aplica y valida el código antes de continuar.", focus: applyDiscount };
+        }
+      }
+      if (step === 7) {
+        if (!form.privacy_accepted.checked) return { valid: false, message: "Acepta la política de privacidad para continuar.", focus: form.privacy_accepted };
+        if (!form.terms_accepted.checked) return { valid: false, message: "Acepta las condiciones de compra, cancelación y acceso.", focus: form.terms_accepted };
+      }
+      return { valid: true, message: "" };
+    }
     if ((!preview && !slug) || (preview && !previewId)) {
-      status.textContent = "Falta el evento.";
+      setCheckoutStatus("Falta el evento.");
       return;
     }
     if (preview) {
@@ -766,14 +880,13 @@
       var paymentOptions = responses[1];
       var event = data.event;
       renderPaymentMethods(paymentMethodsBox, paymentOptions.methods || ["card"]);
-      if (paymentMethodSection) paymentMethodSection.hidden = false;
       if (eventTitle) eventTitle.textContent = event.title;
       var types = (event.ticket_types || []).filter(function (type) {
         if (!preview) return (type.effective_status || type.status) === "on_sale";
         return type.active !== false && type.visible !== false && type.status !== "archived";
       });
       if (!types.length) {
-        status.textContent = preview ? "Añade al menos un tipo de entrada en el editor para comprobar el recorrido de compra." : "No hay entradas disponibles para comprar en este momento.";
+        setCheckoutStatus(preview ? "Añade al menos un tipo de entrada en el editor para comprobar el recorrido de compra." : "No hay entradas disponibles para comprar en este momento.");
         submit.disabled = true;
         return;
       }
@@ -789,8 +902,9 @@
       form.dataset.eventTitle = event.title;
       form.dataset.previewEventId = event.id;
       refreshCheckout();
+      renderWizard();
     }).catch(function (error) {
-      status.textContent = error.message;
+      setCheckoutStatus(error.message);
     });
 
     typesBox.addEventListener("click", function (event) {
@@ -860,19 +974,37 @@
       input.addEventListener("blur", function () { updateCheckoutField(input, true); refreshCheckout(); });
     });
     form.querySelectorAll(".checkout-check input, .checkout-access-check input").forEach(function (input) { input.addEventListener("change", refreshCheckout); });
-    if (billingToggle && billingFields) {
-      billingToggle.addEventListener("change", function () {
-        billingFields.hidden = !billingToggle.checked;
-        billingFields.querySelectorAll("input").forEach(function (input) {
-          input.required = billingToggle.checked;
-          if (!billingToggle.checked) {
-            input.removeAttribute("aria-invalid");
-            input.closest(".checkout-field").classList.remove("has-error");
-          }
-        });
-        refreshCheckout();
-      });
-    }
+    if (billingToggle && billingFields) billingToggle.addEventListener("change", function () { syncBillingFields(); refreshCheckout(); });
+    if (billingChoice) billingChoice.addEventListener("click", function (event) {
+      var choice = event.target.closest("[data-billing-choice]");
+      if (!choice) return;
+      var answer = choice.dataset.billingChoice;
+      form.dataset.billingAnswer = answer;
+      setDecision(billingChoice, answer);
+      billingToggle.checked = answer === "yes";
+      syncBillingFields();
+      refreshCheckout();
+    });
+    if (allergyChoice) allergyChoice.addEventListener("click", function (event) {
+      var choice = event.target.closest("[data-allergy-choice]");
+      if (!choice) return;
+      var answer = choice.dataset.allergyChoice;
+      form.dataset.allergyAnswer = answer;
+      setDecision(allergyChoice, answer);
+      if (answer === "no") applyNoAllergies();
+      if (attendeesDetail) attendeesDetail.hidden = answer !== "yes";
+      renderAttendees();
+      refreshCheckout();
+    });
+    if (discountChoice) discountChoice.addEventListener("click", function (event) {
+      var choice = event.target.closest("[data-discount-choice]");
+      if (!choice) return;
+      var answer = choice.dataset.discountChoice;
+      form.dataset.discountAnswer = answer;
+      setDecision(discountChoice, answer);
+      if (discountDetail) discountDetail.hidden = answer !== "yes";
+      refreshCheckout();
+    });
     if (paymentMethodsBox) paymentMethodsBox.addEventListener("change", refreshCheckout);
     if (discountInput) discountInput.addEventListener("input", function () {
       if (appliedDiscount && String(appliedDiscount.code || "").toUpperCase() !== discountInput.value.trim().toUpperCase()) clearDiscount("El código ha cambiado. Aplícalo de nuevo para actualizar el total.");
@@ -908,6 +1040,28 @@
       if (discountInput) discountInput.value = "";
       clearDiscount("Código eliminado.");
     });
+    if (nextButton) nextButton.addEventListener("click", function () {
+      var validation = wizardStepValidation(currentStep);
+      if (!validation.valid) {
+        setCheckoutStatus(validation.message);
+        focusWizardError(validation);
+        return;
+      }
+      currentStep = Math.min(wizardSteps.length || 7, currentStep + 1);
+      renderWizard();
+      var heading = form.querySelector('[data-checkout-step="' + currentStep + '"] h2');
+      if (heading) {
+        heading.setAttribute("tabindex", "-1");
+        heading.focus({ preventScroll: true });
+      }
+      form.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    if (backButton) backButton.addEventListener("click", function () {
+      currentStep = Math.max(1, currentStep - 1);
+      renderWizard();
+      form.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    renderWizard();
 
     function selectedPaymentMethod() {
       var selected = form.querySelector('input[name="payment_method"]:checked');
@@ -1011,7 +1165,6 @@
       var quantity = selectedTicketInputs().reduce(function (total, input) { return total + Number(input.value || 0); }, 0);
       if (!quantity) {
         attendeeState = [];
-        attendeesSection.hidden = true;
         return;
       }
       var changed = false;
@@ -1023,14 +1176,26 @@
         attendeeState = attendeeState.slice(0, quantity);
         changed = true;
       }
-      attendeesSection.hidden = false;
-      if (changed || !attendeesBox.children.length) {
+      if (form.dataset.allergyAnswer === "no") applyNoAllergies();
+      if (changed || !attendeesBox.children.length || form.dataset.allergyAnswer === "no") {
         renderAttendees();
       } else {
         var buyerName = attendeesBox.querySelector('[data-attendee-index="0"] summary strong');
         if (buyerName) buyerName.textContent = "Asistente 1 · " + attendeeName(attendeeState[0], 0);
         renderAttendeeProgress();
       }
+    }
+
+    function checkoutAttendeeValidation(selected) {
+      if (attendeeState.length !== selected.reduce(function (total, input) { return total + Number(input.value || 0); }, 0)) return { valid: false, message: "Completa la información de alergias de cada asistente para continuar.", focus: attendeesBox };
+      for (var index = 0; index < attendeeState.length; index++) {
+        var attendee = attendeeState[index];
+        if (index > 0 && !String(attendee.name || "").trim()) return { valid: false, message: "Indica el nombre del asistente " + (index + 1) + ".", focus: attendeesBox };
+        if (attendee.hasAllergies === null || typeof attendee.hasAllergies === "undefined") return { valid: false, message: "Indica si el asistente " + (index + 1) + " tiene alergias alimentarias.", focus: attendeesBox };
+        if (attendee.hasAllergies && (!Array.isArray(attendee.allergens) || !attendee.allergens.length)) return { valid: false, message: "Selecciona al menos un alérgeno para el asistente " + (index + 1) + ".", focus: attendeesBox };
+        if (attendee.hasAllergies && (attendee.severeAllergy === null || typeof attendee.severeAllergy === "undefined")) return { valid: false, message: "Indica si la alergia del asistente " + (index + 1) + " es grave.", focus: attendeesBox };
+      }
+      return { valid: true, message: "" };
     }
 
     function attendeesPayload() {
@@ -1100,6 +1265,9 @@
       var discount = appliedDiscount && appliedDiscount.applied ? Math.min(subtotal, Number(appliedDiscount.discount_cents || 0)) : 0;
       var total = Math.max(0, subtotal - discount);
       renderCheckoutSummary(summary, selected, form.dataset.eventTitle || "La experiencia", { subtotal: subtotal, discount: discount, code: appliedDiscount && appliedDiscount.code, total: total, attendees: attendeeState });
+      renderCheckoutSummary(mobileSummary, selected, form.dataset.eventTitle || "La experiencia", { subtotal: subtotal, discount: discount, code: appliedDiscount && appliedDiscount.code, total: total, attendees: attendeeState });
+      if (mobileSummaryLabel) mobileSummaryLabel.textContent = selected.length ? selected.reduce(function (count, input) { return count + Number(input.value || 0); }, 0) + " entrada" + (selected.reduce(function (count, input) { return count + Number(input.value || 0); }, 0) === 1 ? "" : "s") : "Tu reserva";
+      if (mobileSummaryTotal) mobileSummaryTotal.textContent = selected.length ? cents(total) : "—";
       var validation = checkoutValidation(form, selected, attendeeState);
       var paymentMethod = selectedPaymentMethod();
       if (paymentMethodsBox) {
@@ -1107,7 +1275,7 @@
           input.disabled = isSubmitting || input.dataset.unavailable === "true";
         });
       }
-      status.textContent = isSubmitting ? "Preparando el pago seguro..." : (paymentPreparationError || validation.message);
+      setCheckoutStatus(isSubmitting ? "Preparando el pago seguro..." : (paymentPreparationError || (currentStep === 7 ? validation.message : "")));
       submit.disabled = isSubmitting || !validation.valid;
       submit.innerHTML = isSubmitting
         ? 'Conectando con el TPV <span aria-hidden="true">→</span>'
@@ -1123,7 +1291,7 @@
       if (!validation.valid || isSubmitting) {
         paymentPreparationError = "";
         form.querySelectorAll(".checkout-field input").forEach(function (input) { updateCheckoutField(input, true); });
-        status.textContent = validation.message;
+        setCheckoutStatus(validation.message);
         focusInvalidCheckoutStep(validation);
         return;
       }
@@ -1256,6 +1424,8 @@
     if (!selected.length) return { valid: false, message: "Selecciona al menos una entrada para continuar." };
     var requiredFields = [form.first_name, form.last_name, form.email, form.phone];
     if (requiredFields.some(function (input) { return !checkoutFieldValid(input); })) return { valid: false, message: "Completa los datos obligatorios para continuar." };
+    if (!checkoutPhoneValid(form.phone)) return { valid: false, message: "Introduce un teléfono o WhatsApp válido para continuar.", focus: form.phone };
+    if (form.dataset.wizardEnabled === "true" && !form.dataset.billingAnswer) return { valid: false, message: "Indica si necesitas factura para continuar." };
     if (form.billing_requested && form.billing_requested.checked) {
       var billingFields = [form.billing_name, form.billing_tax_id, form.billing_email, form.billing_address, form.billing_postal_code, form.billing_city, form.billing_province, form.billing_country];
       var billingInvalid = billingFields.find(function (input) { return !checkoutFieldValid(input); });
@@ -1263,6 +1433,7 @@
     }
     if (!form.age_requirement_accepted.checked) return { valid: false, message: "Confirma que eres mayor de 18 años.", focus: form.age_requirement_accepted };
     if (!form.dress_code_accepted.checked) return { valid: false, message: "Debes aceptar el código de vestimenta Total White para continuar.", focus: form.dress_code_accepted };
+    if (form.dataset.wizardEnabled === "true" && !form.dataset.allergyAnswer) return { valid: false, message: "Indica si hay alergias o necesidades alimentarias." };
     attendees = Array.isArray(attendees) ? attendees : [];
     if (attendees.length !== selected.reduce(function (total, input) { return total + Number(input.value || 0); }, 0)) return { valid: false, message: "Completa la información de alergias de cada asistente para continuar." };
     for (var index = 0; index < attendees.length; index++) {
@@ -1281,14 +1452,19 @@
     return !!input && !!input.value.trim() && (input.type !== "email" || input.validity.valid);
   }
 
+  function checkoutPhoneValid(input) {
+    return !!input && /^\+?[0-9][0-9 ()-]{6,}$/.test(input.value.trim());
+  }
+
   function updateCheckoutField(input, touched) {
     var field = input.closest(".checkout-field");
+    if (!field) return;
     var error = field.querySelector(".checkout-field-error");
     if (!touched) return;
-    var valid = !input.required || checkoutFieldValid(input);
+    var valid = !input.required || (input.name === "phone" ? checkoutPhoneValid(input) : checkoutFieldValid(input));
     field.classList.toggle("has-error", !valid);
     input.setAttribute("aria-invalid", String(!valid));
-    if (error) error.textContent = valid ? "" : (input.type === "email" && input.value.trim() ? "Introduce un correo electrónico válido." : "Este campo es obligatorio.");
+    if (error) error.textContent = valid ? "" : (input.name === "phone" && input.value.trim() ? "Introduce un teléfono válido." : input.type === "email" && input.value.trim() ? "Introduce un correo electrónico válido." : "Este campo es obligatorio.");
   }
 
   function renderCheckoutSummary(target, selected, eventTitle, totals) {

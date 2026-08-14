@@ -9,7 +9,8 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/css/ticketing.css?v=20260804-ticket-pdf-v6">
-  <link rel="stylesheet" href="/assets/css/checkout.css?v=20260807-access-conditions-v1">
+  <link rel="stylesheet" href="/assets/css/checkout.css?v=20260814-wizard-v1">
+  <link rel="stylesheet" href="/assets/css/checkout-wizard.css?v=20260814-wizard-v1">
 </head>
 <body class="ticketing-page">
   <header class="ticketing-nav">
@@ -22,21 +23,28 @@
         <div>
           <span class="ticket-eyebrow" data-checkout-eyebrow>Reserva de entradas</span>
           <h1 class="ticket-title" data-checkout-title>Completa tu <em>reserva</em></h1>
-          <p class="ticket-copy" data-checkout-copy>Selecciona tus entradas y completa los datos necesarios para continuar con la reserva.</p>
+          <p class="ticket-copy" data-checkout-copy>Todo lo necesario para tu experiencia, paso a paso.</p>
         </div>
-        <div class="checkout-steps" aria-label="Pasos de compra"><span class="is-current">01 · Entrada</span><span>02 · Datos</span><span>03 · Alergias</span><span>04 · Código</span><span>05 · Pago</span></div>
+        <div class="checkout-progress" data-checkout-progress aria-label="Paso 1 de 7">
+          <div class="checkout-progress-copy"><span data-checkout-progress-label>Paso 1 de 7</span><strong data-checkout-progress-title>Entradas</strong></div>
+          <div class="checkout-progress-track" role="progressbar" aria-valuemin="1" aria-valuemax="7" aria-valuenow="1"><i data-checkout-progress-bar></i></div>
+        </div>
       </div>
     </section>
     <section class="ticket-section">
       <div class="ticket-section-inner">
-        <form class="checkout-form" data-ticket-checkout novalidate>
+        <form class="checkout-form checkout-wizard" data-ticket-checkout novalidate>
+          <details class="checkout-mobile-summary" data-mobile-checkout-summary>
+            <summary><span data-mobile-summary-label>Tu reserva</span><strong data-mobile-summary-total>—</strong><span>Ver resumen</span></summary>
+            <div class="checkout-summary-content" data-mobile-checkout-summary-content></div>
+          </details>
           <div class="checkout-layout" data-checkout-layout>
             <div class="checkout-main-column">
-              <section class="checkout-section">
+              <section class="checkout-section checkout-step" data-checkout-step="1" data-checkout-step-title="Entradas">
                 <div class="checkout-section-head"><span class="ticket-eyebrow">01 · Entradas</span><h2 data-checkout-event-title>Evento</h2><p>Indica cuántas personas asistirán a la experiencia.</p></div>
                 <div data-ticket-types class="checkout-ticket-list" aria-live="polite">Cargando entradas...</div>
               </section>
-              <section class="checkout-section">
+              <section class="checkout-section checkout-step" data-checkout-step="2" data-checkout-step-title="Tus datos" hidden>
                 <div class="checkout-section-head"><span class="ticket-eyebrow">02 · Datos</span><h2>Tus datos</h2><p>Los utilizaremos para gestionar la reserva y enviarte las entradas.</p></div>
                 <div class="checkout-fields">
                   <div class="checkout-field"><label for="first_name">Nombre</label><input id="first_name" name="first_name" autocomplete="given-name" required aria-describedby="first_name_error"><small id="first_name_error" class="checkout-field-error"></small></div>
@@ -45,9 +53,10 @@
                   <div class="checkout-field"><label for="phone">Teléfono o WhatsApp</label><input id="phone" name="phone" autocomplete="tel" inputmode="tel" required aria-describedby="phone_error"><small id="phone_error" class="checkout-field-error"></small></div>
                 </div>
               </section>
-              <section class="checkout-section checkout-billing" data-checkout-billing>
-                <div class="checkout-section-head"><span class="ticket-eyebrow">03 · Facturación</span><h2>¿Necesitas factura?</h2><p>Solo completa estos datos si necesitas una factura con tus datos fiscales. Para el resto de compras no son necesarios.</p></div>
-                <label class="checkout-check checkout-billing-toggle"><input id="billing_requested" type="checkbox" name="billing_requested"><span class="checkout-check-mark" aria-hidden="true"></span><span>Necesito factura con mis datos fiscales.</span></label>
+              <section class="checkout-section checkout-step checkout-billing" data-checkout-step="3" data-checkout-step-title="Factura" data-checkout-billing hidden>
+                <div class="checkout-section-head"><span class="ticket-eyebrow">03 · Facturación</span><h2>¿Necesitas factura?</h2><p>Solo te pediremos los datos fiscales si la necesitas.</p></div>
+                <div class="checkout-decision-grid" data-checkout-billing-choice aria-label="¿Necesitas factura?"><button type="button" class="checkout-decision" data-billing-choice="yes" aria-pressed="false"><strong>Sí</strong><small>Quiero factura con mis datos fiscales.</small></button><button type="button" class="checkout-decision" data-billing-choice="no" aria-pressed="false"><strong>No</strong><small>No necesito factura para esta reserva.</small></button></div>
+                <input id="billing_requested" class="checkout-wizard-hidden-input" type="checkbox" name="billing_requested" tabindex="-1" aria-hidden="true">
                 <div class="checkout-fields" data-billing-fields hidden>
                   <div class="checkout-field"><label for="billing_name">Nombre fiscal o razón social</label><input id="billing_name" name="billing_name" autocomplete="organization"><small class="checkout-field-error"></small></div>
                   <div class="checkout-field"><label for="billing_tax_id">NIF, CIF o VAT</label><input id="billing_tax_id" name="billing_tax_id" autocomplete="off"><small class="checkout-field-error"></small></div>
@@ -59,62 +68,38 @@
                   <div class="checkout-field"><label for="billing_country">País</label><input id="billing_country" name="billing_country" value="ES" maxlength="2" autocomplete="country" aria-describedby="billing_country_help"><small id="billing_country_help" class="checkout-field-error">Código ISO de dos letras. Ej.: ES.</small></div>
                 </div>
               </section>
-              <section class="checkout-section checkout-access-conditions" data-checkout-access-conditions aria-labelledby="checkout-access-conditions-title">
-                <div class="checkout-section-head"><span class="ticket-eyebrow">03 · Condiciones de acceso</span><h2 id="checkout-access-conditions-title">Condiciones de acceso</h2><p>Antes de continuar, necesitamos que confirmes las condiciones esenciales de acceso a esta experiencia.</p></div>
+              <section class="checkout-section checkout-step checkout-access-conditions" data-checkout-step="4" data-checkout-step-title="Acceso" data-checkout-access-conditions aria-labelledby="checkout-access-conditions-title" hidden>
+                <div class="checkout-section-head"><span class="ticket-eyebrow">04 · Condiciones de acceso</span><h2 id="checkout-access-conditions-title">Condiciones de acceso</h2><p>Confirma las condiciones esenciales de esta experiencia.</p></div>
                 <div class="checkout-access-condition-list">
-                  <article class="checkout-access-condition">
-                    <span class="ticket-eyebrow">+18 · Acceso exclusivo para adultos</span>
-                    <p>Declaro que soy mayor de 18 años y que cumplo el requisito de edad establecido para acceder a la experiencia.</p>
-                    <label class="checkout-access-check"><input id="age_requirement_accepted" type="checkbox" name="age_requirement_accepted" required><span class="checkout-access-check-mark" aria-hidden="true"></span><span>He leído y confirmo que soy mayor de 18 años.</span></label>
-                  </article>
-                  <article class="checkout-access-condition checkout-dress-code-condition">
-                    <span class="ticket-eyebrow">Total White · Código de vestimenta obligatorio</span>
-                    <p>La experiencia requiere vestimenta íntegramente blanca.</p>
-                    <ul class="checkout-dress-code-list" aria-label="Condiciones Total White"><li>Total White</li><li>Vestimenta completamente blanca</li><li>Condición obligatoria de acceso</li></ul>
-                    <p class="checkout-access-warning">El cumplimiento del código de vestimenta es una condición de acceso. Si el día del evento no se respeta el protocolo Total White, podrá denegarse el acceso.</p>
-                    <label class="checkout-access-check"><input id="dress_code_accepted" type="checkbox" name="dress_code_accepted" required><span class="checkout-access-check-mark" aria-hidden="true"></span><span>He leído, comprendo y acepto el código de vestimenta Total White y las condiciones de acceso.</span></label>
-                  </article>
+                  <article class="checkout-access-condition"><span class="ticket-eyebrow">+18 · Acceso exclusivo para adultos</span><p>Declaro que soy mayor de 18 años y que cumplo el requisito de edad establecido para acceder a la experiencia.</p><label class="checkout-access-check"><input id="age_requirement_accepted" type="checkbox" name="age_requirement_accepted" required><span class="checkout-access-check-mark" aria-hidden="true"></span><span>He leído y confirmo que soy mayor de 18 años.</span></label></article>
+                  <article class="checkout-access-condition checkout-dress-code-condition"><span class="ticket-eyebrow">Total White · Código de vestimenta obligatorio</span><p>La experiencia requiere vestimenta íntegramente blanca.</p><ul class="checkout-dress-code-list" aria-label="Condiciones Total White"><li>Total White</li><li>Vestimenta completamente blanca</li><li>Condición obligatoria de acceso</li></ul><p class="checkout-access-warning">Si el día del evento no se respeta el protocolo Total White, podrá denegarse el acceso.</p><label class="checkout-access-check"><input id="dress_code_accepted" type="checkbox" name="dress_code_accepted" required><span class="checkout-access-check-mark" aria-hidden="true"></span><span>He leído, comprendo y acepto el código de vestimenta Total White y las condiciones de acceso.</span></label></article>
                 </div>
                 <p class="checkout-access-conditions-status" data-checkout-access-conditions-status aria-live="polite"></p>
-                <p class="checkout-access-all-attendees">Estas condiciones son obligatorias para todas las personas incluidas en la reserva.</p>
               </section>
-              <section class="checkout-section checkout-attendees" data-checkout-attendees-section hidden aria-labelledby="checkout-attendees-title">
-                <div class="checkout-section-head"><span class="ticket-eyebrow">04 · Alergias</span><h2 id="checkout-attendees-title">Alergias de los asistentes</h2><p>Indícanos únicamente alergias o intolerancias alimentarias relevantes que debamos conocer por seguridad.</p><small class="checkout-attendees-note">Intentaremos tenerlas en cuenta siempre que sea posible, aunque la experiencia no permite adaptar individualmente todo el recorrido gastronómico. Si algún plato contiene un alérgeno que no pueda consumir, deberá evitar su consumo.</small></div>
-                <div class="checkout-attendee-progress" data-checkout-attendee-progress aria-live="polite"></div>
-                <div class="checkout-attendees-list" data-checkout-attendees></div>
+              <section class="checkout-section checkout-step checkout-attendees" data-checkout-step="5" data-checkout-step-title="Alergias" data-checkout-attendees-section aria-labelledby="checkout-attendees-title" hidden>
+                <div class="checkout-section-head"><span class="ticket-eyebrow">05 · Alergias</span><h2 id="checkout-attendees-title">¿Algún asistente tiene alergias o necesidades alimentarias?</h2><p>Indícanos únicamente alergias o intolerancias relevantes que debamos conocer por seguridad.</p><small class="checkout-attendees-note">Intentaremos tenerlas en cuenta siempre que sea posible, aunque la experiencia no permite adaptar individualmente todo el recorrido gastronómico.</small></div>
+                <div class="checkout-decision-grid" data-checkout-allergy-choice aria-label="¿Hay alergias o necesidades alimentarias?"><button type="button" class="checkout-decision" data-allergy-choice="yes" aria-pressed="false"><strong>Sí</strong><small>Quiero indicar qué asistente y qué necesita.</small></button><button type="button" class="checkout-decision" data-allergy-choice="no" aria-pressed="false"><strong>No</strong><small>Ninguna persona tiene necesidades que comunicar.</small></button></div>
+                <div data-checkout-attendees-detail hidden><div class="checkout-attendee-progress" data-checkout-attendee-progress aria-live="polite"></div><div class="checkout-attendees-list" data-checkout-attendees></div></div>
               </section>
-              <section class="checkout-section checkout-discount" data-checkout-discount-section>
-                <div class="checkout-section-head"><span class="ticket-eyebrow">05 · Código de descuento</span><h2>¿Tienes un código?</h2><p>Introdúcelo y comprobaremos las condiciones antes de aplicar el descuento.</p></div>
-                <div class="checkout-discount-form">
-                  <label class="checkout-field" for="discount_code"><span>Código de descuento</span><input id="discount_code" name="discount_code" autocomplete="off" autocapitalize="characters" placeholder="EJ. BIENVENIDA10"></label>
-                  <button class="ticket-btn" type="button" data-apply-discount>Aplicar código</button>
-                  <button class="ticket-btn checkout-discount-clear" type="button" data-clear-discount hidden>Quitar código</button>
-                </div>
-                <p class="checkout-discount-status" data-discount-status aria-live="polite"></p>
+              <section class="checkout-section checkout-step checkout-discount" data-checkout-step="6" data-checkout-step-title="Código" data-checkout-discount-section hidden>
+                <div class="checkout-section-head"><span class="ticket-eyebrow">06 · Código de descuento</span><h2>¿Tienes un código de descuento?</h2><p>Solo tendrás que escribirlo si dispones de uno.</p></div>
+                <div class="checkout-decision-grid checkout-decision-grid-compact" data-checkout-discount-choice aria-label="¿Tienes un código de descuento?"><button type="button" class="checkout-decision" data-discount-choice="yes" aria-pressed="false"><strong>Sí</strong><small>Quiero aplicarlo a esta reserva.</small></button><button type="button" class="checkout-decision" data-discount-choice="no" aria-pressed="false"><strong>No</strong><small>Continuar sin código de descuento.</small></button></div>
+                <div data-checkout-discount-detail hidden><div class="checkout-discount-form"><label class="checkout-field" for="discount_code"><span>Código de descuento</span><input id="discount_code" name="discount_code" autocomplete="off" autocapitalize="characters" placeholder="EJ. BIENVENIDA10"></label><button class="ticket-btn" type="button" data-apply-discount>Aplicar código</button><button class="ticket-btn checkout-discount-clear" type="button" data-clear-discount hidden>Quitar código</button></div><p class="checkout-discount-status" data-discount-status aria-live="polite"></p></div>
               </section>
-              <section class="checkout-section checkout-payment-method" data-payment-method-section hidden aria-labelledby="checkout-payment-method-title">
-                <div class="checkout-section-head"><span class="ticket-eyebrow">06 · Método de pago</span><h2 id="checkout-payment-method-title">Elige cómo pagar</h2><p>Completarás el pago en la pasarela segura de Redsys.</p></div>
+              <section class="checkout-section checkout-step checkout-payment-method" data-checkout-step="7" data-checkout-step-title="Pago" data-payment-method-section aria-labelledby="checkout-payment-method-title" hidden>
+                <div class="checkout-section-head"><span class="ticket-eyebrow">07 · Pago y confirmación</span><h2 id="checkout-payment-method-title">Elige cómo pagar</h2><p>Completarás el pago en la pasarela segura de Redsys.</p></div>
                 <div class="checkout-payment-methods" data-payment-methods aria-live="polite"></div>
+                <div class="checkout-legal" aria-labelledby="checkout-legal-title"><div class="checkout-section-head"><h3 id="checkout-legal-title">Antes de confirmar</h3><p>Revisa y acepta las condiciones necesarias para completar la reserva.</p></div><label class="checkout-check"><input id="privacy_accepted" type="checkbox" name="privacy_accepted" required><span class="checkout-check-mark" aria-hidden="true"></span><span>He leído y acepto la <a href="/politica-privacidad/" target="_blank" rel="noopener noreferrer">Política de privacidad</a>.</span></label><label class="checkout-check"><input id="terms_accepted" type="checkbox" name="terms_accepted" required><span class="checkout-check-mark" aria-hidden="true"></span><span>He leído y acepto las <a href="/condiciones/" target="_blank" rel="noopener noreferrer">Condiciones de compra, cancelación y acceso</a>.</span></label></div>
               </section>
-              <section class="checkout-legal" aria-labelledby="checkout-legal-title">
-                <div class="checkout-section-head"><span class="ticket-eyebrow">07 · Condiciones</span><h2 id="checkout-legal-title">Antes de continuar</h2><p>Revisa y acepta las condiciones necesarias para completar la reserva.</p></div>
-                <label class="checkout-check"><input id="privacy_accepted" type="checkbox" name="privacy_accepted" required><span class="checkout-check-mark" aria-hidden="true"></span><span>He leído y acepto la <a href="/politica-privacidad/" target="_blank" rel="noopener noreferrer">Política de privacidad</a>.</span></label>
-                <label class="checkout-check"><input id="terms_accepted" type="checkbox" name="terms_accepted" required><span class="checkout-check-mark" aria-hidden="true"></span><span>He leído y acepto las <a href="/condiciones/" target="_blank" rel="noopener noreferrer">Condiciones de compra, cancelación y acceso</a>.</span></label>
-              </section>
+              <div class="checkout-wizard-actions" data-checkout-wizard-actions><button type="button" class="checkout-back" data-checkout-back hidden>← Atrás</button><div class="checkout-wizard-action-main"><p class="checkout-status" data-ticket-status aria-live="polite"></p><button class="checkout-submit checkout-next" type="button" data-checkout-next>Continuar <span aria-hidden="true">→</span></button><button class="checkout-submit" type="submit" hidden data-checkout-submit>Pagar con tarjeta <span aria-hidden="true">→</span></button><p class="checkout-security" data-checkout-safety-copy>Pago seguro · Confirmación por correo electrónico</p></div></div>
             </div>
-            <aside class="checkout-summary" aria-labelledby="checkout-summary-title">
-              <span class="ticket-eyebrow">Tu reserva</span><h2 id="checkout-summary-title">Resumen de compra</h2>
-              <div class="checkout-summary-content" data-checkout-summary aria-live="polite"><p>Aún no has seleccionado entradas.</p><small>Añade al menos una entrada para continuar con la reserva.</small></div>
-              <div class="checkout-status" data-ticket-status aria-live="polite"></div>
-              <button class="checkout-submit" type="submit" disabled data-checkout-submit>Continuar al pago <span aria-hidden="true">→</span></button>
-              <p class="checkout-security" data-checkout-safety-copy>Pago seguro · Confirmación por correo electrónico</p>
-            </aside>
+            <aside class="checkout-summary" aria-labelledby="checkout-summary-title"><span class="ticket-eyebrow">Tu reserva</span><h2 id="checkout-summary-title">Resumen de compra</h2><div class="checkout-summary-content" data-checkout-summary aria-live="polite"><p>Aún no has seleccionado entradas.</p><small>Añade al menos una entrada para continuar con la reserva.</small></div></aside>
           </div>
           <section class="checkout-preview-confirmation" data-checkout-preview-confirmation hidden aria-live="polite"></section>
         </form>
       </div>
     </section>
   </main>
-  <script src="/assets/js/ticketing.js?v=20260808-checkout-error-v1" defer></script>
+  <script src="/assets/js/ticketing.js?v=20260814-checkout-wizard-v1" defer></script>
 </body>
 </html>
