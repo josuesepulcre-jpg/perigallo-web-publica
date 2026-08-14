@@ -795,6 +795,8 @@
         attendee.allergens = [];
         attendee.severeAllergy = false;
         attendee.notes = "";
+        attendee.dietaryPreference = "none";
+        attendee.dietaryNotes = "";
         attendee.open = false;
       });
     }
@@ -938,6 +940,10 @@
         } else if (target.matches("[data-attendee-severity]")) {
           attendee.severeAllergy = target.value === "yes";
           renderAttendeeProgress();
+        } else if (target.matches("[data-attendee-diet]")) {
+          attendee.dietaryPreference = target.value;
+          attendee.dietaryNotes = "";
+          renderAttendees();
         } else if (target.matches("[data-attendee-name]")) {
           attendee.name = target.value;
           renderAttendeeProgress();
@@ -954,6 +960,11 @@
           attendeeState[index].notes = target.value.slice(0, 500);
           var count = card.querySelector("[data-attendee-notes-count]");
           if (count) count.textContent = attendeeState[index].notes.length + "/500";
+        }
+        if (target.matches("[data-attendee-dietary-notes]")) {
+          attendeeState[index].dietaryNotes = target.value.slice(0, 500);
+          var dietaryCount = card.querySelector("[data-attendee-dietary-notes-count]");
+          if (dietaryCount) dietaryCount.textContent = attendeeState[index].dietaryNotes.length + "/500";
         }
         renderAttendeeProgress();
         refreshCheckout();
@@ -1103,6 +1114,8 @@
       if (index > 0 && !attendee.name.trim()) return false;
       if (attendee.hasAllergies === null) return false;
       if (attendee.hasAllergies && (!attendee.allergens.length || attendee.severeAllergy === null)) return false;
+      if (!attendee.dietaryPreference) return false;
+      if (attendee.dietaryPreference === "other" && !attendee.dietaryNotes.trim()) return false;
       return true;
     }
 
@@ -1119,11 +1132,14 @@
     function attendeeCardMarkup(attendee, index) {
       var isBuyer = index === 0;
       var hasAllergies = attendee.hasAllergies;
-      var summary = hasAllergies === false
-        ? "✓ Sin alergias comunicadas"
+      var diets = { none: "Sin dieta especial", vegetarian: "Vegetariana", vegan: "Vegana", pescatarian: "Pescetariana", other: "Otra necesidad" };
+      var allergySummary = hasAllergies === false
+        ? "Sin alergias"
         : hasAllergies === true
         ? (attendee.allergens.length ? attendee.allergens.map(function (id) { var allergen = FOOD_ALLERGENS.find(function (item) { return item.id === id; }); return allergen ? allergen.label : id; }).join(" · ") : "Selecciona los alérgenos")
-        : "Respuesta pendiente";
+        : "Alergias pendientes";
+      var dietSummary = attendee.dietaryPreference ? diets[attendee.dietaryPreference] : "Dieta pendiente";
+      var summary = allergySummary + " · " + dietSummary;
       var allergens = FOOD_ALLERGENS.map(function (allergen) {
         var checked = attendee.allergens.indexOf(allergen.id) !== -1;
         return '<label class="checkout-allergen-chip"><input type="checkbox" data-attendee-allergen value="' + allergen.id + '"' + (checked ? ' checked' : '') + '><span>' + allergen.label + '</span></label>';
@@ -1139,17 +1155,25 @@
         '<label class="checkout-allergy-notes">Notas sobre la alergia<textarea data-attendee-notes maxlength="500" placeholder="Añade cualquier información importante que debamos conocer.">' + escapeHtml(attendee.notes) + '</textarea><small class="checkout-allergy-count" data-attendee-notes-count>' + attendee.notes.length + '/500</small></label>',
         '</div>'
       ].join("") : hasAllergies === false ? '<p class="checkout-attendee-status">✓ Sin alergias comunicadas.</p>' : "";
+      var dietOptions = ["none", "vegetarian", "vegan", "pescatarian", "other"].map(function (diet) {
+        return '<label class="checkout-attendee-choice"><input type="radio" name="attendee_diet_' + index + '" data-attendee-diet value="' + diet + '"' + (attendee.dietaryPreference === diet ? ' checked' : '') + '><span>' + diets[diet] + '</span></label>';
+      }).join("");
+      var dietDetails = attendee.dietaryPreference === "other"
+        ? '<label class="checkout-allergy-notes">Indica la necesidad alimentaria<textarea data-attendee-dietary-notes maxlength="500" placeholder="Ej.: sin gluten, baja en sal u otra necesidad relevante.">' + escapeHtml(attendee.dietaryNotes || "") + '</textarea><small class="checkout-allergy-count" data-attendee-dietary-notes-count>' + (attendee.dietaryNotes || "").length + '/500</small></label>'
+        : "";
       return [
         '<details class="checkout-attendee-card" data-attendee-index="' + index + '"' + (attendee.open ? ' open' : '') + '>',
         '<summary><span><strong>Asistente ' + (index + 1) + ' · ' + escapeHtml(attendeeName(attendee, index)) + '</strong></span><small>' + escapeHtml(summary) + '</small></summary>',
         '<div class="checkout-attendee-card-body">',
         isBuyer ? '<p class="checkout-attendee-status">Este asistente corresponde a los datos de compra.</p>' : '<label class="checkout-field checkout-attendee-name"><span>Nombre del asistente</span><input data-attendee-name value="' + escapeAttr(attendee.name) + '" autocomplete="name" placeholder="Nombre y apellidos"></label>',
-        '<fieldset class="checkout-attendee-question"><legend>¿Tiene alguna alergia alimentaria que debamos conocer?</legend><div class="checkout-attendee-choice-row">',
+        '<fieldset class="checkout-attendee-question"><legend>¿Tiene alguna alergia o intolerancia alimentaria?</legend><div class="checkout-attendee-choice-row">',
         '<label class="checkout-attendee-choice"><input type="radio" name="attendee_allergy_' + index + '" data-attendee-allergy-answer value="no"' + (hasAllergies === false ? ' checked' : '') + '><span>No</span></label>',
         '<label class="checkout-attendee-choice"><input type="radio" name="attendee_allergy_' + index + '" data-attendee-allergy-answer value="yes"' + (hasAllergies === true ? ' checked' : '') + '><span>Sí</span></label>',
         '</div></fieldset>',
         allergyDetails,
-        '<p class="checkout-attendee-status">Este apartado es exclusivamente para alergias o intolerancias relevantes, no para preferencias gastronómicas.</p>',
+        '<fieldset class="checkout-attendee-question"><legend>¿Sigue alguna dieta o preferencia alimentaria?</legend><div class="checkout-attendee-choice-row">' + dietOptions + '</div></fieldset>',
+        dietDetails,
+        '<p class="checkout-attendee-status">Comunícanos solo necesidades reales para poder preparar la experiencia con antelación.</p>',
         '</div></details>'
       ].join("");
     }
@@ -1169,7 +1193,7 @@
       }
       var changed = false;
       while (attendeeState.length < quantity) {
-        attendeeState.push({ name: "", hasAllergies: null, allergens: [], severeAllergy: null, notes: "", open: attendeeState.length === 0 });
+        attendeeState.push({ name: "", hasAllergies: null, allergens: [], severeAllergy: null, notes: "", dietaryPreference: null, dietaryNotes: "", open: attendeeState.length === 0 });
         changed = true;
       }
       if (attendeeState.length > quantity) {
@@ -1194,6 +1218,8 @@
         if (attendee.hasAllergies === null || typeof attendee.hasAllergies === "undefined") return { valid: false, message: "Indica si el asistente " + (index + 1) + " tiene alergias alimentarias.", focus: attendeesBox };
         if (attendee.hasAllergies && (!Array.isArray(attendee.allergens) || !attendee.allergens.length)) return { valid: false, message: "Selecciona al menos un alérgeno para el asistente " + (index + 1) + ".", focus: attendeesBox };
         if (attendee.hasAllergies && (attendee.severeAllergy === null || typeof attendee.severeAllergy === "undefined")) return { valid: false, message: "Indica si la alergia del asistente " + (index + 1) + " es grave.", focus: attendeesBox };
+        if (!attendee.dietaryPreference) return { valid: false, message: "Indica la dieta o preferencia alimentaria del asistente " + (index + 1) + ".", focus: attendeesBox };
+        if (attendee.dietaryPreference === "other" && !String(attendee.dietaryNotes || "").trim()) return { valid: false, message: "Describe la necesidad alimentaria del asistente " + (index + 1) + ".", focus: attendeesBox };
       }
       return { valid: true, message: "" };
     }
@@ -1205,7 +1231,9 @@
           has_allergies: attendee.hasAllergies,
           allergens: attendee.allergens.slice(),
           severe_allergy: attendee.severeAllergy,
-          allergy_notes: attendee.notes.trim()
+          allergy_notes: attendee.notes.trim(),
+          dietary_preference: attendee.dietaryPreference,
+          dietary_notes: attendee.dietaryNotes.trim()
         };
       });
     }
@@ -1442,6 +1470,8 @@
       if (attendee.hasAllergies === null || typeof attendee.hasAllergies === "undefined") return { valid: false, message: "Indica si el asistente " + (index + 1) + " tiene alergias alimentarias." };
       if (attendee.hasAllergies && (!Array.isArray(attendee.allergens) || !attendee.allergens.length)) return { valid: false, message: "Selecciona al menos un alérgeno para el asistente " + (index + 1) + "." };
       if (attendee.hasAllergies && (attendee.severeAllergy === null || typeof attendee.severeAllergy === "undefined")) return { valid: false, message: "Indica si la alergia del asistente " + (index + 1) + " es grave." };
+      if (!attendee.dietaryPreference) return { valid: false, message: "Indica la dieta o preferencia alimentaria de cada asistente." };
+      if (attendee.dietaryPreference === "other" && !String(attendee.dietaryNotes || "").trim()) return { valid: false, message: "Describe la necesidad alimentaria indicada." };
     }
     if (!form.privacy_accepted.checked) return { valid: false, message: "Acepta la política de privacidad para continuar." };
     if (!form.terms_accepted.checked) return { valid: false, message: "Acepta las condiciones de compra, cancelación y acceso." };
@@ -1483,8 +1513,9 @@
     var savings = referenceTotal > total ? referenceTotal - total : 0;
     var attendees = Array.isArray(totals && totals.attendees) ? totals.attendees : [];
     var allergyCount = attendees.filter(function (attendee) { return attendee && attendee.hasAllergies === true; }).length;
+    var dietCount = attendees.filter(function (attendee) { return attendee && attendee.dietaryPreference && attendee.dietaryPreference !== "none"; }).length;
     var attendeeSummary = attendees.length
-      ? '<div class="checkout-summary-attendees"><span><strong>' + attendees.length + ' asistente' + (attendees.length === 1 ? '' : 's') + '</strong><small>' + (allergyCount ? allergyCount + ' con alergias comunicadas' : 'Sin alergias comunicadas todavía') + '</small></span></div>'
+      ? '<div class="checkout-summary-attendees"><span><strong>' + attendees.length + ' asistente' + (attendees.length === 1 ? '' : 's') + '</strong><small>' + (allergyCount ? allergyCount + ' con alergias comunicadas' : 'Sin alergias comunicadas') + (dietCount ? ' · ' + dietCount + ' con dieta especial' : '') + '</small></span></div>'
       : '';
     target.innerHTML = '<p class="checkout-summary-event">' + escapeHtml(eventTitle) + '</p><ul class="checkout-summary-items">' + selected.map(function (input) {
       var quantity = Number(input.value || 0);

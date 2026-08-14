@@ -1116,7 +1116,7 @@ final class Ticketing
             throw new InvalidArgumentException('Pedido no encontrado.');
         }
         $attendees = $this->pdo->prepare(
-            'SELECT ta.attendee_name, ta.has_allergies, ta.severe_allergy, ta.allergy_notes, ta.ticket_sequence,
+            'SELECT ta.attendee_name, ta.has_allergies, ta.severe_allergy, ta.allergy_notes, ta.dietary_preference, ta.dietary_notes, ta.ticket_sequence,
                     toi.ticket_type_name, t.public_code,
                     GROUP_CONCAT(taa.allergen_label ORDER BY taa.allergen_label SEPARATOR " · ") AS allergens
              FROM ticket_attendees ta
@@ -1124,7 +1124,7 @@ final class Ticketing
              LEFT JOIN tickets t ON t.id = ta.ticket_id
              LEFT JOIN ticket_attendee_allergens taa ON taa.attendee_id = ta.id
              WHERE ta.order_id = ?
-             GROUP BY ta.id, ta.attendee_name, ta.has_allergies, ta.severe_allergy, ta.allergy_notes, ta.ticket_sequence, toi.ticket_type_name, t.public_code
+             GROUP BY ta.id, ta.attendee_name, ta.has_allergies, ta.severe_allergy, ta.allergy_notes, ta.dietary_preference, ta.dietary_notes, ta.ticket_sequence, toi.ticket_type_name, t.public_code
              ORDER BY toi.id ASC, ta.ticket_sequence ASC'
         );
         $attendees->execute([$orderId]);
@@ -2888,12 +2888,25 @@ final class Ticketing
             } else {
                 $severeAllergy = false;
             }
+            $dietaryPreference = clean_string((string) ($raw['dietary_preference'] ?? 'none'), 32);
+            $allowedDietaryPreferences = ['none', 'vegetarian', 'vegan', 'pescatarian', 'other'];
+            if (!in_array($dietaryPreference, $allowedDietaryPreferences, true)) {
+                throw new InvalidArgumentException('Se ha indicado una dieta o necesidad alimentaria no válida.');
+            }
+            $dietaryNotes = $dietaryPreference === 'other'
+                ? clean_string((string) ($raw['dietary_notes'] ?? ''), 500)
+                : null;
+            if ($dietaryPreference === 'other' && $dietaryNotes === '') {
+                throw new InvalidArgumentException('Describe la necesidad alimentaria indicada.');
+            }
             $attendees[] = [
                 'name' => $name,
                 'has_allergies' => $hasAllergies,
                 'allergens' => $allergens,
                 'severe_allergy' => $severeAllergy,
                 'allergy_notes' => $hasAllergies ? clean_string((string) ($raw['allergy_notes'] ?? ''), 500) : null,
+                'dietary_preference' => $dietaryPreference,
+                'dietary_notes' => $dietaryNotes,
             ];
         }
         return $attendees;
@@ -2914,8 +2927,8 @@ final class Ticketing
     {
         $attendeeInsert = $this->pdo->prepare(
             'INSERT INTO ticket_attendees
-             (order_id, order_item_id, ticket_sequence, attendee_name, has_allergies, severe_allergy, allergy_notes, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())'
+             (order_id, order_item_id, ticket_sequence, attendee_name, has_allergies, severe_allergy, allergy_notes, dietary_preference, dietary_notes, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())'
         );
         $allergenInsert = $this->pdo->prepare(
             'INSERT INTO ticket_attendee_allergens (attendee_id, allergen_id, allergen_label, created_at)
@@ -2936,6 +2949,8 @@ final class Ticketing
                     $attendee['has_allergies'] ? 1 : 0,
                     $attendee['severe_allergy'] ? 1 : 0,
                     $attendee['allergy_notes'],
+                    $attendee['dietary_preference'],
+                    $attendee['dietary_notes'],
                 ]);
                 $attendeeId = (int) $this->pdo->lastInsertId();
                 foreach ($attendee['allergens'] as $id => $label) {
