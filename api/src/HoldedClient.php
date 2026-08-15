@@ -35,6 +35,7 @@ final class HoldedClient
     public function health(): array
     {
         return [
+            'api_version' => 'v2',
             'enabled' => $this->enabled(),
             'dry_run' => $this->dryRun(),
             'configured' => count($this->configIssues()) === 0,

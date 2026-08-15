@@ -445,12 +445,20 @@
           var action = button.getAttribute("data-order-action");
           var id = Number(button.getAttribute("data-order-id"));
           if (!id || !window.confirm(actionMessage(action))) return;
+          var holdedConfirmation = false;
+          if (action === "holded-retry") {
+            var holdedOrder = (state.orders || []).find(function (order) { return Number(order.id) === id; });
+            if (holdedOrder && holdedOrder.holded_status === "requires_review" && !holdedOrder.holded_document_id) {
+              holdedConfirmation = window.confirm("Este pedido pudo quedarse interrumpido mientras Holded creaba el documento. Busca primero la referencia Redsys en Holded. Pulsa Aceptar solo si has comprobado que NO existe documento ni pago; de lo contrario, cancela.");
+              if (!holdedConfirmation) return;
+            }
+          }
           button.disabled = true;
           var url = api + "/admin/orders/" + id + (action === "cancel" ? "/cancel" : action === "refund" ? "/record-refund" : action === "holded-retry" ? "/holded/retry" : action === "cash-payment" ? "/cash-payment" : action === "send-cash" ? "/send-cash" : "/test");
           var method = action === "purge-test" ? "DELETE" : "POST";
           var note = action === "cash-payment" ? window.prompt("Apunte del cobro en efectivo (opcional):", "") : null;
           if (action === "cash-payment" && note === null) { button.disabled = false; return; }
-          var body = action === "refund" ? { confirmed: true } : action === "cash-payment" ? { cash_payment_notes: note || "" } : {};
+          var body = action === "refund" ? { confirmed: true } : action === "cash-payment" ? { cash_payment_notes: note || "" } : action === "holded-retry" ? { confirm_no_external_document: holdedConfirmation } : {};
           jsonRequest(url, method, body).then(function () { reload(); }).catch(function (error) { renderPageError(error.message); }).finally(function () { button.disabled = false; });
         });
       }).catch(function (error) { renderPageError(error.message); });
@@ -547,8 +555,14 @@
         if (!retry) return;
         var orderId = Number(retry.getAttribute("data-billing-retry"));
         if (!orderId || !window.confirm("El pedido se volverá a dejar en cola para Holded. No se emitirá ningún documento desde el navegador. ¿Continuar?")) return;
+        var order = (state.orders || []).find(function (item) { return Number(item.id) === orderId; });
+        var holdedConfirmation = false;
+        if (order && order.holded_status === "requires_review" && !order.holded_document_id) {
+          holdedConfirmation = window.confirm("Busca primero la referencia Redsys en Holded. Confirma solo si has comprobado que no existe documento ni pago. Si existe, cancela y conserva el pedido para revisión.");
+          if (!holdedConfirmation) return;
+        }
         retry.disabled = true;
-        jsonRequest(api + "/admin/orders/" + orderId + "/holded/retry", "POST", {}).then(reload).catch(function (error) { renderPageError(error.message); }).finally(function () { retry.disabled = false; });
+        jsonRequest(api + "/admin/orders/" + orderId + "/holded/retry", "POST", { confirm_no_external_document: holdedConfirmation }).then(reload).catch(function (error) { renderPageError(error.message); }).finally(function () { retry.disabled = false; });
       });
       reload();
     });

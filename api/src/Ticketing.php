@@ -829,11 +829,7 @@ final class Ticketing
             if ($accepted && $order['status'] !== 'paid') {
                 // Solo el callback firmado y validado puede dejar una tarea fiscal.
                 // No hay comunicación remota con Holded en esta ruta crítica.
-                (new HoldedSyncService($this->pdo, new HoldedClient()))->queuePaidProductionOrder(
-                    (int) $order['id'],
-                    (string) ($attempt['environment'] ?? ''),
-                    $isTestOrder
-                );
+                (new HoldedSyncService($this->pdo, new HoldedClient()))->queuePaidProductionOrder((int) $order['id']);
                 if ($isTestOrder) {
                     $this->sendTestConfirmation((int) $order['id']);
                 } else {
@@ -1008,7 +1004,7 @@ final class Ticketing
             $this->generateTicketsOnce($orderId, $isPaid ? 'issued' : 'blocked');
             $this->auditAdminOperation($operator, $isPaid ? 'cash_order_created_paid' : 'cash_order_reserved', $orderId, ['event_id' => $eventId, 'quantity' => $quantityTotal, 'notes' => $notes]);
             $this->pdo->commit();
-            if ($isPaid) (new HoldedSyncService($this->pdo, new HoldedClient()))->queuePaidProductionOrder($orderId, 'production', false);
+            if ($isPaid) (new HoldedSyncService($this->pdo, new HoldedClient()))->queuePaidProductionOrder($orderId);
             return $this->adminOrderById($orderId);
         } catch (\Throwable $error) {
             if ($this->pdo->inTransaction()) $this->pdo->rollBack();
@@ -1038,7 +1034,7 @@ final class Ticketing
             $this->pdo->prepare('UPDATE tickets t JOIN ticket_order_items oi ON oi.id = t.order_item_id SET t.status = "issued", t.updated_at = NOW() WHERE oi.order_id = ? AND t.status = "blocked"')->execute([$orderId]);
             $this->auditAdminOperation($operator, 'cash_payment_recorded', $orderId, ['notes' => $notes]);
             $this->pdo->commit();
-            (new HoldedSyncService($this->pdo, new HoldedClient()))->queuePaidProductionOrder($orderId, 'production', false);
+            (new HoldedSyncService($this->pdo, new HoldedClient()))->queuePaidProductionOrder($orderId);
             return $this->adminOrderById($orderId);
         } catch (\Throwable $error) {
             if ($this->pdo->inTransaction()) $this->pdo->rollBack();

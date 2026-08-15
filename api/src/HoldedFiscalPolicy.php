@@ -17,6 +17,10 @@ final class HoldedFiscalPolicy
         foreach (['HOLDED_DEFAULT_TAX_ID', 'HOLDED_PAYMENT_METHOD_ID', 'HOLDED_TREASURY_ID'] as $key) {
             if (!env_value($key)) $issues[] = $key;
         }
+        $taxRate = env_value('HOLDED_DEFAULT_TAX_RATE');
+        if ($taxRate === null || $taxRate === '' || !is_numeric($taxRate) || (float) $taxRate < 0 || (float) $taxRate > 100) {
+            $issues[] = 'HOLDED_DEFAULT_TAX_RATE inválido';
+        }
         $series = $documentType === 'invoice' ? 'HOLDED_INVOICE_SERIES_ID' : 'HOLDED_SALES_RECEIPT_SERIES_ID';
         if (!env_value($series)) $issues[] = $series;
         return $issues;

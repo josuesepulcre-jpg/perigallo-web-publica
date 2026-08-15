@@ -26,33 +26,73 @@ final class HoldedSyncService
         $this->mailer = $mailer ?? new Mailer();
     }
 
-    public function queuePaidProductionOrder(int $orderId, string $paymentEnvironment, bool $isTest): void
+    /**
+     * Encola exclusivamente según el pedido persistido. El entorno de Redsys
+     * ("real"/"test") no es el entorno interno del pedido ("production"/"sandbox")
+     * y no debe decidir nunca si una venta se contabiliza.
+     */
+    public function queuePaidProductionOrder(int $orderId): void
     {
-        if ($isTest || $paymentEnvironment !== 'production') {
-            return;
-        }
-        $this->pdo->prepare(
+        $statement = $this->pdo->prepare(
             'UPDATE ticket_orders
              SET holded_status = IF(holded_status = "synced", holded_status, "pending"),
                  holded_next_attempt_at = IF(holded_status = "synced", holded_next_attempt_at, NOW()),
                  holded_last_error = IF(holded_status = "synced", holded_last_error, NULL),
                  updated_at = NOW()
              WHERE id = ? AND is_test = 0 AND environment = "production" AND status = "paid"'
-        )->execute([$orderId]);
-        $this->log($orderId, 'queue', 'planned', 0, null, null, null, null);
+        );
+        $statement->execute([$orderId]);
+        if ($statement->rowCount() > 0) {
+            $this->log($orderId, 'queue', 'planned', 0, null, null, null, null);
+        }
     }
 
-    public function retry(int $orderId): array
+    /**
+     * Reintenta de forma segura. Un processing/requires_review sin ID externo
+     * puede haber creado ya un documento remoto, por lo que exige confirmación
+     * explícita de que se ha revisado Holded antes de volver a emitirlo.
+     */
+    public function retry(int $orderId, bool $confirmNoExternalDocument = false): array
     {
-        $statement = $this->pdo->prepare('SELECT id, status, is_test, environment FROM ticket_orders WHERE id = ? LIMIT 1');
+        $statement = $this->pdo->prepare('SELECT id, status, is_test, environment, holded_status, holded_document_id, holded_payment_id, holded_last_error FROM ticket_orders WHERE id = ? LIMIT 1');
         $statement->execute([$orderId]);
         $order = $statement->fetch();
         if (!$order || $order['status'] !== 'paid' || !empty($order['is_test']) || $order['environment'] !== 'production') {
             throw new RuntimeException('Solo se pueden reintentar pedidos reales cobrados en producción.');
         }
+        if ($order['holded_status'] === 'synced') {
+            return $this->orderStatus($orderId);
+        }
+        $ambiguousPayment = empty($order['holded_payment_id'])
+            && preg_match('/^holded_(network|http \(5[0-9]{2}\))/', (string) ($order['holded_last_error'] ?? ''));
+        $needsExternalReview = in_array($order['holded_status'], ['processing', 'requires_review'], true)
+            && (empty($order['holded_document_id']) || $ambiguousPayment);
+        if ($needsExternalReview && !$confirmNoExternalDocument) {
+            throw new RuntimeException('Antes de reintentar este pedido revisa Holded por la referencia Redsys y confirma que no existe un documento externo.');
+        }
         $this->pdo->prepare('UPDATE ticket_orders SET holded_status = "pending", holded_next_attempt_at = NOW(), holded_last_error = NULL, updated_at = NOW() WHERE id = ? AND holded_status <> "synced"')->execute([$orderId]);
-        $this->log($orderId, 'manual_retry', 'planned', 0, null, null, null, null);
+        $this->log($orderId, 'manual_retry', 'planned', 0, null, null, $needsExternalReview ? 'external_write_reviewed' : null, null);
         return $this->orderStatus($orderId);
+    }
+
+    /** @return array{eligible:int,requeued:int,order_ids:list<int>} */
+    public function requeueRecoverableOrders(int $limit = 100, bool $apply = false): array
+    {
+        $limit = max(1, min(500, $limit));
+        $rows = $this->pdo->query(
+            'SELECT id FROM ticket_orders
+             WHERE is_test = 0 AND environment = "production" AND status = "paid"
+               AND holded_status IN ("not_required", "pending", "error")
+             ORDER BY id ASC LIMIT ' . $limit
+        )->fetchAll();
+        $ids = array_map(static fn (array $row): int => (int) $row['id'], $rows);
+        if ($apply) {
+            foreach ($ids as $orderId) {
+                $this->pdo->prepare('UPDATE ticket_orders SET holded_status = "pending", holded_next_attempt_at = NOW(), holded_last_error = NULL, updated_at = NOW() WHERE id = ? AND holded_status IN ("not_required", "pending", "error")')->execute([$orderId]);
+                $this->log($orderId, 'requeue_recoverable', 'planned', 0, null, null, null, null);
+            }
+        }
+        return ['eligible' => count($ids), 'requeued' => $apply ? count($ids) : 0, 'order_ids' => $ids];
     }
 
     public function due(int $limit = 20): array
@@ -125,16 +165,37 @@ final class HoldedSyncService
             $order = $this->loadOrder($orderId, false);
             if (!$order) throw new RuntimeException('Pedido no encontrado.');
             $documentType = (string) $order['holded_document_type'];
-            $document = $this->issueDocument($order, $documentType);
-            $documentId = $this->externalId($document);
-            if ($documentId === '') throw new HoldedException('Holded no devolvió el identificador del documento.', null, null, false, 'holded_invalid_response');
+            $documentId = (string) ($order['holded_document_id'] ?? '');
+            if ($documentId === '') {
+                try {
+                    $document = $this->issueDocument($order, $documentType);
+                } catch (HoldedException $error) {
+                    return $this->handleFailure($orderId, $error, 'document');
+                }
+                $documentId = $this->externalId($document);
+                if ($documentId === '') throw new HoldedException('Holded no devolvió el identificador del documento.', null, null, false, 'holded_invalid_response');
+                // Persistimos el ID antes de llamar a /payments: si el pago falla,
+                // el siguiente worker reutiliza este documento y jamás emite otro.
+                $this->rememberDocument($orderId, $documentType, $documentId, $this->documentNumber($document));
+                $this->log($orderId, 'issue_' . $documentType, 'succeeded', (int) $order['holded_sync_attempts'], null, $documentId, null, null);
+            }
             if ($documentType === 'invoice' && filter_var(env_value('HOLDED_AUTO_APPROVE', 'false'), FILTER_VALIDATE_BOOLEAN)) {
                 $this->client->approveInvoice($documentId);
             }
-            $payment = $this->paymentPayload($order);
-            $paymentResponse = $documentType === 'invoice'
-                ? $this->client->recordInvoicePayment($documentId, $payment)
-                : $this->client->recordSalesReceiptPayment($documentId, $payment);
+            $paymentId = (string) ($order['holded_payment_id'] ?? '');
+            if ($paymentId === '') {
+                $payment = $this->paymentPayload($order);
+                try {
+                    $paymentResponse = $documentType === 'invoice'
+                        ? $this->client->recordInvoicePayment($documentId, $payment)
+                        : $this->client->recordSalesReceiptPayment($documentId, $payment);
+                } catch (HoldedException $error) {
+                    return $this->handleFailure($orderId, $error, 'payment');
+                }
+                $paymentId = $this->externalId($paymentResponse);
+                if ($paymentId === '') throw new HoldedException('Holded no devolvió el identificador del pago.', null, null, false, 'holded_invalid_response');
+                $this->rememberPayment($orderId, $paymentId);
+            }
             $this->pdo->prepare(
                 'UPDATE ticket_orders
                  SET holded_status = "synced",
@@ -153,8 +214,8 @@ final class HoldedSyncService
                  WHERE id = ?'
             )->execute([
                 $documentId,
-                $this->documentNumber($document),
-                $this->externalId($paymentResponse),
+                $this->documentNumberFromOrder($orderId),
+                $paymentId,
                 $documentType,
                 $documentType,
                 $orderId,
@@ -162,16 +223,25 @@ final class HoldedSyncService
             $this->log($orderId, 'payment_' . $documentType, 'succeeded', (int) $order['holded_sync_attempts'], null, $documentId, null, null);
             return 'synced';
         } catch (HoldedException $error) {
-            return $this->handleFailure($orderId, $error);
+            return $this->handleFailure($orderId, $error, 'finalize');
         } catch (\Throwable $error) {
-            return $this->handleFailure($orderId, new HoldedException('Error interno al sincronizar con Holded.', null, null, true, 'holded_internal'));
+            return $this->handleFailure($orderId, new HoldedException('Error interno al sincronizar con Holded.', null, null, true, 'holded_internal'), 'finalize');
         }
     }
 
     public function health(): array
     {
-        $counts = $this->pdo->query('SELECT holded_status, COUNT(*) AS total FROM ticket_orders WHERE is_test = 0 GROUP BY holded_status')->fetchAll();
-        return ['configuration' => $this->client->health(), 'orders' => $counts, 'legal_review_required' => true];
+        $byStatus = array_fill_keys(['not_required', 'pending', 'error', 'requires_review', 'processing', 'synced'], 0);
+        try {
+            $rows = $this->pdo->query('SELECT holded_status, COUNT(*) AS total FROM ticket_orders WHERE is_test = 0 AND environment = "production" GROUP BY holded_status')->fetchAll();
+            foreach ($rows as $row) $byStatus[(string) $row['holded_status']] = (int) $row['total'];
+            $recent = $this->pdo->query('SELECT order_id, operation, status, attempt, http_status, error_code, created_at FROM holded_sync_logs WHERE status IN ("requires_review", "failed", "retry_scheduled") ORDER BY id DESC LIMIT 10')->fetchAll();
+            return ['configuration' => $this->client->health(), 'orders' => $byStatus, 'recent_diagnostics' => $recent, 'schema_ready' => true, 'legal_review_required' => true];
+        } catch (\Throwable $error) {
+            // El comprobador se puede ejecutar antes de migrar sin filtrar el
+            // detalle del esquema ni detener la comprobación de configuración.
+            return ['configuration' => $this->client->health(), 'orders' => $byStatus, 'recent_diagnostics' => [], 'schema_ready' => false, 'schema_error' => 'holded_schema_unavailable', 'legal_review_required' => true];
+        }
     }
 
     /** @return array{sent:int,errors:int} */
@@ -344,20 +414,63 @@ final class HoldedSyncService
         ];
     }
 
-    private function handleFailure(int $orderId, HoldedException $error): string
+    private function rememberDocument(int $orderId, string $documentType, string $documentId, ?string $documentNumber): void
+    {
+        $statement = $this->pdo->prepare(
+            'UPDATE ticket_orders
+             SET holded_document_type = ?, holded_document_id = ?, holded_document_number = ?, updated_at = NOW()
+             WHERE id = ? AND holded_status = "processing"
+               AND (holded_document_id IS NULL OR holded_document_id = "" OR holded_document_id = ?)'
+        );
+        $statement->execute([$documentType, $documentId, $documentNumber, $orderId, $documentId]);
+        if ($statement->rowCount() !== 1) {
+            throw new RuntimeException('No se ha podido guardar de forma segura el documento de Holded.');
+        }
+    }
+
+    private function rememberPayment(int $orderId, string $paymentId): void
+    {
+        $statement = $this->pdo->prepare(
+            'UPDATE ticket_orders
+             SET holded_payment_id = ?, updated_at = NOW()
+             WHERE id = ? AND holded_status = "processing"
+               AND (holded_payment_id IS NULL OR holded_payment_id = "" OR holded_payment_id = ?)'
+        );
+        $statement->execute([$paymentId, $orderId, $paymentId]);
+        if ($statement->rowCount() !== 1) {
+            throw new RuntimeException('No se ha podido guardar de forma segura el pago de Holded.');
+        }
+    }
+
+    private function documentNumberFromOrder(int $orderId): ?string
+    {
+        $statement = $this->pdo->prepare('SELECT holded_document_number FROM ticket_orders WHERE id = ?');
+        $statement->execute([$orderId]);
+        $value = $statement->fetchColumn();
+        return $value ? (string) $value : null;
+    }
+
+    private function handleFailure(int $orderId, HoldedException $error, string $stage = 'sync'): string
     {
         $order = $this->loadOrder($orderId, false);
         $attempt = (int) ($order['holded_sync_attempts'] ?? 1);
         $safe = $this->safeMessage($error);
-        $requiresReview = !$error->retryable || in_array($error->httpStatus, [401, 403], true) || $attempt >= 5;
+        // Una respuesta ausente o 5xx durante una escritura puede haber llegado
+        // a Holded aunque no tengamos su ID. No se reintenta a ciegas: se evita
+        // duplicar tanto documentos como pagos. Con un ID ya persistido, el
+        // siguiente reintento reutiliza el documento y es seguro.
+        $ambiguousWrite = in_array($stage, ['document', 'payment'], true)
+            && empty($order['holded_' . ($stage === 'document' ? 'document' : 'payment') . '_id'])
+            && ($error->safeCode === 'holded_network' || ($error->httpStatus !== null && $error->httpStatus >= 500));
+        $requiresReview = $ambiguousWrite || !$error->retryable || in_array($error->httpStatus, [401, 403], true) || $attempt >= 5;
         if ($requiresReview) {
             $this->pdo->prepare('UPDATE ticket_orders SET holded_status = "requires_review", holded_last_error = ?, holded_next_attempt_at = NULL, updated_at = NOW() WHERE id = ?')->execute([$safe, $orderId]);
-            $this->log($orderId, 'sync', 'requires_review', $attempt, $error->httpStatus, null, $error->safeCode, $safe);
+            $this->log($orderId, $stage, 'requires_review', $attempt, $error->httpStatus, null, $ambiguousWrite ? 'holded_ambiguous_write' : $error->safeCode, $safe);
             return 'requires_review';
         }
         $delay = $error->retryAfterSeconds ?: [60, 300, 900, 3600, 21600][$attempt - 1];
         $this->pdo->prepare('UPDATE ticket_orders SET holded_status = "error", holded_last_error = ?, holded_next_attempt_at = DATE_ADD(NOW(), INTERVAL ? SECOND), updated_at = NOW() WHERE id = ?')->execute([$safe, $delay, $orderId]);
-        $this->log($orderId, 'sync', 'retry_scheduled', $attempt, $error->httpStatus, null, $error->safeCode, $safe);
+        $this->log($orderId, $stage, 'retry_scheduled', $attempt, $error->httpStatus, null, $error->safeCode, $safe);
         return 'errors';
     }
 

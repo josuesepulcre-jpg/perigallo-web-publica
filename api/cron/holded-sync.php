@@ -5,6 +5,7 @@ require dirname(__DIR__) . '/src/bootstrap.php';
 
 use Perigallo\Ticketing\Database;
 use Perigallo\Ticketing\HoldedClient;
+use Perigallo\Ticketing\HoldedException;
 use Perigallo\Ticketing\HoldedSyncService;
 
 $lockPath = sys_get_temp_dir() . '/perigallo-holded-sync.lock';
@@ -18,7 +19,15 @@ try {
     $result = (new HoldedSyncService(Database::pdo(), new HoldedClient()))->due($limit);
     fwrite(STDOUT, json_encode($result, JSON_UNESCAPED_UNICODE) . PHP_EOL);
 } catch (Throwable $error) {
-    fwrite(STDERR, "Holded sync failed.\n");
+    // Diagnóstico útil para Plesk sin revelar cabeceras, claves ni datos fiscales.
+    $diagnostic = [
+        'ok' => false,
+        'error_type' => (new ReflectionClass($error))->getShortName(),
+        'safe_code' => $error instanceof HoldedException ? $error->safeCode : 'holded_cron_internal',
+        'http_status' => $error instanceof HoldedException ? $error->httpStatus : null,
+        'order_id' => null,
+    ];
+    fwrite(STDERR, json_encode($diagnostic, JSON_UNESCAPED_UNICODE) . PHP_EOL);
     exit(1);
 } finally {
     flock($lock, LOCK_UN);

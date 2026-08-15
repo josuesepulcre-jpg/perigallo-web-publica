@@ -419,7 +419,16 @@ try {
 
     if ($method === 'POST' && preg_match('#^/admin/orders/([0-9]+)/holded/retry$#', $path, $m)) {
         AdminAuth::requireOwner();
-        json_response(['ok' => true, 'holded' => $holded->retry((int) $m[1])]);
+        $body = read_json_body();
+        json_response(['ok' => true, 'holded' => $holded->retry((int) $m[1], !empty($body['confirm_no_external_document']))]);
+        return;
+    }
+
+    if ($method === 'POST' && $path === '/admin/holded/requeue-recoverable') {
+        AdminAuth::requireOwner();
+        $body = read_json_body();
+        $limit = isset($body['limit']) ? (int) $body['limit'] : 100;
+        json_response(['ok' => true, 'holded' => $holded->requeueRecoverableOrders($limit, !empty($body['apply']))]);
         return;
     }
 

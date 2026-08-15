@@ -11,10 +11,14 @@ complete la revisión fiscal y la activación expresa. La configuración de Reds
 se mantiene separada y en su entorno actual.
 
 El callback firmado de Redsys solo encola un pedido real cobrado en producción.
+La decisión se toma a partir de `ticket_orders.environment` e `is_test`, nunca
+del literal de entorno que devuelve Redsys (`real`/`test`). El cobro es la
+fuente de verdad y la sincronización no depende del retorno del navegador.
 `api/cron/holded-sync.php` procesa la cola fuera del callback con reintentos de
 1 min, 5 min, 15 min, 1 h y 6 h. Los errores de permisos, configuración o una
 sincronización interrumpida pasan a `requires_review`; no se reintenta a ciegas
-para evitar duplicar documentos.
+para evitar duplicar documentos. El ID del documento se guarda inmediatamente
+antes de registrar el pago; el siguiente intento reutiliza ese documento.
 
 Cuando el comprador solicita factura, la sincronización crea el contacto y la
 factura nominal en Holded. Con `HOLDED_AUTO_APPROVE=true` y
@@ -31,22 +35,53 @@ pedido. Este enlace no guarda el PDF en la web ni expone la API Key de Holded.
    Nunca guardarlas en Git ni en JavaScript público.
    `HOLDED_DEFAULT_TAX_RATE` debe coincidir con el impuesto seleccionado en
    `HOLDED_DEFAULT_TAX_ID` (por ejemplo, `10` con `s_iva_10`).
-3. Ejecutar `php api/scripts/holded-health.php`: solo informa de configuración y
-   recuentos; no hace peticiones a Holded ni escribe datos.
+3. Ejecutar `php api/scripts/holded-health.php`: solo informa de configuración,
+   recuentos por estado y diagnósticos seguros; no hace peticiones a Holded ni
+   escribe datos. Antes de activar, debe indicar `enabled=true`,
+   `dry_run=false`, `configured=true` y `missing=[]`.
 4. Validar con datos de prueba y una cuenta/entorno autorizado por Holded.
 5. Revisar textos legales de facturación, conservación de datos y rectificativas
    con asesoría antes de cambiar `HOLDED_ENABLED`.
-6. Aplicar `database/migrations/021_holded_invoice_delivery.sql` antes de activar
-   el correo automático de facturas.
+6. Confirmar que están aplicadas, en este orden, las migraciones
+   `020_holded_fiscal_sync.sql`, `021_holded_invoice_delivery.sql`,
+   `022_checkout_runtime_compatibility.sql` y
+   `023_ticket_order_tax_breakdown.sql` antes de activar el correo automático
+   de facturas o recuperar ventas antiguas.
 
 ## Cron de facturación
 
 El mismo cron procesa la cola fiscal y la entrega de facturas. Configurarlo en
-Plesk cada 5 minutos, desde el directorio activo de la web:
+Plesk cada 5 minutos como tarea **Ejecutar un comando**, desde el directorio
+activo de la web:
 
 ```bash
-cd /var/www/vhosts/perigallo.com/perigallo.com && php api/cron/holded-sync.php 20
+cd /var/www/vhosts/perigallo.com/perigallo.com && /usr/bin/php api/cron/holded-sync.php 20
 ```
+
+Si Plesk muestra otro binario de PHP, sustituir solo `/usr/bin/php`. La salida
+es JSON seguro y, ante un fallo no controlado, contiene únicamente
+`error_type`, `safe_code`, `http_status` y `order_id` cuando esté disponible.
+Nunca incluye claves, cabeceras ni datos fiscales.
+
+## Recuperar ventas reales ya cobradas
+
+Primero ejecutar la previsualización, que no escribe nada:
+
+```bash
+cd /var/www/vhosts/perigallo.com/perigallo.com && /usr/bin/php api/scripts/holded-requeue.php --limit=100
+```
+
+Solo muestra pedidos reales, cobrados y de producción en `not_required`,
+`pending` o `error`. No toca `synced`, `processing` ni `requires_review`. Si
+la lista es correcta, aplicar la recuperación:
+
+```bash
+cd /var/www/vhosts/perigallo.com/perigallo.com && /usr/bin/php api/scripts/holded-requeue.php --limit=100 --apply
+```
+
+Los casos `requires_review` deben revisarse por la referencia Redsys en Holded
+antes de pulsar **Preparar reintento** en el backoffice. Si no hay ID externo,
+la interfaz exige confirmar que no existe documento ni pago remoto.
 
 ## Regla documental
 
@@ -71,11 +106,12 @@ emitir un documento con un impuesto incorrecto.
 
 ## Endpoints oficiales utilizados
 
-- [Crear facturas](https://www.holded.com/es/desarrolladores/crear-factura)
-- [Registrar pagos de facturas](https://www.holded.com/es/desarrolladores/registrar-pago-de-factura)
-- [Crear recibos de venta](https://www.holded.com/es/desarrolladores/crear-recibo-de-venta)
-- [Crear contactos](https://www.holded.com/es/desarrolladores/crear-contacto)
-- [Crear notas rectificativas](https://www.holded.com/es/desarrolladores/crear-nota-de-venta)
+La integración usa la API v2 configurada en el proyecto
+(`https://api.holded.com/api/v2`) con autenticación Bearer para facturas,
+recibos de venta, contactos, pagos y PDF. No mezclar claves de la API v1 con
+este flujo: Holded conserva v1 para integraciones antiguas y v2 es la API
+actual. La documentación de la credencial generada en Holded debe confirmar el
+acceso a esas operaciones antes de activar producción.
 
 La tabla `holded_refund_requests` prepara la trazabilidad de abonos/rectificativas;
 no devuelve dinero ni emite notas automáticamente.
