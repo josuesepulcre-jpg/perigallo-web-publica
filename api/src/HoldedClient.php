@@ -60,6 +60,12 @@ final class HoldedClient
     public function recordSalesReceiptPayment(string $id, array $payload): array { return $this->request('POST', '/sales-receipts/' . rawurlencode($id) . '/payments', $payload); }
     public function createCreditNote(array $payload): array { return $this->request('POST', '/receipt-notes', $payload); }
     public function paymentMethods(): array { return $this->request('GET', '/payment-methods'); }
+    public function salesReceipts(array $filters = []): array
+    {
+        $allowed = ['limit', 'cursor', 'contact_id', 'status', 'start_date', 'end_date', 'sort', 'approval_status'];
+        $query = array_intersect_key($filters, array_flip($allowed));
+        return $this->request('GET', '/sales-receipts' . ($query ? '?' . http_build_query($query) : ''));
+    }
     public function taxes(): array { return $this->request('GET', '/taxes'); }
     public function numberingSeries(string $type): array { return $this->request('GET', '/numbering-series/' . rawurlencode($type)); }
 

@@ -49,6 +49,7 @@ const cases = [
   ["billing uses Holded health only for the owner", () => assert.match(adminJs, /sessionData\.is_owner/) ],
   ["billing never issues documents from the browser", () => assert.doesNotMatch(billingPage + adminJs, /createInvoice\(|HOLDED_API_KEY/) ],
   ["Holded stores the taxable base separately", () => assert.match(sync, /unit_base_cents/)],
+  ["Holded uses the v2 item account field", () => assert.match(sync, /'account' => \(string\) env_value\('HOLDED_SALES_ACCOUNT_ID'\)/)],
   ["Holded prevents a mismatched tax mapping", () => assert.match(sync, /holded_tax_mapping/)],
   ["Holded validates configured tax rate", () => assert.match(policy, /HOLDED_DEFAULT_TAX_RATE inválido/)],
   ["document ID is persisted before payment", () => {
@@ -57,6 +58,8 @@ const cases = [
     assert.ok(remember >= 0 && payment > remember);
   }],
   ["existing document is reused on retry", () => assert.match(sync, /\$documentId = \(string\) \(\$order\['holded_document_id'\] \?\? ''\)/)],
+  ["wrapped document responses are accepted", () => assert.match(sync, /'sales_receipt', 'salesReceipt'/)],
+  ["sales receipt inspection remains read-only", () => assert.match(client, /function salesReceipts\(array \$filters = \[\]\)/)],
   ["synced orders are terminal", () => assert.match(sync, /if \(\$order\['holded_status'\] === 'synced'\)/)],
   ["health reports every required state", () => assert.match(sync, /\['not_required', 'pending', 'error', 'requires_review', 'processing', 'synced'\]/)],
   ["health is safe before fiscal migrations", () => assert.match(sync, /holded_schema_unavailable/)],

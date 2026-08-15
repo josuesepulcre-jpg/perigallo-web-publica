@@ -384,7 +384,7 @@ final class HoldedSyncService
                 'type' => 'service',
                 'units' => (int) $item['quantity'],
                 'price' => $this->policy->amount((int) $item['unit_base_cents']),
-                'account_id' => (string) env_value('HOLDED_SALES_ACCOUNT_ID'),
+                'account' => (string) env_value('HOLDED_SALES_ACCOUNT_ID'),
             ];
             if ($taxRate > 0) {
                 $expectedRate = (float) (env_value('HOLDED_DEFAULT_TAX_RATE', '0') ?? '0');
@@ -403,7 +403,7 @@ final class HoldedSyncService
                     'type' => 'service',
                     'units' => (int) $item['quantity'],
                     'price' => $this->policy->amount((int) $item['unit_fee_cents']),
-                    'account_id' => (string) env_value('HOLDED_SALES_ACCOUNT_ID'),
+                    'account' => (string) env_value('HOLDED_SALES_ACCOUNT_ID'),
                 ];
             }
         }
@@ -554,13 +554,30 @@ final class HoldedSyncService
     private function externalId(array $response): string
     {
         foreach (['id', '_id', 'document_id', 'payment_id'] as $key) if (!empty($response[$key])) return (string) $response[$key];
-        if (isset($response['data']) && is_array($response['data'])) return $this->externalId($response['data']);
+        foreach (['data', 'result', 'item', 'document', 'invoice', 'sales_receipt', 'salesReceipt', 'payment'] as $key) {
+            if (isset($response[$key]) && is_array($response[$key])) {
+                $id = $this->externalId($response[$key]);
+                if ($id !== '') return $id;
+            }
+        }
+        if (array_is_list($response) && count($response) === 1 && is_array($response[0])) {
+            return $this->externalId($response[0]);
+        }
         return '';
     }
 
     private function documentNumber(array $response): ?string
     {
         foreach (['number', 'document_number', 'doc_number'] as $key) if (!empty($response[$key])) return clean_string((string) $response[$key], 100);
+        foreach (['data', 'result', 'item', 'document', 'invoice', 'sales_receipt', 'salesReceipt'] as $key) {
+            if (isset($response[$key]) && is_array($response[$key])) {
+                $number = $this->documentNumber($response[$key]);
+                if ($number !== null) return $number;
+            }
+        }
+        if (array_is_list($response) && count($response) === 1 && is_array($response[0])) {
+            return $this->documentNumber($response[0]);
+        }
         return null;
     }
 
