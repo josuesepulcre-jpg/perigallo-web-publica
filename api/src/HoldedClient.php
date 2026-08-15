@@ -66,6 +66,12 @@ final class HoldedClient
         $query = array_intersect_key($filters, array_flip($allowed));
         return $this->request('GET', '/sales-receipts' . ($query ? '?' . http_build_query($query) : ''));
     }
+    public function invoices(array $filters = []): array
+    {
+        $allowed = ['limit', 'cursor', 'contact_id', 'status', 'start_date', 'end_date', 'sort', 'approval_status'];
+        $query = array_intersect_key($filters, array_flip($allowed));
+        return $this->request('GET', '/invoices' . ($query ? '?' . http_build_query($query) : ''));
+    }
     public function taxes(): array { return $this->request('GET', '/taxes'); }
     public function numberingSeries(string $type): array { return $this->request('GET', '/numbering-series/' . rawurlencode($type)); }
 

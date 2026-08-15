@@ -176,6 +176,14 @@ final class HoldedSyncService
                     return $this->handleFailure($orderId, $error, 'document');
                 }
                 $documentId = $this->externalId($document);
+                if ($documentId === '') {
+                    // Algunas respuestas intermedias de la API no incluyen el
+                    // ID aunque el documento ya se haya creado. La referencia
+                    // única se guarda también en description para recuperarlo
+                    // con una lectura, sin repetir la escritura.
+                    $document = $this->findDocumentByReference($order, $documentType);
+                    $documentId = $this->externalId($document);
+                }
                 if ($documentId === '') throw new HoldedException('Holded no devolvió el identificador del documento.', null, null, false, 'holded_invalid_response');
                 // Persistimos el ID antes de llamar a /payments: si el pago falla,
                 // el siguiente worker reutiliza este documento y jamás emite otro.
@@ -185,13 +193,11 @@ final class HoldedSyncService
             if ($documentType === 'invoice' && filter_var(env_value('HOLDED_AUTO_APPROVE', 'false'), FILTER_VALIDATE_BOOLEAN)) {
                 $this->client->approveInvoice($documentId);
             }
-            $paymentId = (string) ($order['holded_payment_id'] ?? '');
-            if ($paymentId === '') {
+            $paymentId = $documentType === 'salesreceipt' ? null : (string) ($order['holded_payment_id'] ?? '');
+            if ($documentType === 'invoice' && $paymentId === '') {
                 $payment = $this->paymentPayload($order);
                 try {
-                    $paymentResponse = $documentType === 'invoice'
-                        ? $this->client->recordInvoicePayment($documentId, $payment)
-                        : $this->client->recordSalesReceiptPayment($documentId, $payment);
+                    $paymentResponse = $this->client->recordInvoicePayment($documentId, $payment);
                 } catch (HoldedException $error) {
                     return $this->handleFailure($orderId, $error, 'payment');
                 }
@@ -223,7 +229,7 @@ final class HoldedSyncService
                 $documentType,
                 $orderId,
             ]);
-            $this->log($orderId, 'payment_' . $documentType, 'succeeded', (int) $order['holded_sync_attempts'], null, $documentId, null, null);
+            $this->log($orderId, $documentType === 'salesreceipt' ? 'finalize_salesreceipt' : 'payment_invoice', 'succeeded', (int) $order['holded_sync_attempts'], null, $documentId, null, null);
             return 'synced';
         } catch (HoldedException $error) {
             return $this->handleFailure($orderId, $error, 'finalize');
@@ -411,7 +417,8 @@ final class HoldedSyncService
             'date' => (new DateTimeImmutable((string) $order['paid_at']))->format('Y-m-d'),
             'items' => $payloadItems,
             'payment_method_id' => (string) env_value('HOLDED_PAYMENT_METHOD_ID'),
-            'notes' => 'Pedido Perigallo ' . (string) $order['redsys_order'],
+            'description' => $this->documentReference($order),
+            'notes' => $this->documentReference($order),
         ];
         if ($documentType === 'invoice') {
             $contactId = $this->contactId($order);
@@ -421,6 +428,27 @@ final class HoldedSyncService
         }
         $common['number_line_id'] = (string) env_value('HOLDED_SALES_RECEIPT_SERIES_ID');
         return $this->client->createSalesReceipt($common);
+    }
+
+    /** @return array<string, mixed> */
+    private function findDocumentByReference(array $order, string $documentType): array
+    {
+        $date = (new DateTimeImmutable((string) $order['paid_at']))->format('Y-m-d');
+        $page = $documentType === 'invoice'
+            ? $this->client->invoices(['limit' => 200, 'start_date' => $date, 'end_date' => $date])
+            : $this->client->salesReceipts(['limit' => 200, 'start_date' => $date, 'end_date' => $date]);
+        $reference = $this->documentReference($order);
+        foreach (($page['items'] ?? []) as $item) {
+            if (is_array($item) && (string) ($item['description'] ?? '') === $reference) {
+                return $item;
+            }
+        }
+        return [];
+    }
+
+    private function documentReference(array $order): string
+    {
+        return 'Pedido Perigallo ' . (string) $order['redsys_order'];
     }
 
     private function contactId(array $order): string
