@@ -232,7 +232,13 @@ final class HoldedSyncService
             // mensaje original: puede contener datos del pedido o de Holded.
             $type = strtolower((new \ReflectionClass($error))->getShortName());
             $safeType = preg_replace('/[^a-z0-9_]+/', '_', $type) ?: 'unknown';
-            return $this->handleFailure($orderId, new HoldedException('Error interno al sincronizar con Holded.', null, null, true, 'holded_internal_' . $safeType), 'finalize');
+            $safeCode = 'holded_internal_' . $safeType;
+            if ($error instanceof \PDOException) {
+                $sqlState = strtolower(trim((string) $error->getCode()));
+                $sqlState = preg_replace('/[^a-z0-9_]+/', '_', $sqlState) ?: 'unknown';
+                $safeCode .= '_' . $sqlState;
+            }
+            return $this->handleFailure($orderId, new HoldedException('Error interno al sincronizar con Holded.', null, null, true, $safeCode), 'finalize');
         }
     }
 
@@ -242,6 +248,8 @@ final class HoldedSyncService
         try {
             $columns = $this->pdo->query('SHOW COLUMNS FROM ticket_orders')->fetchAll();
             $availableColumns = array_flip(array_map(static fn (array $column): string => (string) $column['Field'], $columns));
+            $itemColumns = $this->pdo->query('SHOW COLUMNS FROM ticket_order_items')->fetchAll();
+            $availableItemColumns = array_flip(array_map(static fn (array $column): string => (string) $column['Field'], $itemColumns));
             $requiredColumns = [
                 'is_test', 'environment', 'payment_status', 'holded_status', 'holded_document_type',
                 'holded_document_id', 'holded_document_number', 'holded_payment_id',
@@ -249,16 +257,21 @@ final class HoldedSyncService
                 'holded_invoice_delivery_sent_at', 'holded_invoice_delivery_next_attempt_at',
                 'holded_invoice_delivery_last_error',
             ];
+            $requiredItemColumns = ['unit_base_cents', 'unit_tax_cents', 'tax_rate', 'unit_fee_cents'];
             $missingColumns = array_values(array_filter($requiredColumns, static fn (string $column): bool => !isset($availableColumns[$column])));
+            $missingItemColumns = array_map(
+                static fn (string $column): string => 'ticket_order_items.' . $column,
+                array_values(array_filter($requiredItemColumns, static fn (string $column): bool => !isset($availableItemColumns[$column])))
+            );
             $hasLogs = (bool) $this->pdo->query('SHOW TABLES LIKE "holded_sync_logs"')->fetchColumn();
-            if ($missingColumns || !$hasLogs) {
+            if ($missingColumns || $missingItemColumns || !$hasLogs) {
                 return [
                     'configuration' => $this->client->health(),
                     'orders' => $byStatus,
                     'recent_diagnostics' => [],
                     'schema_ready' => false,
                     'schema_error' => 'holded_schema_unavailable',
-                    'missing_schema' => array_merge($missingColumns, $hasLogs ? [] : ['holded_sync_logs']),
+                    'missing_schema' => array_merge($missingColumns, $missingItemColumns, $hasLogs ? [] : ['holded_sync_logs']),
                     'legal_review_required' => true,
                 ];
             }

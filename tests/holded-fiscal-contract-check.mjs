@@ -41,6 +41,7 @@ const cases = [
   ["cron is separately locked", () => assert.match(cron, /LOCK_EX \| LOCK_NB/)],
   ["cron emits safe diagnostics", () => assert.match(cron, /error_type.*safe_code.*http_status/s)],
   ["unexpected sync errors keep a safe exception type", () => assert.match(sync, /holded_internal_' \. \$safeType/)],
+  ["PDO diagnostics keep only the SQLSTATE", () => assert.match(sync, /\$error instanceof \\PDOException[\s\S]*\$error->getCode\(\)/)],
   ["admin retry is server-protected", () => assert.match(api, /\/holded\/retry/)],
   ["ambiguous retries require explicit external review", () => assert.match(sync, /confirmNoExternalDocument/)],
   ["recoverable orders can be previewed and requeued", () => assert.match(requeue, /--apply/)],
@@ -60,6 +61,7 @@ const cases = [
   ["health reports every required state", () => assert.match(sync, /\['not_required', 'pending', 'error', 'requires_review', 'processing', 'synced'\]/)],
   ["health is safe before fiscal migrations", () => assert.match(sync, /holded_schema_unavailable/)],
   ["health names missing fiscal delivery columns", () => assert.match(sync, /holded_invoice_delivery_status/)],
+  ["health validates the ticket tax breakdown columns", () => assert.match(sync, /requiredItemColumns = \['unit_base_cents', 'unit_tax_cents', 'tax_rate', 'unit_fee_cents'\]/)],
   ["client remains on current Holded v2 API", () => assert.match(client, /https:\/\/api\.holded\.com\/api\/v2/)],
 ];
 
