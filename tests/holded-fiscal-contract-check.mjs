@@ -59,6 +59,7 @@ const cases = [
   ["synced orders are terminal", () => assert.match(sync, /if \(\$order\['holded_status'\] === 'synced'\)/)],
   ["health reports every required state", () => assert.match(sync, /\['not_required', 'pending', 'error', 'requires_review', 'processing', 'synced'\]/)],
   ["health is safe before fiscal migrations", () => assert.match(sync, /holded_schema_unavailable/)],
+  ["health names missing fiscal delivery columns", () => assert.match(sync, /holded_invoice_delivery_status/)],
   ["client remains on current Holded v2 API", () => assert.match(client, /https:\/\/api\.holded\.com\/api\/v2/)],
 ];
 

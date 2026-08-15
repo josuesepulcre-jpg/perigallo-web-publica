@@ -240,6 +240,28 @@ final class HoldedSyncService
     {
         $byStatus = array_fill_keys(['not_required', 'pending', 'error', 'requires_review', 'processing', 'synced'], 0);
         try {
+            $columns = $this->pdo->query('SHOW COLUMNS FROM ticket_orders')->fetchAll();
+            $availableColumns = array_flip(array_map(static fn (array $column): string => (string) $column['Field'], $columns));
+            $requiredColumns = [
+                'is_test', 'environment', 'payment_status', 'holded_status', 'holded_document_type',
+                'holded_document_id', 'holded_document_number', 'holded_payment_id',
+                'holded_invoice_delivery_status', 'holded_invoice_delivery_attempts',
+                'holded_invoice_delivery_sent_at', 'holded_invoice_delivery_next_attempt_at',
+                'holded_invoice_delivery_last_error',
+            ];
+            $missingColumns = array_values(array_filter($requiredColumns, static fn (string $column): bool => !isset($availableColumns[$column])));
+            $hasLogs = (bool) $this->pdo->query('SHOW TABLES LIKE "holded_sync_logs"')->fetchColumn();
+            if ($missingColumns || !$hasLogs) {
+                return [
+                    'configuration' => $this->client->health(),
+                    'orders' => $byStatus,
+                    'recent_diagnostics' => [],
+                    'schema_ready' => false,
+                    'schema_error' => 'holded_schema_unavailable',
+                    'missing_schema' => array_merge($missingColumns, $hasLogs ? [] : ['holded_sync_logs']),
+                    'legal_review_required' => true,
+                ];
+            }
             $rows = $this->pdo->query('SELECT holded_status, COUNT(*) AS total FROM ticket_orders WHERE is_test = 0 AND environment = "production" GROUP BY holded_status')->fetchAll();
             foreach ($rows as $row) $byStatus[(string) $row['holded_status']] = (int) $row['total'];
             $recent = $this->pdo->query('SELECT order_id, operation, status, attempt, http_status, error_code, created_at FROM holded_sync_logs WHERE status IN ("requires_review", "failed", "retry_scheduled") ORDER BY id DESC LIMIT 10')->fetchAll();
