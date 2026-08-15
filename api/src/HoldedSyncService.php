@@ -225,7 +225,11 @@ final class HoldedSyncService
         } catch (HoldedException $error) {
             return $this->handleFailure($orderId, $error, 'finalize');
         } catch (\Throwable $error) {
-            return $this->handleFailure($orderId, new HoldedException('Error interno al sincronizar con Holded.', null, null, true, 'holded_internal'), 'finalize');
+            // Conservamos el tipo técnico para diagnóstico, pero nunca el
+            // mensaje original: puede contener datos del pedido o de Holded.
+            $type = strtolower((new \ReflectionClass($error))->getShortName());
+            $safeType = preg_replace('/[^a-z0-9_]+/', '_', $type) ?: 'unknown';
+            return $this->handleFailure($orderId, new HoldedException('Error interno al sincronizar con Holded.', null, null, true, 'holded_internal_' . $safeType), 'finalize');
         }
     }
 

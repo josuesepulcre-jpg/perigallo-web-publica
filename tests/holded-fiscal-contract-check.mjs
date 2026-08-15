@@ -39,6 +39,7 @@ const cases = [
   ["holded never blocks callback", () => assert.doesNotMatch(ticketing.match(/processRedsysNotification[\s\S]*?public function adminSummary/)?.[0] || "", /createInvoice\(/)],
   ["cron is separately locked", () => assert.match(cron, /LOCK_EX \| LOCK_NB/)],
   ["cron emits safe diagnostics", () => assert.match(cron, /error_type.*safe_code.*http_status/s)],
+  ["unexpected sync errors keep a safe exception type", () => assert.match(sync, /holded_internal_' \. \$safeType/)],
   ["admin retry is server-protected", () => assert.match(api, /\/holded\/retry/)],
   ["ambiguous retries require explicit external review", () => assert.match(sync, /confirmNoExternalDocument/)],
   ["recoverable orders can be previewed and requeued", () => assert.match(requeue, /--apply/)],
