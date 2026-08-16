@@ -5,6 +5,7 @@ namespace Perigallo\Ticketing;
 
 use InvalidArgumentException;
 use PDO;
+use PDOException;
 use RuntimeException;
 
 /** Server-side discount rules. Amounts are always stored and calculated in cents. */
@@ -167,6 +168,7 @@ final class DiscountCodes
     public function save(array $data, string $operator, ?int $id = null): array
     {
         $payload = $this->cleanAdminPayload($data);
+        $this->assertCodeAvailableForSave((string) $payload['columns'][1], $id);
         $this->pdo->beginTransaction();
         try {
             if ($id === null) {
@@ -186,6 +188,12 @@ final class DiscountCodes
             $this->replaceRelations('discount_code_ticket_types', 'ticket_type_id', $id, $payload['ticket_type_ids']);
             $this->pdo->commit();
             return $this->get($id);
+        } catch (PDOException $error) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            if (str_contains($error->getMessage(), 'code_normalized') || str_contains($error->getMessage(), 'uq_discount_codes_normalized')) {
+                throw new InvalidArgumentException('Ya existe un código con este nombre. Elige otro o edita el código existente.');
+            }
+            throw $error;
         } catch (\Throwable $error) {
             if ($this->pdo->inTransaction()) $this->pdo->rollBack();
             throw $error;
@@ -348,9 +356,10 @@ final class DiscountCodes
         if ($code === '' || strlen($code) < 3) throw new InvalidArgumentException('Indica un código de al menos 3 caracteres.');
         $type = (string) ($data['discount_type'] ?? 'percent');
         if (!in_array($type, ['percent', 'fixed'], true)) throw new InvalidArgumentException('Tipo de descuento no válido.');
-        $percent = $type === 'percent' ? max(1, min(10000, (int) ($data['percent_basis_points'] ?? 0))) : null;
+        $percent = $type === 'percent' ? max(0, min(10000, (int) ($data['percent_basis_points'] ?? 0))) : null;
         $fixed = $type === 'fixed' ? max(1, (int) ($data['fixed_amount_cents'] ?? 0)) : null;
         if (($type === 'percent' && !$percent) || ($type === 'fixed' && !$fixed)) throw new InvalidArgumentException('Indica un valor de descuento válido.');
+        if ($type === 'percent' && $percent < 100) throw new InvalidArgumentException('El descuento mínimo es del 1 %. Escribe, por ejemplo, 18 para aplicar un 18 %.');
         $scope = (string) ($data['application_scope'] ?? 'order');
         $eventScope = (string) ($data['event_scope'] ?? 'all');
         if (!in_array($scope, ['order', 'per_ticket', 'ticket_types'], true) || !in_array($eventScope, ['all', 'included', 'excluded'], true)) throw new InvalidArgumentException('La configuración de alcance no es válida.');
@@ -409,6 +418,16 @@ final class DiscountCodes
         $timestamp = strtotime($value);
         if ($timestamp === false) throw new InvalidArgumentException('Indica una fecha válida.');
         return date('Y-m-d H:i:s', $timestamp);
+    }
+
+    private function assertCodeAvailableForSave(string $normalizedCode, ?int $currentId): void
+    {
+        $statement = $this->pdo->prepare('SELECT id FROM discount_codes WHERE code_normalized = ? LIMIT 1');
+        $statement->execute([$normalizedCode]);
+        $existingId = $statement->fetchColumn();
+        if ($existingId !== false && (int) $existingId !== $currentId) {
+            throw new InvalidArgumentException('Ya existe un código con este nombre. Elige otro o edita el código existente.');
+        }
     }
 
     private function codeExists(string $code): bool

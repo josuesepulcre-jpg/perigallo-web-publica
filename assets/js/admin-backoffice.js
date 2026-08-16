@@ -721,6 +721,7 @@
   function discountStatusLabel(code) {
     if (Number(code.is_archived)) return "Archivado";
     if (!Number(code.is_active)) return "Inactivo";
+    if (code.discount_type === "percent" && Number(code.percent_basis_points || 0) < 100) return "Revisar valor";
     if (code.starts_at && new Date(String(code.starts_at).replace(" ", "T")) > new Date()) return "Programado";
     if (code.expires_at && new Date(String(code.expires_at).replace(" ", "T")) < new Date()) return "Caducado";
     if (code.maximum_total_uses != null && Number(code.consumed_uses || 0) >= Number(code.maximum_total_uses)) return "Agotado";
@@ -749,8 +750,9 @@
     }
     target.innerHTML = rows.map(function (code) {
       var usage = Number(code.consumed_uses || 0) + (code.maximum_total_uses != null ? " / " + Number(code.maximum_total_uses) : "");
-      return '<article class="admin-discount-row" data-discount-id="' + Number(code.id) + '">' +
-        '<div><span class="ticket-eyebrow">' + escapeHtml(discountStatusLabel(code)) + '</span><strong>' + escapeHtml(code.code) + '</strong><small>' + escapeHtml(code.internal_description || "Sin descripción interna") + '</small></div>' +
+      var needsReview = code.discount_type === "percent" && Number(code.percent_basis_points || 0) < 100;
+      return '<article class="admin-discount-row' + (needsReview ? ' is-needs-review' : '') + '" data-discount-id="' + Number(code.id) + '">' +
+        '<div><span class="ticket-eyebrow">' + escapeHtml(discountStatusLabel(code)) + '</span><strong>' + escapeHtml(code.code) + '</strong><small>' + escapeHtml(code.internal_description || "Sin descripción interna") + '</small>' + (needsReview ? '<small class="admin-discount-warning">El porcentaje es inferior al 1 % y no producirá descuento.</small>' : '') + '</div>' +
         '<div><small>Descuento</small><strong>' + escapeHtml(discountValueLabel(code)) + '</strong><small>Usos: ' + escapeHtml(String(usage)) + '</small></div>' +
         '<div><small>Alcance</small><strong>' + escapeHtml(code.application_scope === "ticket_types" ? "Tipos seleccionados" : code.application_scope === "per_ticket" ? "Cada entrada" : "Pedido completo") + '</strong><small>' + escapeHtml(code.event_scope === "all" ? "Todas las experiencias" : (code.event_names || "Experiencias seleccionadas")) + '</small></div>' +
         '<div class="admin-discount-actions"><button type="button" class="text-action" data-discount-action="edit">Editar</button><button type="button" class="text-action" data-discount-action="history">Historial</button><button type="button" class="text-action" data-discount-action="duplicate">Duplicar</button>' + (Number(code.total_uses || 0) === 0 ? '<button type="button" class="text-action danger" data-discount-action="delete">Eliminar</button>' : (!Number(code.is_archived) ? '<button type="button" class="text-action danger" data-discount-action="archive">Archivar</button>' : '')) + '</div>' +
@@ -760,10 +762,56 @@
 
   function syncDiscountFormVisibility(form) {
     var fixed = form.discount_type.value === "fixed";
-    form.querySelector("[data-discount-percent]").hidden = fixed;
-    form.querySelector("[data-discount-fixed]").hidden = !fixed;
+    var percentField = form.querySelector("[data-discount-percent]");
+    var fixedField = form.querySelector("[data-discount-fixed]");
+    var percentInput = form.discount_percent;
+    var fixedInput = form.fixed_amount;
+    percentField.hidden = fixed;
+    fixedField.hidden = !fixed;
+    percentInput.disabled = fixed;
+    percentInput.required = !fixed;
+    fixedInput.disabled = !fixed;
+    fixedInput.required = fixed;
     form.querySelector("[data-discount-events]").hidden = form.event_scope.value === "all";
     form.querySelector("[data-discount-ticket-types]").hidden = form.application_scope.value !== "ticket_types";
+    syncDiscountValueHint(form);
+  }
+
+  function syncDiscountValueHint(form) {
+    var hint = form.querySelector("[data-discount-value-hint]");
+    if (!hint) return;
+    var value = Number(form.discount_percent.value || 0);
+    if (!value) {
+      hint.textContent = "Escribe 18 para aplicar un 18 %.";
+      return;
+    }
+    if (value < 1) {
+      hint.textContent = "Un valor inferior al 1 % no genera descuento en las entradas actuales.";
+      return;
+    }
+    hint.textContent = "Se aplicará un " + value.toLocaleString("es-ES", { maximumFractionDigits: 2 }) + " % de descuento.";
+  }
+
+  function setDiscountFormStatus(status, message, kind) {
+    status.textContent = message;
+    status.dataset.state = kind || "";
+  }
+
+  function hasAdvancedDiscountSettings(code) {
+    return Boolean(
+      code.internal_description ||
+      code.event_scope && code.event_scope !== "all" ||
+      code.application_scope && code.application_scope !== "order" ||
+      code.maximum_discount_cents != null ||
+      code.minimum_order_cents != null ||
+      code.minimum_ticket_quantity != null ||
+      code.maximum_discounted_ticket_quantity != null ||
+      code.maximum_total_uses != null ||
+      code.maximum_uses_per_customer != null ||
+      code.starts_at ||
+      code.expires_at ||
+      Number(code.is_combinable)
+    );
   }
 
   function populateDiscountOptions(form) {
@@ -780,6 +828,7 @@
     form.application_scope.value = "order";
     form.is_active.checked = true;
     form.querySelector("[data-discount-form-title]").textContent = "Nuevo código";
+    form.querySelector("[data-discount-advanced]").open = false;
     setSelectedOptions(form.event_ids, []);
     setSelectedOptions(form.ticket_type_ids, []);
     syncDiscountFormVisibility(form);
@@ -807,6 +856,7 @@
     setSelectedOptions(form.event_ids, code.event_ids || []);
     setSelectedOptions(form.ticket_type_ids, code.ticket_type_ids || []);
     form.querySelector("[data-discount-form-title]").textContent = "Editar " + (code.code || "código");
+    form.querySelector("[data-discount-advanced]").open = hasAdvancedDiscountSettings(code);
     syncDiscountFormVisibility(form);
     form.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -864,6 +914,7 @@
         resetDiscountForm(form);
       }).catch(function (error) { renderPageError(error.message); });
       form.discount_type.addEventListener("change", function () { syncDiscountFormVisibility(form); });
+      form.discount_percent.addEventListener("input", function () { syncDiscountValueHint(form); });
       form.event_scope.addEventListener("change", function () { syncDiscountFormVisibility(form); });
       form.application_scope.addEventListener("change", function () { syncDiscountFormVisibility(form); });
       search.addEventListener("input", function () { renderDiscountList(root, search.value); });
@@ -871,16 +922,29 @@
       root.querySelectorAll("[data-discount-filter]").forEach(function (button) {
         button.addEventListener("click", function () { stateFilter = button.getAttribute("data-discount-filter") || "active"; root.querySelectorAll("[data-discount-filter]").forEach(function (item) { item.classList.toggle("is-active", item === button); }); loadCodes().catch(function (error) { renderPageError(error.message); }); });
       });
-      root.querySelector("[data-discount-form-reset]").addEventListener("click", function () { resetDiscountForm(form); formStatus.textContent = ""; });
+      root.querySelector("[data-discount-form-reset]").addEventListener("click", function () { resetDiscountForm(form); setDiscountFormStatus(formStatus, "", ""); });
+      form.addEventListener("invalid", function (event) {
+        if (event.target === form.discount_percent && Number(form.discount_percent.value || 0) > 0 && Number(form.discount_percent.value) < 1) {
+          setDiscountFormStatus(formStatus, "El descuento mínimo es del 1 %. Escribe 18 para un 18 %.", "error");
+          return;
+        }
+        setDiscountFormStatus(formStatus, "Revisa los campos marcados antes de guardar.", "error");
+      }, true);
       form.addEventListener("submit", function (event) {
         event.preventDefault();
         var submit = form.querySelector('[type="submit"]');
         var id = Number(form.discount_id.value || 0);
+        var percentage = Number(form.discount_percent.value || 0);
+        if (form.discount_type.value === "percent" && (!Number.isFinite(percentage) || percentage < 1)) {
+          setDiscountFormStatus(formStatus, "El descuento mínimo es del 1 %. Escribe 18 para un 18 %.", "error");
+          form.discount_percent.focus();
+          return;
+        }
         submit.disabled = true;
-        formStatus.textContent = "Guardando…";
+        setDiscountFormStatus(formStatus, "Guardando…", "");
         jsonRequest(api + "/admin/discount-codes" + (id ? "/" + id : ""), id ? "PUT" : "POST", formDiscountPayload(form))
-          .then(function (data) { formStatus.textContent = "Código " + data.discount_code.code + " guardado."; resetDiscountForm(form); return loadCodes(); })
-          .catch(function (error) { formStatus.textContent = error.message; })
+          .then(function (data) { fillDiscountForm(form, data.discount_code); setDiscountFormStatus(formStatus, "Código " + data.discount_code.code + " guardado" + (Number(data.discount_code.is_active) ? " y activo en checkout." : "."), "success"); return loadCodes(); })
+          .catch(function (error) { setDiscountFormStatus(formStatus, error.message || "No se ha podido guardar el código.", "error"); })
           .finally(function () { submit.disabled = false; });
       });
       root.addEventListener("click", function (event) {
