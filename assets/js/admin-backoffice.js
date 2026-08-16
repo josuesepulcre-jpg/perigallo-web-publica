@@ -772,6 +772,8 @@
     percentInput.required = !fixed;
     fixedInput.disabled = !fixed;
     fixedInput.required = fixed;
+    form.querySelector("[data-discount-value-hint]").hidden = fixed;
+    form.querySelector("[data-discount-fixed-help]").hidden = !fixed;
     form.querySelector("[data-discount-events]").hidden = form.event_scope.value === "all";
     form.querySelector("[data-discount-ticket-types]").hidden = form.application_scope.value !== "ticket_types";
     syncDiscountValueHint(form);

@@ -8,7 +8,7 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/ticketing.css?v=20260804-discounts-v1">
-<link rel="stylesheet" href="/assets/css/admin-orders.css?v=20260816-discounts-simple-v1">
+<link rel="stylesheet" href="/assets/css/admin-orders.css?v=20260816-discounts-simple-v2">
 </head>
 <body class="ticketing-page admin-backoffice-page">
 <div class="admin-app-shell">
@@ -22,9 +22,15 @@
         <div class="admin-section-label"><div><span class="ticket-eyebrow">Configuración rápida</span><h2 data-discount-form-title>Nuevo código</h2><p>Por defecto se aplica a todo el pedido y a todas las experiencias.</p></div><button class="text-action" type="button" data-discount-form-reset>Nuevo código</button></div>
         <div class="admin-discount-essential">
           <label class="admin-discount-code"><span>Código</span><input name="code" maxlength="64" required placeholder="FAMILY18" autocapitalize="characters" autocomplete="off" aria-describedby="discount-code-help"><small id="discount-code-help">El comprador lo introducirá tal cual en el checkout.</small></label>
-          <label><span>Tipo de descuento</span><select name="discount_type"><option value="percent">Porcentaje</option><option value="fixed">Importe fijo</option></select></label>
-          <label data-discount-percent><span>Descuento (%)</span><input name="discount_percent" type="number" min="1" max="100" step="0.01" required placeholder="18" aria-describedby="discount-percent-help"><small id="discount-percent-help" data-discount-value-hint>Escribe 18 para aplicar un 18 %.</small></label>
-          <label data-discount-fixed hidden><span>Descuento (€)</span><input name="fixed_amount" inputmode="decimal" placeholder="10,00" aria-describedby="discount-fixed-help"><small id="discount-fixed-help">Importe que se descuenta del pedido.</small></label>
+          <div class="admin-discount-benefit">
+            <span>Descuento</span>
+            <div class="admin-discount-benefit-controls">
+              <label class="admin-discount-type"><span class="admin-visually-hidden">Tipo de descuento</span><select name="discount_type" aria-label="Tipo de descuento"><option value="percent">Porcentaje</option><option value="fixed">Importe fijo</option></select></label>
+              <label class="admin-discount-benefit-value" data-discount-percent><span class="admin-visually-hidden">Porcentaje de descuento</span><span class="admin-input-with-unit"><input name="discount_percent" type="number" min="1" max="100" step="0.01" required placeholder="18" aria-describedby="discount-percent-help"><b aria-hidden="true">%</b></span></label>
+              <label class="admin-discount-benefit-value" data-discount-fixed hidden><span class="admin-visually-hidden">Importe fijo de descuento</span><span class="admin-input-with-unit"><input name="fixed_amount" inputmode="decimal" placeholder="10,00" aria-describedby="discount-fixed-help"><b aria-hidden="true">€</b></span></label>
+            </div>
+            <small id="discount-percent-help" data-discount-value-hint>Escribe 18 para aplicar un 18 %.</small><small id="discount-fixed-help" data-discount-fixed-help hidden>Importe que se descuenta del pedido.</small>
+          </div>
         </div>
         <div class="admin-discount-toggles admin-discount-availability"><label><input name="is_active" type="checkbox" checked><span><strong>Activo y disponible en checkout</strong><small>El código podrá utilizarse nada más guardarlo.</small></span></label></div>
         <details class="admin-discount-advanced" data-discount-advanced>
@@ -62,6 +68,6 @@
     </section>
   </main>
 </div>
-<script src="/assets/js/admin-backoffice.js?v=20260816-discounts-simple-v1" defer></script>
+<script src="/assets/js/admin-backoffice.js?v=20260816-discounts-simple-v2" defer></script>
 </body>
 </html>
