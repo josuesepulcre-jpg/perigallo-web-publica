@@ -343,18 +343,19 @@ for (const forbiddenMarker of ["Simular pago aceptado", "Simular pago rechazado"
 
 const perigallaStoryPage = readFileSync(join(root, "la-perigalla-01/index.html"), "utf8");
 const storyAssets = Array.from(perigallaStoryPage.matchAll(/(?:src|href)="(\/la-perigalla-01\/assets\/[^\"]+)"/g), (match) => match[1]);
-const storyJavaScriptAssets = storyAssets.filter((asset) => asset.endsWith(".js"));
-const storyStylesheetAssets = storyAssets.filter((asset) => asset.endsWith(".css"));
+const storyAssetPath = (asset) => asset.split("?", 1)[0];
+const storyJavaScriptAssets = storyAssets.filter((asset) => storyAssetPath(asset).endsWith(".js"));
+const storyStylesheetAssets = storyAssets.filter((asset) => storyAssetPath(asset).endsWith(".css"));
 const storyApplicationAsset = storyJavaScriptAssets.find((asset) => /\/index-[^/]+\.js$/.test(asset));
 if (!storyApplicationAsset || storyStylesheetAssets.length < 1) throw new Error("La Perigalla story page must reference its application bundle and at least one stylesheet asset.");
 for (const asset of storyAssets) {
-  if (!existsSync(join(root, asset.slice(1)))) throw new Error(`La Perigalla story asset is missing: ${asset}`);
+  if (!existsSync(join(root, storyAssetPath(asset).slice(1)))) throw new Error(`La Perigalla story asset is missing: ${asset}`);
 }
-const storyBundle = readFileSync(join(root, storyApplicationAsset.slice(1)), "utf8");
+const storyBundle = readFileSync(join(root, storyAssetPath(storyApplicationAsset).slice(1)), "utf8");
 for (const marker of ["Bienvenidos a", "La Perigalla 01", "v9-scenes", "final-celebration", "Quiero vivir la historia", "/entradas/checkout/?event=la-perigalla-01-ibicenca&quantity=1&ticketType=1", "story_transition_start", "story_transition_end", "20260807-03"]) {
   if (!storyBundle.includes(marker)) throw new Error(`La Perigalla story bundle is missing ${marker}.`);
 }
-const storyStyles = storyStylesheetAssets.map((asset) => readFileSync(join(root, asset.slice(1)), "utf8")).join("\n");
+const storyStyles = storyStylesheetAssets.map((asset) => readFileSync(join(root, storyAssetPath(asset).slice(1)), "utf8")).join("\n");
 if (!storyStyles.includes("hosts-hero-cover.png")) {
   throw new Error("La Perigalla story stylesheet is missing the approved cover image.");
 }
@@ -505,10 +506,10 @@ for (const marker of ["/discounts/validate", "/admin/discount-codes", "adminSave
 if (!envExample.includes("REDSYS_BIZUM_ENABLED=false")) throw new Error("Bizum feature flag is missing from .env.example.");
 
 const checkout = readFileSync(join(root, "entradas/checkout/index.html"), "utf8");
-for (const marker of ["data-checkout-eyebrow", "data-checkout-title", "data-checkout-safety-copy", "data-checkout-summary", "data-checkout-submit", "checkout.css", "data-checkout-attendees", "Alergias de los asistentes", "data-checkout-access-conditions", "Condiciones de acceso", "Total White"]) {
+for (const marker of ["data-checkout-eyebrow", "data-checkout-title", "data-checkout-safety-copy", "data-checkout-summary", "data-checkout-submit", "checkout.css", "data-checkout-attendees", "Necesidades alimentarias", "data-checkout-access-conditions", "Condiciones de acceso", "Total White"]) {
   if (!checkout.includes(marker)) throw new Error(`Missing preview-aware checkout marker: ${marker}`);
 }
-for (const marker of ["data-payment-methods", "payment_method", "Método de pago"]) {
+for (const marker of ["data-payment-method-section", "data-payment-methods", "payment_method", "Elige cómo pagar"]) {
   if (!checkout.includes(marker) && !publicJs.includes(marker)) throw new Error(`Checkout payment method UI is missing ${marker}.`);
 }
 for (const marker of ["Próximamente", "data-unavailable", "checkout-payment-unavailable"]) {
@@ -522,6 +523,19 @@ for (const marker of ["clearDiscount", "discounts/validate", "discount_code", "c
 }
 for (const marker of ["FOOD_ALLERGENS", "attendeesPayload", "normaliseAttendees", "ticket_attendees", "ticket_attendee_allergens", "adminOrderAttendees", "/admin/orders/([0-9]+)/attendees"]) {
   if (!(publicJs + ticketing + api).includes(marker)) throw new Error(`Missing attendee allergy contract: ${marker}`);
+}
+for (const marker of ["data-checkout-step=\"1\"", "data-checkout-step=\"7\"", "data-checkout-billing-choice", "data-checkout-allergy-choice", "data-checkout-discount-choice", "data-checkout-next"]) {
+  if (!checkout.includes(marker)) throw new Error(`Checkout wizard is missing ${marker}.`);
+}
+for (const marker of ["wizardStepValidation", "applyNoAllergies", "billing_requested", "discountFingerprint", "submitPaymentForm"]) {
+  if (!publicJs.includes(marker)) throw new Error(`Checkout flow behavior is missing ${marker}.`);
+}
+const dietaryMigration = readFileSync(join(root, "database/migrations/025_ticket_attendee_dietary_preferences.sql"), "utf8");
+for (const marker of ["dietary_preference", "dietary_notes"]) {
+  if (!dietaryMigration.includes(marker) || !ticketing.includes(marker)) throw new Error(`Dietary attendee persistence is missing ${marker}.`);
+}
+for (const marker of ["ticketAttendeeDietarySchemaAvailable", "No se puede registrar una dieta especial"]) {
+  if (!ticketing.includes(marker)) throw new Error(`Checkout deployment compatibility is missing ${marker}.`);
 }
 const attendeeMigration = readFileSync(join(root, "database/migrations/017_ticket_attendee_allergies.sql"), "utf8");
 for (const marker of ["ticket_attendees", "ticket_attendee_allergens", "allergy_notes", "severe_allergy", "fk_ticket_attendees_ticket"]) {

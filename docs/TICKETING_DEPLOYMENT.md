@@ -79,11 +79,22 @@ mysql -u DB_USER -p DB_NAME < database/migrations/010_order_access_recovery.sql
 mysql -u DB_USER -p DB_NAME < database/migrations/011_admin_users_and_order_operations.sql
 mysql -u DB_USER -p DB_NAME < database/migrations/012_payment_methods_bizum.sql
 mysql -u DB_USER -p DB_NAME < database/migrations/013_discount_codes.sql
+mysql -u DB_USER -p DB_NAME < database/migrations/014_reference_ticket_price.sql
+mysql -u DB_USER -p DB_NAME < database/migrations/017_ticket_attendee_allergies.sql
+mysql -u DB_USER -p DB_NAME < database/migrations/018_order_access_conditions.sql
+mysql -u DB_USER -p DB_NAME < database/migrations/020_holded_fiscal_sync.sql
+mysql -u DB_USER -p DB_NAME < database/migrations/021_holded_invoice_delivery.sql
+mysql -u DB_USER -p DB_NAME < database/migrations/022_checkout_runtime_compatibility.sql
+mysql -u DB_USER -p DB_NAME < database/migrations/023_ticket_order_tax_breakdown.sql
+mysql -u DB_USER -p DB_NAME < database/migrations/024_admin_cash_ticket_orders.sql
+mysql -u DB_USER -p DB_NAME < database/migrations/025_ticket_attendee_dietary_preferences.sql
 ```
 
 La segunda migración amplía eventos y entradas sin borrar pedidos, pagos, códigos ni asistentes ya existentes. La tercera conserva esos datos y añade el identificador común para la integración privada con Suite. La cuarta cambia los textos públicos a `LONGTEXT`, sin eliminar contenido existente. Ejecutarlas antes de desplegar la versión con editor integrado. Para actualizar una instalación existente, ejecutar `008_secure_ticket_delivery_and_qr.sql` **antes** de copiar el PHP nuevo: añade las columnas y estados que este código consulta.
 
 Crear y editar un evento desde `/admin/entradas/` después de configurar usuario admin. El editor queda en `/admin/entradas/evento/?id=ID` y la vista previa privada en `/admin/entradas/vista-previa/?id=ID`.
+
+En una instalación existente, aplica las migraciones en orden antes del primer cobro. En particular, `025_ticket_attendee_dietary_preferences.sql` es necesaria para guardar dietas especiales sin bloquear el checkout.
 
 ## Password admin
 

@@ -14,6 +14,7 @@ final class Ticketing
     private ?DiscountCodes $discountCodes = null;
     private ?bool $cashOrderSchemaAvailable = null;
     private ?bool $ticketItemTaxBreakdownAvailable = null;
+    private ?bool $ticketAttendeeDietarySchemaAvailable = null;
     private const FOOD_ALLERGENS = [
         'gluten' => 'Cereales con gluten',
         'crustaceans' => 'Crustáceos',
@@ -1111,8 +1112,14 @@ final class Ticketing
         if (!$record) {
             throw new InvalidArgumentException('Pedido no encontrado.');
         }
+        $dietaryFields = $this->ticketAttendeeDietarySchemaAvailable()
+            ? 'ta.dietary_preference, ta.dietary_notes'
+            : 'NULL AS dietary_preference, NULL AS dietary_notes';
+        $dietaryGroupBy = $this->ticketAttendeeDietarySchemaAvailable()
+            ? ', ta.dietary_preference, ta.dietary_notes'
+            : '';
         $attendees = $this->pdo->prepare(
-            'SELECT ta.attendee_name, ta.has_allergies, ta.severe_allergy, ta.allergy_notes, ta.dietary_preference, ta.dietary_notes, ta.ticket_sequence,
+            'SELECT ta.attendee_name, ta.has_allergies, ta.severe_allergy, ta.allergy_notes, ' . $dietaryFields . ', ta.ticket_sequence,
                     toi.ticket_type_name, t.public_code,
                     GROUP_CONCAT(taa.allergen_label ORDER BY taa.allergen_label SEPARATOR " · ") AS allergens
              FROM ticket_attendees ta
@@ -1120,7 +1127,7 @@ final class Ticketing
              LEFT JOIN tickets t ON t.id = ta.ticket_id
              LEFT JOIN ticket_attendee_allergens taa ON taa.attendee_id = ta.id
              WHERE ta.order_id = ?
-             GROUP BY ta.id, ta.attendee_name, ta.has_allergies, ta.severe_allergy, ta.allergy_notes, ta.dietary_preference, ta.dietary_notes, ta.ticket_sequence, toi.ticket_type_name, t.public_code
+             GROUP BY ta.id, ta.attendee_name, ta.has_allergies, ta.severe_allergy, ta.allergy_notes' . $dietaryGroupBy . ', ta.ticket_sequence, toi.ticket_type_name, t.public_code
              ORDER BY toi.id ASC, ta.ticket_sequence ASC'
         );
         $attendees->execute([$orderId]);
@@ -2662,6 +2669,26 @@ final class Ticketing
         }
     }
 
+    /**
+     * La migración 025 añade preferencias alimentarias no alérgicas. Durante
+     * una actualización, no impedir pedidos que no aportan ese dato; para una
+     * necesidad especial sí exigimos el esquema nuevo antes de guardar, de
+     * forma que nunca se descarte información de seguridad o de servicio.
+     */
+    private function ticketAttendeeDietarySchemaAvailable(): bool
+    {
+        if ($this->ticketAttendeeDietarySchemaAvailable !== null) {
+            return $this->ticketAttendeeDietarySchemaAvailable;
+        }
+
+        try {
+            $column = $this->pdo->query("SHOW COLUMNS FROM ticket_attendees LIKE 'dietary_preference'")->fetch();
+            return $this->ticketAttendeeDietarySchemaAvailable = (bool) $column;
+        } catch (\Throwable) {
+            return $this->ticketAttendeeDietarySchemaAvailable = false;
+        }
+    }
+
     private function promoCodeHash(array $data, string $existing = ''): ?string
     {
         if (empty($data['requires_promo'])) {
@@ -2921,10 +2948,22 @@ final class Ticketing
 
     private function persistAttendees(int $orderId, array $orderItems, array $attendees): void
     {
+        $dietarySchemaAvailable = $this->ticketAttendeeDietarySchemaAvailable();
+        if (!$dietarySchemaAvailable) {
+            foreach ($attendees as $attendee) {
+                if (($attendee['dietary_preference'] ?? 'none') !== 'none') {
+                    throw new InvalidArgumentException('No se puede registrar una dieta especial hasta terminar la actualización técnica. Inténtalo de nuevo en unos minutos o contacta con Perigallo.');
+                }
+            }
+        }
         $attendeeInsert = $this->pdo->prepare(
-            'INSERT INTO ticket_attendees
-             (order_id, order_item_id, ticket_sequence, attendee_name, has_allergies, severe_allergy, allergy_notes, dietary_preference, dietary_notes, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())'
+            $dietarySchemaAvailable
+                ? 'INSERT INTO ticket_attendees
+                   (order_id, order_item_id, ticket_sequence, attendee_name, has_allergies, severe_allergy, allergy_notes, dietary_preference, dietary_notes, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())'
+                : 'INSERT INTO ticket_attendees
+                   (order_id, order_item_id, ticket_sequence, attendee_name, has_allergies, severe_allergy, allergy_notes, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())'
         );
         $allergenInsert = $this->pdo->prepare(
             'INSERT INTO ticket_attendee_allergens (attendee_id, allergen_id, allergen_label, created_at)
@@ -2937,7 +2976,7 @@ final class Ticketing
                 if (!$attendee) {
                     throw new RuntimeException('No se ha podido asociar la información de los asistentes a las entradas.');
                 }
-                $attendeeInsert->execute([
+                $values = [
                     $orderId,
                     (int) $item['id'],
                     $sequence,
@@ -2945,9 +2984,12 @@ final class Ticketing
                     $attendee['has_allergies'] ? 1 : 0,
                     $attendee['severe_allergy'] ? 1 : 0,
                     $attendee['allergy_notes'],
-                    $attendee['dietary_preference'],
-                    $attendee['dietary_notes'],
-                ]);
+                ];
+                if ($dietarySchemaAvailable) {
+                    $values[] = $attendee['dietary_preference'];
+                    $values[] = $attendee['dietary_notes'];
+                }
+                $attendeeInsert->execute($values);
                 $attendeeId = (int) $this->pdo->lastInsertId();
                 foreach ($attendee['allergens'] as $id => $label) {
                     $allergenInsert->execute([$attendeeId, $id, $label]);
