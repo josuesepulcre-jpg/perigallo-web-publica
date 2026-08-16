@@ -8,7 +8,7 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/ticketing.css?v=20260804-discounts-v1">
-<link rel="stylesheet" href="/assets/css/admin-orders.css?v=20260816-discounts-simple-v2">
+<link rel="stylesheet" href="/assets/css/admin-orders.css?v=20260816-discounts-simple-v3">
 </head>
 <body class="ticketing-page admin-backoffice-page">
 <div class="admin-app-shell">
@@ -37,23 +37,31 @@
           <summary><span>Ajustes opcionales</span><small>Restringir por experiencia, fecha, entradas o usos</small></summary>
           <div class="admin-discount-advanced-body">
             <div class="admin-form-grid">
-              <label class="admin-form-span"><span>Descripción interna</span><input name="internal_description" maxlength="500" placeholder="Ej. descuento para familiares"></label>
+              <label class="admin-form-span"><span>Descripción interna</span><input name="internal_description" maxlength="500" placeholder="Ej. descuento para familiares"><small>Solo la ves tú en administración; no aparece al comprador.</small></label>
             </div>
             <div class="admin-form-split">
-              <fieldset><legend>Dónde se puede usar</legend><label><span>Experiencias</span><select name="event_scope"><option value="all">Todas las experiencias</option><option value="included">Solo experiencias seleccionadas</option><option value="excluded">Todas excepto las seleccionadas</option></select></label><label data-discount-events><span>Selecciona experiencias</span><select name="event_ids" multiple size="5"></select></label></fieldset>
-              <fieldset><legend>Sobre qué se aplica</legend><label><span>Aplicación</span><select name="application_scope"><option value="order">Todo el pedido</option><option value="per_ticket">Cada entrada</option><option value="ticket_types">Solo tipos de entrada seleccionados</option></select></label><label data-discount-ticket-types><span>Selecciona tipos de entrada</span><select name="ticket_type_ids" multiple size="5"></select></label></fieldset>
+              <fieldset><legend>Dónde se puede usar</legend><p>Por defecto funciona en todas las experiencias.</p><label><span>Experiencias</span><select name="event_scope"><option value="all">Todas las experiencias</option><option value="included">Solo experiencias seleccionadas</option><option value="excluded">Todas excepto las seleccionadas</option></select></label><label data-discount-events><span>Selecciona experiencias</span><select name="event_ids" multiple size="5"></select></label></fieldset>
+              <fieldset><legend>Sobre qué se aplica</legend><p>Normalmente se descuenta del total del pedido.</p><label><span>Aplicación</span><select name="application_scope"><option value="order">Todo el pedido</option><option value="per_ticket">Cada entrada</option><option value="ticket_types">Solo tipos de entrada seleccionados</option></select></label><label data-discount-ticket-types><span>Selecciona tipos de entrada</span><select name="ticket_type_ids" multiple size="5"></select></label></fieldset>
             </div>
-            <div class="admin-form-grid admin-discount-rules">
-              <label><span>Importe mínimo (€)</span><input name="minimum_order" inputmode="decimal" placeholder="Sin mínimo"></label>
-              <label><span>Entradas mínimas</span><input name="minimum_ticket_quantity" type="number" min="1" placeholder="Sin mínimo"></label>
-              <label><span>Máx. entradas con descuento</span><input name="maximum_discounted_ticket_quantity" type="number" min="1" placeholder="Sin límite"></label>
-              <label><span>Máx. usos totales</span><input name="maximum_total_uses" type="number" min="1" placeholder="Sin límite"></label>
-              <label><span>Máx. usos por cliente</span><input name="maximum_uses_per_customer" type="number" min="1" placeholder="Sin límite"></label>
-              <label><span>Inicio</span><input name="starts_at" type="datetime-local"></label>
-              <label><span>Fin</span><input name="expires_at" type="datetime-local"></label>
-              <label><span>Descuento máximo (€)</span><input name="maximum_discount" inputmode="decimal" placeholder="Sin límite"></label>
-            </div>
-            <div class="admin-discount-toggles"><label><input name="is_combinable" type="checkbox"><span>Combinable (preparado para futuras campañas)</span></label></div>
+            <section class="admin-discount-rule-section" aria-labelledby="discount-limits-title">
+              <div class="admin-discount-rule-heading"><div><span class="ticket-eyebrow">Límites</span><h3 id="discount-limits-title">Condiciones de uso</h3></div><p>Déjalos vacíos si no quieres limitar el código.</p></div>
+              <div class="admin-form-grid admin-discount-rules">
+                <label><span>Importe mínimo (€)</span><input name="minimum_order" inputmode="decimal" placeholder="Sin mínimo"><small>El pedido debe alcanzar este importe para aplicar el código.</small></label>
+                <label><span>Entradas mínimas</span><input name="minimum_ticket_quantity" type="number" min="1" placeholder="Sin mínimo"><small>El comprador debe añadir al menos este número de entradas.</small></label>
+                <label><span>Máx. entradas con descuento</span><input name="maximum_discounted_ticket_quantity" type="number" min="1" placeholder="Sin límite"><small>Limita cuántas entradas de un pedido reciben el descuento.</small></label>
+                <label><span>Máx. usos totales</span><input name="maximum_total_uses" type="number" min="1" placeholder="Sin límite"><small>Número máximo de pedidos que pueden utilizar este código.</small></label>
+                <label><span>Máx. usos por cliente</span><input name="maximum_uses_per_customer" type="number" min="1" placeholder="Sin límite"><small>Cuántas veces puede usarlo una misma persona.</small></label>
+                <label><span>Descuento máximo (€)</span><input name="maximum_discount" inputmode="decimal" placeholder="Sin límite"><small>Tope de dinero que puede descontar un código porcentual.</small></label>
+              </div>
+            </section>
+            <section class="admin-discount-rule-section" aria-labelledby="discount-period-title">
+              <div class="admin-discount-rule-heading"><div><span class="ticket-eyebrow">Vigencia</span><h3 id="discount-period-title">Cuándo se puede usar</h3></div><p>Si no indicas fechas, estará disponible mientras siga activo.</p></div>
+              <div class="admin-discount-date-range">
+                <label><span>Disponible desde</span><input name="starts_at" type="datetime-local"><small>Déjalo vacío para que esté activo desde ahora.</small></label>
+                <label><span>Disponible hasta</span><input name="expires_at" type="datetime-local"><small>Déjalo vacío para que no tenga fecha de caducidad.</small></label>
+              </div>
+            </section>
+            <div class="admin-discount-toggles"><label><input name="is_combinable" type="checkbox"><span><strong>Permitir combinar con otras campañas</strong><small>Déjalo desactivado salvo que quieras acumular descuentos.</small></span></label></div>
           </div>
         </details>
         <div class="admin-inline-actions"><button class="ticket-btn primary" type="submit">Guardar y activar código</button><p class="admin-form-status" data-admin-discount-status aria-live="polite"></p></div>
@@ -68,6 +76,6 @@
     </section>
   </main>
 </div>
-<script src="/assets/js/admin-backoffice.js?v=20260816-discounts-simple-v2" defer></script>
+<script src="/assets/js/admin-backoffice.js?v=20260816-discounts-simple-v3" defer></script>
 </body>
 </html>
