@@ -144,7 +144,7 @@
       target.setAttribute("aria-busy", "true");
       request(api + "/events").then(function (data) {
         if (!data.events.length) {
-          target.innerHTML = '<div class="ticket-panel experience-empty"><span class="ticket-eyebrow">Próximamente</span><h2>La próxima experiencia está en camino</h2><p class="ticket-copy">Estamos ultimando la siguiente edición Perigallo. Síguenos para descubrirla antes que nadie.</p><a class="ticket-btn primary" href="https://www.instagram.com/perigallo_popup/" target="_blank" rel="noopener noreferrer">Seguir novedades</a></div>';
+          target.innerHTML = '<div class="ticket-panel experience-empty"><span class="ticket-eyebrow">Próximamente</span><h2>La próxima experiencia está en camino</h2><p class="ticket-copy">Estamos ultimando la siguiente edición Perigallo. Síguenos para descubrirla antes que nadie.</p><a class="ticket-btn primary" href="https://www.instagram.com/somosperigallo/" target="_blank" rel="noopener noreferrer">Seguir novedades</a></div>';
           return;
         }
         target.innerHTML = data.events.map(eventCard).join("");
