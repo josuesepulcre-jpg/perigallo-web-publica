@@ -32,6 +32,7 @@ const required = [
   "database/migrations/020_holded_fiscal_sync.sql",
   "database/migrations/021_holded_invoice_delivery.sql",
   "database/migrations/023_ticket_order_tax_breakdown.sql",
+  "database/migrations/024_admin_cash_ticket_orders.sql",
   "database/migrations/022_checkout_runtime_compatibility.sql",
   "api/scripts/apply-migration.php",
   "api/scripts/purge-test-ticketing-data.php",
@@ -108,6 +109,7 @@ const activeFiles = [
   "assets/css/checkout.css",
   "assets/css/event-information-accordions.css",
   "assets/css/admin-orders.css",
+  "assets/css/admin-cash-orders.css",
   "formulario/index.html",
 ];
 
@@ -216,6 +218,25 @@ for (const marker of ["openTicketDrawer", "closeTicketDrawer", "updateTicketPric
 const adminBackoffice = readFileSync(join(root, "assets/js/admin-backoffice.js"), "utf8");
 for (const marker of ["/admin/login/", "data-admin-dashboard", "data-admin-events-list", "data-admin-orders-list", "data-admin-users-page", "/admin/eventos/", "/admin/acceso/", "/admin/usuarios/", "data-order-action", "record-refund", "purge-test"]) {
   if (!adminBackoffice.includes(marker)) throw new Error(`Missing central backoffice marker: ${marker}`);
+}
+const cashMigration = readFileSync(join(root, "database/migrations/024_admin_cash_ticket_orders.sql"), "utf8");
+const adminSales = readFileSync(join(root, "admin/ventas/index.html"), "utf8");
+const cashSalesCss = readFileSync(join(root, "assets/css/admin-cash-orders.css"), "utf8");
+for (const marker of ["sales_channel", "cash_payment_status", "cash_payment_recorded_at"]) {
+  if (!cashMigration.includes(marker)) throw new Error(`Cash-order migration is missing ${marker}.`);
+}
+for (const marker of ["data-cash-order-total", "data-cash-order-total-amount", "Total en efectivo"]) {
+  if (!adminSales.includes(marker)) throw new Error(`Cash-order total UI is missing ${marker}.`);
+}
+if (!cashSalesCss.includes(".admin-cash-order-total")) throw new Error("Cash-order total styles are missing.");
+for (const marker of ["updateCashOrderTotal", "cashWhatsAppUrl", "whatsapp_url", "Total cobrado en efectivo"]) {
+  if (!adminBackoffice.includes(marker)) throw new Error(`Cash-order total or WhatsApp behavior is missing ${marker}.`);
+}
+for (const marker of ["cashOrderWhatsAppUrl", "whatsapp_url", "Aplica la migración 024"]) {
+  if (!ticketing.includes(marker)) throw new Error(`Cash-order API contract is missing ${marker}.`);
+}
+if (!api.includes("['ok' => true] + $ticketing->adminCreateCashOrder")) {
+  throw new Error("Cash-order endpoint must return the WhatsApp URL at the top level.");
 }
 const adminLogin = readFileSync(join(root, "admin/login/index.html"), "utf8");
 for (const marker of ["Administración Perigallo", "data-admin-login-page", "data-toggle-password"]) {

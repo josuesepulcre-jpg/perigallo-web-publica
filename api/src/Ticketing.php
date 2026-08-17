@@ -954,8 +954,9 @@ final class Ticketing
                  VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW(), 1, NOW(), ?, 0, 0, ?, ?, ?, ?, ?, 0, "production", "cash", ?, ?, ?, ?, ?, ?, "generated", ?, "not_required", 1, "cash_sale", NOW(), NOW())'
             );
             $isPaid = $cashStatus === 'paid';
+            $publicToken = public_token();
             $orderStmt->execute([
-                $publicToken = public_token(), $this->nextRedsysOrder(), $firstName, $lastName, $name, $email, $phone, self::DRESS_CODE_VERSION,
+                $publicToken, $this->nextRedsysOrder(), $firstName, $lastName, $name, $email, $phone, self::DRESS_CODE_VERSION,
                 env_value('REDSYS_CURRENCY', '978'), $isPaid ? 'paid' : 'pending', $reservationExpiresAt, client_ip(), substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255),
                 $cashStatus, $notes ?: null, $isPaid ? $operator : null, $isPaid ? now_mysql() : null, $isPaid ? 'confirmed' : 'pending_payment', $isPaid ? 'paid' : 'pending', $isPaid ? now_mysql() : null,
             ]);

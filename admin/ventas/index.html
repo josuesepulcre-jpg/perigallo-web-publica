@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/ticketing.css?v=20260804-admin-v1">
 <link rel="stylesheet" href="/assets/css/admin-orders.css?v=20260817-cash-expiry-v1">
+<link rel="stylesheet" href="/assets/css/admin-cash-orders.css?v=20260817-cash-total-v1">
 </head>
 <body class="ticketing-page admin-backoffice-page">
 <div class="admin-app-shell">
@@ -39,6 +40,7 @@
         <form class="admin-cash-order-form" data-admin-cash-order-form>
           <label class="admin-form-span">Evento<select name="event_id" required data-cash-event><option value="">Selecciona un evento</option></select></label>
           <div class="admin-cash-ticket-lines" data-cash-ticket-lines><p>Selecciona un evento para elegir las entradas.</p></div>
+          <div class="admin-cash-order-total admin-form-span" data-cash-order-total hidden aria-live="polite"><span data-cash-order-total-label>Total en efectivo</span><strong data-cash-order-total-amount>0,00 €</strong></div>
           <label>Nombre<input name="first_name" required maxlength="120" autocomplete="given-name"></label>
           <label>Apellidos<input name="last_name" maxlength="160" autocomplete="family-name"></label>
           <label class="admin-form-span">Teléfono / WhatsApp<input name="phone" required maxlength="60" autocomplete="tel" inputmode="tel" placeholder="600 000 000 o +34 600 000 000"></label>
@@ -52,6 +54,6 @@
     </div>
   </main>
 </div>
-<script src="/assets/js/admin-backoffice.js?v=20260817-cash-whatsapp-v1" defer></script>
+<script src="/assets/js/admin-backoffice.js?v=20260817-cash-total-v1" defer></script>
 </body>
 </html>

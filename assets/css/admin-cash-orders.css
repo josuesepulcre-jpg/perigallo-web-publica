@@ -1,0 +1,4 @@
+.admin-cash-order-form>[data-cash-expiry-wrap][hidden]{display:none!important}
+.admin-cash-order-total{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:15px 16px;border:1px solid var(--pg-gold);background:rgba(205,177,151,.12)}
+.admin-cash-order-total span{color:var(--pg-gold);font:500 .58rem Montserrat,Arial,sans-serif;letter-spacing:.14em;text-transform:uppercase}
+.admin-cash-order-total strong{color:var(--pg-cream);font:400 1.7rem/1 "Cormorant Garamond",serif;white-space:nowrap}

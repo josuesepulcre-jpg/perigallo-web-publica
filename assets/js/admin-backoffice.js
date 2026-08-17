@@ -375,12 +375,32 @@
         if (!lines) return;
         if (!event || !(event.ticket_types || []).length) {
           lines.innerHTML = '<p>No hay tipos de entrada activos para este evento.</p>';
+          updateCashOrderTotal();
           return;
         }
         lines.innerHTML = (event.ticket_types || []).map(function (type) {
           var available = Number(type.available || 0);
           return '<label><span><strong>' + escapeHtml(type.name) + '</strong><small>' + formatMoney(type.final_price_cents) + ' · ' + available + ' disponibles</small></span><input type="number" min="0" max="' + Math.min(available, Number(type.max_per_order || available)) + '" value="0" data-cash-ticket-quantity data-ticket-type-id="' + Number(type.id) + '" ' + (available ? '' : 'disabled') + '></label>';
         }).join("");
+        updateCashOrderTotal();
+      }
+      function updateCashOrderTotal() {
+        var eventId = Number(form && form.event_id.value);
+        var event = cashMeta.events.filter(function (row) { return Number(row.id) === eventId; })[0];
+        var total = form && form.querySelector("[data-cash-order-total]");
+        var amount = total && total.querySelector("[data-cash-order-total-amount]");
+        var label = total && total.querySelector("[data-cash-order-total-label]");
+        if (!total || !amount || !label) return;
+        if (!event) { total.hidden = true; return; }
+        var totalCents = Array.prototype.slice.call(form.querySelectorAll("[data-cash-ticket-quantity]")).reduce(function (sum, input) {
+          var typeId = Number(input.getAttribute("data-ticket-type-id"));
+          var type = (event.ticket_types || []).filter(function (row) { return Number(row.id) === typeId; })[0];
+          var quantity = Math.max(0, Math.floor(Number(input.value) || 0));
+          return sum + (type ? quantity * Number(type.final_price_cents || 0) : 0);
+        }, 0);
+        label.textContent = form.cash_payment_status.value === "paid" ? "Total cobrado en efectivo" : "Total pendiente de cobro";
+        amount.textContent = formatMoney(totalCents);
+        total.hidden = false;
       }
       function populateCashEvents() {
         var select = form && form.querySelector("[data-cash-event]");
@@ -391,6 +411,7 @@
         if (!modal) return;
         modal.hidden = false;
         updateCashPaymentFields();
+        updateCashOrderTotal();
         form.querySelector('[name="first_name"]').focus();
       }
       function updateCashPaymentFields() {
@@ -399,6 +420,7 @@
         expiry.hidden = !reserved;
         form.reservation_expires_at.required = reserved;
         if (reserved) setDefaultExpiry();
+        updateCashOrderTotal();
       }
       function actionMessage(action) {
         if (action === "cancel") return "Cancelar las entradas de este pedido impedirá su acceso. No realiza ningún abono. ¿Continuar?";
@@ -426,6 +448,7 @@
         modal.addEventListener("click", function (event) { if (event.target === modal) closeCashModal(); });
         form.event_id.addEventListener("change", renderCashTicketLines);
         form.cash_payment_status.addEventListener("change", updateCashPaymentFields);
+        form.addEventListener("input", function (event) { if (event.target.matches("[data-cash-ticket-quantity]")) updateCashOrderTotal(); });
         updateCashPaymentFields();
         form.addEventListener("submit", function (event) {
           event.preventDefault();
