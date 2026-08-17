@@ -41,19 +41,17 @@
           <div class="admin-cash-ticket-lines" data-cash-ticket-lines><p>Selecciona un evento para elegir las entradas.</p></div>
           <label>Nombre<input name="first_name" required maxlength="120" autocomplete="given-name"></label>
           <label>Apellidos<input name="last_name" maxlength="160" autocomplete="family-name"></label>
-          <label>Correo electrónico<input type="email" name="email" required maxlength="190" autocomplete="email"></label>
-          <label>Teléfono<input name="phone" maxlength="60" autocomplete="tel"></label>
+          <label class="admin-form-span">Teléfono / WhatsApp<input name="phone" required maxlength="60" autocomplete="tel" inputmode="tel" placeholder="600 000 000 o +34 600 000 000"></label>
           <label>Estado del efectivo<select name="cash_payment_status" data-cash-payment-status><option value="paid">Pagado en efectivo</option><option value="reserved">Reserva pendiente de cobro</option></select></label>
           <label data-cash-expiry-wrap>Reserva válida hasta<input type="datetime-local" name="reservation_expires_at" data-cash-expiry></label>
           <label class="admin-form-span">Apunte de pago o reserva<textarea name="cash_payment_notes" maxlength="1000" placeholder="Ej.: paga al llegar; 174 € recibidos en efectivo."></textarea></label>
-          <label class="admin-cash-send-option admin-form-span"><input type="checkbox" name="send_now" value="1"> Enviar por correo al crear</label>
           <p class="admin-form-status admin-form-span" data-cash-order-status aria-live="polite"></p>
-          <div class="admin-cash-form-actions admin-form-span"><button type="button" class="ticket-btn" data-close-cash-order>Cancelar</button><button type="submit" class="ticket-btn primary">Generar pedido</button></div>
+          <div class="admin-cash-form-actions admin-form-span"><button type="button" class="ticket-btn" data-close-cash-order>Cancelar</button><button type="submit" class="ticket-btn primary">Generar y abrir WhatsApp</button></div>
         </form>
       </div>
     </div>
   </main>
 </div>
-<script src="/assets/js/admin-backoffice.js?v=20260810-cash-orders-v1" defer></script>
+<script src="/assets/js/admin-backoffice.js?v=20260817-cash-whatsapp-v1" defer></script>
 </body>
 </html>

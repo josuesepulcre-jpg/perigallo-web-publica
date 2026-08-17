@@ -282,7 +282,7 @@ try {
 
     if ($method === 'POST' && $path === '/admin/cash-orders') {
         AdminAuth::requireCsrf();
-        json_response(['ok' => true, 'order' => $ticketing->adminCreateCashOrder(read_json_body(), AdminAuth::operatorName())], 201);
+        json_response(['ok' => true] + $ticketing->adminCreateCashOrder(read_json_body(), AdminAuth::operatorName()), 201);
         return;
     }
 

@@ -39,7 +39,7 @@ final class HoldedSyncService
                  holded_next_attempt_at = IF(holded_status = "synced", holded_next_attempt_at, NOW()),
                  holded_last_error = IF(holded_status = "synced", holded_last_error, NULL),
                  updated_at = NOW()
-             WHERE id = ? AND is_test = 0 AND environment = "production"
+             WHERE id = ? AND is_test = 0 AND environment = "production" AND holded_excluded = 0
                AND (status = "paid" OR payment_status = "paid")'
         );
         $statement->execute([$orderId]);
@@ -55,10 +55,10 @@ final class HoldedSyncService
      */
     public function retry(int $orderId, bool $confirmNoExternalDocument = false): array
     {
-        $statement = $this->pdo->prepare('SELECT id, status, is_test, environment, holded_status, holded_document_id, holded_payment_id, holded_last_error FROM ticket_orders WHERE id = ? LIMIT 1');
+        $statement = $this->pdo->prepare('SELECT id, status, is_test, environment, holded_excluded, holded_status, holded_document_id, holded_payment_id, holded_last_error FROM ticket_orders WHERE id = ? LIMIT 1');
         $statement->execute([$orderId]);
         $order = $statement->fetch();
-        if (!$order || !$this->isPaidOrder($order) || !empty($order['is_test']) || $order['environment'] !== 'production') {
+        if (!$order || !$this->isPaidOrder($order) || !empty($order['is_test']) || $order['environment'] !== 'production' || !empty($order['holded_excluded'])) {
             throw new RuntimeException('Solo se pueden reintentar pedidos reales cobrados en producción.');
         }
         if ($order['holded_status'] === 'synced') {
@@ -82,7 +82,7 @@ final class HoldedSyncService
         $limit = max(1, min(500, $limit));
         $rows = $this->pdo->query(
             'SELECT id FROM ticket_orders
-             WHERE is_test = 0 AND environment = "production"
+             WHERE is_test = 0 AND environment = "production" AND holded_excluded = 0
                AND (status = "paid" OR payment_status = "paid")
                AND holded_status IN ("not_required", "pending", "error")
              ORDER BY id ASC LIMIT ' . $limit
@@ -102,7 +102,7 @@ final class HoldedSyncService
         $limit = max(1, min(100, $limit));
         $rows = $this->pdo->query(
             'SELECT id FROM ticket_orders
-             WHERE is_test = 0 AND environment = "production"
+             WHERE is_test = 0 AND environment = "production" AND holded_excluded = 0
                AND (status = "paid" OR payment_status = "paid")
                AND holded_status IN ("pending", "error")
                AND (holded_next_attempt_at IS NULL OR holded_next_attempt_at <= NOW())
@@ -127,7 +127,7 @@ final class HoldedSyncService
         $this->pdo->beginTransaction();
         try {
             $order = $this->loadOrder($orderId, true);
-            if (!$order || !$this->isPaidOrder($order) || !empty($order['is_test']) || $order['environment'] !== 'production') {
+            if (!$order || !$this->isPaidOrder($order) || !empty($order['is_test']) || $order['environment'] !== 'production' || !empty($order['holded_excluded'])) {
                 $this->pdo->rollBack();
                 return 'pending';
             }
@@ -302,7 +302,7 @@ final class HoldedSyncService
         $rows = $this->pdo->query(
             'SELECT id, public_token, billing_name, billing_email, email, holded_document_number, holded_invoice_delivery_attempts
              FROM ticket_orders
-             WHERE is_test = 0 AND environment = "production"
+             WHERE is_test = 0 AND environment = "production" AND holded_excluded = 0
                AND (status = "paid" OR payment_status = "paid")
                AND holded_status = "synced" AND holded_document_type = "invoice"
                AND holded_invoice_delivery_status IN ("pending", "failed")

@@ -201,6 +201,14 @@
 
   function isClosedOrder(order) { return order.display_status === "cancelled" || order.display_status === "refunded"; }
 
+  function cashWhatsAppUrl(order) {
+    var phone = String(order.phone || "").replace(/\D/g, "");
+    if (phone.length === 9 && /^[67]/.test(phone)) phone = "34" + phone;
+    var link = window.location.origin + "/entradas/pedido/?token=" + encodeURIComponent(order.public_token);
+    var message = "Hola " + (order.name || "") + ",\n\nAquí tienes tus entradas para " + (order.event_title || "Perigallo") + ".\n" + link;
+    return "https://wa.me/" + encodeURIComponent(phone) + "?text=" + encodeURIComponent(message);
+  }
+
   function orderActions(order) {
     if (!state.session || state.session.role !== "admin") return "";
     var actions = '<div class="admin-order-actions"><a class="text-action" href="/entradas/pedido/?token=' + encodeURIComponent(order.public_token) + '" target="_blank" rel="noopener noreferrer">Ver pedido</a>';
@@ -209,7 +217,7 @@
     if (order.sales_channel === "cash" && !isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="send-cash" data-order-id="' + Number(order.id) + '">' + (order.cash_payment_status === "paid" ? "Enviar entradas" : "Enviar reserva") + '</button>';
     if (!isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="cancel" data-order-id="' + Number(order.id) + '">Cancelar</button>';
     if (!isClosedOrder(order) && (order.payment_status === "paid" || order.status === "paid")) actions += '<button type="button" class="text-action" data-order-action="refund" data-order-id="' + Number(order.id) + '">Registrar devolución</button>';
-    if (state.session.is_owner && !Number(order.is_test) && (order.payment_status === "paid" || order.status === "paid") && order.holded_status && order.holded_status !== "synced") actions += '<button type="button" class="text-action" data-order-action="holded-retry" data-order-id="' + Number(order.id) + '">Reintentar Holded</button>';
+    if (state.session.is_owner && order.sales_channel !== "cash" && !Number(order.is_test) && (order.payment_status === "paid" || order.status === "paid") && order.holded_status && order.holded_status !== "synced") actions += '<button type="button" class="text-action" data-order-action="holded-retry" data-order-id="' + Number(order.id) + '">Reintentar Holded</button>';
     if (state.session.is_owner && Number(order.is_test)) actions += '<button type="button" class="text-action danger" data-order-action="purge-test" data-order-id="' + Number(order.id) + '">Eliminar prueba</button>';
     return actions + '</div>';
   }
@@ -226,7 +234,7 @@
         ? '<strong><s>' + formatMoney(order.subtotal_cents) + '</s> ' + formatMoney(order.total_cents) + '</strong><small class="admin-order-discount">Cupón ' + escapeHtml(order.discount_code || "") + ' · −' + formatMoney(discount) + '</small>'
         : '<strong>' + formatMoney(order.total_cents) + '</strong>';
       var allergySummary = Number(order.allergy_attendee_count || 0) ? ' · ' + Number(order.allergy_attendee_count) + ' alergia' + (Number(order.allergy_attendee_count) === 1 ? '' : 's') + ' comunicada' + (Number(order.allergy_attendee_count) === 1 ? '' : 's') : '';
-      var holded = !Number(order.is_test) && order.holded_status ? '<small class="admin-order-holded">Holded: ' + escapeHtml({not_required:"No requerido",pending:"Pendiente",processing:"Procesando",synced:"Sincronizado",error:"Reintento programado",requires_review:"Revisión necesaria"}[order.holded_status] || order.holded_status) + (order.holded_document_number ? ' · ' + escapeHtml(order.holded_document_number) : '') + '</small>' : '';
+      var holded = order.sales_channel === "cash" ? '<small class="admin-order-holded admin-order-cash">Registro web · sin Holded</small>' : !Number(order.is_test) && order.holded_status ? '<small class="admin-order-holded">Holded: ' + escapeHtml({not_required:"No requerido",pending:"Pendiente",processing:"Procesando",synced:"Sincronizado",error:"Reintento programado",requires_review:"Revisión necesaria"}[order.holded_status] || order.holded_status) + (order.holded_document_number ? ' · ' + escapeHtml(order.holded_document_number) : '') + '</small>' : '';
       var paymentNote = order.sales_channel === "cash" && order.cash_payment_notes ? '<small class="admin-order-cash-note">Efectivo: ' + escapeHtml(order.cash_payment_notes) + '</small>' : '';
       return '<article class="admin-order-row"><div><strong>' + escapeHtml(order.name || "Comprador sin nombre") + '</strong><small>' + escapeHtml(order.event_title || "Evento por asignar") + ' · ' + escapeHtml(reference) + ' · ' + paymentMethod + cashStatus + allergySummary + (Number(order.is_test) ? ' · Prueba' : '') + '</small>' + paymentNote + holded + '</div><span>' + Number(order.ticket_quantity || 0) + ' entrada' + (Number(order.ticket_quantity || 0) === 1 ? "" : "s") + '</span><span class="status-pill status-' + escapeHtml(displayStatus) + '">' + escapeHtml(statusLabel(displayStatus)) + '</span><span class="admin-order-amount">' + amount + '</span>' + (compact ? "" : orderActions(order)) + '</article>';
     }).join("");
@@ -390,7 +398,7 @@
         if (action === "refund") return "Registra la devolución solo cuando el abono ya se haya realizado en Redsys/TPV. Esta acción revoca las entradas, pero no devuelve dinero automáticamente. ¿Confirmar?";
         if (action === "holded-retry") return "Se volverá a dejar el pedido en cola para Holded. No se emitirá ningún documento desde el navegador. ¿Continuar?";
         if (action === "cash-payment") return "¿Confirmas que ya se ha recibido el pago en efectivo? Se activarán las entradas y se sumará a las ventas cobradas.";
-        if (action === "send-cash") return "Se enviará al correo del comprador el enlace de sus entradas o de su reserva. ¿Continuar?";
+        if (action === "send-cash") return "Se abrirá WhatsApp con el enlace de las entradas preparado. ¿Continuar?";
         return "Eliminarás definitivamente este pedido de prueba y todas sus entradas. No se puede deshacer. ¿Continuar?";
       }
       Promise.all([request(api + "/admin/orders"), request(api + "/admin/cash-orders/meta")]).then(function (data) {
@@ -423,13 +431,14 @@
           var items = Array.prototype.slice.call(form.querySelectorAll("[data-cash-ticket-quantity]")).map(function (input) { return { ticket_type_id: Number(input.getAttribute("data-ticket-type-id")), quantity: Number(input.value || 0) }; }).filter(function (item) { return item.quantity > 0; });
           if (!items.length) { setCashStatus("Selecciona al menos una entrada."); return; }
           var submit = form.querySelector('[type="submit"]');
-          var payload = { event_id: Number(form.event_id.value), first_name: form.first_name.value.trim(), last_name: form.last_name.value.trim(), email: form.email.value.trim(), phone: form.phone.value.trim(), cash_payment_status: form.cash_payment_status.value, reservation_expires_at: form.reservation_expires_at.value, cash_payment_notes: form.cash_payment_notes.value.trim(), items: items };
+          var payload = { event_id: Number(form.event_id.value), first_name: form.first_name.value.trim(), last_name: form.last_name.value.trim(), phone: form.phone.value.trim(), cash_payment_status: form.cash_payment_status.value, reservation_expires_at: form.reservation_expires_at.value, cash_payment_notes: form.cash_payment_notes.value.trim(), items: items };
+          var popup = window.open("about:blank", "perigallo-cash-whatsapp");
           submit.disabled = true;
           setCashStatus("Generando pedido…");
           jsonRequest(api + "/admin/cash-orders", "POST", payload).then(function (result) {
-            if (form.send_now.checked) return jsonRequest(api + "/admin/orders/" + Number(result.order.id) + "/send-cash", "POST", {});
-            return result;
-          }).then(function () { form.reset(); renderCashTicketLines(); closeCashModal(); reload(); }).catch(function (error) { setCashStatus(error.message || "No se ha podido generar el pedido."); }).finally(function () { submit.disabled = false; });
+            if (popup) popup.location.replace(result.whatsapp_url); else window.open(result.whatsapp_url, "_blank", "noopener");
+            form.reset(); renderCashTicketLines(); closeCashModal(); reload();
+          }).catch(function (error) { if (popup) popup.close(); setCashStatus(error.message || "No se ha podido generar el pedido."); }).finally(function () { submit.disabled = false; });
         });
         root.addEventListener("click", function (event) {
           var allergiesButton = event.target.closest("[data-order-allergies]");
@@ -445,6 +454,11 @@
           var action = button.getAttribute("data-order-action");
           var id = Number(button.getAttribute("data-order-id"));
           if (!id || !window.confirm(actionMessage(action))) return;
+          if (action === "send-cash") {
+            var cashOrder = (state.orders || []).find(function (order) { return Number(order.id) === id; });
+            if (cashOrder) window.open(cashWhatsAppUrl(cashOrder), "_blank", "noopener");
+            return;
+          }
           var holdedConfirmation = false;
           if (action === "holded-retry") {
             var holdedOrder = (state.orders || []).find(function (order) { return Number(order.id) === id; });
@@ -477,7 +491,7 @@
   }
 
   function isFiscalOrder(order) {
-    return Number(order.is_test) !== 1 && order.environment === "production" && (order.payment_status === "paid" || order.status === "paid");
+    return Number(order.is_test) !== 1 && order.sales_channel !== "cash" && order.environment === "production" && (order.payment_status === "paid" || order.status === "paid");
   }
 
   function billingOrderRow(order) {

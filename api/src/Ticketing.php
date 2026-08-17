@@ -935,8 +935,8 @@ final class Ticketing
         $name = trim($firstName . ' ' . $lastName);
         $email = mb_strtolower(clean_string((string) ($data['email'] ?? ''), 190));
         $phone = clean_string((string) ($data['phone'] ?? ''), 60);
-        if ($name === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            throw new InvalidArgumentException('Indica nombre y un correo electrónico válido para enviar las entradas.');
+        if ($name === '' || $phone === '') {
+            throw new InvalidArgumentException('Indica nombre y teléfono de WhatsApp para enviar las entradas.');
         }
         $cashStatus = (string) ($data['cash_payment_status'] ?? 'reserved');
         if (!in_array($cashStatus, ['reserved', 'paid'], true)) {
@@ -950,12 +950,12 @@ final class Ticketing
             $event = $this->requireAdminEvent($eventId);
             $orderStmt = $this->pdo->prepare(
                 'INSERT INTO ticket_orders
-                 (public_token, redsys_order, first_name, last_name, name, email, phone, age_requirement_accepted, age_requirement_accepted_at, dress_code_accepted, dress_code_accepted_at, dress_code_version, subtotal_cents, total_cents, currency, status, reservation_expires_at, ip_address, user_agent, is_test, environment, sales_channel, cash_payment_status, cash_payment_notes, cash_payment_recorded_by, cash_payment_recorded_at, order_status, payment_status, delivery_status, paid_at, created_at, updated_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW(), 1, NOW(), ?, 0, 0, ?, ?, ?, ?, ?, 0, "production", "cash", ?, ?, ?, ?, ?, ?, "generated", ?, NOW(), NOW())'
+                 (public_token, redsys_order, first_name, last_name, name, email, phone, age_requirement_accepted, age_requirement_accepted_at, dress_code_accepted, dress_code_accepted_at, dress_code_version, subtotal_cents, total_cents, currency, status, reservation_expires_at, ip_address, user_agent, is_test, environment, sales_channel, cash_payment_status, cash_payment_notes, cash_payment_recorded_by, cash_payment_recorded_at, order_status, payment_status, delivery_status, paid_at, holded_status, holded_excluded, holded_exclusion_reason, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW(), 1, NOW(), ?, 0, 0, ?, ?, ?, ?, ?, 0, "production", "cash", ?, ?, ?, ?, ?, ?, "generated", ?, "not_required", 1, "cash_sale", NOW(), NOW())'
             );
             $isPaid = $cashStatus === 'paid';
             $orderStmt->execute([
-                public_token(), $this->nextRedsysOrder(), $firstName, $lastName, $name, $email, $phone, self::DRESS_CODE_VERSION,
+                $publicToken = public_token(), $this->nextRedsysOrder(), $firstName, $lastName, $name, $email, $phone, self::DRESS_CODE_VERSION,
                 env_value('REDSYS_CURRENCY', '978'), $isPaid ? 'paid' : 'pending', $reservationExpiresAt, client_ip(), substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255),
                 $cashStatus, $notes ?: null, $isPaid ? $operator : null, $isPaid ? now_mysql() : null, $isPaid ? 'confirmed' : 'pending_payment', $isPaid ? 'paid' : 'pending', $isPaid ? now_mysql() : null,
             ]);
@@ -1005,8 +1005,7 @@ final class Ticketing
             $this->generateTicketsOnce($orderId, $isPaid ? 'issued' : 'blocked');
             $this->auditAdminOperation($operator, $isPaid ? 'cash_order_created_paid' : 'cash_order_reserved', $orderId, ['event_id' => $eventId, 'quantity' => $quantityTotal, 'notes' => $notes]);
             $this->pdo->commit();
-            if ($isPaid) (new HoldedSyncService($this->pdo, new HoldedClient()))->queuePaidProductionOrder($orderId);
-            return $this->adminOrderById($orderId);
+            return ['order' => $this->adminOrderById($orderId), 'whatsapp_url' => $this->cashOrderWhatsAppUrl($phone, $name, (string) $event['title'], $publicToken)];
         } catch (\Throwable $error) {
             if ($this->pdo->inTransaction()) $this->pdo->rollBack();
             throw $error;
@@ -1031,11 +1030,10 @@ final class Ticketing
                     if (!$type || (int) $item['quantity'] > $this->availableForType((int) $item['ticket_type_id'], (int) $type['capacity'])) throw new RuntimeException('La reserva ha caducado y ya no hay aforo suficiente para confirmarla.');
                 }
             }
-            $this->pdo->prepare('UPDATE ticket_orders SET status = "paid", order_status = "confirmed", payment_status = "paid", cash_payment_status = "paid", cash_payment_notes = ?, cash_payment_recorded_by = ?, cash_payment_recorded_at = NOW(), reservation_expires_at = NULL, delivery_status = "generated", paid_at = NOW(), updated_at = NOW() WHERE id = ?')->execute([$notes ?: ($order['cash_payment_notes'] ?? null), $operator, $orderId]);
+            $this->pdo->prepare('UPDATE ticket_orders SET status = "paid", order_status = "confirmed", payment_status = "paid", cash_payment_status = "paid", cash_payment_notes = ?, cash_payment_recorded_by = ?, cash_payment_recorded_at = NOW(), reservation_expires_at = NULL, delivery_status = "generated", paid_at = NOW(), holded_status = "not_required", holded_excluded = 1, holded_exclusion_reason = "cash_sale", holded_next_attempt_at = NULL, holded_last_error = NULL, updated_at = NOW() WHERE id = ?')->execute([$notes ?: ($order['cash_payment_notes'] ?? null), $operator, $orderId]);
             $this->pdo->prepare('UPDATE tickets t JOIN ticket_order_items oi ON oi.id = t.order_item_id SET t.status = "issued", t.updated_at = NOW() WHERE oi.order_id = ? AND t.status = "blocked"')->execute([$orderId]);
             $this->auditAdminOperation($operator, 'cash_payment_recorded', $orderId, ['notes' => $notes]);
             $this->pdo->commit();
-            (new HoldedSyncService($this->pdo, new HoldedClient()))->queuePaidProductionOrder($orderId);
             return $this->adminOrderById($orderId);
         } catch (\Throwable $error) {
             if ($this->pdo->inTransaction()) $this->pdo->rollBack();
@@ -2769,6 +2767,14 @@ final class Ticketing
             throw new InvalidArgumentException('La fecha límite de la reserva debe ser futura.');
         }
         return $date->format('Y-m-d H:i:s');
+    }
+
+    private function cashOrderWhatsAppUrl(string $phone, string $name, string $eventTitle, string $publicToken): string
+    {
+        $recipient = preg_replace('/\D+/', '', $phone) ?: '';
+        if (strlen($recipient) === 9 && (str_starts_with($recipient, '6') || str_starts_with($recipient, '7'))) $recipient = '34' . $recipient;
+        $ticketUrl = app_base_url() . '/entradas/pedido/?token=' . rawurlencode($publicToken);
+        return 'https://wa.me/' . rawurlencode($recipient) . '?text=' . rawurlencode("Hola {$name},\n\nAquí tienes tus entradas para {$eventTitle}.\n{$ticketUrl}");
     }
 
     private function cashOrderSchemaAvailable(): bool
