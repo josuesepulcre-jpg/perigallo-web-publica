@@ -14,7 +14,12 @@
 .ticket-access-setup .ticket-field { grid-column: 1 / -1; }
 .ticket-access-setup small { display: block; margin-top: 8px; color: var(--pg-muted); font-size: .72rem; line-height: 1.45; }
 
+.ticket-attendee-tools { display: grid; justify-items: end; gap: 12px; }
+.ticket-print-guests { min-height: 42px; padding-inline: 16px; font-size: .62rem; }
+
 @media (max-width: 760px) {
   .ticket-manual-code { grid-template-columns: 1fr; }
   .ticket-manual-code .ticket-btn { width: 100%; }
+  .ticket-attendee-tools { justify-items: stretch; }
+  .ticket-print-guests { width: 100%; }
 }

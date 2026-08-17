@@ -872,6 +872,7 @@
       var facingMode = "environment";
       var torchOn = false;
       var wakeLock = null;
+      var printableAttendees = [];
       document.body.classList.add("has-ticket-access-control");
       if (wrap) wrap.hidden = false;
 
@@ -934,6 +935,29 @@
         var next = attendee.access_status === "not_entered" ? "entry" : (attendee.access_status === "inside" ? "exit" : "reentry");
         return '<button class="text-action" type="button" data-propose-ticket="' + escapeHtml(attendee.public_code) + '" data-propose-action="' + next + '">' + escapeHtml(actionLabel(next)) + '</button>';
       }
+      function printGuestList() {
+        var selected = form.event_id && form.event_id.options[form.event_id.selectedIndex];
+        var eventName = selected && selected.value ? selected.textContent.trim() : "Experiencia";
+        var guests = printableAttendees.filter(function (attendee) { return attendee.status === "issued"; });
+        var excluded = printableAttendees.length - guests.length;
+        var printWindow = window.open("", "_blank");
+        if (!printWindow) {
+          status.textContent = "El navegador ha bloqueado la ventana de impresión. Permite las ventanas emergentes e inténtalo de nuevo.";
+          status.className = "ticket-status is-error";
+          return;
+        }
+        var printedAt = new Intl.DateTimeFormat("es-ES", { dateStyle: "long", timeStyle: "short" }).format(new Date());
+        var rows = guests.map(function (attendee, index) {
+          var contact = [attendee.email, attendee.phone].filter(Boolean).join(" · ") || "Sin contacto";
+          var presence = accessStatus(attendee.access_status);
+          return '<tr><td class="number">' + (index + 1) + '</td><td><strong>' + escapeHtml(attendee.name || "Sin nombre") + '</strong><small>' + escapeHtml(contact) + '</small></td><td><strong>' + escapeHtml(attendee.ticket_type_name || "Entrada") + '</strong><small>' + escapeHtml(attendee.order_reference || "Sin referencia") + '</small></td><td><code>' + escapeHtml(attendee.public_code || "") + '</code></td><td>' + escapeHtml(presence) + '</td><td class="manual"><span class="check"></span><span class="line"></span></td></tr>';
+        }).join("");
+        printWindow.document.open();
+        printWindow.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Lista de invitados · ' + escapeHtml(eventName) + '</title><style>@page{size:A4 portrait;margin:12mm}*{box-sizing:border-box}body{margin:0;color:#17252a;font-family:Arial,sans-serif;font-size:9pt}header{display:flex;justify-content:space-between;gap:18px;padding-bottom:10px;border-bottom:2px solid #17252a}h1{margin:0 0 4px;font:700 22pt Georgia,serif}p{margin:0;color:#536166;line-height:1.4}.summary{margin:12px 0 10px;padding:8px 10px;background:#f0f3f1;font-size:8.5pt}.summary strong{color:#17252a}table{width:100%;border-collapse:collapse;table-layout:fixed}th{padding:7px 5px;border-bottom:1.5px solid #17252a;text-align:left;color:#405158;font-size:7pt;letter-spacing:.08em;text-transform:uppercase}td{padding:7px 5px;border-bottom:1px solid #b7c1c2;vertical-align:top;line-height:1.3}td strong,td small{display:block}td small{margin-top:2px;color:#5f6d71;font-size:7.5pt;overflow-wrap:anywhere}td code{font-family:"Courier New",monospace;font-size:7.5pt;overflow-wrap:anywhere}.number{width:4%;text-align:center}.manual{width:13%;white-space:nowrap}.check{display:inline-block;width:13px;height:13px;margin-right:8px;border:1px solid #17252a;vertical-align:middle}.line{display:inline-block;width:52px;border-bottom:1px solid #17252a;vertical-align:middle}footer{margin-top:10px;color:#617074;font-size:7.5pt}@media print{thead{display:table-header-group}tr{break-inside:avoid}footer{position:fixed;bottom:0;left:0;right:0}}</style></head><body><header><div><h1>Lista de invitados</h1><p>' + escapeHtml(eventName) + '</p></div><p>Impreso el<br><strong>' + escapeHtml(printedAt) + '</strong></p></header><div class="summary"><strong>' + guests.length + ' entradas activas</strong> · Marca la casilla y anota la hora al validar manualmente.' + (excluded ? ' Se han excluido ' + excluded + ' entrada' + (excluded === 1 ? '' : 's') + ' anulada, reembolsada o bloqueada.' : '') + '</div><table><thead><tr><th class="number">#</th><th>Asistente</th><th>Entrada / pedido</th><th>Código</th><th>Estado actual</th><th class="manual">Control manual</th></tr></thead><tbody>' + rows + '</tbody></table><footer>Lista operativa de Perigallo · La validación definitiva debe registrarse después en el control de acceso.</footer></body></html>');
+        printWindow.document.close();
+        printWindow.focus();
+        window.setTimeout(function () { printWindow.print(); }, 180);
+      }
       function loadAttendees() {
         var eventId = Number(form.event_id.value || 0);
         if (!eventId || !attendeesRoot) { if (attendeesRoot) attendeesRoot.hidden = true; return; }
@@ -942,7 +966,8 @@
           attendeesRoot.hidden = false;
           var attendees = data.attendees || [];
           var history = data.history || [];
-          attendeesRoot.innerHTML = '<div class="ticket-attendee-head"><div><span class="ticket-eyebrow">Estado en directo</span><h2>Control de acceso</h2></div><div class="ticket-attendee-metrics"><span>' + Number(metrics.not_entered || 0) + ' sin acceder</span><span class="is-inside">' + Number(metrics.inside || 0) + ' dentro</span><span>' + Number(metrics.outside || 0) + ' fuera</span><span>' + Number(metrics.entries || 0) + ' entradas</span><span>' + Number(metrics.exits || 0) + ' salidas</span></div></div><div class="ticket-attendee-filters"><label>Buscar<input type="search" data-attendee-search placeholder="Nombre, teléfono, pedido o código"></label><label>Presencia<select data-attendee-filter><option value="all">Todas</option><option value="not_entered">Sin acceder</option><option value="inside">Dentro</option><option value="outside">Fuera</option><option value="incidents">Incidencias</option></select></label></div><div class="ticket-attendee-table" data-attendee-table></div><details class="ticket-access-history"><summary>Historial de movimientos</summary><div data-access-history></div></details>';
+          printableAttendees = attendees;
+          attendeesRoot.innerHTML = '<div class="ticket-attendee-head"><div><span class="ticket-eyebrow">Estado en directo</span><h2>Control de acceso</h2></div><div class="ticket-attendee-tools"><button class="ticket-btn ticket-print-guests" type="button" data-print-guests>Imprimir lista de invitados</button><div class="ticket-attendee-metrics"><span>' + Number(metrics.not_entered || 0) + ' sin acceder</span><span class="is-inside">' + Number(metrics.inside || 0) + ' dentro</span><span>' + Number(metrics.outside || 0) + ' fuera</span><span>' + Number(metrics.entries || 0) + ' entradas</span><span>' + Number(metrics.exits || 0) + ' salidas</span></div></div></div><div class="ticket-attendee-filters"><label>Buscar<input type="search" data-attendee-search placeholder="Nombre, teléfono, pedido o código"></label><label>Presencia<select data-attendee-filter><option value="all">Todas</option><option value="not_entered">Sin acceder</option><option value="inside">Dentro</option><option value="outside">Fuera</option><option value="incidents">Incidencias</option></select></label></div><div class="ticket-attendee-table" data-attendee-table></div><details class="ticket-access-history"><summary>Historial de movimientos</summary><div data-access-history></div></details>';
           function drawAttendees() {
             var search = (attendeesRoot.querySelector("[data-attendee-search]").value || "").toLowerCase().trim();
             var filter = attendeesRoot.querySelector("[data-attendee-filter]").value;
@@ -1101,6 +1126,7 @@
       document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible" && stream) requestWakeLock(); });
       window.addEventListener("beforeunload", releaseWakeLock);
       if (attendeesRoot) attendeesRoot.addEventListener("click", function (event) {
+        if (event.target.closest("[data-print-guests]")) { printGuestList(); return; }
         var propose = event.target.closest("[data-propose-ticket]");
         if (propose) { form.code.value = propose.dataset.proposeTicket; inspect(propose.dataset.proposeTicket, "manual"); return; }
         var button = event.target.closest("[data-revert-ticket]");
