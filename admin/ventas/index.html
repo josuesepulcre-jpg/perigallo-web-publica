@@ -35,15 +35,15 @@
         <button type="button" class="ticket-access-modal-close" data-close-cash-order aria-label="Cerrar">×</button>
         <span class="ticket-eyebrow">Operativa interna</span>
         <h2 id="cash-order-title">Entrada en efectivo</h2>
-        <p>Genera una venta cobrada o una reserva pendiente. Nunca aparecerá como opción en la web pública.</p>
+        <p>Marca si ya ha pagado o si queda pendiente. Solo una reserva pendiente tiene fecha de caducidad. Las entradas se abren en WhatsApp para enviarlas manualmente.</p>
         <form class="admin-cash-order-form" data-admin-cash-order-form>
           <label class="admin-form-span">Evento<select name="event_id" required data-cash-event><option value="">Selecciona un evento</option></select></label>
           <div class="admin-cash-ticket-lines" data-cash-ticket-lines><p>Selecciona un evento para elegir las entradas.</p></div>
           <label>Nombre<input name="first_name" required maxlength="120" autocomplete="given-name"></label>
           <label>Apellidos<input name="last_name" maxlength="160" autocomplete="family-name"></label>
           <label class="admin-form-span">Teléfono / WhatsApp<input name="phone" required maxlength="60" autocomplete="tel" inputmode="tel" placeholder="600 000 000 o +34 600 000 000"></label>
-          <label>Estado del efectivo<select name="cash_payment_status" data-cash-payment-status><option value="paid">Pagado en efectivo</option><option value="reserved">Reserva pendiente de cobro</option></select></label>
-          <label data-cash-expiry-wrap>Reserva válida hasta<input type="datetime-local" name="reservation_expires_at" data-cash-expiry></label>
+          <label>¿Ha pagado?<select name="cash_payment_status" data-cash-payment-status><option value="paid">Sí, ha pagado en efectivo</option><option value="reserved">No, pendiente de pagar</option></select></label>
+          <label data-cash-expiry-wrap>La reserva caduca el<input type="datetime-local" name="reservation_expires_at" data-cash-expiry><small>Solo se usa si está pendiente de pagar.</small></label>
           <label class="admin-form-span">Apunte de pago o reserva<textarea name="cash_payment_notes" maxlength="1000" placeholder="Ej.: paga al llegar; 174 € recibidos en efectivo."></textarea></label>
           <p class="admin-form-status admin-form-span" data-cash-order-status aria-live="polite"></p>
           <div class="admin-cash-form-actions admin-form-span"><button type="button" class="ticket-btn" data-close-cash-order>Cancelar</button><button type="submit" class="ticket-btn primary">Generar y abrir WhatsApp</button></div>

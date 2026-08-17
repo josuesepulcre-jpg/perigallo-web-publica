@@ -390,8 +390,15 @@
       function openCashModal() {
         if (!modal) return;
         modal.hidden = false;
-        setDefaultExpiry();
+        updateCashPaymentFields();
         form.querySelector('[name="first_name"]').focus();
+      }
+      function updateCashPaymentFields() {
+        var expiry = form.querySelector("[data-cash-expiry-wrap]");
+        var reserved = form.cash_payment_status.value === "reserved";
+        expiry.hidden = !reserved;
+        form.reservation_expires_at.required = reserved;
+        if (reserved) setDefaultExpiry();
       }
       function actionMessage(action) {
         if (action === "cancel") return "Cancelar las entradas de este pedido impedirá su acceso. No realiza ningún abono. ¿Continuar?";
@@ -418,14 +425,8 @@
         root.querySelectorAll("[data-close-cash-order]").forEach(function (button) { button.addEventListener("click", closeCashModal); });
         modal.addEventListener("click", function (event) { if (event.target === modal) closeCashModal(); });
         form.event_id.addEventListener("change", renderCashTicketLines);
-        form.cash_payment_status.addEventListener("change", function () {
-          var expiry = form.querySelector("[data-cash-expiry-wrap]");
-          var reserved = form.cash_payment_status.value === "reserved";
-          expiry.hidden = !reserved;
-          form.reservation_expires_at.required = reserved;
-          if (reserved) setDefaultExpiry();
-        });
-        form.querySelector("[data-cash-expiry-wrap]").hidden = true;
+        form.cash_payment_status.addEventListener("change", updateCashPaymentFields);
+        updateCashPaymentFields();
         form.addEventListener("submit", function (event) {
           event.preventDefault();
           var items = Array.prototype.slice.call(form.querySelectorAll("[data-cash-ticket-quantity]")).map(function (input) { return { ticket_type_id: Number(input.getAttribute("data-ticket-type-id")), quantity: Number(input.value || 0) }; }).filter(function (item) { return item.quantity > 0; });
