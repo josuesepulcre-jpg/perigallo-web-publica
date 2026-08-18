@@ -254,6 +254,25 @@
       '</div><footer class="perigalla-gastronomy-finale"><span>Y cuando el recorrido termina…</span><h3>Más sorpresas, dulces, espectáculo, fiesta y resopón.</h3><p>La historia continúa hasta las dos de la mañana.</p></footer>';
   }
 
+  function eventFloatingPurchaseCta(event, types, targetId) {
+    var availableTypes = (types || []).filter(function (type) {
+      return (type.effective_status || type.status || "on_sale") === "on_sale" && Number(type.available || 0) > 0;
+    });
+    if (!availableTypes.length) return "";
+
+    var firstType = availableTypes[0];
+    var salePrice = Number(firstType.final_price_cents != null ? firstType.final_price_cents : firstType.price_cents || 0);
+    var priceLabel = availableTypes.length > 1 ? "Desde " + cents(salePrice) : cents(salePrice);
+
+    return [
+      '<div class="event-floating-purchase-spacer" aria-hidden="true"></div>',
+      '<aside class="event-floating-purchase" aria-label="Comprar entradas para ' + escapeAttr(event.title) + '">',
+      '<div class="event-floating-purchase-summary"><span>Entradas</span><strong>' + escapeHtml(priceLabel) + '</strong></div>',
+      '<a class="event-floating-purchase-button wedding-button wedding-button--solid" data-analytics-click="comprar-entradas-flotante" href="#' + escapeAttr(targetId) + '"><span>Comprar entradas</span><b aria-hidden="true">→</b></a>',
+      '</aside>'
+    ].join("");
+  }
+
   function renderPerigalla01Landing(event, preview) {
     var types = event.ticket_types || [];
     var experienceImageUrl = "/assets/images/perigalla-01/sofia-carlos-experience.png";
@@ -276,6 +295,7 @@
       information ? '<section class="event-public-information event-public-information-accordions perigalla-information" id="info" data-analytics-section="detalles"><div class="event-chapter-inner event-details-layout"><header class="experience-information-heading"><span class="ticket-eyebrow">07 · Información</span><h2>Todo lo que necesitas saber</h2><p>Horarios, ubicación, acceso, recomendaciones y preguntas frecuentes.</p></header><div class="event-details-body">' + information + '</div></div></section>' : '',
       '<div class="perigalla-story-overlay" data-story-overlay hidden aria-hidden="true" role="dialog" aria-modal="true" aria-label="La historia de La Perigalla 01"><div class="perigalla-story-overlay-bar"><span>La Perigalla 01</span><button type="button" data-story-overlay-close>Cerrar <b aria-hidden="true">×</b></button></div><div class="perigalla-story-frame" data-story-frame></div></div>',
       '<div class="perigalla-gastronomy-dialog" data-gastronomy-dialog hidden aria-hidden="true" role="dialog" aria-modal="true" aria-label="Detalle del plato"><button type="button" data-gastronomy-close aria-label="Cerrar detalle">×</button><figure><img data-gastronomy-image alt=""></figure><div><span data-gastronomy-index-label></span><h2 data-gastronomy-title></h2><p data-gastronomy-dish></p><p class="perigalla-gastronomy-allergens" data-gastronomy-allergens></p></div></div>',
+      eventFloatingPurchaseCta(event, types, "entradas"),
       '</div>'
     ].join("");
   }
@@ -325,6 +345,7 @@
         '<section class="event-story event-story-layout event-chapter event-chapter-story" id="experiencia" data-analytics-section="experiencia"><span class="event-anchor" id="historia" aria-hidden="true"></span><div class="event-chapter-inner event-story-editorial">' + storyVisual + '<div class="event-story-copy"><span class="ticket-eyebrow">02 / 03 · La experiencia</span><h2>' + escapeHtml(experienceName) + '</h2><p class="event-story-lede">Una noche donde gastronomía, música y puesta en escena cuentan una misma historia.</p><div class="ticket-copy event-story-text">' + storyText + '</div>' + storyVenue + '</div><a class="event-chapter-next event-chapter-next-story" data-analytics-click="ver-detalles" href="#detalles"><span class="event-chapter-next-index">02 / 03</span><span>Todos los detalles</span><b aria-hidden="true">↓</b></a></div></section>',
         gallery ? '<section class="event-gallery" id="galeria" data-analytics-section="galeria">' + gallery + '</section>' : '',
         information ? '<section class="event-public-information event-public-information-accordions event-chapter event-chapter-details" id="detalles" data-analytics-section="detalles"><span class="event-anchor" id="faq" aria-hidden="true"></span><div class="event-chapter-inner event-details-layout"><header class="experience-information-heading"><span class="ticket-eyebrow">03 / 03 · Detalles</span><h2>Todo lo que necesitas saber</h2><p>Los detalles de la experiencia.</p></header><div class="event-details-body">' + information + '</div></div></section>' : '',
+        eventFloatingPurchaseCta(event, types, "reservar"),
         '</div>'
       ].join("");
   }
