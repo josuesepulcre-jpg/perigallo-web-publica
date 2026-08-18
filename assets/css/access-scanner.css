@@ -16,6 +16,11 @@
 
 .ticket-attendee-tools { display: grid; justify-items: end; gap: 12px; }
 .ticket-print-guests { min-height: 42px; padding-inline: 16px; font-size: .62rem; }
+.ticket-food-alert { display: grid; gap: 4px; margin-top: 10px; padding: 9px 10px; border: 1px solid #d99a83; border-left: 4px solid #d06d4c; background: rgba(208, 109, 76, .14); color: #ffe1d3; font-size: .68rem; line-height: 1.4; }
+.ticket-food-alert > strong { color: #ffd1bf; font: 600 .57rem Montserrat, Arial, sans-serif; letter-spacing: .12em; }
+.ticket-food-alert span { display: block; }
+.ticket-food-alert span strong { color: #fff1e9; font-size: .61rem; }
+.ticket-food-status { margin-top: 10px; color: #b7dcc1; font: 600 .57rem Montserrat, Arial, sans-serif; letter-spacing: .07em; }
 
 @media (max-width: 760px) {
   .ticket-manual-code { grid-template-columns: 1fr; }

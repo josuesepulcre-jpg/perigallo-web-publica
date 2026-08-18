@@ -1963,9 +1963,14 @@ final class Ticketing
     public function adminEventAttendees(int $eventId): array
     {
         $this->requireAdminEvent($eventId);
+        $dietaryFields = $this->ticketAttendeeDietarySchemaAvailable()
+            ? 'ta.dietary_preference, ta.dietary_notes'
+            : 'NULL AS dietary_preference, NULL AS dietary_notes';
         $rows = $this->pdo->prepare(
             'SELECT t.id, t.public_code, t.status, t.access_status, t.first_entry_at, t.last_entry_at, t.last_exit_at, t.entry_count, t.exit_count, t.last_access_action, t.last_access_by, toi.ticket_type_name,
-                    COALESCE(ta.attendee_name, o.name) AS name, o.email, o.phone, COALESCE(o.test_reference, o.redsys_order) AS order_reference
+                    COALESCE(ta.attendee_name, o.name) AS name, o.email, o.phone, COALESCE(o.test_reference, o.redsys_order) AS order_reference,
+                    ta.has_allergies, ta.severe_allergy, ta.allergy_notes, ' . $dietaryFields . ',
+                    COALESCE((SELECT GROUP_CONCAT(taa.allergen_label ORDER BY taa.allergen_label SEPARATOR " · ") FROM ticket_attendee_allergens taa WHERE taa.attendee_id = ta.id), "") AS allergens
              FROM tickets t
              JOIN ticket_order_items toi ON toi.id = t.order_item_id
              JOIN ticket_orders o ON o.id = toi.order_id
@@ -2045,8 +2050,13 @@ final class Ticketing
     private function findTicketForAccess(string $scannedValue, bool $forUpdate = false): ?array
     {
         $qrToken = $this->extractQrToken($scannedValue);
+        $dietaryFields = $this->ticketAttendeeDietarySchemaAvailable()
+            ? 'ta.dietary_preference, ta.dietary_notes'
+            : 'NULL AS dietary_preference, NULL AS dietary_notes';
         $stmt = $this->pdo->prepare(
-            'SELECT t.*, COALESCE(ta.attendee_name, o.name) AS attendee_name, COALESCE(o.test_reference, o.redsys_order) AS order_reference, toi.ticket_type_name
+            'SELECT t.*, COALESCE(ta.attendee_name, o.name) AS attendee_name, COALESCE(o.test_reference, o.redsys_order) AS order_reference, toi.ticket_type_name,
+                    ta.has_allergies, ta.severe_allergy, ta.allergy_notes, ' . $dietaryFields . ',
+                    COALESCE((SELECT GROUP_CONCAT(taa.allergen_label ORDER BY taa.allergen_label SEPARATOR " · ") FROM ticket_attendee_allergens taa WHERE taa.attendee_id = ta.id), "") AS allergens
              FROM tickets t
              JOIN ticket_order_items toi ON toi.id = t.order_item_id
              JOIN ticket_orders o ON o.id = toi.order_id
@@ -2099,7 +2109,7 @@ final class Ticketing
 
     private function ticketAccessPayload(array $ticket): array
     {
-        return ['id' => (int) $ticket['id'], 'public_code' => $ticket['public_code'], 'status' => $ticket['status'], 'access_status' => $ticket['access_status'] ?? 'not_entered', 'first_entry_at' => $ticket['first_entry_at'] ?? null, 'last_entry_at' => $ticket['last_entry_at'] ?? null, 'last_exit_at' => $ticket['last_exit_at'] ?? null, 'entry_count' => (int) ($ticket['entry_count'] ?? 0), 'exit_count' => (int) ($ticket['exit_count'] ?? 0), 'last_access_by' => $ticket['last_access_by'] ?? null, 'attendee_name' => $ticket['attendee_name'], 'ticket_type_name' => $ticket['ticket_type_name'], 'order_reference' => $ticket['order_reference'] ?? null];
+        return ['id' => (int) $ticket['id'], 'public_code' => $ticket['public_code'], 'status' => $ticket['status'], 'access_status' => $ticket['access_status'] ?? 'not_entered', 'first_entry_at' => $ticket['first_entry_at'] ?? null, 'last_entry_at' => $ticket['last_entry_at'] ?? null, 'last_exit_at' => $ticket['last_exit_at'] ?? null, 'entry_count' => (int) ($ticket['entry_count'] ?? 0), 'exit_count' => (int) ($ticket['exit_count'] ?? 0), 'last_access_by' => $ticket['last_access_by'] ?? null, 'attendee_name' => $ticket['attendee_name'], 'ticket_type_name' => $ticket['ticket_type_name'], 'order_reference' => $ticket['order_reference'] ?? null, 'has_allergies' => !empty($ticket['has_allergies']), 'severe_allergy' => !empty($ticket['severe_allergy']), 'allergens' => $ticket['allergens'] ?? '', 'allergy_notes' => $ticket['allergy_notes'] ?? null, 'dietary_preference' => $ticket['dietary_preference'] ?? 'none', 'dietary_notes' => $ticket['dietary_notes'] ?? null];
     }
 
     private function administrativeAccessMessage(string $status): string
@@ -2921,9 +2931,9 @@ final class Ticketing
                 throw new InvalidArgumentException('Indica el nombre de cada asistente.');
             }
             $hasAllergies = $this->nullableBoolean($raw['has_allergies'] ?? null);
-            if ($hasAllergies === null) {
-                throw new InvalidArgumentException('Indica si cada asistente tiene alergias alimentarias.');
-            }
+            // La información alimentaria es opcional: si no se declara nada,
+            // se registra explícitamente que no hay alerta para el acceso.
+            if ($hasAllergies === null) $hasAllergies = false;
             $allergens = [];
             if ($hasAllergies) {
                 if (!is_array($raw['allergens'] ?? null)) {

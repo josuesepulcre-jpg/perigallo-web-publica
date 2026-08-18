@@ -845,7 +845,6 @@
         if (!form.dress_code_accepted.checked) return { valid: false, message: "Acepta el código de vestimenta Total White para continuar.", focus: form.dress_code_accepted };
       }
       if (step === 5) {
-        if (!form.dataset.allergyAnswer) return { valid: false, message: "Indica si hay alergias o necesidades alimentarias.", focus: allergyChoice };
         if (form.dataset.allergyAnswer === "yes") return checkoutAttendeeValidation(selected);
       }
       if (step === 6) {
@@ -1193,7 +1192,7 @@
       }
       var changed = false;
       while (attendeeState.length < quantity) {
-        attendeeState.push({ name: "", hasAllergies: null, allergens: [], severeAllergy: null, notes: "", dietaryPreference: null, dietaryNotes: "", open: attendeeState.length === 0 });
+        attendeeState.push({ name: "", hasAllergies: false, allergens: [], severeAllergy: false, notes: "", dietaryPreference: "none", dietaryNotes: "", open: false });
         changed = true;
       }
       if (attendeeState.length > quantity) {
@@ -1461,7 +1460,6 @@
     }
     if (!form.age_requirement_accepted.checked) return { valid: false, message: "Confirma que eres mayor de 18 años.", focus: form.age_requirement_accepted };
     if (!form.dress_code_accepted.checked) return { valid: false, message: "Debes aceptar el código de vestimenta Total White para continuar.", focus: form.dress_code_accepted };
-    if (form.dataset.wizardEnabled === "true" && !form.dataset.allergyAnswer) return { valid: false, message: "Indica si hay alergias o necesidades alimentarias." };
     attendees = Array.isArray(attendees) ? attendees : [];
     if (attendees.length !== selected.reduce(function (total, input) { return total + Number(input.value || 0); }, 0)) return { valid: false, message: "Completa la información de alergias de cada asistente para continuar." };
     for (var index = 0; index < attendees.length; index++) {
