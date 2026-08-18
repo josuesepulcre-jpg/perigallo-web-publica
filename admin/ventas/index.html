@@ -41,6 +41,7 @@
           <label class="admin-form-span">Evento<select name="event_id" required data-cash-event><option value="">Selecciona un evento</option></select></label>
           <div class="admin-cash-ticket-lines" data-cash-ticket-lines><p>Selecciona un evento para elegir las entradas.</p></div>
           <div class="admin-cash-order-total admin-form-span" data-cash-order-total hidden aria-live="polite"><span data-cash-order-total-label>Total en efectivo</span><strong data-cash-order-total-amount>0,00 €</strong></div>
+          <label>Descuento (€)<input type="number" name="cash_discount_euros" min="0" step="0.01" inputmode="decimal" value="0" data-cash-discount placeholder="0,00"><small>Se descuenta del total de las entradas.</small></label>
           <label>Nombre<input name="first_name" required maxlength="120" autocomplete="given-name"></label>
           <label>Apellidos<input name="last_name" maxlength="160" autocomplete="family-name"></label>
           <label class="admin-form-span">Teléfono / WhatsApp<input name="phone" required maxlength="60" autocomplete="tel" inputmode="tel" placeholder="600 000 000 o +34 600 000 000"></label>
@@ -54,6 +55,6 @@
     </div>
   </main>
 </div>
-<script src="/assets/js/admin-backoffice.js?v=20260817-cash-total-v1" defer></script>
+<script src="/assets/js/admin-backoffice.js?v=20260818-cash-discount-v1" defer></script>
 </body>
 </html>

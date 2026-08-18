@@ -943,6 +943,7 @@ final class Ticketing
             throw new InvalidArgumentException('El estado del pago en efectivo no es válido.');
         }
         $notes = clean_string((string) ($data['cash_payment_notes'] ?? ''), 1000);
+        $cashDiscountCents = $this->cashDiscountCents($data['cash_discount_euros'] ?? 0);
         $reservationExpiresAt = $cashStatus === 'reserved' ? $this->cashReservationExpiry((string) ($data['reservation_expires_at'] ?? '')) : null;
 
         $this->pdo->beginTransaction();
@@ -1001,10 +1002,23 @@ final class Ticketing
                 $quantityTotal += $quantity;
             }
             if ($quantityTotal === 0) throw new InvalidArgumentException('Selecciona al menos una entrada.');
+            if ($cashDiscountCents > $subtotal) {
+                throw new InvalidArgumentException('El descuento no puede superar el total de las entradas.');
+            }
+            $total = $subtotal - $cashDiscountCents;
             $this->persistCashAttendees($orderId, $orderItems, $name);
-            $this->pdo->prepare('UPDATE ticket_orders SET subtotal_cents = ?, total_cents = ?, updated_at = NOW() WHERE id = ?')->execute([$subtotal, $subtotal, $orderId]);
+            $this->pdo->prepare('UPDATE ticket_orders SET subtotal_cents = ?, discount_type = ?, discount_value_snapshot = ?, discount_amount_cents = ?, discount_snapshot = ?, discount_applied_at = ?, total_cents = ?, updated_at = NOW() WHERE id = ?')->execute([
+                $subtotal,
+                $cashDiscountCents > 0 ? 'fixed' : null,
+                $cashDiscountCents > 0 ? 'Descuento manual en efectivo' : null,
+                $cashDiscountCents,
+                $cashDiscountCents > 0 ? json_encode(['source' => 'cash_manual', 'amount_cents' => $cashDiscountCents, 'operator' => $operator], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null,
+                $cashDiscountCents > 0 ? now_mysql() : null,
+                $total,
+                $orderId,
+            ]);
             $this->generateTicketsOnce($orderId, $isPaid ? 'issued' : 'blocked');
-            $this->auditAdminOperation($operator, $isPaid ? 'cash_order_created_paid' : 'cash_order_reserved', $orderId, ['event_id' => $eventId, 'quantity' => $quantityTotal, 'notes' => $notes]);
+            $this->auditAdminOperation($operator, $isPaid ? 'cash_order_created_paid' : 'cash_order_reserved', $orderId, ['event_id' => $eventId, 'quantity' => $quantityTotal, 'cash_discount_cents' => $cashDiscountCents, 'notes' => $notes]);
             $this->pdo->commit();
             return ['order' => $this->adminOrderById($orderId), 'whatsapp_url' => $this->cashOrderWhatsAppUrl($phone, $name, (string) $event['title'], $publicToken)];
         } catch (\Throwable $error) {
@@ -2752,6 +2766,20 @@ final class Ticketing
         $stmt->execute([$typeId]);
         $reserved = (int) $stmt->fetchColumn();
         return max(0, $capacity - $reserved);
+    }
+
+    /** Convierte el descuento manual en euros a céntimos sin redondeos flotantes. */
+    private function cashDiscountCents(mixed $value): int
+    {
+        $amount = str_replace([' ', '€'], '', trim((string) $value));
+        if ($amount === '') return 0;
+        if (!preg_match('/^\d+(?:[.,]\d{1,2})?$/', $amount)) {
+            throw new InvalidArgumentException('Indica un descuento válido en euros, con un máximo de dos decimales.');
+        }
+        $parts = preg_split('/[.,]/', $amount);
+        $euros = (int) $parts[0];
+        $cents = isset($parts[1]) ? (int) str_pad($parts[1], 2, '0') : 0;
+        return $euros * 100 + $cents;
     }
 
     private function cashReservationExpiry(string $value): string

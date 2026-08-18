@@ -231,7 +231,7 @@
       var cashStatus = order.sales_channel === "cash" ? ' · ' + (order.cash_payment_status === "paid" ? "Cobrado" : "Reserva pendiente") : "";
       var discount = Number(order.discount_amount_cents || 0);
       var amount = discount
-        ? '<strong><s>' + formatMoney(order.subtotal_cents) + '</s> ' + formatMoney(order.total_cents) + '</strong><small class="admin-order-discount">Cupón ' + escapeHtml(order.discount_code || "") + ' · −' + formatMoney(discount) + '</small>'
+        ? '<strong><s>' + formatMoney(order.subtotal_cents) + '</s> ' + formatMoney(order.total_cents) + '</strong><small class="admin-order-discount">' + (order.discount_code ? 'Cupón ' + escapeHtml(order.discount_code) : 'Descuento manual') + ' · −' + formatMoney(discount) + '</small>'
         : '<strong>' + formatMoney(order.total_cents) + '</strong>';
       var allergySummary = Number(order.allergy_attendee_count || 0) ? ' · ' + Number(order.allergy_attendee_count) + ' alergia' + (Number(order.allergy_attendee_count) === 1 ? '' : 's') + ' comunicada' + (Number(order.allergy_attendee_count) === 1 ? '' : 's') : '';
       var holded = order.sales_channel === "cash" ? '<small class="admin-order-holded admin-order-cash">Registro web · sin Holded</small>' : !Number(order.is_test) && order.holded_status ? '<small class="admin-order-holded">Holded: ' + escapeHtml({not_required:"No requerido",pending:"Pendiente",processing:"Procesando",synced:"Sincronizado",error:"Reintento programado",requires_review:"Revisión necesaria"}[order.holded_status] || order.holded_status) + (order.holded_document_number ? ' · ' + escapeHtml(order.holded_document_number) : '') + '</small>' : '';
@@ -392,12 +392,16 @@
         var label = total && total.querySelector("[data-cash-order-total-label]");
         if (!total || !amount || !label) return;
         if (!event) { total.hidden = true; return; }
-        var totalCents = Array.prototype.slice.call(form.querySelectorAll("[data-cash-ticket-quantity]")).reduce(function (sum, input) {
+        var subtotalCents = Array.prototype.slice.call(form.querySelectorAll("[data-cash-ticket-quantity]")).reduce(function (sum, input) {
           var typeId = Number(input.getAttribute("data-ticket-type-id"));
           var type = (event.ticket_types || []).filter(function (row) { return Number(row.id) === typeId; })[0];
           var quantity = Math.max(0, Math.floor(Number(input.value) || 0));
           return sum + (type ? quantity * Number(type.final_price_cents || 0) : 0);
         }, 0);
+        var discountInput = form.querySelector("[data-cash-discount]");
+        var discountCents = Math.max(0, Math.round(Number((discountInput && discountInput.value) || 0) * 100) || 0);
+        if (discountInput) discountInput.max = (subtotalCents / 100).toFixed(2);
+        var totalCents = Math.max(0, subtotalCents - discountCents);
         label.textContent = form.cash_payment_status.value === "paid" ? "Total cobrado en efectivo" : "Total pendiente de cobro";
         amount.textContent = formatMoney(totalCents);
         total.hidden = false;
@@ -448,14 +452,14 @@
         modal.addEventListener("click", function (event) { if (event.target === modal) closeCashModal(); });
         form.event_id.addEventListener("change", renderCashTicketLines);
         form.cash_payment_status.addEventListener("change", updateCashPaymentFields);
-        form.addEventListener("input", function (event) { if (event.target.matches("[data-cash-ticket-quantity]")) updateCashOrderTotal(); });
+        form.addEventListener("input", function (event) { if (event.target.matches("[data-cash-ticket-quantity], [data-cash-discount]")) updateCashOrderTotal(); });
         updateCashPaymentFields();
         form.addEventListener("submit", function (event) {
           event.preventDefault();
           var items = Array.prototype.slice.call(form.querySelectorAll("[data-cash-ticket-quantity]")).map(function (input) { return { ticket_type_id: Number(input.getAttribute("data-ticket-type-id")), quantity: Number(input.value || 0) }; }).filter(function (item) { return item.quantity > 0; });
           if (!items.length) { setCashStatus("Selecciona al menos una entrada."); return; }
           var submit = form.querySelector('[type="submit"]');
-          var payload = { event_id: Number(form.event_id.value), first_name: form.first_name.value.trim(), last_name: form.last_name.value.trim(), phone: form.phone.value.trim(), cash_payment_status: form.cash_payment_status.value, reservation_expires_at: form.reservation_expires_at.value, cash_payment_notes: form.cash_payment_notes.value.trim(), items: items };
+          var payload = { event_id: Number(form.event_id.value), first_name: form.first_name.value.trim(), last_name: form.last_name.value.trim(), phone: form.phone.value.trim(), cash_payment_status: form.cash_payment_status.value, reservation_expires_at: form.reservation_expires_at.value, cash_discount_euros: form.cash_discount_euros.value, cash_payment_notes: form.cash_payment_notes.value.trim(), items: items };
           var popup = window.open("about:blank", "perigallo-cash-whatsapp");
           submit.disabled = true;
           setCashStatus("Generando pedido…");
