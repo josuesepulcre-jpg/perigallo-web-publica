@@ -16,7 +16,7 @@ META_APP_SECRET=
 META_WEBHOOK_VERIFY_TOKEN=
 META_GRAPH_VERSION=v23.0
 META_TEMPLATE_NAME=entradas_perigallo_confirmadas_v1
-META_TEMPLATE_LANGUAGE=es_ES
+META_TEMPLATE_LANGUAGE=es
 TICKET_PDF_NODE_BINARY=node
 ```
 
@@ -32,16 +32,16 @@ Suscribir al menos el campo `messages`. La verificación `GET` usa `META_WEBHOOK
 
 ## Plantilla propuesta
 
-Crear o presentar en WhatsApp Manager una plantilla de tipo `UTILITY`, idioma `es_ES`, con este payload de referencia. No se crea automáticamente sin credenciales y permisos explícitos.
+Crear o presentar en WhatsApp Manager una plantilla de tipo `UTILITY`, idioma `es`, con este payload de referencia. No se crea automáticamente sin credenciales y permisos explícitos.
 
 ```json
 {
   "name": "entradas_perigallo_confirmadas_v1",
   "category": "UTILITY",
-  "language": "es_ES",
+  "language": "es",
   "components": [
     {"type": "HEADER", "format": "DOCUMENT", "example": {"header_handle": ["https://example.invalid/entradas-ejemplo.pdf"]}},
-    {"type": "BODY", "text": "Hola {{1}}, tu compra para {{2}} está confirmada.\n\nNúmero de pedido: {{3}}\nEntradas: {{4}}\nFecha del evento: {{5}}\n\nAdjuntamos tus entradas en PDF. Cada entrada contiene su código QR de acceso. Guarda este documento y preséntalo al llegar al evento.\n\nTambién hemos enviado una copia al correo {{6}}.", "example": {"body_text": [["Ana Ejemplo", "La Perigalla 01", "PG-TEST-001", "2", "29/08/2026 19:00", "ana@example.test"]]}},
+    {"type": "BODY", "text": "Hola {{1}}, hemos confirmado tu compra para {{2}}. El pedido {{3}} contiene {{4}} entradas y se celebra el {{5}}. Hemos enviado una copia a {{6}}; consérvala para cualquier consulta.", "example": {"body_text": [["Ana Ejemplo", "La Perigalla 01", "PG-TEST-001", "2", "29/08/2026 19:00", "ana@example.test"]]}},
     {"type": "FOOTER", "text": "Perigallo · Entradas digitales"}
   ]
 }
