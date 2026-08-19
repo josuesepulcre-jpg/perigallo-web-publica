@@ -216,12 +216,16 @@
   function eventCard(event, featured) {
     var image = event.card_image_url || event.image_url || "/assets/images/perigallo-hero-original-01.jpg";
     var occupancy = event.capacity ? Math.min(100, Math.round(Number(event.sold || 0) * 100 / Number(event.capacity))) : 0;
+    var archived = (event.effective_status || event.status) === "archived";
+    var lifecycleActions = !featured
+      ? '<div class="admin-event-lifecycle-actions" aria-label="Acciones de ciclo de vida para ' + escapeHtml(event.title) + '"><button class="text-action" type="button" data-event-action="' + (archived ? 'restore' : 'archive') + '" data-event-id="' + Number(event.id) + '">' + (archived ? 'Restaurar evento' : 'Archivar evento') + '</button>' + (state.session && state.session.is_owner ? '<button class="text-action danger" type="button" data-event-action="delete" data-event-id="' + Number(event.id) + '">Eliminar definitivamente</button>' : '') + '</div>'
+      : '';
     return '<article class="admin-featured-event' + (featured ? " is-featured" : "") + '">' +
       '<div class="admin-featured-image" style="background-image:url(' + escapeHtml(image) + ')"></div>' +
       '<div class="admin-featured-copy"><span class="status-pill status-' + escapeHtml(event.effective_status || event.status) + '">' + escapeHtml(statusLabel(event.effective_status || event.status)) + '</span>' +
       '<h2>' + escapeHtml(event.title) + '</h2><p>' + escapeHtml(formatDate(event.starts_at, true)) + ' · ' + escapeHtml(event.location || "Ubicación por definir") + '</p>' +
       '<div class="admin-progress"><span><strong>' + Number(event.sold || 0) + '</strong> entradas vendidas</span><span>' + Number(event.capacity || 0) + ' aforo · ' + occupancy + '%</span><i><b style="width:' + occupancy + '%"></b></i></div>' +
-      '<div class="admin-inline-actions"><a class="ticket-btn primary" href="/admin/eventos/' + Number(event.id) + '/editar/">Editar evento</a><a class="ticket-btn" href="/admin/ventas/?event=' + Number(event.id) + '">Ver ventas</a><a class="ticket-btn" href="/admin/acceso/?event=' + Number(event.id) + '">Control de acceso</a><a class="text-action" href="/eventos/' + encodeURIComponent(event.slug) + '/" target="_blank" rel="noopener noreferrer">Página pública</a></div></div></article>';
+      '<div class="admin-inline-actions"><a class="ticket-btn primary" href="/admin/eventos/' + Number(event.id) + '/editar/">Editar evento</a><a class="ticket-btn" href="/admin/ventas/?event=' + Number(event.id) + '">Ver ventas</a><a class="ticket-btn" href="/admin/acceso/?event=' + Number(event.id) + '">Control de acceso</a><a class="text-action" href="/eventos/' + encodeURIComponent(event.slug) + '/" target="_blank" rel="noopener noreferrer">Página pública</a></div>' + lifecycleActions + '</div></article>';
   }
 
   function renderDashboard(summary, orders) {
@@ -336,6 +340,18 @@
     requireSession(function () {
       var create = root.querySelector("[data-admin-create-event]");
       var search = root.querySelector("[data-admin-event-search]");
+      var status = root.querySelector("[data-admin-page-status]");
+      function refreshEvents(message) {
+        return request(api + "/admin/events").then(function (data) {
+          state.events = data.events || [];
+          renderEvents(state.events, search.value);
+          if (message && status) {
+            status.textContent = message;
+            status.hidden = false;
+            status.className = "ticket-status is-success";
+          }
+        });
+      }
       function createEvent() {
         create.disabled = true;
         create.textContent = "Creando…";
@@ -344,12 +360,27 @@
         }).catch(function (error) { renderPageError(error.message); create.disabled = false; create.textContent = "Crear evento"; });
       }
       create.addEventListener("click", createEvent);
-      request(api + "/admin/events").then(function (data) {
-        state.events = data.events || [];
-        renderEvents(state.events);
+      refreshEvents().then(function () {
         search.addEventListener("input", function () { renderEvents(state.events, search.value); });
         if (new URLSearchParams(window.location.search).get("new") === "1") createEvent();
       }).catch(function (error) { renderPageError(error.message); });
+      root.addEventListener("click", function (event) {
+        var button = event.target.closest("[data-event-action]");
+        if (!button) return;
+        var id = Number(button.getAttribute("data-event-id"));
+        var action = button.getAttribute("data-event-action");
+        var item = state.events.find(function (row) { return Number(row.id) === id; });
+        if (!id || !item) return;
+        if (action === "archive" && !window.confirm('Archivarás “' + item.title + '”. Dejará de estar a la venta y conservará todos sus datos. ¿Continuar?')) return;
+        if (action === "restore" && !window.confirm('Restaurarás “' + item.title + '” como borrador. Tendrás que revisarlo y publicarlo de nuevo cuando corresponda. ¿Continuar?')) return;
+        if (action === "delete" && window.prompt('Eliminarás definitivamente “' + item.title + '”. Solo se permite si no tiene ventas reales; los pedidos de prueba asociados se borrarán. Escribe ELIMINAR para confirmar:') !== "ELIMINAR") return;
+        button.disabled = true;
+        var url = api + "/admin/events/" + id + (action === "delete" ? "" : "/" + action);
+        jsonRequest(url, action === "delete" ? "DELETE" : "POST", {}).then(function () {
+          var message = action === "delete" ? "Evento eliminado definitivamente." : action === "archive" ? "Evento archivado. Sus ventas y datos se han conservado." : "Evento restaurado como borrador.";
+          return refreshEvents(message);
+        }).catch(function (error) { renderPageError(error.message); }).finally(function () { button.disabled = false; });
+      });
     });
   }
 

@@ -113,7 +113,7 @@
         '<button class="admin-event-cover" data-open-event type="button" style="background-image:url(' + escapeHtml(image) + ')"><span class="status-pill status-' + escapeHtml(event.effective_status) + '">' + escapeHtml(statusLabel(event.effective_status)) + '</span></button>' +
         '<div class="admin-event-card-body"><div><span class="ticket-eyebrow">' + escapeHtml(dateText(event.starts_at)) + '</span><h3>' + escapeHtml(event.title) + '</h3><p>' + escapeHtml(event.location || "Ubicación por definir") + '</p></div>' +
         '<dl class="event-metrics"><div><dt>Vendidas</dt><dd>' + Number(event.sold || 0) + '</dd></div><div><dt>Disponibles</dt><dd>' + Number(event.available || 0) + '</dd></div><div><dt>Facturación</dt><dd>' + cents(event.revenue_cents) + '</dd></div></dl>' +
-        '<div class="admin-card-actions"><button class="text-action" data-open-event type="button">Editar</button><button class="text-action" data-copy-link type="button">Copiar enlace</button><details class="action-menu"><summary aria-label="Más acciones">•••</summary><button data-event-action="preview" type="button">Vista previa</button><button data-event-action="publication" type="button">' + (event.visible ? "Despublicar" : "Publicar") + '</button><button data-event-action="duplicate" type="button">Duplicar</button><button data-event-action="archive" type="button">Archivar / eliminar</button></details></div></div></article>';
+        '<div class="admin-card-actions"><button class="text-action" data-open-event type="button">Editar</button><button class="text-action" data-copy-link type="button">Copiar enlace</button><details class="action-menu"><summary aria-label="Más acciones">•••</summary><button data-event-action="preview" type="button">Vista previa</button><button data-event-action="publication" type="button">' + (event.visible ? "Despublicar" : "Publicar") + '</button><button data-event-action="duplicate" type="button">Duplicar</button><button data-event-action="archive" type="button">Archivar evento</button></details></div></div></article>';
     }).join("");
   }
 
@@ -157,7 +157,7 @@
         if (action === "preview") window.open("/admin/entradas/vista-previa/?id=" + id, "_blank", "noopener");
         if (action === "publication") jsonRequest(api + "/admin/events/" + id + "/" + ((state.events.find(function (row) { return Number(row.id) === id; }) || {}).visible ? "unpublish" : "publish"), "POST", {}).then(loadEvents).catch(showFatal);
         if (action === "duplicate") jsonRequest(api + "/admin/events/" + id + "/duplicate", "POST", {}).then(function (data) { window.location.href = "/admin/eventos/" + data.event.id + "/editar/"; }).catch(showFatal);
-        if (action === "archive" && window.confirm("¿Archivar o eliminar este evento? Los eventos con ventas se archivarán para proteger los pedidos.")) jsonRequest(api + "/admin/events/" + id, "DELETE").then(loadEvents).catch(showFatal);
+        if (action === "archive" && window.confirm("¿Archivar este evento? Dejará de estar a la venta y conservará sus ventas y datos.")) jsonRequest(api + "/admin/events/" + id + "/archive", "POST", {}).then(loadEvents).catch(showFatal);
       });
     });
   }
@@ -604,7 +604,7 @@
         saveForPreview(id, form).then(showPreview).catch(function (error) { if (!previewWindow.closed) previewWindow.close(); editorNotice("No se ha podido guardar para abrir la vista previa. El contenido permanece en el editor. " + error.message, true); });
       });
       document.querySelector("[data-archive-event]").addEventListener("click", function () {
-        if (window.confirm("¿Archivar o eliminar este evento? Las ventas existentes quedarán protegidas.")) jsonRequest(api + "/admin/events/" + id, "DELETE").then(function () { window.location.href = "/admin/eventos/"; }).catch(function (error) { editorNotice(error.message, true); });
+        if (window.confirm("¿Archivar este evento? Dejará de estar a la venta y conservará sus ventas y datos.")) jsonRequest(api + "/admin/events/" + id + "/archive", "POST", {}).then(function () { window.location.href = "/admin/eventos/"; }).catch(function (error) { editorNotice(error.message, true); });
       });
       initTicketForm(id);
       initEventMediaManager();

@@ -558,9 +558,15 @@ try {
         return;
     }
 
-    if ($method === 'DELETE' && preg_match('#^/admin/events/([0-9]+)$#', $path, $m)) {
+    if ($method === 'POST' && preg_match('#^/admin/events/([0-9]+)/(archive|restore)$#', $path, $m)) {
         AdminAuth::requireCsrf();
-        json_response(['ok' => true] + $ticketing->adminArchiveOrDeleteEvent((int) $m[1]));
+        json_response(['ok' => true, 'event' => $ticketing->adminSetEventArchived((int) $m[1], $m[2] === 'archive')]);
+        return;
+    }
+
+    if ($method === 'DELETE' && preg_match('#^/admin/events/([0-9]+)$#', $path, $m)) {
+        AdminAuth::requireOwner();
+        json_response(['ok' => true] + $ticketing->adminDeleteEvent((int) $m[1], AdminAuth::operatorName()));
         return;
     }
 

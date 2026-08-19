@@ -1300,6 +1300,16 @@ final class Ticketing
         }
     }
 
+    private function auditEventOperation(string $operator, string $action, int $eventId, array $context): void
+    {
+        try {
+            $statement = $this->pdo->prepare('INSERT INTO ticket_admin_audit_logs (actor, action, entity_type, entity_id, context_json, created_at) VALUES (?, ?, "event", ?, ?, NOW())');
+            $statement->execute([$operator, $action, $eventId, json_encode($context, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)]);
+        } catch (\Throwable $error) {
+            // La trazabilidad no debe impedir una eliminación ya validada.
+        }
+    }
+
     public function adminCreateEvent(array $data): array
     {
         $canonicalId = $this->canonicalId((string) ($data['canonical_id'] ?? ''));
@@ -1731,18 +1741,55 @@ final class Ticketing
         return $this->adminGetEvent((int) $new['id']) ?? [];
     }
 
-    public function adminArchiveOrDeleteEvent(int $eventId): array
+    public function adminSetEventArchived(int $eventId, bool $archive): array
     {
         $this->requireAdminEvent($eventId);
-        $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM ticket_order_items WHERE event_id=?');
-        $stmt->execute([$eventId]);
-        if ((int) $stmt->fetchColumn() > 0) {
+        if ($archive) {
             $this->pdo->prepare('UPDATE events SET status="archived", visible=0, updated_at=NOW() WHERE id=?')->execute([$eventId]);
-            return ['deleted' => false, 'archived' => true];
         }
-        $this->pdo->prepare('DELETE FROM ticket_types WHERE event_id=?')->execute([$eventId]);
-        $this->pdo->prepare('DELETE FROM events WHERE id=?')->execute([$eventId]);
-        return ['deleted' => true, 'archived' => false];
+        else {
+            $this->pdo->prepare('UPDATE events SET status="draft", visible=0, updated_at=NOW() WHERE id=?')->execute([$eventId]);
+        }
+        return $this->adminGetEvent($eventId) ?? [];
+    }
+
+    /** Elimina solo experiencias sin ventas reales y purga pedidos de prueba asociados. */
+    public function adminDeleteEvent(int $eventId, string $operator): array
+    {
+        $this->requireAdminEvent($eventId);
+        $orders = $this->pdo->prepare(
+            'SELECT DISTINCT o.id, o.is_test FROM ticket_orders o JOIN ticket_order_items oi ON oi.order_id = o.id WHERE oi.event_id = ? ORDER BY o.id ASC'
+        );
+        $orders->execute([$eventId]);
+        $rows = $orders->fetchAll();
+        foreach ($rows as $order) {
+            if (empty($order['is_test'])) {
+                throw new RuntimeException('No se puede eliminar un evento con ventas o reservas reales. Archívalo para conservar su historial.');
+            }
+        }
+        foreach ($rows as $order) {
+            $this->adminPurgeTestOrder((int) $order['id'], $operator);
+        }
+
+        $this->pdo->beginTransaction();
+        try {
+            $remaining = $this->pdo->prepare('SELECT COUNT(*) FROM ticket_order_items WHERE event_id=?');
+            $remaining->execute([$eventId]);
+            if ((int) $remaining->fetchColumn() > 0) {
+                throw new RuntimeException('No se puede eliminar el evento mientras conserve pedidos.');
+            }
+            $this->pdo->prepare('DELETE FROM ticket_scans WHERE event_id=?')->execute([$eventId]);
+            $this->pdo->prepare('DELETE FROM discount_code_events WHERE event_id=?')->execute([$eventId]);
+            $this->pdo->prepare('DELETE dct FROM discount_code_ticket_types dct JOIN ticket_types tt ON tt.id=dct.ticket_type_id WHERE tt.event_id=?')->execute([$eventId]);
+            $this->pdo->prepare('DELETE FROM ticket_types WHERE event_id=?')->execute([$eventId]);
+            $this->pdo->prepare('DELETE FROM events WHERE id=?')->execute([$eventId]);
+            $this->auditEventOperation($operator, 'event_deleted', $eventId, ['purged_test_orders' => count($rows)]);
+            $this->pdo->commit();
+            return ['deleted' => true, 'purged_test_orders' => count($rows)];
+        } catch (\Throwable $error) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            throw $error;
+        }
     }
 
     public function adminUpdateTicketType(int $eventId, int $ticketTypeId, array $data): array
