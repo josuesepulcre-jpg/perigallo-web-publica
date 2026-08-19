@@ -161,7 +161,7 @@ for (const marker of [
     throw new Error(`Missing event editor contract: ${marker}`);
   }
 }
-for (const marker of ["adminSetEventArchived", "adminDeleteEvent", "/(archive|restore)", "No se puede eliminar un evento con ventas o reservas reales"]) {
+for (const marker of ["adminSetEventArchived", "adminDeleteEvent", "purgeDiscardableOrder", "/(archive|restore)", "No se puede eliminar un evento con cobros reales"]) {
   if (!(api + ticketing).includes(marker)) throw new Error(`Missing explicit event lifecycle contract: ${marker}`);
 }
 const holdedInvoiceDeliveryMigration = readFileSync(join(root, "database/migrations/021_holded_invoice_delivery.sql"), "utf8");

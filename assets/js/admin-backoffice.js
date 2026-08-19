@@ -376,7 +376,7 @@
         if (!id || !item) return;
         if (action === "archive" && !window.confirm('Archivarás “' + item.title + '”. Dejará de estar a la venta y conservará todos sus datos. ¿Continuar?')) return;
         if (action === "restore" && !window.confirm('Restaurarás “' + item.title + '” como borrador. Tendrás que revisarlo y publicarlo de nuevo cuando corresponda. ¿Continuar?')) return;
-        if (action === "delete" && !window.confirm('¿Eliminar definitivamente “' + item.title + '”? Esta acción no se puede deshacer. Si solo tiene pedidos de prueba, también se eliminarán.')) return;
+        if (action === "delete" && !window.confirm('¿Eliminar definitivamente “' + item.title + '”? Esta acción no se puede deshacer. Se eliminarán también sus pedidos de prueba o invitaciones gratuitas.')) return;
         button.disabled = true;
         var url = api + "/admin/events/" + id + (action === "delete" ? "" : "/" + action);
         jsonRequest(url, action === "delete" ? "DELETE" : "POST", {}).then(function () {

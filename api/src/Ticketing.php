@@ -1166,11 +1166,20 @@ final class Ticketing
 
     public function adminPurgeTestOrder(int $orderId, string $operator): void
     {
+        $this->purgeDiscardableOrder($orderId, $operator, true, 'test_order_deleted');
+    }
+
+    /** Purga un pedido técnico o una invitación sin importe al eliminar su evento de prueba. */
+    private function purgeDiscardableOrder(int $orderId, string $operator, bool $requireTestOrder, string $auditAction): void
+    {
         $this->pdo->beginTransaction();
         try {
             $order = $this->lockedOrder($orderId);
-            if (empty($order['is_test'])) {
+            if ($requireTestOrder && empty($order['is_test'])) {
                 throw new RuntimeException('Solo se pueden eliminar pedidos de prueba.');
+            }
+            if (!$requireTestOrder && empty($order['is_test']) && (int) ($order['total_cents'] ?? 0) > 0) {
+                throw new RuntimeException('No se puede eliminar un pedido con cobro real.');
             }
             $ticketStatement = $this->pdo->prepare('SELECT t.id FROM tickets t JOIN ticket_order_items oi ON oi.id = t.order_item_id WHERE oi.order_id = ?');
             $ticketStatement->execute([$orderId]);
@@ -1193,7 +1202,7 @@ final class Ticketing
             $this->pdo->prepare('DELETE FROM payment_attempts WHERE order_id = ?')->execute([$orderId]);
             $this->pdo->prepare('DELETE FROM ticket_order_items WHERE order_id = ?')->execute([$orderId]);
             $this->pdo->prepare('DELETE FROM ticket_orders WHERE id = ?')->execute([$orderId]);
-            $this->auditAdminOperation($operator, 'test_order_deleted', $orderId, ['reference' => $order['test_reference'] ?: $order['redsys_order']]);
+            $this->auditAdminOperation($operator, $auditAction, $orderId, ['reference' => $order['test_reference'] ?: $order['redsys_order']]);
             $this->pdo->commit();
         } catch (\Throwable $error) {
             if ($this->pdo->inTransaction()) {
@@ -1753,22 +1762,22 @@ final class Ticketing
         return $this->adminGetEvent($eventId) ?? [];
     }
 
-    /** Elimina solo experiencias sin ventas reales y purga pedidos de prueba asociados. */
+    /** Elimina experiencias sin cobros reales y purga sus pedidos de prueba o invitaciones gratuitas. */
     public function adminDeleteEvent(int $eventId, string $operator): array
     {
         $this->requireAdminEvent($eventId);
         $orders = $this->pdo->prepare(
-            'SELECT DISTINCT o.id, o.is_test FROM ticket_orders o JOIN ticket_order_items oi ON oi.order_id = o.id WHERE oi.event_id = ? ORDER BY o.id ASC'
+            'SELECT DISTINCT o.id, o.is_test, o.total_cents FROM ticket_orders o JOIN ticket_order_items oi ON oi.order_id = o.id WHERE oi.event_id = ? ORDER BY o.id ASC'
         );
         $orders->execute([$eventId]);
         $rows = $orders->fetchAll();
         foreach ($rows as $order) {
-            if (empty($order['is_test'])) {
-                throw new RuntimeException('No se puede eliminar un evento con ventas o reservas reales. Archívalo para conservar su historial.');
+            if (empty($order['is_test']) && (int) ($order['total_cents'] ?? 0) > 0) {
+                throw new RuntimeException('No se puede eliminar un evento con cobros reales. Archívalo para conservar su historial.');
             }
         }
         foreach ($rows as $order) {
-            $this->adminPurgeTestOrder((int) $order['id'], $operator);
+            $this->purgeDiscardableOrder((int) $order['id'], $operator, false, 'event_free_order_deleted');
         }
 
         $this->pdo->beginTransaction();
