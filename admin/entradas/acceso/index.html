@@ -8,7 +8,7 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/ticketing.css?v=20260804-admin-access-shell-v1">
-<link rel="stylesheet" href="/assets/css/access-scanner.css?v=20260818-food-alert-v1">
+<link rel="stylesheet" href="/assets/css/access-scanner.css?v=20260819-access-operator-v1">
 </head>
 <body class="ticketing-page has-ticket-access-control admin-backoffice-page admin-access-page">
 <div class="admin-app-shell">
@@ -36,9 +36,9 @@
         </div>
         <div class="ticket-scanner-meta"><span class="ticket-access-connection" data-connection-status>Comprobando conexión...</span><span>El sistema detecta si corresponde entrada, salida o reentrada.</span></div>
         <div class="ticket-actions ticket-access-primary-actions"><button class="ticket-btn primary" type="button" data-open-camera>Leer QR</button><button class="ticket-btn" type="button" data-open-manual>Introducir código</button></div>
-        <div class="ticket-manual-code" data-manual-code-panel hidden><div class="ticket-field"><label for="ticket-manual-code">Código de entrada</label><input id="ticket-manual-code" name="code" autocomplete="off" placeholder="Escribe el código de la entrada"></div><button class="ticket-btn" type="submit">Comprobar código</button></div>
-        <div class="ticket-camera" data-ticket-camera-wrap hidden><video data-ticket-camera playsinline muted></video><div class="ticket-qr-guide" aria-hidden="true"></div><div class="ticket-camera-copy"><strong>Enfoca el QR dentro del marco</strong><span>La entrada se comprueba en el servidor antes de confirmar.</span></div><div class="ticket-camera-tools"><button class="ticket-btn" type="button" data-toggle-flash hidden>Linterna</button><button class="ticket-btn" type="button" data-switch-camera>Cambiar cámara</button><button class="ticket-btn" type="button" data-close-camera>Detener</button></div></div>
-        <p class="ticket-status" data-scan-status aria-live="polite"></p>
+        <div class="ticket-manual-code" data-manual-code-panel hidden><div class="ticket-field"><label for="ticket-manual-code">Código de entrada</label><input id="ticket-manual-code" name="code" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="done" placeholder="Escribe el código de la entrada"></div><div class="ticket-manual-actions"><button class="ticket-btn primary" type="submit">Comprobar código</button><button class="text-action" type="button" data-clear-manual>Borrar código</button></div></div>
+        <div class="ticket-camera" data-ticket-camera-wrap hidden><video data-ticket-camera playsinline muted></video><div class="ticket-qr-guide" aria-hidden="true"></div><div class="ticket-camera-copy"><strong>Coloca el QR dentro del recuadro</strong><span>La entrada se comprueba en el servidor antes de confirmar.</span></div><div class="ticket-camera-tools"><button class="ticket-btn" type="button" data-toggle-flash hidden>Linterna</button><button class="ticket-btn" type="button" data-switch-camera>Cambiar cámara</button><button class="ticket-btn" type="button" data-close-camera>Cerrar escáner</button></div></div>
+        <p class="ticket-status" data-scan-status aria-live="polite" aria-atomic="true"></p>
       </form>
       <section class="ticket-attendees" data-ticket-attendees hidden aria-live="polite"></section>
     </div>
@@ -46,10 +46,11 @@
       <div class="ticket-panel login-panel"><span class="ticket-eyebrow">Acceso privado</span><h2>Entrar al control de acceso</h2><form class="ticket-form" data-admin-login><div class="ticket-form-grid"><div class="ticket-field"><label for="username">Usuario</label><input id="username" name="username" autocomplete="username" required></div><div class="ticket-field"><label for="password">Contraseña</label><input id="password" name="password" type="password" autocomplete="current-password" required></div></div><button class="ticket-btn primary" type="submit">Entrar</button><p class="ticket-status" data-admin-status></p></form></div>
     </div>
   </section>
+  <section class="ticket-access-permission" data-access-permission-state hidden aria-live="assertive"><span class="ticket-eyebrow">Acceso restringido</span><h2>No tienes permisos para controlar el acceso</h2><p>Inicia sesión con una cuenta autorizada o vuelve al panel de administración.</p><div class="ticket-actions"><a class="ticket-btn primary" href="/admin/">Volver al panel</a><a class="ticket-btn" href="/admin/login/">Cambiar de cuenta</a></div></section>
 </main>
 </div>
-<div class="ticket-access-modal" data-access-modal hidden role="dialog" aria-modal="true" aria-labelledby="access-modal-title"><section class="ticket-access-modal-card" data-access-modal-content></section></div>
-<script src="/assets/js/admin-backoffice.js?v=20260808-billing-v1" defer></script>
-<script src="/assets/js/ticketing-admin.js?v=20260818-food-alert-v1" defer></script>
+<div class="ticket-access-modal" data-access-modal hidden role="dialog" aria-modal="true" aria-labelledby="access-modal-title"><section class="ticket-access-modal-card" data-access-modal-content aria-live="assertive" aria-atomic="true"></section></div>
+<script src="/assets/js/admin-backoffice.js?v=20260819-mobile-admin-v1" defer></script>
+<script src="/assets/js/ticketing-admin.js?v=20260819-access-operator-v1" defer></script>
 </body>
 </html>

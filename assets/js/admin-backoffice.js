@@ -67,7 +67,50 @@
 
   function roleLabel(role) { return role === "control_acceso" ? "Control de acceso" : "Administrador"; }
 
+  function setAdminDrawer(open) {
+    document.body.classList.toggle("admin-drawer-open", !!open);
+    document.querySelectorAll("[data-admin-drawer-toggle]").forEach(function (button) {
+      button.setAttribute("aria-expanded", String(!!open));
+    });
+  }
+
+  function ensureAdminMobileStyles() {
+    if (document.querySelector('link[data-admin-mobile-styles]')) return;
+    var stylesheet = document.createElement("link");
+    stylesheet.rel = "stylesheet";
+    stylesheet.href = "/assets/css/admin-mobile.css?v=20260819-v1";
+    stylesheet.setAttribute("data-admin-mobile-styles", "");
+    document.head.appendChild(stylesheet);
+  }
+
+  function installMobileAdminHeader(sidebar, sectionTitle) {
+    var shell = sidebar.closest(".admin-app-shell");
+    if (!shell || shell.querySelector("[data-admin-mobile-header]")) return;
+    var header = document.createElement("header");
+    header.className = "admin-mobile-header";
+    header.setAttribute("data-admin-mobile-header", "");
+    header.innerHTML = '<button class="admin-mobile-menu" type="button" data-admin-drawer-toggle aria-expanded="false" aria-controls="adminSidebar">Menú <span aria-hidden="true">☰</span></button><div><span>Perigallo</span><strong>' + escapeHtml(sectionTitle || "Administración") + '</strong></div>';
+    var backdrop = document.createElement("button");
+    backdrop.className = "admin-drawer-backdrop";
+    backdrop.type = "button";
+    backdrop.tabIndex = -1;
+    backdrop.setAttribute("aria-label", "Cerrar menú");
+    backdrop.setAttribute("data-admin-drawer-backdrop", "");
+    sidebar.id = "adminSidebar";
+    shell.insertBefore(header, sidebar);
+    shell.insertBefore(backdrop, sidebar);
+    header.querySelector("[data-admin-drawer-toggle]").addEventListener("click", function () { setAdminDrawer(!document.body.classList.contains("admin-drawer-open")); });
+    backdrop.addEventListener("click", function () { setAdminDrawer(false); });
+    sidebar.addEventListener("click", function (event) { if (event.target.closest("a, [data-admin-drawer-close]")) setAdminDrawer(false); });
+  }
+
+  if (!window.__perigalloAdminDrawerEscape) {
+    window.__perigalloAdminDrawerEscape = true;
+    document.addEventListener("keydown", function (event) { if (event.key === "Escape") setAdminDrawer(false); });
+  }
+
   function injectShell(sessionData) {
+    ensureAdminMobileStyles();
     document.querySelectorAll("[data-admin-user-name]").forEach(function (node) { node.textContent = sessionData.operator || "Perigallo"; });
     document.querySelectorAll("[data-admin-user-role]").forEach(function (node) { node.textContent = roleLabel(sessionData.role); });
     document.querySelectorAll("[data-admin-nav]").forEach(function (node) {
@@ -93,11 +136,12 @@
             (sessionData.is_owner ? '<span class="admin-nav-label">Configuración</span><a href="/admin/usuarios/" data-admin-nav-item="users">Equipo y permisos</a>' : '') +
           '</nav>';
       node.innerHTML =
-        '<a class="admin-brand" href="/admin/" aria-label="Administración Perigallo"><img src="/assets/images/perigallo-logo-original.png" alt="Perigallo"><span>Administración</span></a>' +
+        '<div class="admin-drawer-header"><a class="admin-brand" href="/admin/" aria-label="Administración Perigallo"><img src="/assets/images/perigallo-logo-original.png" alt="Perigallo"><span>Administración</span></a><button class="admin-drawer-close" type="button" data-admin-drawer-close aria-label="Cerrar menú">×</button></div>' +
         navigation +
         '<div class="admin-account"><span data-admin-user-name></span><small data-admin-user-role></small><button type="button" data-admin-logout>Cerrar sesión</button></div>';
       var activeNode = node.querySelector('[data-admin-nav-item="' + active + '"]');
       if (activeNode) activeNode.classList.add("is-active");
+      installMobileAdminHeader(node, activeNode ? activeNode.textContent : "Administración");
     });
     document.querySelectorAll("[data-admin-user-name]").forEach(function (node) { node.textContent = sessionData.operator || "Perigallo"; });
     document.querySelectorAll("[data-admin-user-role]").forEach(function (node) { node.textContent = roleLabel(sessionData.role); });

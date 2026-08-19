@@ -836,8 +836,14 @@
   function initScanner() {
     var form = document.querySelector("[data-ticket-scan]");
     if (!form) return;
-    requireSession(function () {
+    requireSession(function (sessionData) {
       var wrap = document.querySelector("[data-ticket-scan-wrap]");
+      var permissionState = document.querySelector("[data-access-permission-state]");
+      if (!sessionData.can_scan) {
+        if (wrap) wrap.hidden = true;
+        if (permissionState) permissionState.hidden = false;
+        return;
+      }
       var status = form.querySelector("[data-scan-status]");
       var modal = document.querySelector("[data-access-modal]");
       var modalContent = document.querySelector("[data-access-modal-content]");
@@ -854,6 +860,8 @@
         modalContent = document.createElement("section");
         modalContent.className = "ticket-access-modal-card";
         modalContent.setAttribute("data-access-modal-content", "");
+        modalContent.setAttribute("aria-live", "assertive");
+        modalContent.setAttribute("aria-atomic", "true");
         modal.appendChild(modalContent);
         document.body.appendChild(modal);
       }
@@ -873,6 +881,7 @@
       var torchOn = false;
       var wakeLock = null;
       var printableAttendees = [];
+      var recentQrScans = {};
       document.body.classList.add("has-ticket-access-control");
       if (wrap) wrap.hidden = false;
 
@@ -880,6 +889,13 @@
         document.querySelectorAll("[data-connection-status]").forEach(function (item) {
           item.textContent = navigator.onLine ? "Conectado" : "Sin conexión";
           item.className = "ticket-access-connection " + (navigator.onLine ? "is-online" : "is-offline");
+        });
+      }
+      function setConnectionValidating(value) {
+        if (!value) { updateConnection(); return; }
+        document.querySelectorAll("[data-connection-status]").forEach(function (item) {
+          item.textContent = "Validando";
+          item.className = "ticket-access-connection is-validating";
         });
       }
       updateConnection();
@@ -927,7 +943,8 @@
         torchOn = false;
         if (flashButton) { flashButton.hidden = true; flashButton.textContent = "Linterna"; }
         if (video) video.srcObject = null;
-        if (cameraWrap) cameraWrap.hidden = true;
+        if (cameraWrap) { cameraWrap.hidden = true; cameraWrap.classList.remove("is-open"); }
+        releaseWakeLock();
       }
       function releaseWakeLock() {
         if (wakeLock && wakeLock.release) wakeLock.release().catch(function () {});
@@ -1006,7 +1023,9 @@
           status.textContent = data.message || "No se puede registrar ningún movimiento.";
           status.className = "ticket-status is-error";
           if (modalContent && modal) {
-            modalContent.innerHTML = '<section class="ticket-access-decision is-error"><button class="ticket-access-modal-close" type="button" data-cancel-access aria-label="Cerrar">×</button><span class="ticket-eyebrow">Acceso no autorizado</span><h2 id="access-modal-title">No se puede continuar</h2><p>' + escapeHtml(data.message || "No se puede registrar ningún movimiento.") + '</p><div class="ticket-actions"><button class="ticket-btn" type="button" data-cancel-access>Cerrar</button></div></section>';
+            var invalidTitle = data.result === "otro_evento" ? "ENTRADA DE OTRA EXPERIENCIA" : (data.result === "inexistente" ? "QR NO VÁLIDO" : "ENTRADA NO VÁLIDA");
+            var invalidClass = data.result === "otro_evento" ? "is-other-event" : "is-error";
+            modalContent.innerHTML = '<section class="ticket-access-decision ' + invalidClass + '"><button class="ticket-access-modal-close" type="button" data-scan-next aria-label="Cerrar">×</button><span class="ticket-access-decision-icon" aria-hidden="true">!</span><span class="ticket-eyebrow">' + invalidTitle + '</span><h2 id="access-modal-title">No se puede continuar</h2><p>' + escapeHtml(data.message || "No se puede registrar ningún movimiento.") + '</p><div class="ticket-actions"><button class="ticket-btn primary" type="button" data-scan-next>Volver a escanear</button><button class="ticket-btn" type="button" data-cancel-access>Cancelar</button></div></section>';
             modal.hidden = false;
           }
           if (navigator.vibrate) navigator.vibrate([80, 60, 80]);
@@ -1015,19 +1034,30 @@
         proposal = { value: value, action: data.action, ticket: data.ticket, method: data.method || "qr" };
         status.textContent = "Entrada identificada. Revisa y confirma el movimiento.";
         status.className = "ticket-status is-ready";
-        var heading = ({ entry: "Confirmar entrada", exit: "Confirmar salida", reentry: "Confirmar reentrada" })[data.action] || "Confirmar movimiento";
+        var heading = ({ entry: "ENTRADA VÁLIDA", exit: "ENTRADA YA UTILIZADA", reentry: "REENTRADA VÁLIDA" })[data.action] || "ENTRADA IDENTIFICADA";
+        var proposalClass = ({ entry: "is-valid", exit: "is-already-used", reentry: "is-reentry" })[data.action] || "";
         var button = ({ entry: "Validar entrada", exit: "Registrar salida", reentry: "Validar reentrada" })[data.action] || actionLabel(data.action);
-        modalContent.innerHTML = '<section class="ticket-access-decision is-' + escapeHtml(data.action) + '"><button class="ticket-access-modal-close" type="button" data-cancel-access aria-label="Cancelar">×</button><span class="ticket-eyebrow">' + escapeHtml(heading) + '</span><h2 id="access-modal-title" class="ticket-holder-name">' + escapeHtml(data.ticket.attendee_name) + '</h2><p>' + escapeHtml(actionDetail(data.action)) + '</p>' + foodAlertMarkup(data.ticket) + '<div class="ticket-access-ticket-data"><strong>' + escapeHtml(data.ticket.ticket_type_name) + '</strong><span>Código de entrada: ' + escapeHtml(data.ticket.public_code) + '</span><span>Pedido: ' + escapeHtml(data.ticket.order_reference || "No disponible") + '</span><span>Estado actual: ' + escapeHtml(accessStatus(data.ticket.access_status)) + '</span>' + (data.ticket.last_entry_at ? '<span>Última entrada: ' + escapeHtml(dateText(data.ticket.last_entry_at)) + '</span>' : '') + (data.ticket.last_exit_at ? '<span>Última salida: ' + escapeHtml(dateText(data.ticket.last_exit_at)) + '</span>' : '') + (data.ticket.last_access_by ? '<span>Registrado por: ' + escapeHtml(data.ticket.last_access_by) + '</span>' : '') + '</div><div class="ticket-access-decision-meta"><span>' + Number(data.ticket.entry_count || 0) + ' entradas</span><span>' + Number(data.ticket.exit_count || 0) + ' salidas</span></div><div class="ticket-actions"><button class="ticket-btn primary" type="button" data-confirm-access>' + escapeHtml(button) + '</button><button class="ticket-btn" type="button" data-cancel-access>Cancelar</button></div></section>';
+        modalContent.innerHTML = '<section class="ticket-access-decision ' + proposalClass + '"><button class="ticket-access-modal-close" type="button" data-cancel-access aria-label="Cancelar">×</button><span class="ticket-access-decision-icon" aria-hidden="true">' + (data.action === "exit" ? "!" : "✓") + '</span><span class="ticket-eyebrow">' + escapeHtml(heading) + '</span><h2 id="access-modal-title" class="ticket-holder-name">' + escapeHtml(data.ticket.attendee_name) + '</h2><p>' + escapeHtml(actionDetail(data.action)) + '</p>' + foodAlertMarkup(data.ticket) + '<div class="ticket-access-ticket-data"><strong>' + escapeHtml(data.ticket.ticket_type_name) + '</strong><span>Código de entrada: ' + escapeHtml(data.ticket.public_code) + '</span><span>Pedido: ' + escapeHtml(data.ticket.order_reference || "No disponible") + '</span><span>Estado actual: ' + escapeHtml(accessStatus(data.ticket.access_status)) + '</span>' + (data.ticket.last_entry_at ? '<span>Última entrada: ' + escapeHtml(dateText(data.ticket.last_entry_at)) + '</span>' : '') + (data.ticket.last_exit_at ? '<span>Última salida: ' + escapeHtml(dateText(data.ticket.last_exit_at)) + '</span>' : '') + (data.ticket.last_access_by ? '<span>Registrado por: ' + escapeHtml(data.ticket.last_access_by) + '</span>' : '') + '</div><div class="ticket-access-decision-meta"><span>' + Number(data.ticket.entry_count || 0) + ' entradas</span><span>' + Number(data.ticket.exit_count || 0) + ' salidas</span></div><div class="ticket-actions"><button class="ticket-btn primary" type="button" data-confirm-access>' + escapeHtml(button) + '</button><button class="ticket-btn" type="button" data-cancel-access>Cancelar</button></div></section>';
         modal.hidden = false;
         if (navigator.vibrate) navigator.vibrate(60);
       }
       function inspect(value, method) {
         if (!value || locked) return;
         if (!navigator.onLine) { status.textContent = "No hay conexión. Por seguridad no se ha registrado ningún acceso."; status.className = "ticket-status is-error"; return; }
+        if (method === "qr") {
+          var now = Date.now();
+          if (recentQrScans[value] && now - recentQrScans[value] < 2500) {
+            status.textContent = "Este QR acaba de leerse. Espera un momento o escanea la siguiente entrada.";
+            status.className = "ticket-status is-ready";
+            return;
+          }
+          recentQrScans[value] = now;
+        }
         locked = true;
         clearProposal();
         status.textContent = "Consultando entrada...";
         status.className = "ticket-status";
+        setConnectionValidating(true);
         jsonRequest(api + "/admin/tickets/access-preview", "POST", {
           event_id: Number(form.event_id.value || 0),
           code: value,
@@ -1040,7 +1070,15 @@
           form.code.value = "";
           if (manualCodePanel && !manualCodePanel.hidden) form.code.focus();
           loadAttendees();
-        }).catch(function (error) { status.textContent = error.message; status.className = "ticket-status is-error"; }).finally(function () { locked = false; });
+        }).catch(function (error) {
+          status.textContent = error.message || "No se ha podido comprobar la entrada.";
+          status.className = "ticket-status is-error";
+          if (modalContent && modal) {
+            modalContent.innerHTML = '<section class="ticket-access-decision is-error"><button class="ticket-access-modal-close" type="button" data-scan-next aria-label="Cerrar">×</button><span class="ticket-access-decision-icon" aria-hidden="true">!</span><span class="ticket-eyebrow">NO SE HA PODIDO COMPROBAR LA ENTRADA</span><h2 id="access-modal-title">Error de comunicación</h2><p>' + escapeHtml(error.message || "Comprueba la conexión y vuelve a intentarlo.") + '</p><div class="ticket-actions"><button class="ticket-btn primary" type="button" data-retry-access>Reintentar</button><button class="ticket-btn" type="button" data-scan-next>Volver a escanear</button></div></section>';
+            modal.hidden = false;
+          }
+          if (navigator.vibrate) navigator.vibrate([80, 60, 80]);
+        }).finally(function () { locked = false; setConnectionValidating(false); });
       }
       function confirmProposal() {
         if (!proposal || locked) return;
@@ -1048,6 +1086,7 @@
         locked = true;
         status.textContent = proposal.action === "entry" ? "Validando acceso..." : "Registrando movimiento...";
         status.className = "ticket-status";
+        setConnectionValidating(true);
         if (modalContent) modalContent.querySelectorAll("button").forEach(function (button) { button.disabled = true; });
         jsonRequest(api + "/admin/tickets/access-movement", "POST", {
           event_id: Number(form.event_id.value || 0), token: proposal.value, action: proposal.action,
@@ -1058,12 +1097,12 @@
           status.className = "ticket-status is-success";
           proposal = null;
           if (modalContent && modal) {
-            modalContent.innerHTML = '<section class="ticket-access-decision is-success"><span class="ticket-eyebrow">' + escapeHtml(data.action === "entry" ? "Acceso validado" : data.action === "exit" ? "Salida registrada" : "Reentrada validada") + '</span><h2 id="access-modal-title" class="ticket-holder-name">' + escapeHtml(ticket.attendee_name) + '</h2><p><strong>' + escapeHtml(ticket.ticket_type_name) + '</strong></p>' + foodAlertMarkup(ticket) + '<div class="ticket-access-ticket-data"><span>Código de entrada: ' + escapeHtml(ticket.public_code) + '</span><span>Estado actual: ' + escapeHtml(accessStatus(ticket.access_status)) + '</span><span>Hora: ' + escapeHtml(dateText(data.action === "exit" ? ticket.last_exit_at : ticket.last_entry_at)) + '</span></div><div class="ticket-actions"><button class="ticket-btn primary" type="button" data-scan-next>Escanear siguiente</button></div></section>';
+            modalContent.innerHTML = '<section class="ticket-access-decision is-success"><span class="ticket-access-decision-icon" aria-hidden="true">✓</span><span class="ticket-eyebrow">' + escapeHtml(data.action === "entry" ? "ENTRADA VÁLIDA" : data.action === "exit" ? "SALIDA REGISTRADA" : "REENTRADA VÁLIDA") + '</span><h2 id="access-modal-title" class="ticket-holder-name">' + escapeHtml(ticket.attendee_name) + '</h2><p><strong>' + escapeHtml(ticket.ticket_type_name) + '</strong></p>' + foodAlertMarkup(ticket) + '<div class="ticket-access-ticket-data"><span>Código de entrada: ' + escapeHtml(ticket.public_code) + '</span><span>Estado actual: ' + escapeHtml(accessStatus(ticket.access_status)) + '</span><span>Hora: ' + escapeHtml(dateText(data.action === "exit" ? ticket.last_exit_at : ticket.last_entry_at)) + '</span></div><div class="ticket-actions"><button class="ticket-btn primary" type="button" data-scan-next>Escanear siguiente</button></div></section>';
             modal.hidden = false;
           }
           if (navigator.vibrate) navigator.vibrate([80, 45, 120]);
           loadAttendees();
-        }).catch(function (error) { status.textContent = error.message; status.className = "ticket-status is-error"; if (modalContent) { var errorTarget = modalContent.querySelector(".ticket-access-decision p"); if (errorTarget) errorTarget.textContent = error.message; modalContent.querySelectorAll("button").forEach(function (button) { button.disabled = false; }); } }).finally(function () { locked = false; });
+        }).catch(function (error) { status.textContent = error.message; status.className = "ticket-status is-error"; if (modalContent) { var errorTarget = modalContent.querySelector(".ticket-access-decision p"); if (errorTarget) errorTarget.textContent = error.message; modalContent.querySelectorAll("button").forEach(function (button) { button.disabled = false; }); } }).finally(function () { locked = false; setConnectionValidating(false); });
       }
       function scanFrame(detector) {
         if (!scanning || !video || locked) { if (scanning) window.requestAnimationFrame(function () { scanFrame(detector); }); return; }
@@ -1072,19 +1111,27 @@
           window.requestAnimationFrame(function () { scanFrame(detector); });
         }).catch(function () { window.requestAnimationFrame(function () { scanFrame(detector); }); });
       }
+      function cameraErrorMessage(error) {
+        if (!window.isSecureContext) return "El lector necesita una conexión segura (https). Introduce el código manualmente o abre la versión segura de la página.";
+        if (error && (error.name === "NotAllowedError" || error.name === "SecurityError")) return "Necesitamos permiso para usar la cámara. Puedes permitirlo en el navegador o introducir el código manualmente.";
+        if (error && error.name === "NotFoundError") return "No encontramos una cámara disponible en este dispositivo. Introduce el código manualmente.";
+        if (error && error.name === "NotReadableError") return "La cámara está siendo usada por otra aplicación. Ciérrala e inténtalo de nuevo.";
+        if (error && error.name === "OverconstrainedError") return "No se ha podido usar esta cámara. Prueba a cambiar de cámara o introduce el código manualmente.";
+        return "No se pudo abrir la cámara. Revisa los permisos y vuelve a intentarlo.";
+      }
       function startCamera() {
         if (!form.event_id.value) { status.textContent = "Selecciona primero la experiencia."; return; }
         if (manualCodePanel) manualCodePanel.hidden = true;
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.BarcodeDetector) { status.textContent = "Este navegador no permite abrir el lector. Introduce el código de la entrada manualmente."; return; }
+        if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.BarcodeDetector) { status.textContent = !window.isSecureContext ? "El lector necesita una conexión segura (https). Introduce el código manualmente." : "Este navegador no permite abrir el lector. Introduce el código de la entrada manualmente."; status.className = "ticket-status is-error"; return; }
         status.textContent = "Preparando cámara...";
         status.className = "ticket-status is-ready";
         navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: facingMode }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }).then(function (media) {
-          stream = media; video.srcObject = media; cameraWrap.hidden = false; scanning = true; requestWakeLock();
+          stream = media; video.srcObject = media; cameraWrap.hidden = false; cameraWrap.classList.add("is-open"); scanning = true; requestWakeLock();
           var track = media.getVideoTracks()[0];
           var capabilities = track && track.getCapabilities ? track.getCapabilities() : {};
           if (flashButton) flashButton.hidden = !capabilities.torch;
           return video.play();
-        }).then(function () { status.textContent = "Cámara lista. Enfoca el código QR."; status.className = "ticket-status is-ready"; scanFrame(new window.BarcodeDetector({ formats: ["qr_code"] })); }).catch(function (error) { status.textContent = error && error.name === "NotAllowedError" ? "Necesitamos permiso para usar la cámara. Puedes permitirlo en el navegador o introducir el código manualmente." : "No se pudo abrir la cámara. Revisa los permisos y vuelve a intentarlo."; status.className = "ticket-status is-error"; stopCamera(); });
+        }).then(function () { status.textContent = "Cámara lista. Coloca el QR dentro del recuadro."; status.className = "ticket-status is-ready"; scanFrame(new window.BarcodeDetector({ formats: ["qr_code"] })); }).catch(function (error) { status.textContent = cameraErrorMessage(error); status.className = "ticket-status is-error"; stopCamera(); });
       }
       function toggleFlash() {
         var track = stream && stream.getVideoTracks ? stream.getVideoTracks()[0] : null;
@@ -1130,6 +1177,8 @@
       form.querySelector("[data-open-camera]").addEventListener("click", startCamera);
       var manualButton = form.querySelector("[data-open-manual]");
       if (manualButton) manualButton.addEventListener("click", function () { stopCamera(); if (manualCodePanel) manualCodePanel.hidden = false; form.code.focus(); status.textContent = "Introduce el código de la entrada y pulsa Comprobar código."; status.className = "ticket-status is-ready"; });
+      var clearManualButton = form.querySelector("[data-clear-manual]");
+      if (clearManualButton) clearManualButton.addEventListener("click", function () { form.code.value = ""; form.code.focus(); status.textContent = "Código borrado."; status.className = "ticket-status"; });
       form.querySelector("[data-close-camera]").addEventListener("click", function () { resumeCamera = false; stopCamera(); releaseWakeLock(); });
       if (flashButton) flashButton.addEventListener("click", toggleFlash);
       if (switchCameraButton) switchCameraButton.addEventListener("click", switchCamera);
@@ -1137,11 +1186,13 @@
         if (event.target === modal) { if (proposal) cancelProposal(); else scanNext(); return; }
         if (event.target.closest("[data-cancel-access]")) { cancelProposal(); return; }
         if (event.target.closest("[data-confirm-access]")) { confirmProposal(); return; }
+        if (event.target.closest("[data-retry-access]")) { if (!locked) { clearProposal(); inspect(form.code.value.trim(), "manual"); } return; }
         if (event.target.closest("[data-scan-next]")) { scanNext(); }
       });
       document.addEventListener("keydown", function (event) { if (event.key === "Escape" && modal && !modal.hidden) { if (proposal) cancelProposal(); else scanNext(); } });
-      document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible" && stream) requestWakeLock(); });
-      window.addEventListener("beforeunload", releaseWakeLock);
+      document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") { resumeCamera = false; stopCamera(); } });
+      window.addEventListener("pagehide", function () { resumeCamera = false; stopCamera(); });
+      window.addEventListener("beforeunload", function () { stopCamera(); releaseWakeLock(); });
       if (attendeesRoot) attendeesRoot.addEventListener("click", function (event) {
         if (event.target.closest("[data-print-guests]")) { printGuestList(); return; }
         var propose = event.target.closest("[data-propose-ticket]");

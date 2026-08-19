@@ -454,6 +454,17 @@ for (const file of ["check-in/index.html", "admin/entradas/acceso/index.html"]) 
 for (const marker of ["access-preview", "Validar entrada", "ticket-access-modal", "toggleFlash", "requestWakeLock", "getUserMedia", "data-manual-code-panel"]) {
   if (!adminJs.includes(marker)) throw new Error(`Missing access scanner behavior: ${marker}`);
 }
+for (const marker of ["recentQrScans", "cameraErrorMessage", "data-clear-manual", "data-retry-access", "visibilityState === \"hidden\"", "ENTRADA DE OTRA EXPERIENCIA", "NO SE HA PODIDO COMPROBAR LA ENTRADA"]) {
+  if (!adminJs.includes(marker)) throw new Error(`Missing mobile access-safety behavior: ${marker}`);
+}
+const accessScannerPage = readFileSync(join(root, "admin/entradas/acceso/index.html"), "utf8");
+for (const marker of ["data-access-permission-state", "autocorrect=\"off\"", "enterkeyhint=\"done\"", "Coloca el QR dentro del recuadro"]) {
+  if (!accessScannerPage.includes(marker)) throw new Error(`Missing mobile access page marker: ${marker}`);
+}
+const adminMobileCss = readFileSync(join(root, "assets/css/admin-mobile.css"), "utf8");
+for (const marker of ["safe-area-inset-top", "admin-drawer-open", ".admin-mobile-menu", "min-height:44px"]) {
+  if (!adminMobileCss.includes(marker)) throw new Error(`Missing responsive admin navigation style: ${marker}`);
+}
 const adminAuth = readFileSync(join(root, "api/src/AdminAuth.php"), "utf8");
 for (const marker of ["ACCESS_USERNAME", "ACCESS_PASSWORD_HASH", "control_acceso", "requireAccessCsrf", "can_revert"]) {
   if (!(adminAuth + api).includes(marker)) throw new Error(`Missing access-control role contract: ${marker}`);

@@ -23,8 +23,14 @@
 .ticket-food-status { margin-top: 10px; color: #b7dcc1; font: 600 .57rem Montserrat, Arial, sans-serif; letter-spacing: .07em; }
 
 @media (max-width: 760px) {
+  .admin-access-workspace { padding: 0 !important; }
+  .admin-access-page .ticket-hero { display:none; }
+  .admin-access-page .ticket-section { padding:0; }
   .ticket-manual-code { grid-template-columns: 1fr; }
   .ticket-manual-code .ticket-btn { width: 100%; }
+  .ticket-manual-actions { grid-template-columns:1fr; gap:6px; }.ticket-manual-actions .text-action { justify-self:start; }
   .ticket-attendee-tools { justify-items: stretch; }
   .ticket-print-guests { width: 100%; }
+  .ticket-camera.is-open { position:fixed; z-index:300; inset:0; display:block; margin:0; border:0; background:#071317; }.ticket-camera.is-open video { width:100%; height:100dvh; max-height:none; object-fit:cover; }.ticket-camera.is-open .ticket-camera-copy { bottom:calc(16px + env(safe-area-inset-bottom)); padding:24px 20px; }.ticket-camera.is-open .ticket-camera-tools { top:calc(12px + env(safe-area-inset-top)); }.ticket-camera.is-open .ticket-qr-guide { width:min(72vw,310px); }
+  .ticket-access-permission { margin:0; min-height:calc(100dvh - 64px); padding:32px 18px calc(32px + env(safe-area-inset-bottom)); border-right:0; border-left:5px solid #e7b7a7; }.ticket-access-permission .ticket-btn { width:100%; min-height:56px; }
 }
