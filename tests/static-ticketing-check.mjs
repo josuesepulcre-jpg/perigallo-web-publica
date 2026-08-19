@@ -161,7 +161,7 @@ for (const marker of [
     throw new Error(`Missing event editor contract: ${marker}`);
   }
 }
-for (const marker of ["adminSetEventArchived", "adminDeleteEvent", "purgeDiscardableOrder", "deleteOrderReferencesIfTableExists", "holded_sync_logs", "/(archive|restore)", "No se puede eliminar un evento con cobros reales"]) {
+for (const marker of ["adminSetEventArchived", "adminDeleteEvent", "purgeDiscardableOrder", "deleteOrderReferencesIfTableExists", "holded_sync_logs", "/(archive|restore)", "Solo los eventos creados en modo prueba pueden eliminarse definitivamente", "contiene entradas de otro evento protegido"]) {
   if (!(api + ticketing).includes(marker)) throw new Error(`Missing explicit event lifecycle contract: ${marker}`);
 }
 const holdedInvoiceDeliveryMigration = readFileSync(join(root, "database/migrations/021_holded_invoice_delivery.sql"), "utf8");
@@ -219,8 +219,14 @@ for (const marker of ["openTicketDrawer", "closeTicketDrawer", "updateTicketPric
 }
 
 const adminBackoffice = readFileSync(join(root, "assets/js/admin-backoffice.js"), "utf8");
-for (const marker of ["Eliminar definitivamente", "showEventsStatus", "window.confirm"]) {
+for (const marker of ["Eliminar definitivamente", "showEventsStatus", "window.confirm", "data-admin-create-test-event", "Protegido · solo se puede archivar"]) {
   if (!adminBackoffice.includes(marker)) throw new Error(`Missing visible event-deletion feedback: ${marker}`);
+}
+for (const marker of ['name="is_test"', "data-test-mode-help", "data-editor-test-mode"]) {
+  if (!editor.includes(marker)) throw new Error(`Missing explicit event test-mode editor: ${marker}`);
+}
+for (const marker of ["testModeLocked", "order_count", "is_test"]) {
+  if (!adminJs.includes(marker)) throw new Error(`Missing event test-mode editor behavior: ${marker}`);
 }
 for (const marker of ["/admin/login/", "data-admin-dashboard", "data-admin-events-list", "data-admin-orders-list", "data-admin-users-page", "/admin/eventos/", "/admin/acceso/", "/admin/usuarios/", "data-order-action", "record-refund", "purge-test"]) {
   if (!adminBackoffice.includes(marker)) throw new Error(`Missing central backoffice marker: ${marker}`);
@@ -408,6 +414,10 @@ for (const [file, marker] of [[paymentSuccess, 'data-payment-result="success"'],
 const testMigration = readFileSync(join(root, "database/migrations/006_test_checkout_sandbox.sql"), "utf8");
 for (const marker of ["is_test", "environment", "payment_status", "delivery_status", "test_session_id", "ticket_delivery_logs"]) {
   if (!testMigration.includes(marker)) throw new Error(`Sandbox migration is missing ${marker}.`);
+}
+const eventTestModeMigration = readFileSync(join(root, "database/migrations/026_event_test_mode.sql"), "utf8");
+for (const marker of ["ADD COLUMN IF NOT EXISTS is_test", "idx_events_test_mode", "DEFAULT 0"]) {
+  if (!eventTestModeMigration.includes(marker)) throw new Error(`Event test-mode migration is missing ${marker}.`);
 }
 
 const secureDeliveryMigration = readFileSync(join(root, "database/migrations/008_secure_ticket_delivery_and_qr.sql"), "utf8");

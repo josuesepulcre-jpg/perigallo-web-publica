@@ -158,8 +158,8 @@ final class Ticketing
 
             $orderStmt = $this->pdo->prepare(
                 'INSERT INTO ticket_orders
-                 (public_token, redsys_order, first_name, last_name, name, email, phone, age_requirement_accepted, age_requirement_accepted_at, dress_code_accepted, dress_code_accepted_at, dress_code_version, billing_requested, billing_name, billing_tax_id, billing_address, billing_postal_code, billing_city, billing_province, billing_country, billing_email, subtotal_cents, total_cents, currency, status, reservation_expires_at, ip_address, user_agent, created_at, updated_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW(), 1, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, "pending", ?, ?, ?, NOW(), NOW())'
+                 (public_token, redsys_order, first_name, last_name, name, email, phone, age_requirement_accepted, age_requirement_accepted_at, dress_code_accepted, dress_code_accepted_at, dress_code_version, billing_requested, billing_name, billing_tax_id, billing_address, billing_postal_code, billing_city, billing_province, billing_country, billing_email, subtotal_cents, total_cents, currency, status, reservation_expires_at, ip_address, user_agent, is_test, environment, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW(), 1, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, "pending", ?, ?, ?, ?, ?, NOW(), NOW())'
             );
             $firstName = clean_string((string) $data['first_name'], 120);
             $lastName = clean_string((string) $data['last_name'], 160);
@@ -189,6 +189,8 @@ final class Ticketing
                 $expires,
                 client_ip(),
                 substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255),
+                !empty($event['is_test']) ? 1 : 0,
+                !empty($event['is_test']) ? 'sandbox' : 'production',
             ]);
             $orderId = (int) $this->pdo->lastInsertId();
 
@@ -952,13 +954,14 @@ final class Ticketing
             $orderStmt = $this->pdo->prepare(
                 'INSERT INTO ticket_orders
                  (public_token, redsys_order, first_name, last_name, name, email, phone, age_requirement_accepted, age_requirement_accepted_at, dress_code_accepted, dress_code_accepted_at, dress_code_version, subtotal_cents, total_cents, currency, status, reservation_expires_at, ip_address, user_agent, is_test, environment, sales_channel, cash_payment_status, cash_payment_notes, cash_payment_recorded_by, cash_payment_recorded_at, order_status, payment_status, delivery_status, paid_at, holded_status, holded_excluded, holded_exclusion_reason, created_at, updated_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW(), 1, NOW(), ?, 0, 0, ?, ?, ?, ?, ?, 0, "production", "cash", ?, ?, ?, ?, ?, ?, "generated", ?, "not_required", 1, "cash_sale", NOW(), NOW())'
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW(), 1, NOW(), ?, 0, 0, ?, ?, ?, ?, ?, ?, ?, "cash", ?, ?, ?, ?, ?, ?, "generated", ?, "not_required", 1, "cash_sale", NOW(), NOW())'
             );
             $isPaid = $cashStatus === 'paid';
             $publicToken = public_token();
             $orderStmt->execute([
                 $publicToken, $this->nextRedsysOrder(), $firstName, $lastName, $name, $email, $phone, self::DRESS_CODE_VERSION,
                 env_value('REDSYS_CURRENCY', '978'), $isPaid ? 'paid' : 'pending', $reservationExpiresAt, client_ip(), substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255),
+                !empty($event['is_test']) ? 1 : 0, !empty($event['is_test']) ? 'sandbox' : 'production',
                 $cashStatus, $notes ?: null, $isPaid ? $operator : null, $isPaid ? now_mysql() : null, $isPaid ? 'confirmed' : 'pending_payment', $isPaid ? 'paid' : 'pending', $isPaid ? now_mysql() : null,
             ]);
             $orderId = (int) $this->pdo->lastInsertId();
@@ -1170,7 +1173,7 @@ final class Ticketing
     }
 
     /** Purga un pedido técnico o una invitación sin importe al eliminar su evento de prueba. */
-    private function purgeDiscardableOrder(int $orderId, string $operator, bool $requireTestOrder, string $auditAction): void
+    private function purgeDiscardableOrder(int $orderId, string $operator, bool $requireTestOrder, string $auditAction, bool $allowPaidOrder = false): void
     {
         $this->pdo->beginTransaction();
         try {
@@ -1178,7 +1181,7 @@ final class Ticketing
             if ($requireTestOrder && empty($order['is_test'])) {
                 throw new RuntimeException('Solo se pueden eliminar pedidos de prueba.');
             }
-            if (!$requireTestOrder && empty($order['is_test']) && (int) ($order['total_cents'] ?? 0) > 0) {
+            if (!$requireTestOrder && !$allowPaidOrder && empty($order['is_test']) && (int) ($order['total_cents'] ?? 0) > 0) {
                 throw new RuntimeException('No se puede eliminar un pedido con cobro real.');
             }
             $ticketStatement = $this->pdo->prepare('SELECT t.id FROM tickets t JOIN ticket_order_items oi ON oi.id = t.order_item_id WHERE oi.order_id = ?');
@@ -1347,8 +1350,8 @@ final class Ticketing
         $saleEndsAt = $this->dateValue((string) ($data['sale_ends_at'] ?? ''), $startsAt);
         $stmt = $this->pdo->prepare(
             'INSERT INTO events
-             (canonical_id, event_type, origin_app, source_updated_at, slug, title, subtitle, description, image_url, location, address, starts_at, ends_at, sale_starts_at, sale_ends_at, capacity, status, visible, promoter, created_at, updated_at)
-             VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())'
+             (canonical_id, event_type, origin_app, source_updated_at, slug, title, subtitle, description, image_url, location, address, starts_at, ends_at, sale_starts_at, sale_ends_at, capacity, status, visible, is_test, promoter, created_at, updated_at)
+             VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())'
         );
         $stmt->execute([
             $canonicalId,
@@ -1368,6 +1371,7 @@ final class Ticketing
             max(0, (int) ($data['capacity'] ?? 0)),
             'draft',
             0,
+            !empty($data['is_test']) ? 1 : 0,
             clean_string((string) ($data['promoter'] ?? 'JYD Events, S.L.'), 190),
         ]);
         return $this->adminGetEvent((int) $this->pdo->lastInsertId()) ?? [];
@@ -1569,7 +1573,17 @@ final class Ticketing
     public function adminUpdateEvent(int $eventId, array $data): array
     {
         $existing = $this->requireAdminEvent($eventId);
+        $existingIsTest = !empty($existing['is_test']);
+        $requestedIsTest = array_key_exists('is_test', $data) ? !empty($data['is_test']) : $existingIsTest;
+        if ($requestedIsTest !== $existingIsTest) {
+            $orderCount = $this->pdo->prepare('SELECT COUNT(DISTINCT order_id) FROM ticket_order_items WHERE event_id = ?');
+            $orderCount->execute([$eventId]);
+            if ((string) ($existing['status'] ?? '') !== 'draft' || !empty($existing['publication_at']) || (int) $orderCount->fetchColumn() > 0) {
+                throw new RuntimeException('El modo prueba solo puede cambiarse mientras el evento sea un borrador que nunca se haya publicado ni tenga pedidos.');
+            }
+        }
         $merged = array_merge($existing, $data);
+        $merged['is_test'] = $requestedIsTest;
         $status = $this->eventStatus($merged);
         // El acceso solo mediante enlace nunca debe aparecer en los listados.
         // Se conserva el valor para que al desactivarlo el editor vuelva a mostrar
@@ -1614,7 +1628,7 @@ final class Ticketing
               location=?, address=?, postal_code=?, locality=?, province=?, country=?, maps_url=?, access_notes=?, parking_info=?, venue_type=?,
               starts_at=?, ends_at=?, doors_open_at=?, timezone=?, schedule_note=?, sale_starts_at=?, sale_ends_at=?, capacity=?, allow_reentry=?, maximum_reentries=?, reentry_until=?, require_manual_confirmation_for_reentry=?,
               included_text=?, access_conditions=?, minor_policy=?, refund_policy=?, faq_json=?, contact_info=?, recommendations=?, dress_code=?, accessibility_info=?,
-              status=?, visible=?, promoter=?, publication_at=?, unlisted=?, link_only=?, show_sold_out=?, show_availability=?, show_price_from=?,
+              status=?, visible=?, is_test=?, promoter=?, publication_at=?, unlisted=?, link_only=?, show_sold_out=?, show_availability=?, show_price_from=?,
               seo_title=?, seo_description=?, seo_image_url=?, canonical_url=?, updated_at=NOW()
               WHERE id=?'
         );
@@ -1668,6 +1682,7 @@ final class Ticketing
             trim((string) ($merged['accessibility_info'] ?? '')),
             $status,
             $visible,
+            $requestedIsTest ? 1 : 0,
             clean_string((string) ($merged['promoter'] ?? 'JYD Events, S.L.'), 190) ?: 'JYD Events, S.L.',
             $this->nullableDate((string) ($merged['publication_at'] ?? '')),
             !empty($merged['unlisted']) ? 1 : 0,
@@ -1778,22 +1793,25 @@ final class Ticketing
         return $this->adminGetEvent($eventId) ?? [];
     }
 
-    /** Elimina experiencias sin cobros reales y purga sus pedidos de prueba o invitaciones gratuitas. */
+    /** Solo los eventos clasificados previamente como prueba pueden eliminarse definitivamente. */
     public function adminDeleteEvent(int $eventId, string $operator): array
     {
-        $this->requireAdminEvent($eventId);
+        $event = $this->requireAdminEvent($eventId);
+        if (empty($event['is_test'])) {
+            throw new RuntimeException('Este evento está protegido. Solo los eventos creados en modo prueba pueden eliminarse definitivamente; archívalo para conservar su historial.');
+        }
         $orders = $this->pdo->prepare(
             'SELECT DISTINCT o.id, o.is_test, o.total_cents FROM ticket_orders o JOIN ticket_order_items oi ON oi.order_id = o.id WHERE oi.event_id = ? ORDER BY o.id ASC'
         );
         $orders->execute([$eventId]);
         $rows = $orders->fetchAll();
         foreach ($rows as $order) {
-            if (empty($order['is_test']) && (int) ($order['total_cents'] ?? 0) > 0) {
-                throw new RuntimeException('No se puede eliminar un evento con cobros reales. Archívalo para conservar su historial.');
+            $otherEventItems = $this->pdo->prepare('SELECT COUNT(*) FROM ticket_order_items WHERE order_id = ? AND event_id <> ?');
+            $otherEventItems->execute([(int) $order['id'], $eventId]);
+            if ((int) $otherEventItems->fetchColumn() > 0) {
+                throw new RuntimeException('No se puede eliminar la prueba porque uno de sus pedidos contiene entradas de otro evento protegido.');
             }
-        }
-        foreach ($rows as $order) {
-            $this->purgeDiscardableOrder((int) $order['id'], $operator, false, 'event_free_order_deleted');
+            $this->purgeDiscardableOrder((int) $order['id'], $operator, false, 'test_event_order_deleted', true);
         }
 
         $this->pdo->beginTransaction();
@@ -2218,6 +2236,10 @@ final class Ticketing
         $event['maximum_reentries'] = isset($event['maximum_reentries']) ? (int) $event['maximum_reentries'] : null;
         $event['require_manual_confirmation_for_reentry'] = !array_key_exists('require_manual_confirmation_for_reentry', $event) || (bool) $event['require_manual_confirmation_for_reentry'];
         $event['visible'] = (bool) $event['visible'];
+        $event['is_test'] = !empty($event['is_test']);
+        $orderCount = $this->pdo->prepare('SELECT COUNT(DISTINCT order_id) FROM ticket_order_items WHERE event_id = ?');
+        $orderCount->execute([(int) $event['id']]);
+        $event['order_count'] = (int) $orderCount->fetchColumn();
         foreach (['unlisted', 'link_only', 'show_sold_out', 'show_availability', 'show_price_from'] as $field) {
             $event[$field] = array_key_exists($field, $event) ? (bool) $event[$field] : false;
         }

@@ -194,6 +194,15 @@
     document.querySelector("[data-editor-title]").textContent = eventData.title || "Nuevo evento";
     document.querySelector("[data-editor-status]").textContent = statusLabel(eventData.effective_status || eventData.status);
     document.querySelector("[data-editor-status]").className = "status-pill status-" + (eventData.effective_status || eventData.status);
+    var testBadge = document.querySelector("[data-editor-test-mode]");
+    if (testBadge) testBadge.hidden = !eventData.is_test;
+    var testField = input(form, "is_test");
+    var testHelp = document.querySelector("[data-test-mode-help]");
+    var testModeLocked = String(eventData.status || "") !== "draft" || !!eventData.publication_at || Number(eventData.order_count || 0) > 0;
+    if (testField) testField.disabled = testModeLocked;
+    if (testHelp) testHelp.textContent = testModeLocked
+      ? "El modo queda bloqueado después de programar, publicar o registrar el primer pedido."
+      : "Actívalo antes de publicar si este evento se usará para pruebas. Solo los eventos de prueba podrán eliminarse definitivamente.";
     document.querySelector("[data-ticket-count]").textContent = (eventData.ticket_types || []).length;
     renderEventMediaManager();
     refreshPublicInformation();

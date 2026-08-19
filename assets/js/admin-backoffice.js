@@ -78,7 +78,7 @@
     if (document.querySelector('link[data-admin-mobile-styles]')) return;
     var stylesheet = document.createElement("link");
     stylesheet.rel = "stylesheet";
-    stylesheet.href = "/assets/css/admin-mobile.css?v=20260819-v1";
+    stylesheet.href = "/assets/css/admin-mobile.css?v=20260819-event-test-mode-v1";
     stylesheet.setAttribute("data-admin-mobile-styles", "");
     document.head.appendChild(stylesheet);
   }
@@ -217,12 +217,16 @@
     var image = event.card_image_url || event.image_url || "/assets/images/perigallo-hero-original-01.jpg";
     var occupancy = event.capacity ? Math.min(100, Math.round(Number(event.sold || 0) * 100 / Number(event.capacity))) : 0;
     var archived = (event.effective_status || event.status) === "archived";
+    var testMode = Number(event.is_test) === 1;
+    var deleteControl = state.session && state.session.is_owner
+      ? (testMode ? '<button class="text-action danger" type="button" data-event-action="delete" data-event-id="' + Number(event.id) + '">Eliminar definitivamente</button>' : '<span class="admin-event-protected">Protegido · solo se puede archivar</span>')
+      : '';
     var lifecycleActions = !featured
-      ? '<div class="admin-event-lifecycle-actions" aria-label="Acciones de ciclo de vida para ' + escapeHtml(event.title) + '"><button class="text-action" type="button" data-event-action="' + (archived ? 'restore' : 'archive') + '" data-event-id="' + Number(event.id) + '">' + (archived ? 'Restaurar evento' : 'Archivar evento') + '</button>' + (state.session && state.session.is_owner ? '<button class="text-action danger" type="button" data-event-action="delete" data-event-id="' + Number(event.id) + '">Eliminar definitivamente</button>' : '') + '</div>'
+      ? '<div class="admin-event-lifecycle-actions" aria-label="Acciones de ciclo de vida para ' + escapeHtml(event.title) + '"><button class="text-action" type="button" data-event-action="' + (archived ? 'restore' : 'archive') + '" data-event-id="' + Number(event.id) + '">' + (archived ? 'Restaurar evento' : 'Archivar evento') + '</button>' + deleteControl + '</div>'
       : '';
     return '<article class="admin-featured-event' + (featured ? " is-featured" : "") + '">' +
       '<div class="admin-featured-image" style="background-image:url(' + escapeHtml(image) + ')"></div>' +
-      '<div class="admin-featured-copy"><span class="status-pill status-' + escapeHtml(event.effective_status || event.status) + '">' + escapeHtml(statusLabel(event.effective_status || event.status)) + '</span>' +
+      '<div class="admin-featured-copy"><span class="status-pill status-' + escapeHtml(event.effective_status || event.status) + '">' + escapeHtml(statusLabel(event.effective_status || event.status)) + '</span>' + (testMode ? '<span class="status-pill status-scheduled">Modo prueba</span>' : '') +
       '<h2>' + escapeHtml(event.title) + '</h2><p>' + escapeHtml(formatDate(event.starts_at, true)) + ' · ' + escapeHtml(event.location || "Ubicación por definir") + '</p>' +
       '<div class="admin-progress"><span><strong>' + Number(event.sold || 0) + '</strong> entradas vendidas</span><span>' + Number(event.capacity || 0) + ' aforo · ' + occupancy + '%</span><i><b style="width:' + occupancy + '%"></b></i></div>' +
       '<div class="admin-inline-actions"><a class="ticket-btn primary" href="/admin/eventos/' + Number(event.id) + '/editar/">Editar evento</a><a class="ticket-btn" href="/admin/ventas/?event=' + Number(event.id) + '">Ver ventas</a><a class="ticket-btn" href="/admin/acceso/?event=' + Number(event.id) + '">Control de acceso</a><a class="text-action" href="/eventos/' + encodeURIComponent(event.slug) + '/" target="_blank" rel="noopener noreferrer">Página pública</a></div>' + lifecycleActions + '</div></article>';
@@ -339,6 +343,7 @@
     if (!root) return;
     requireSession(function () {
       var create = root.querySelector("[data-admin-create-event]");
+      var createTest = root.querySelector("[data-admin-create-test-event]");
       var search = root.querySelector("[data-admin-event-search]");
       var status = root.querySelector("[data-admin-page-status]");
       function showEventsStatus(message, isError) {
@@ -355,17 +360,21 @@
           if (message) showEventsStatus(message, false);
         });
       }
-      function createEvent() {
-        create.disabled = true;
-        create.textContent = "Creando…";
-        jsonRequest(api + "/admin/events", "POST", { title: "Nuevo evento" }).then(function (data) {
+      function createEvent(isTest, button) {
+        button.disabled = true;
+        var originalLabel = button.textContent;
+        button.textContent = "Creando…";
+        jsonRequest(api + "/admin/events", "POST", { title: isTest ? "Nuevo evento de prueba" : "Nuevo evento", is_test: !!isTest }).then(function (data) {
           window.location.assign("/admin/eventos/" + data.event.id + "/editar/");
-        }).catch(function (error) { renderPageError(error.message); create.disabled = false; create.textContent = "Crear evento"; });
+        }).catch(function (error) { renderPageError(error.message); button.disabled = false; button.textContent = originalLabel; });
       }
-      create.addEventListener("click", createEvent);
+      create.addEventListener("click", function () { createEvent(false, create); });
+      createTest.addEventListener("click", function () { createEvent(true, createTest); });
       refreshEvents().then(function () {
         search.addEventListener("input", function () { renderEvents(state.events, search.value); });
-        if (new URLSearchParams(window.location.search).get("new") === "1") createEvent();
+        var newMode = new URLSearchParams(window.location.search).get("new");
+        if (newMode === "1") createEvent(false, create);
+        if (newMode === "test") createEvent(true, createTest);
       }).catch(function (error) { renderPageError(error.message); });
       root.addEventListener("click", function (event) {
         var button = event.target.closest("[data-event-action]");
@@ -376,7 +385,7 @@
         if (!id || !item) return;
         if (action === "archive" && !window.confirm('Archivarás “' + item.title + '”. Dejará de estar a la venta y conservará todos sus datos. ¿Continuar?')) return;
         if (action === "restore" && !window.confirm('Restaurarás “' + item.title + '” como borrador. Tendrás que revisarlo y publicarlo de nuevo cuando corresponda. ¿Continuar?')) return;
-        if (action === "delete" && !window.confirm('¿Eliminar definitivamente “' + item.title + '”? Esta acción no se puede deshacer. Se eliminarán también sus pedidos de prueba o invitaciones gratuitas.')) return;
+        if (action === "delete" && !window.confirm('¿Eliminar definitivamente la prueba “' + item.title + '”? Se borrarán también todos sus pedidos, entradas y registros técnicos. Esta acción no se puede deshacer.')) return;
         button.disabled = true;
         var url = api + "/admin/events/" + id + (action === "delete" ? "" : "/" + action);
         jsonRequest(url, action === "delete" ? "DELETE" : "POST", {}).then(function () {
