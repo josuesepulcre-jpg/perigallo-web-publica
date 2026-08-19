@@ -1200,6 +1200,8 @@ final class Ticketing
             $this->pdo->prepare('DELETE FROM email_deliveries WHERE order_id = ?')->execute([$orderId]);
             $this->pdo->prepare('DELETE FROM discount_code_usages WHERE order_id = ?')->execute([$orderId]);
             $this->pdo->prepare('DELETE FROM payment_attempts WHERE order_id = ?')->execute([$orderId]);
+            $this->deleteOrderReferencesIfTableExists('holded_refund_requests', $orderId);
+            $this->deleteOrderReferencesIfTableExists('holded_sync_logs', $orderId);
             $this->pdo->prepare('DELETE FROM ticket_order_items WHERE order_id = ?')->execute([$orderId]);
             $this->pdo->prepare('DELETE FROM ticket_orders WHERE id = ?')->execute([$orderId]);
             $this->auditAdminOperation($operator, $auditAction, $orderId, ['reference' => $order['test_reference'] ?: $order['redsys_order']]);
@@ -1210,6 +1212,20 @@ final class Ticketing
             }
             throw $error;
         }
+    }
+
+    /** Algunas instalaciones aún no tienen el módulo Holded; su ausencia no debe bloquear una prueba. */
+    private function deleteOrderReferencesIfTableExists(string $table, int $orderId): void
+    {
+        if (!in_array($table, ['holded_refund_requests', 'holded_sync_logs'], true)) {
+            throw new InvalidArgumentException('Tabla de referencias no permitida.');
+        }
+        $exists = $this->pdo->prepare('SHOW TABLES LIKE ?');
+        $exists->execute([$table]);
+        if (!$exists->fetchColumn()) {
+            return;
+        }
+        $this->pdo->prepare('DELETE FROM `' . $table . '` WHERE order_id = ?')->execute([$orderId]);
     }
 
     private function changeOrderCommercialStatus(int $orderId, string $operator, string $targetStatus, string $reason): array
