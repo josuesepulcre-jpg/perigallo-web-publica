@@ -1220,9 +1220,9 @@ final class Ticketing
         if (!in_array($table, ['holded_refund_requests', 'holded_sync_logs'], true)) {
             throw new InvalidArgumentException('Tabla de referencias no permitida.');
         }
-        $exists = $this->pdo->prepare('SHOW TABLES LIKE ?');
+        $exists = $this->pdo->prepare('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?');
         $exists->execute([$table]);
-        if (!$exists->fetchColumn()) {
+        if ((int) $exists->fetchColumn() === 0) {
             return;
         }
         $this->pdo->prepare('DELETE FROM `' . $table . '` WHERE order_id = ?')->execute([$orderId]);
