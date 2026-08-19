@@ -18,6 +18,7 @@
     <p class="ticket-status is-error" data-admin-page-status hidden></p>
     <header class="admin-page-heading admin-page-heading-compact"><div><span class="ticket-eyebrow">Gestión</span><h1>Pedidos y <em>ventas</em></h1><p>Consulta el estado comercial de cada compra sin salir del backoffice.</p></div><button type="button" class="ticket-btn primary" data-open-cash-order>Generar entrada en efectivo</button></header>
     <section class="admin-sales-summary" data-admin-sales-summary aria-label="Resumen global de ventas"></section>
+    <p class="admin-orders-status" data-admin-whatsapp-template-status aria-live="polite"></p>
     <section class="admin-order-toolbar" aria-label="Filtros de pedidos">
       <div class="admin-filter-group" role="group" aria-label="Estado del pedido">
         <button type="button" class="is-active" data-admin-order-filter="active">Entradas activas</button>
@@ -25,6 +26,10 @@
         <button type="button" data-admin-order-filter="cancelled">Cancelaciones</button>
         <button type="button" data-admin-order-filter="refunded">Devoluciones</button>
         <button type="button" data-admin-order-filter="tests">Pruebas</button>
+        <button type="button" data-admin-order-filter="email-failed">Email fallido</button>
+        <button type="button" data-admin-order-filter="whatsapp-failed">WhatsApp fallido</button>
+        <button type="button" data-admin-order-filter="partial-delivery">Entrega parcial</button>
+        <button type="button" data-admin-order-filter="no-delivery">Sin entrega</button>
         <button type="button" data-admin-order-filter="all">Todas</button>
       </div>
       <label class="admin-search"><span>Buscar pedido</span><input type="search" data-admin-sales-search placeholder="Comprador, evento, referencia o estado"></label>
@@ -55,6 +60,6 @@
     </div>
   </main>
 </div>
-<script src="/assets/js/admin-backoffice.js?v=20260818-cash-discount-v1" defer></script>
+<script src="/assets/js/admin-backoffice.js?v=20260819-mobile-admin-v1" defer></script>
 </body>
 </html>

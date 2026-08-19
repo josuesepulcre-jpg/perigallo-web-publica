@@ -5,7 +5,7 @@ namespace Perigallo\Ticketing;
 
 use PDO;
 
-/** Orchestrates only verifiable delivery attempts. */
+/** Compatibility facade: delivery is now executed by the persistent worker. */
 final class TicketDeliveryService
 {
     public function __construct(private Mailer $mailer)
@@ -14,23 +14,8 @@ final class TicketDeliveryService
 
     public function sendOrder(PDO $pdo, array $order, array $event, int $quantity): array
     {
-        $orderId = (int) $order['id'];
-        $link = app_base_url() . '/entradas/pedido/?token=' . rawurlencode((string) $order['public_token']);
-        $isTest = !empty($order['is_test']);
-        $referenceTotal = $this->referenceTotal($pdo, $orderId);
-        $paidTotal = (int) ($order['total_cents'] ?? 0);
-        $priceNote = $referenceTotal !== null && $referenceTotal > $paidTotal
-            ? "Valor de la experiencia: {$this->money($referenceTotal)}\nImporte pagado: {$this->money($paidTotal)}\n"
-            : "Importe pagado: {$this->money($paidTotal)}\n";
-        $subject = ($isTest ? '[PRUEBA] ' : '') . 'Tus entradas para ' . (string) $event['title'];
-        $intro = $isTest ? "MODO DE PRUEBAS · No corresponde a una compra real.\n\n" : '';
-        $body = $intro . "Hola {$order['name']},\n\n" . ($isTest ? 'Tu experiencia de prueba' : 'Tu pago') . " para {$event['title']} se ha confirmado.\n\nEntradas: {$quantity}\n{$priceNote}Consulta y descarga tus entradas: {$link}\n\nEquipo Perigallo\n";
-        $this->mailer->queueOrderEmail($pdo, $orderId, (string) $order['email'], $subject, $body, $this->orderEmailHtml($order, $event, $quantity, $link, $isTest, $referenceTotal));
-
-        $emailStatus = (string) ($pdo->query('SELECT status FROM email_deliveries WHERE id = LAST_INSERT_ID()')->fetchColumn() ?: 'failed');
-        $whatsAppStatus = (new WhatsAppDeliveryService())->sendOrder($pdo, $order, (string) $event['title'], $quantity);
-
-        return ['email' => $emailStatus, 'whatsapp' => $whatsAppStatus];
+        (new TicketDeliveryQueue($pdo, $this->mailer))->enqueuePaidOrder((int) $order['id']);
+        return ['email' => 'queued', 'whatsapp' => !empty($order['whatsapp_consent']) ? 'queued' : 'not_authorized'];
     }
 
     private function orderEmailHtml(array $order, array $event, int $quantity, string $link, bool $isTest, ?int $referenceTotal): string

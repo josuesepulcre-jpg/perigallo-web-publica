@@ -12,6 +12,7 @@ use Perigallo\Ticketing\HoldedClient;
 use Perigallo\Ticketing\HoldedSyncService;
 use Perigallo\Ticketing\Redsys;
 use Perigallo\Ticketing\Ticketing;
+use Perigallo\Ticketing\WhatsAppDeliveryService;
 
 header('X-Frame-Options: SAMEORIGIN');
 header('Referrer-Policy: strict-origin-when-cross-origin');
@@ -27,6 +28,36 @@ try {
     $ticketing = new Ticketing(Database::pdo(), new Redsys(), $mailer);
     $analytics = new Analytics(Database::pdo(), $mailer);
     $holded = new HoldedSyncService(Database::pdo(), new HoldedClient());
+
+    if ($method === 'GET' && $path === '/whatsapp/webhook') {
+        $whatsApp = new WhatsAppDeliveryService();
+        $mode = (string) ($_GET['hub_mode'] ?? '');
+        $token = (string) ($_GET['hub_verify_token'] ?? '');
+        $challenge = (string) ($_GET['hub_challenge'] ?? '');
+        if ($mode === 'subscribe' && $challenge !== '' && $whatsApp->webhookVerifyToken() !== '' && hash_equals($whatsApp->webhookVerifyToken(), $token)) {
+            header('Content-Type: text/plain; charset=utf-8');
+            echo $challenge;
+            return;
+        }
+        json_response(['ok' => false, 'error' => 'Webhook no autorizado.'], 403);
+        return;
+    }
+
+    if ($method === 'POST' && $path === '/whatsapp/webhook') {
+        $raw = file_get_contents('php://input') ?: '';
+        $whatsApp = new WhatsAppDeliveryService();
+        if (!$whatsApp->verifyWebhookSignature($raw, (string) ($_SERVER['HTTP_X_HUB_SIGNATURE_256'] ?? ''))) {
+            json_response(['ok' => false, 'error' => 'Firma de webhook inválida.'], 403);
+            return;
+        }
+        $payload = json_decode($raw, true);
+        if (!is_array($payload)) {
+            json_response(['ok' => false, 'error' => 'Webhook inválido.'], 400);
+            return;
+        }
+        json_response(['ok' => true, 'updated' => $whatsApp->recordWebhookStatuses(Database::pdo(), $payload)]);
+        return;
+    }
 
     if ($method === 'POST' && $path === '/analytics/events') {
         $length = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
@@ -274,6 +305,12 @@ try {
         return;
     }
 
+    if ($method === 'GET' && $path === '/admin/whatsapp/template-status') {
+        AdminAuth::require();
+        json_response(['ok' => true, 'template' => (new WhatsAppDeliveryService())->templateStatus()]);
+        return;
+    }
+
     if ($method === 'GET' && $path === '/admin/cash-orders/meta') {
         AdminAuth::require();
         json_response(['ok' => true] + $ticketing->adminCashOrderMeta());
@@ -414,6 +451,12 @@ try {
     if ($method === 'POST' && preg_match('#^/admin/orders/([0-9]+)/send-cash$#', $path, $m)) {
         AdminAuth::requireCsrf();
         json_response(['ok' => true, 'order' => $ticketing->adminSendCashOrder((int) $m[1], AdminAuth::operatorName())]);
+        return;
+    }
+
+    if ($method === 'POST' && preg_match('#^/admin/orders/([0-9]+)/delivery/(email|whatsapp)/retry$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        json_response(['ok' => true, 'delivery' => $ticketing->adminRetryDelivery((int) $m[1], $m[2], AdminAuth::operatorName())]);
         return;
     }
 

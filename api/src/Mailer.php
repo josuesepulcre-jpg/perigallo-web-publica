@@ -46,6 +46,68 @@ final class Mailer
         return $this->queue($pdo, $orderId, $email, $subject, $body, $htmlBody ?? $this->basicOrderHtml($subject, $body));
     }
 
+    /**
+     * Entrega el PDF ya creado para el pedido. La clave persistente evita que
+     * un webhook repetido programe un segundo correo de la misma versión.
+     */
+    public function sendTicketDocumentEmail(PDO $pdo, int $orderId, string $email, string $subject, string $body, string $htmlBody, array $document, string $idempotencyKey): string
+    {
+        $existing = $pdo->prepare('SELECT status FROM email_deliveries WHERE idempotency_key = ? LIMIT 1');
+        $existing->execute([$idempotencyKey]);
+        $previous = $existing->fetchColumn();
+        if ($previous !== false) {
+            return (string) $previous;
+        }
+
+        $insert = $pdo->prepare(
+            'INSERT INTO email_deliveries (order_id, idempotency_key, recipient_email, subject, body, status, document_version, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, "pending", ?, NOW(), NOW())'
+        );
+        try {
+            $insert->execute([$orderId, $idempotencyKey, $email, $subject, $body, TicketDocumentService::DOCUMENT_VERSION]);
+        } catch (\Throwable $error) {
+            $existing->execute([$idempotencyKey]);
+            $previous = $existing->fetchColumn();
+            if ($previous !== false) {
+                return (string) $previous;
+            }
+            throw $error;
+        }
+        $deliveryId = (int) $pdo->lastInsertId();
+
+        try {
+            $mixed = 'perigallo-mixed-' . bin2hex(random_bytes(12));
+            $alternative = 'perigallo-alt-' . bin2hex(random_bytes(12));
+            $headers = [
+                'From: ' . (env_value('MAIL_FROM_NAME', 'Perigallo') ?: 'Perigallo') . ' <' . (env_value('MAIL_FROM', 'entradas@perigallo.com') ?: 'entradas@perigallo.com') . '>',
+                'MIME-Version: 1.0',
+                'Content-Type: multipart/mixed; boundary="' . $mixed . '"',
+            ];
+            $filename = $this->headerFilename((string) $document['filename']);
+            $message = '--' . $mixed . "\r\n"
+                . 'Content-Type: multipart/alternative; boundary="' . $alternative . "\"\r\n\r\n"
+                . '--' . $alternative . "\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n"
+                . $body . "\r\n\r\n"
+                . '--' . $alternative . "\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n"
+                . $htmlBody . "\r\n\r\n"
+                . '--' . $alternative . "--\r\n"
+                . '--' . $mixed . "\r\nContent-Type: application/pdf; name=\"" . $filename . "\"\r\n"
+                . "Content-Transfer-Encoding: base64\r\n"
+                . 'Content-Disposition: attachment; filename="' . $filename . "\"\r\n\r\n"
+                . chunk_split(base64_encode((string) $document['content']))
+                . '--' . $mixed . '--';
+            $sent = mail($email, $subject, $message, implode("\r\n", $headers));
+            $status = $sent ? 'sent' : 'failed';
+            $error = $sent ? null : 'mail() devolvió false. Configura el SMTP transaccional en Plesk.';
+        } catch (Throwable $error) {
+            $status = 'failed';
+            $error = 'Fallo técnico de envío registrado.';
+        }
+        $update = $pdo->prepare('UPDATE email_deliveries SET status = ?, error_message = ?, sent_at = IF(? = "sent", NOW(), sent_at), updated_at = NOW() WHERE id = ?');
+        $update->execute([$status, $error, $status, $deliveryId]);
+        return $status;
+    }
+
     public function queueOrderRecoveryEmail(PDO $pdo, int $orderId, string $email, string $name, string $link): string
     {
         $body = "Hola {$name},\n\nHemos recibido una solicitud para acceder a tus entradas. Puedes abrirlas desde este enlace seguro:\n{$link}\n\nSi no has solicitado este acceso, puedes ignorar este mensaje.\n\nEquipo Perigallo\n";
@@ -115,6 +177,12 @@ final class Mailer
         );
         $update->execute([$status, $error, $status]);
         return $status;
+    }
+
+    private function headerFilename(string $filename): string
+    {
+        $filename = preg_replace('/[^A-Za-z0-9._-]+/', '-', $filename) ?: 'entradas-perigallo.pdf';
+        return trim($filename, '-') ?: 'entradas-perigallo.pdf';
     }
 
     private function basicOrderHtml(string $subject, string $body, string $buttonLabel = 'Descargar mis entradas'): string

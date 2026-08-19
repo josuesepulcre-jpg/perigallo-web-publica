@@ -7,6 +7,8 @@ const required = [
   "api/index.php",
   "api/src/Ticketing.php",
   "api/src/TicketDeliveryService.php",
+  "api/src/TicketDeliveryQueue.php",
+  "api/src/TicketDocumentService.php",
   "api/src/WhatsAppDeliveryService.php",
   "api/src/DiscountCodes.php",
   "api/src/Redsys.php",
@@ -38,6 +40,8 @@ const required = [
   "api/scripts/purge-test-ticketing-data.php",
   "api/scripts/holded-health.php",
   "api/cron/holded-sync.php",
+  "api/cron/ticket-delivery.php",
+  "api/scripts/render-ticket-pdf.mjs",
   "api/src/HoldedClient.php",
   "api/src/HoldedSyncService.php",
   "api/src/HoldedFiscalPolicy.php",
@@ -85,6 +89,8 @@ const required = [
   ".env.example",
   ".user.ini",
   ".htaccess",
+  "database/migrations/027_whatsapp_document_delivery.sql",
+  "docs/WHATSAPP_TICKET_DELIVERY.md",
 ];
 
 const missing = required.filter((file) => !existsSync(join(root, file)));
@@ -482,17 +488,23 @@ for (const marker of ["safe-area-inset-top", "admin-drawer-open", ".admin-mobile
   if (!adminMobileCss.includes(marker)) throw new Error(`Missing responsive admin navigation style: ${marker}`);
 }
 const adminAuth = readFileSync(join(root, "api/src/AdminAuth.php"), "utf8");
+const ticketDeliveryQueue = readFileSync(join(root, "api/src/TicketDeliveryQueue.php"), "utf8");
+const ticketDocument = readFileSync(join(root, "api/src/TicketDocumentService.php"), "utf8");
+const ticketDeliveryMigration = readFileSync(join(root, "database/migrations/027_whatsapp_document_delivery.sql"), "utf8");
 for (const marker of ["ACCESS_USERNAME", "ACCESS_PASSWORD_HASH", "control_acceso", "requireAccessCsrf", "can_revert"]) {
   if (!(adminAuth + api).includes(marker)) throw new Error(`Missing access-control role contract: ${marker}`);
 }
-if (!whatsAppDelivery.includes("WHATSAPP_PROVIDER") || !whatsAppDelivery.includes("meta_cloud")) {
-  throw new Error("Missing transactional WhatsApp provider adapter.");
+for (const marker of ["META_WABA_ID", "META_PHONE_NUMBER_ID", "sendTicketDocument", "/media", "/messages", "verifyWebhookSignature", "provider_message_id"]) {
+  if (!whatsAppDelivery.includes(marker)) throw new Error(`Missing official Meta WhatsApp delivery contract: ${marker}.`);
+}
+for (const marker of ["TicketDeliveryQueue", "ticket_delivery_jobs", "ticket_delivery_documents", "whatsapp_consent", "/whatsapp/webhook"]) {
+  if (!(api + ticketing + ticketDeliveryQueue + ticketDocument + ticketDeliveryMigration).includes(marker)) throw new Error(`Missing asynchronous WhatsApp ticket delivery contract: ${marker}.`);
 }
 
 for (const marker of ["data-download-all", "qrcode", "application/pdf", "Descargar todas las entradas"]) {
   if (!publicJs.includes(marker)) throw new Error(`Missing ticket delivery client marker: ${marker}`);
 }
-for (const marker of ["createTestOrder", "assertConfigured", "assertSandboxConfigured", "redsysForm", "ticket_delivery_logs", "is_test = 0", "TicketDeliveryService", "Ds_SignatureVersion", "notification processed"]) {
+for (const marker of ["createTestOrder", "assertConfigured", "assertSandboxConfigured", "redsysForm", "ticket_delivery_logs", "is_test = 0", "Ds_SignatureVersion", "notification processed"]) {
   if (!(api + ticketing).includes(marker)) throw new Error(`Missing isolated test-order contract: ${marker}`);
 }
 const mailer = readFileSync(join(root, "api/src/Mailer.php"), "utf8");

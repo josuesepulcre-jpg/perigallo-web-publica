@@ -851,7 +851,7 @@
         var fields = [form.first_name, form.last_name, form.email, form.phone];
         var invalid = fields.find(function (input) { return !checkoutFieldValid(input); });
         if (invalid) return { valid: false, message: invalid === form.email ? "Introduce un correo electrónico válido para continuar." : "Completa tus " + (invalid === form.phone ? "teléfono o WhatsApp" : invalid.previousElementSibling.textContent.toLowerCase()) + " para continuar.", focus: invalid };
-        if (!checkoutPhoneValid(form.phone)) return { valid: false, message: "Introduce un teléfono o WhatsApp válido para continuar.", focus: form.phone };
+        if (!checkoutPhoneValid(form.phone, form.whatsapp_country_code)) return { valid: false, message: "Introduce un teléfono o WhatsApp válido para continuar.", focus: form.phone };
       }
       if (step === 3) {
         if (!form.dataset.billingAnswer) return { valid: false, message: "Indica si necesitas factura para continuar.", focus: billingChoice };
@@ -1349,6 +1349,8 @@
         last_name: form.last_name.value,
         email: form.email.value,
         phone: form.phone.value,
+        whatsapp_country_code: form.whatsapp_country_code ? form.whatsapp_country_code.value : "ES",
+        whatsapp_consent: !!(form.whatsapp_consent && form.whatsapp_consent.checked),
         billing_requested: !!(billingToggle && billingToggle.checked),
         age_requirement_accepted: form.age_requirement_accepted.checked,
         dress_code_accepted: form.dress_code_accepted.checked,
@@ -1472,7 +1474,7 @@
     if (!selected.length) return { valid: false, message: "Selecciona al menos una entrada para continuar." };
     var requiredFields = [form.first_name, form.last_name, form.email, form.phone];
     if (requiredFields.some(function (input) { return !checkoutFieldValid(input); })) return { valid: false, message: "Completa los datos obligatorios para continuar." };
-    if (!checkoutPhoneValid(form.phone)) return { valid: false, message: "Introduce un teléfono o WhatsApp válido para continuar.", focus: form.phone };
+    if (!checkoutPhoneValid(form.phone, form.whatsapp_country_code)) return { valid: false, message: "Introduce un teléfono o WhatsApp válido para continuar.", focus: form.phone };
     if (form.dataset.wizardEnabled === "true" && !form.dataset.billingAnswer) return { valid: false, message: "Indica si necesitas factura para continuar." };
     if (form.billing_requested && form.billing_requested.checked) {
       var billingFields = [form.billing_name, form.billing_tax_id, form.billing_email, form.billing_address, form.billing_postal_code, form.billing_city, form.billing_province, form.billing_country];
@@ -1501,8 +1503,14 @@
     return !!input && !!input.value.trim() && (input.type !== "email" || input.validity.valid);
   }
 
-  function checkoutPhoneValid(input) {
-    return !!input && /^\+?[0-9][0-9 ()-]{6,}$/.test(input.value.trim());
+  function checkoutPhoneValid(input, countryInput) {
+    if (!input) return false;
+    var raw = input.value.trim().replace(/[()\s.-]/g, "");
+    if (raw.indexOf("00") === 0) raw = "+" + raw.slice(2);
+    if (/^\+\d{8,15}$/.test(raw)) return true;
+    if (!/^\d{7,15}$/.test(raw)) return false;
+    var country = countryInput && countryInput.value || "ES";
+    return country !== "ES" || /^[6-9]\d{8}$/.test(raw);
   }
 
   function updateCheckoutField(input, touched) {
@@ -1510,7 +1518,7 @@
     if (!field) return;
     var error = field.querySelector(".checkout-field-error");
     if (!touched) return;
-    var valid = !input.required || (input.name === "phone" ? checkoutPhoneValid(input) : checkoutFieldValid(input));
+    var valid = !input.required || (input.name === "phone" ? checkoutPhoneValid(input, input.form && input.form.whatsapp_country_code) : checkoutFieldValid(input));
     field.classList.toggle("has-error", !valid);
     input.setAttribute("aria-invalid", String(!valid));
     if (error) error.textContent = valid ? "" : (input.name === "phone" && input.value.trim() ? "Introduce un teléfono válido." : input.type === "email" && input.value.trim() ? "Introduce un correo electrónico válido." : "Este campo es obligatorio.");

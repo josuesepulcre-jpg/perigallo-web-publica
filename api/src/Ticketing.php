@@ -142,6 +142,7 @@ final class Ticketing
             throw new RuntimeException('Selecciona al menos una entrada.');
         }
         $billing = $this->normaliseBilling($data);
+        $whatsApp = $this->normaliseWhatsAppPhone($data);
         // Si un despliegue deja el esquema incompleto, debemos poder indicar al
         // comprador la fase afectada sin mostrar detalles internos ni secretos.
         $checkoutStage = 'validar la reserva';
@@ -158,8 +159,8 @@ final class Ticketing
 
             $orderStmt = $this->pdo->prepare(
                 'INSERT INTO ticket_orders
-                 (public_token, redsys_order, first_name, last_name, name, email, phone, age_requirement_accepted, age_requirement_accepted_at, dress_code_accepted, dress_code_accepted_at, dress_code_version, billing_requested, billing_name, billing_tax_id, billing_address, billing_postal_code, billing_city, billing_province, billing_country, billing_email, subtotal_cents, total_cents, currency, status, reservation_expires_at, ip_address, user_agent, is_test, environment, created_at, updated_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW(), 1, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, "pending", ?, ?, ?, ?, ?, NOW(), NOW())'
+                 (public_token, redsys_order, first_name, last_name, name, email, phone, whatsapp_phone_input, whatsapp_phone_e164, whatsapp_country_code, whatsapp_consent, whatsapp_consent_at, whatsapp_consent_source, whatsapp_consent_version, age_requirement_accepted, age_requirement_accepted_at, dress_code_accepted, dress_code_accepted_at, dress_code_version, billing_requested, billing_name, billing_tax_id, billing_address, billing_postal_code, billing_city, billing_province, billing_country, billing_email, subtotal_cents, total_cents, currency, status, reservation_expires_at, ip_address, user_agent, is_test, environment, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, IF(? = 1, NOW(), NULL), ?, ?, 1, NOW(), 1, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, "pending", ?, ?, ?, ?, ?, NOW(), NOW())'
             );
             $firstName = clean_string((string) $data['first_name'], 120);
             $lastName = clean_string((string) $data['last_name'], 160);
@@ -175,6 +176,13 @@ final class Ticketing
                 $name,
                 $email,
                 $phone,
+                $whatsApp['input'],
+                $whatsApp['e164'],
+                $whatsApp['country'],
+                $whatsApp['consent'] ? 1 : 0,
+                $whatsApp['consent'] ? 1 : 0,
+                $whatsApp['consent'] ? 'checkout' : null,
+                $whatsApp['consent'] ? 'v1' : null,
                 self::DRESS_CODE_VERSION,
                 $billing['requested'],
                 $billing['name'],
@@ -552,25 +560,8 @@ final class Ticketing
             throw new RuntimeException('No se pueden reenviar entradas de este pedido.', 409);
         }
 
-        $recent = $this->pdo->prepare(
-            'SELECT created_at FROM email_deliveries WHERE order_id = ? ORDER BY id DESC LIMIT 1'
-        );
-        $recent->execute([(int) $order['id']]);
-        $lastAttempt = $recent->fetchColumn();
-        if ($lastAttempt && strtotime((string) $lastAttempt) > time() - 300) {
-            throw new RuntimeException('Ya hemos preparado un envio recientemente. Espera unos minutos antes de solicitar otro.', 409);
-        }
-
-        $link = app_base_url() . '/entradas/pedido/?token=' . rawurlencode((string) $order['public_token']);
-        $this->mailer->queueOrderEmail(
-            $this->pdo,
-            (int) $order['id'],
-            (string) $order['email'],
-            'Tus entradas Perigallo',
-            "Hola {$order['name']},\n\nPuedes consultar y descargar tus entradas aquí:\n{$link}\n\nContacto Perigallo: +34 691 499 985\n"
-        );
-
-        return ['message' => 'Hemos preparado un nuevo envio a ' . (string) $order['email'] . '.'];
+        (new TicketDeliveryQueue($this->pdo, $this->mailer))->requeue((int) $order['id'], 'email', 'buyer');
+        return ['message' => 'Hemos dejado el reenvío por correo en cola.'];
     }
 
     public function resendOrderWhatsApp(string $token): array
@@ -579,29 +570,15 @@ final class Ticketing
         if (!$order || $this->effectiveOrderStatus($order) !== 'paid') {
             throw new RuntimeException('No se pueden reenviar entradas de este pedido.', 409);
         }
-        $recent = $this->pdo->prepare(
-            'SELECT status, created_at FROM ticket_delivery_logs WHERE order_id = ? AND channel = "whatsapp" ORDER BY id DESC LIMIT 1'
-        );
-        $recent->execute([(int) $order['id']]);
-        $lastAttempt = $recent->fetch() ?: [];
-        if (($lastAttempt['status'] ?? '') !== 'not_configured' && !empty($lastAttempt['created_at']) && strtotime((string) $lastAttempt['created_at']) > time() - 300) {
-            throw new RuntimeException('Ya existe un intento reciente de WhatsApp. Espera unos minutos antes de volver a solicitarlo.', 409);
-        }
-        $eventStmt = $this->pdo->prepare('SELECT e.* FROM events e JOIN ticket_order_items toi ON toi.event_id = e.id WHERE toi.order_id = ? LIMIT 1');
-        $eventStmt->execute([(int) $order['id']]);
-        $event = $eventStmt->fetch();
-        $quantityStmt = $this->pdo->prepare('SELECT COALESCE(SUM(quantity), 0) FROM ticket_order_items WHERE order_id = ?');
-        $quantityStmt->execute([(int) $order['id']]);
-        if (!$event) {
-            throw new RuntimeException('No se ha encontrado la experiencia de este pedido.', 409);
-        }
-        $status = (new WhatsAppDeliveryService())->sendOrder($this->pdo, $order, $event, (int) $quantityStmt->fetchColumn());
-        $messages = [
-            'sent' => 'Hemos enviado el enlace de tus entradas por WhatsApp.',
-            'not_configured' => 'El envío por WhatsApp todavía no está configurado. Puedes descargar las entradas desde esta página.',
-            'failed' => 'No se pudo enviar WhatsApp. Tus entradas siguen disponibles en esta página.',
-        ];
-        return ['status' => $status, 'message' => $messages[$status] ?? 'Estamos preparando el envío por WhatsApp.'];
+        (new TicketDeliveryQueue($this->pdo, $this->mailer))->requeue((int) $order['id'], 'whatsapp', 'buyer');
+        return ['status' => 'queued', 'message' => 'Hemos dejado el reenvío por WhatsApp en cola.'];
+    }
+
+    public function adminRetryDelivery(int $orderId, string $channel, string $operator): array
+    {
+        $result = (new TicketDeliveryQueue($this->pdo, $this->mailer))->requeue($orderId, $channel, $operator);
+        $this->auditAdminOperation($operator, 'ticket_delivery_requeued', $orderId, ['channel' => $channel, 'idempotency_key' => $result['idempotency_key']]);
+        return $result;
     }
 
     /** Creates an admin-only sandbox order. It never reserves production capacity. */
@@ -1088,7 +1065,16 @@ final class Ticketing
             : 'COALESCE((SELECT pa.payment_method FROM payment_attempts pa WHERE pa.order_id = o.id ORDER BY pa.id DESC LIMIT 1), "card")';
         return $this->pdo->query(
             'SELECT o.id, o.public_token, o.redsys_order, o.test_reference, o.is_test, o.environment,
-                    o.order_status, o.payment_status, o.delivery_status, ' . $cashColumns . ', o.name, o.email, o.phone,
+                    o.order_status, o.payment_status, o.delivery_status, ' . $cashColumns . ', o.name, o.email, o.phone, o.whatsapp_consent,
+                    (SELECT ed.status FROM email_deliveries ed WHERE ed.order_id = o.id AND ed.idempotency_key IS NOT NULL ORDER BY ed.id DESC LIMIT 1) AS email_delivery_status,
+                    (SELECT ed.sent_at FROM email_deliveries ed WHERE ed.order_id = o.id AND ed.idempotency_key IS NOT NULL ORDER BY ed.id DESC LIMIT 1) AS email_delivery_at,
+                    (SELECT ed.error_message FROM email_deliveries ed WHERE ed.order_id = o.id AND ed.idempotency_key IS NOT NULL ORDER BY ed.id DESC LIMIT 1) AS email_delivery_error,
+                    (SELECT dl.status FROM ticket_delivery_logs dl WHERE dl.order_id = o.id AND dl.channel = "whatsapp" AND dl.idempotency_key IS NOT NULL ORDER BY dl.id DESC LIMIT 1) AS whatsapp_delivery_status,
+                    (SELECT dl.recipient FROM ticket_delivery_logs dl WHERE dl.order_id = o.id AND dl.channel = "whatsapp" AND dl.idempotency_key IS NOT NULL ORDER BY dl.id DESC LIMIT 1) AS whatsapp_recipient,
+                    (SELECT dl.template_name FROM ticket_delivery_logs dl WHERE dl.order_id = o.id AND dl.channel = "whatsapp" AND dl.idempotency_key IS NOT NULL ORDER BY dl.id DESC LIMIT 1) AS whatsapp_template_name,
+                    (SELECT dl.provider_message_id FROM ticket_delivery_logs dl WHERE dl.order_id = o.id AND dl.channel = "whatsapp" AND dl.idempotency_key IS NOT NULL ORDER BY dl.id DESC LIMIT 1) AS whatsapp_message_id,
+                    (SELECT dl.last_status_at FROM ticket_delivery_logs dl WHERE dl.order_id = o.id AND dl.channel = "whatsapp" AND dl.idempotency_key IS NOT NULL ORDER BY dl.id DESC LIMIT 1) AS whatsapp_delivery_at,
+                    (SELECT dl.error_message FROM ticket_delivery_logs dl WHERE dl.order_id = o.id AND dl.channel = "whatsapp" AND dl.idempotency_key IS NOT NULL ORDER BY dl.id DESC LIMIT 1) AS whatsapp_delivery_error,
                     o.subtotal_cents, o.discount_code, o.discount_amount_cents, o.total_cents, o.status, o.reservation_expires_at, o.paid_at, o.created_at,
                     o.billing_requested, o.holded_status, o.holded_document_type, o.holded_document_id, o.holded_document_number, o.holded_payment_id,
                     o.holded_sync_attempts, o.holded_synced_at, o.holded_last_error, o.holded_next_attempt_at,
@@ -1285,7 +1271,10 @@ final class Ticketing
             : 'COALESCE((SELECT pa.payment_method FROM payment_attempts pa WHERE pa.order_id = o.id ORDER BY pa.id DESC LIMIT 1), "card")';
         $statement = $this->pdo->prepare(
             'SELECT o.id, o.public_token, o.redsys_order, o.test_reference, o.is_test, o.environment,
-                    o.order_status, o.payment_status, o.delivery_status, ' . $cashColumns . ', o.name, o.email, o.phone,
+                    o.order_status, o.payment_status, o.delivery_status, ' . $cashColumns . ', o.name, o.email, o.phone, o.whatsapp_consent,
+                    (SELECT ed.status FROM email_deliveries ed WHERE ed.order_id = o.id AND ed.idempotency_key IS NOT NULL ORDER BY ed.id DESC LIMIT 1) AS email_delivery_status,
+                    (SELECT dl.status FROM ticket_delivery_logs dl WHERE dl.order_id = o.id AND dl.channel = "whatsapp" AND dl.idempotency_key IS NOT NULL ORDER BY dl.id DESC LIMIT 1) AS whatsapp_delivery_status,
+                    (SELECT dl.recipient FROM ticket_delivery_logs dl WHERE dl.order_id = o.id AND dl.channel = "whatsapp" AND dl.idempotency_key IS NOT NULL ORDER BY dl.id DESC LIMIT 1) AS whatsapp_recipient,
                     o.total_cents, o.status, o.reservation_expires_at, o.paid_at, o.created_at,
                     CASE WHEN o.status IN ("cancelled", "refunded") THEN o.status ELSE COALESCE(o.payment_status, o.status) END AS display_status,
                     ' . $paymentMethod . ' AS payment_method,
@@ -2980,6 +2969,37 @@ final class Ticketing
      * Validates health-related attendee data on the server. It is never returned
      * in public order or ticket payloads.
      */
+    /** @return array{input:string,e164:string,country:string,consent:bool} */
+    private function normaliseWhatsAppPhone(array $data): array
+    {
+        $input = clean_string((string) ($data['phone'] ?? ''), 60);
+        // No se infiere +34 en el servidor: el checkout siempre envía la
+        // selección visible y, fuera de él, se exige un número E.164 completo.
+        $country = strtoupper(clean_string((string) ($data['whatsapp_country_code'] ?? ''), 2));
+        if ($country === '' || $country === 'OT') {
+            $country = 'ZZ';
+        }
+        $raw = preg_replace('/[\s().-]+/', '', $input) ?: '';
+        if (str_starts_with($raw, '00')) {
+            $raw = '+' . substr($raw, 2);
+        }
+        $prefixes = ['ES' => '34', 'PT' => '351', 'FR' => '33', 'GB' => '44'];
+        if (!str_starts_with($raw, '+')) {
+            if (!isset($prefixes[$country])) {
+                throw new InvalidArgumentException('Para este país, introduce el teléfono con prefijo internacional, por ejemplo +12025550123.');
+            }
+            $local = ltrim($raw, '0');
+            if ($country === 'ES' && !preg_match('/^[6-9][0-9]{8}$/', $local)) {
+                throw new InvalidArgumentException('Introduce un teléfono español válido.');
+            }
+            $raw = '+' . $prefixes[$country] . $local;
+        }
+        if (!preg_match('/^\+[1-9][0-9]{7,14}$/', $raw)) {
+            throw new InvalidArgumentException('Introduce un teléfono internacional válido.');
+        }
+        return ['input' => $input, 'e164' => $raw, 'country' => $country, 'consent' => !empty($data['whatsapp_consent'])];
+    }
+
     /** @return array{requested:int,name:?string,tax_id:?string,address:?string,postal_code:?string,city:?string,province:?string,country:?string,email:?string} */
     private function normaliseBilling(array $data): array
     {
@@ -3273,45 +3293,13 @@ final class Ticketing
 
     private function sendConfirmation(int $orderId): void
     {
-        $stmt = $this->pdo->prepare('SELECT * FROM ticket_orders WHERE id = ?');
-        $stmt->execute([$orderId]);
-        $order = $stmt->fetch();
-        if (!$order) {
-            return;
-        }
-        $eventStmt = $this->pdo->prepare('SELECT e.* FROM events e JOIN ticket_order_items toi ON toi.event_id = e.id WHERE toi.order_id = ? LIMIT 1');
-        $eventStmt->execute([$orderId]);
-        $event = $eventStmt->fetch();
-        if (!$event) {
-            return;
-        }
-        $quantityStmt = $this->pdo->prepare('SELECT COALESCE(SUM(quantity), 0) FROM ticket_order_items WHERE order_id = ?');
-        $quantityStmt->execute([$orderId]);
-        $result = (new TicketDeliveryService($this->mailer))->sendOrder($this->pdo, $order, $event, (int) $quantityStmt->fetchColumn());
-        $status = $result['email'] === 'sent' && $result['whatsapp'] === 'sent' ? 'sent' : ($result['email'] === 'sent' ? 'partially_sent' : 'failed');
-        $this->pdo->prepare('UPDATE ticket_orders SET delivery_status = ?, updated_at = NOW() WHERE id = ?')->execute([$status, $orderId]);
+        // Esta operación solo crea trabajos en base de datos. El cron los procesa
+        // después de responder a Redsys, por lo que un envío lento no afecta al pago.
+        (new TicketDeliveryQueue($this->pdo, $this->mailer))->enqueuePaidOrder($orderId);
     }
 
     private function sendTestConfirmation(int $orderId): void
     {
-        $orderStmt = $this->pdo->prepare('SELECT * FROM ticket_orders WHERE id = ? AND is_test = 1');
-        $orderStmt->execute([$orderId]);
-        $order = $orderStmt->fetch();
-        if (!$order) {
-            return;
-        }
-        $eventStmt = $this->pdo->prepare('SELECT e.* FROM events e JOIN ticket_order_items toi ON toi.event_id = e.id WHERE toi.order_id = ? LIMIT 1');
-        $eventStmt->execute([$orderId]);
-        $event = $eventStmt->fetch();
-        if (!$event) {
-            return;
-        }
-        $quantityStmt = $this->pdo->prepare('SELECT COALESCE(SUM(quantity), 0) FROM ticket_order_items WHERE order_id = ?');
-        $quantityStmt->execute([$orderId]);
-        $quantity = (int) $quantityStmt->fetchColumn();
-        $delivery = new TicketDeliveryService($this->mailer);
-        $result = $delivery->sendOrder($this->pdo, $order, $event, $quantity);
-        $status = $result['email'] === 'sent' ? 'partially_sent' : 'failed';
-        $this->pdo->prepare('UPDATE ticket_orders SET delivery_status = ?, updated_at = NOW() WHERE id = ?')->execute([$status, $orderId]);
+        $this->sendConfirmation($orderId);
     }
 }
