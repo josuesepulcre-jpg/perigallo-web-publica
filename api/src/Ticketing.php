@@ -462,6 +462,19 @@ final class Ticketing
         return ['content' => $content, 'filename' => 'factura-' . $number . '.pdf'];
     }
 
+    /** @return array{content:string,filename:string,content_type:string,sha256:string}|null */
+    public function ticketPdfByToken(string $token): ?array
+    {
+        $order = $this->getOrderRecordByToken($token);
+        if (!$order || $this->effectiveOrderStatus($order) !== 'paid') {
+            return null;
+        }
+
+        // El token público ya es el acceso que se utiliza en la página de pedido.
+        // Reutilizarlo aquí evita crear otra URL menos clara para la descarga desde WhatsApp.
+        return (new TicketDocumentService())->ensureOrderDocument($this->pdo, (int) $order['id']);
+    }
+
     /**
      * A recovery link is separate from the permanent order token so it can expire
      * or be revoked without invalidating historic URLs sent after a purchase.

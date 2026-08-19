@@ -9,7 +9,7 @@ use RuntimeException;
 /** Official Meta WhatsApp Cloud API adapter for transactional ticket documents. */
 final class WhatsAppDeliveryService
 {
-    public const TEMPLATE_NAME = 'entradas_perigallo_confirmadas_v1';
+    public const TEMPLATE_NAME = 'entradas_perigallo_descarga_v1';
     public const TEMPLATE_LANGUAGE = 'es_ES';
 
     /** @return array{configured:bool,status:string,template:string,language:string,reason:?string} */
@@ -60,7 +60,10 @@ final class WhatsAppDeliveryService
             return ['status' => (string) $existing['status'], 'message_id' => $existing['provider_message_id'] ?: null, 'error' => null];
         }
         try {
-            $mediaId = $this->uploadDocument((string) $document['content'], (string) $document['filename'], $config);
+            $downloadToken = rawurlencode((string) ($order['public_token'] ?? ''));
+            if ($downloadToken === '') {
+                throw new RuntimeException('No se pudo preparar el enlace de descarga.');
+            }
             $payload = [
                 'messaging_product' => 'whatsapp',
                 'to' => ltrim($recipient, '+'),
@@ -69,17 +72,13 @@ final class WhatsAppDeliveryService
                     'name' => $config['template'],
                     'language' => ['code' => $config['language']],
                     'components' => [
-                        ['type' => 'header', 'parameters' => [[
-                            'type' => 'document',
-                            'document' => ['id' => $mediaId, 'filename' => (string) $document['filename']],
-                        ]]],
                         ['type' => 'body', 'parameters' => [
                             ['type' => 'text', 'text' => $this->safeText((string) ($order['name'] ?? ''))],
                             ['type' => 'text', 'text' => $this->safeText((string) ($event['title'] ?? 'Perigallo'))],
-                            ['type' => 'text', 'text' => $this->safeText((string) (($order['test_reference'] ?? '') ?: ($order['redsys_order'] ?? '')))],
                             ['type' => 'text', 'text' => (string) $quantity],
-                            ['type' => 'text', 'text' => $this->eventDate((string) ($event['starts_at'] ?? ''))],
-                            ['type' => 'text', 'text' => $this->safeText((string) ($order['email'] ?? ''))],
+                        ]],
+                        ['type' => 'button', 'sub_type' => 'url', 'index' => '0', 'parameters' => [
+                            ['type' => 'text', 'text' => $downloadToken],
                         ]],
                     ],
                 ],
@@ -94,6 +93,7 @@ final class WhatsAppDeliveryService
                 'document_version' => TicketDocumentService::DOCUMENT_VERSION,
                 'document_sha256' => (string) ($document['sha256'] ?? ''),
                 'ticket_quantity' => $quantity,
+                'download_mode' => 'template_url_button',
             ]);
             return ['status' => 'sent', 'message_id' => $messageId, 'error' => null];
         } catch (RuntimeException $error) {
@@ -143,6 +143,7 @@ final class WhatsAppDeliveryService
         return $count;
     }
 
+    /** Kept for the existing document-delivery fallback and media re-uploads. */
     private function uploadDocument(string $content, string $filename, array $config): string
     {
         $temporary = tempnam(sys_get_temp_dir(), 'perigallo-wa-');

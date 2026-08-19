@@ -159,6 +159,20 @@ try {
         return;
     }
 
+    if ($method === 'GET' && preg_match('#^/orders/tickets/([A-Za-z0-9_-]+)$#', $path, $m)) {
+        $document = $ticketing->ticketPdfByToken($m[1]);
+        if (!$document) {
+            json_response(['ok' => false, 'error' => 'Las entradas todavía no están disponibles.'], 404);
+            return;
+        }
+        header('Content-Type: ' . ($document['content_type'] ?: 'application/pdf'));
+        header('Content-Disposition: inline; filename="' . $document['filename'] . '"');
+        header('Content-Length: ' . strlen($document['content']));
+        header('Cache-Control: private, no-store');
+        echo $document['content'];
+        return;
+    }
+
     if ($method === 'POST' && preg_match('#^/orders/([A-Za-z0-9_-]+)/resend-email$#', $path, $m)) {
         json_response(['ok' => true] + $ticketing->resendOrderEmail($m[1]));
         return;

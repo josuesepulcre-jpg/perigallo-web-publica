@@ -6,10 +6,10 @@ const root = new URL("..", import.meta.url).pathname;
 const required = {
   migration: ["whatsapp_phone_e164", "ticket_delivery_documents", "ticket_delivery_jobs", "uq_ticket_delivery_jobs_idempotency", "provider_message_id"],
   queue: ["enqueuePaidOrder", "processDue", "idempotency_key", "TicketDocumentService", "sendTicketDocumentEmail"],
-  whatsapp: ["META_WABA_ID", "META_PHONE_NUMBER_ID", "message_templates", "verifyWebhookSignature", "provider_message_id", "document"],
+  whatsapp: ["META_WABA_ID", "META_PHONE_NUMBER_ID", "message_templates", "verifyWebhookSignature", "provider_message_id", "downloadToken", "sub_type", "template_url_button"],
   document: ["render-ticket-pdf.mjs", "qr_token_ciphertext", "ticket_delivery_documents", "%PDF-"],
   checkout: ["whatsapp_country_code", "whatsapp_consent", "checkoutPhoneValid"],
-  routes: ["/whatsapp/webhook", "delivery/(email|whatsapp)/retry", "template-status"],
+  routes: ["/whatsapp/webhook", "delivery/(email|whatsapp)/retry", "template-status", "ticketPdfByToken", "/orders/tickets/([A-Za-z0-9_-]+)"],
 };
 const sources = {
   migration: readFileSync(join(root, "database/migrations/027_whatsapp_document_delivery.sql"), "utf8"),
