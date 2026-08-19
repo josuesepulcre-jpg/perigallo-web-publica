@@ -219,6 +219,9 @@ for (const marker of ["openTicketDrawer", "closeTicketDrawer", "updateTicketPric
 }
 
 const adminBackoffice = readFileSync(join(root, "assets/js/admin-backoffice.js"), "utf8");
+for (const marker of ["Eliminar definitivamente", "showEventsStatus", "window.confirm"]) {
+  if (!adminBackoffice.includes(marker)) throw new Error(`Missing visible event-deletion feedback: ${marker}`);
+}
 for (const marker of ["/admin/login/", "data-admin-dashboard", "data-admin-events-list", "data-admin-orders-list", "data-admin-users-page", "/admin/eventos/", "/admin/acceso/", "/admin/usuarios/", "data-order-action", "record-refund", "purge-test"]) {
   if (!adminBackoffice.includes(marker)) throw new Error(`Missing central backoffice marker: ${marker}`);
 }

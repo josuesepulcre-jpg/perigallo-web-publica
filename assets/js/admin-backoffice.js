@@ -341,15 +341,18 @@
       var create = root.querySelector("[data-admin-create-event]");
       var search = root.querySelector("[data-admin-event-search]");
       var status = root.querySelector("[data-admin-page-status]");
+      function showEventsStatus(message, isError) {
+        if (!status) return;
+        status.textContent = message;
+        status.hidden = false;
+        status.className = "ticket-status " + (isError ? "is-error" : "is-success");
+        status.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }
       function refreshEvents(message) {
         return request(api + "/admin/events").then(function (data) {
           state.events = data.events || [];
           renderEvents(state.events, search.value);
-          if (message && status) {
-            status.textContent = message;
-            status.hidden = false;
-            status.className = "ticket-status is-success";
-          }
+          if (message) showEventsStatus(message, false);
         });
       }
       function createEvent() {
@@ -373,13 +376,13 @@
         if (!id || !item) return;
         if (action === "archive" && !window.confirm('Archivarás “' + item.title + '”. Dejará de estar a la venta y conservará todos sus datos. ¿Continuar?')) return;
         if (action === "restore" && !window.confirm('Restaurarás “' + item.title + '” como borrador. Tendrás que revisarlo y publicarlo de nuevo cuando corresponda. ¿Continuar?')) return;
-        if (action === "delete" && window.prompt('Eliminarás definitivamente “' + item.title + '”. Solo se permite si no tiene ventas reales; los pedidos de prueba asociados se borrarán. Escribe ELIMINAR para confirmar:') !== "ELIMINAR") return;
+        if (action === "delete" && !window.confirm('¿Eliminar definitivamente “' + item.title + '”? Esta acción no se puede deshacer. Si solo tiene pedidos de prueba, también se eliminarán.')) return;
         button.disabled = true;
         var url = api + "/admin/events/" + id + (action === "delete" ? "" : "/" + action);
         jsonRequest(url, action === "delete" ? "DELETE" : "POST", {}).then(function () {
           var message = action === "delete" ? "Evento eliminado definitivamente." : action === "archive" ? "Evento archivado. Sus ventas y datos se han conservado." : "Evento restaurado como borrador.";
           return refreshEvents(message);
-        }).catch(function (error) { renderPageError(error.message); }).finally(function () { button.disabled = false; });
+        }).catch(function (error) { showEventsStatus(error.message || "No se ha podido completar la acción.", true); }).finally(function () { button.disabled = false; });
       });
     });
   }
