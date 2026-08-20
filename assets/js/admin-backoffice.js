@@ -283,7 +283,8 @@
     if (order.sales_channel === "cash" && !isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="send-cash" data-order-id="' + Number(order.id) + '">' + (order.cash_payment_status === "paid" ? "Abrir WhatsApp" : "Enviar reserva") + '</button>';
     if (!isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="cancel" data-order-id="' + Number(order.id) + '">Cancelar</button>';
     if (!isClosedOrder(order) && (order.payment_status === "paid" || order.status === "paid")) actions += '<button type="button" class="text-action" data-order-action="refund" data-order-id="' + Number(order.id) + '">Registrar devolución</button>';
-    if ((order.payment_status === "paid" || order.status === "paid")) {
+    if ((order.payment_status === "paid" || order.status === "paid") && order.sales_channel !== "cash") {
+      if (order.email_delivery_status !== "sent") actions += '<button type="button" class="text-action" data-order-action="delivery-email-confirm" data-order-id="' + Number(order.id) + '">Marcar correo enviado</button>';
       actions += '<button type="button" class="text-action" data-order-action="delivery-email" data-order-id="' + Number(order.id) + '">Reenviar correo</button>';
       if (Number(order.whatsapp_consent)) actions += '<button type="button" class="text-action" data-order-action="delivery-whatsapp" data-order-id="' + Number(order.id) + '">Reenviar WhatsApp</button>';
     }
@@ -548,6 +549,7 @@
         if (action === "cash-payment") return "¿Confirmas que ya se ha recibido el pago en efectivo? Se activarán las entradas y se sumará a las ventas cobradas.";
         if (action === "send-cash") return "Se abrirá WhatsApp con el enlace de las entradas preparado. ¿Continuar?";
         if (action === "delivery-email") return "Se programará un nuevo correo con el mismo PDF de entradas. ¿Continuar?";
+        if (action === "delivery-email-confirm") return "Confirma esto solo si sabes que el correo ya llegó. No se enviará ningún mensaje nuevo. ¿Marcar como enviado?";
         if (action === "delivery-whatsapp") return "Se programará un nuevo WhatsApp con el mismo PDF de entradas. ¿Continuar?";
         return "Eliminarás definitivamente este pedido de prueba y todas sus entradas. No se puede deshacer. ¿Continuar?";
       }
@@ -619,7 +621,7 @@
             }
           }
           button.disabled = true;
-          var url = api + "/admin/orders/" + id + (action === "cancel" ? "/cancel" : action === "refund" ? "/record-refund" : action === "holded-retry" ? "/holded/retry" : action === "cash-payment" ? "/cash-payment" : action === "send-cash" ? "/send-cash" : action === "delivery-email" ? "/delivery/email/retry" : action === "delivery-whatsapp" ? "/delivery/whatsapp/retry" : "/test");
+          var url = api + "/admin/orders/" + id + (action === "cancel" ? "/cancel" : action === "refund" ? "/record-refund" : action === "holded-retry" ? "/holded/retry" : action === "cash-payment" ? "/cash-payment" : action === "send-cash" ? "/send-cash" : action === "delivery-email" ? "/delivery/email/retry" : action === "delivery-email-confirm" ? "/delivery/email/confirm" : action === "delivery-whatsapp" ? "/delivery/whatsapp/retry" : "/test");
           var method = action === "purge-test" ? "DELETE" : "POST";
           var note = action === "cash-payment" ? window.prompt("Apunte del cobro en efectivo (opcional):", "") : null;
           if (action === "cash-payment" && note === null) { button.disabled = false; return; }

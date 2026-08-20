@@ -594,6 +594,25 @@ final class Ticketing
         return $result;
     }
 
+    /** Marks a historical email as received without creating a new delivery. */
+    public function adminConfirmEmailDelivered(int $orderId, string $operator): array
+    {
+        $order = $this->lockedOrder($orderId);
+        if ($this->effectiveOrderStatus($order) !== 'paid') {
+            throw new RuntimeException('Solo se puede confirmar la entrega de un pedido pagado.', 409);
+        }
+
+        $key = 'order_' . $orderId . ':tickets:email:manual-confirmed';
+        $this->pdo->prepare(
+            'INSERT INTO email_deliveries (order_id, idempotency_key, recipient_email, subject, body, status, document_version, sent_at, created_at, updated_at)
+             VALUES (?, ?, ?, "Confirmación histórica de entrega", "Correo confirmado manualmente desde administración; no se ha enviado ningún mensaje nuevo.", "sent", "manual", NOW(), NOW(), NOW())
+             ON DUPLICATE KEY UPDATE status = "sent", error_message = NULL, sent_at = COALESCE(sent_at, NOW()), updated_at = NOW()'
+        )->execute([$orderId, $key, (string) $order['email']]);
+        $this->auditAdminOperation($operator, 'ticket_email_delivery_confirmed', $orderId, ['source' => 'historical_manual_confirmation']);
+
+        return $this->adminOrderById($orderId);
+    }
+
     /** Creates an admin-only sandbox order. It never reserves production capacity. */
     public function createTestOrder(int $eventId, array $data): array
     {

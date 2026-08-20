@@ -474,6 +474,12 @@ try {
         return;
     }
 
+    if ($method === 'POST' && preg_match('#^/admin/orders/([0-9]+)/delivery/email/confirm$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        json_response(['ok' => true, 'order' => $ticketing->adminConfirmEmailDelivered((int) $m[1], AdminAuth::operatorName())]);
+        return;
+    }
+
     if ($method === 'POST' && preg_match('#^/admin/orders/([0-9]+)/holded/retry$#', $path, $m)) {
         AdminAuth::requireOwner();
         $body = read_json_body();
