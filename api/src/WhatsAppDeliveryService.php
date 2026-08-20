@@ -10,7 +10,10 @@ use RuntimeException;
 final class WhatsAppDeliveryService
 {
     public const TEMPLATE_NAME = 'entradas_perigallo_descarga_v1';
-    public const TEMPLATE_LANGUAGE = 'es_ES';
+    // Meta devuelve la plantilla aprobada con el código de idioma "es".
+    // Usar el mismo valor por defecto evita que un .env incompleto provoque
+    // rechazos al enviar aunque la plantilla exista y esté aprobada.
+    public const TEMPLATE_LANGUAGE = 'es';
 
     /** @return array{configured:bool,status:string,template:string,language:string,reason:?string} */
     public function templateStatus(): array

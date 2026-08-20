@@ -15,7 +15,7 @@ META_ACCESS_TOKEN=
 META_APP_SECRET=
 META_WEBHOOK_VERIFY_TOKEN=
 META_GRAPH_VERSION=v23.0
-META_TEMPLATE_NAME=entradas_perigallo_confirmadas_v1
+META_TEMPLATE_NAME=entradas_perigallo_descarga_v1
 META_TEMPLATE_LANGUAGE=es
 TICKET_PDF_NODE_BINARY=node
 ```
@@ -36,18 +36,17 @@ Crear o presentar en WhatsApp Manager una plantilla de tipo `UTILITY`, idioma `e
 
 ```json
 {
-  "name": "entradas_perigallo_confirmadas_v1",
+  "name": "entradas_perigallo_descarga_v1",
   "category": "UTILITY",
   "language": "es",
   "components": [
-    {"type": "HEADER", "format": "DOCUMENT", "example": {"header_handle": ["https://example.invalid/entradas-ejemplo.pdf"]}},
-    {"type": "BODY", "text": "Hola {{1}}, hemos confirmado tu compra para {{2}}. El pedido {{3}} contiene {{4}} entradas y se celebra el {{5}}. Hemos enviado una copia a {{6}}; consérvala para cualquier consulta.", "example": {"body_text": [["Ana Ejemplo", "La Perigalla 01", "PG-TEST-001", "2", "29/08/2026 19:00", "ana@example.test"]]}},
-    {"type": "FOOTER", "text": "Perigallo · Entradas digitales"}
+    {"type": "BODY", "text": "Hola {{1}}, tu compra para {{2}} está confirmada. Pulsa el botón para abrir y descargar tus {{3}} entradas con QR.", "example": {"body_text": [["Ana Ejemplo", "La Perigalla 01", "2"]]}},
+    {"type": "BUTTONS", "buttons": [{"type": "URL", "text": "Descargar aquí las entradas", "url": "https://perigallo.com/api/orders/tickets/{{1}}", "example": ["https://perigallo.com/api/orders/tickets/pedido-de-prueba"]}]}
   ]
 }
 ```
 
-La aplicación consulta el estado de la plantilla antes de enviar. Si no está aprobada, los trabajos de WhatsApp quedan bloqueados y se reintentan; no se marcan como entregados ni se modifica el pago.
+La aplicación consulta el estado de la plantilla antes de enviar. Si no está aprobada, los trabajos de WhatsApp quedan bloqueados y se reintentan; no se marcan como entregados ni se modifica el pago. El botón abre el PDF protegido del pedido directamente en el navegador.
 
 ## Tareas de despliegue cuando se autorice
 
