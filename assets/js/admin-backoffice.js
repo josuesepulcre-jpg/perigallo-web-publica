@@ -261,6 +261,20 @@
     return "https://wa.me/" + encodeURIComponent(phone) + "?text=" + encodeURIComponent(message);
   }
 
+  function deliveryStatusLabel(status) {
+    return ({sent:"Enviado",delivered:"Entregado",read:"Leído",queued:"En cola",pending:"Pendiente",blocked:"Bloqueado",failed:"Fallido",not_authorized:"No autorizado"})[status] || "Pendiente";
+  }
+
+  function deliveryStatusClass(status) {
+    if (["sent", "delivered", "read"].indexOf(status) !== -1) return "is-success";
+    if (status === "failed") return "is-error";
+    return "is-neutral";
+  }
+
+  function deliveryStatusMarkup(channel, status) {
+    return '<span class="admin-delivery-status ' + deliveryStatusClass(status) + '">' + escapeHtml(channel + ' ' + deliveryStatusLabel(status)) + '</span>';
+  }
+
   function orderActions(order) {
     if (!state.session || state.session.role !== "admin") return "";
     var actions = '<div class="admin-order-actions"><a class="text-action" href="/entradas/pedido/?token=' + encodeURIComponent(order.public_token) + '" target="_blank" rel="noopener noreferrer">Ver pedido</a>';
@@ -292,9 +306,9 @@
       var allergySummary = Number(order.allergy_attendee_count || 0) ? ' · ' + Number(order.allergy_attendee_count) + ' alergia' + (Number(order.allergy_attendee_count) === 1 ? '' : 's') + ' comunicada' + (Number(order.allergy_attendee_count) === 1 ? '' : 's') : '';
       var holded = order.sales_channel === "cash" ? '<small class="admin-order-holded admin-order-cash">Registro web · sin Holded</small>' : !Number(order.is_test) && order.holded_status ? '<small class="admin-order-holded">Holded: ' + escapeHtml({not_required:"No requerido",pending:"Pendiente",processing:"Procesando",synced:"Sincronizado",error:"Reintento programado",requires_review:"Revisión necesaria"}[order.holded_status] || order.holded_status) + (order.holded_document_number ? ' · ' + escapeHtml(order.holded_document_number) : '') + '</small>' : '';
       var paymentNote = order.sales_channel === "cash" && order.cash_payment_notes ? '<small class="admin-order-cash-note">Efectivo: ' + escapeHtml(order.cash_payment_notes) + '</small>' : '';
-      var emailDelivery = ({sent:"Enviado",queued:"En cola",pending:"Pendiente",failed:"Fallido"})[order.email_delivery_status] || "Pendiente";
-      var whatsAppDelivery = !Number(order.whatsapp_consent) ? "No autorizado" : (({sent:"Enviado",delivered:"Entregado",read:"Leído",queued:"En cola",pending:"Pendiente",blocked:"Bloqueado",failed:"Fallido",not_authorized:"No autorizado"})[order.whatsapp_delivery_status] || "En cola");
-      var delivery = '<small class="admin-order-delivery"><strong>Entrega:</strong> Email ' + escapeHtml(emailDelivery) + (order.email_delivery_error ? ' · ' + escapeHtml(order.email_delivery_error) : '') + ' <br>WhatsApp ' + escapeHtml(whatsAppDelivery) + (order.whatsapp_recipient ? ' · ' + escapeHtml(order.whatsapp_recipient) : '') + (order.whatsapp_template_name ? ' · ' + escapeHtml(order.whatsapp_template_name) : '') + (order.whatsapp_delivery_error ? ' · ' + escapeHtml(order.whatsapp_delivery_error) : '') + '</small>';
+      var emailDeliveryStatus = ["sent", "queued", "pending", "failed"].indexOf(order.email_delivery_status) !== -1 ? order.email_delivery_status : "pending";
+      var whatsAppDeliveryStatus = !Number(order.whatsapp_consent) ? "not_authorized" : (["sent", "delivered", "read", "queued", "pending", "blocked", "failed", "not_authorized"].indexOf(order.whatsapp_delivery_status) !== -1 ? order.whatsapp_delivery_status : "queued");
+      var delivery = '<small class="admin-order-delivery"><span><strong>Entrega:</strong> ' + deliveryStatusMarkup("Email", emailDeliveryStatus) + (order.email_delivery_error ? '<span class="admin-delivery-error"> · ' + escapeHtml(order.email_delivery_error) + '</span>' : '') + '</span><span>' + deliveryStatusMarkup("WhatsApp", whatsAppDeliveryStatus) + (order.whatsapp_recipient ? '<span class="admin-delivery-meta"> · ' + escapeHtml(order.whatsapp_recipient) + '</span>' : '') + (order.whatsapp_template_name ? '<span class="admin-delivery-meta"> · ' + escapeHtml(order.whatsapp_template_name) + '</span>' : '') + (order.whatsapp_delivery_error ? '<span class="admin-delivery-error"> · ' + escapeHtml(order.whatsapp_delivery_error) + '</span>' : '') + '</span></small>';
       return '<article class="admin-order-row"><div><strong>' + escapeHtml(order.name || "Comprador sin nombre") + '</strong><small>' + escapeHtml(order.event_title || "Evento por asignar") + ' · ' + escapeHtml(reference) + ' · ' + paymentMethod + cashStatus + allergySummary + (Number(order.is_test) ? ' · Prueba' : '') + '</small>' + paymentNote + holded + delivery + '</div><span>' + Number(order.ticket_quantity || 0) + ' entrada' + (Number(order.ticket_quantity || 0) === 1 ? "" : "s") + '</span><span class="status-pill status-' + escapeHtml(displayStatus) + '">' + escapeHtml(statusLabel(displayStatus)) + '</span><span class="admin-order-amount">' + amount + '</span>' + (compact ? "" : orderActions(order)) + '</article>';
     }).join("");
   }

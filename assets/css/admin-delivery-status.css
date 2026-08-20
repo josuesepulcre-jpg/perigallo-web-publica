@@ -1,0 +1,22 @@
+.admin-order-delivery {
+  display: grid;
+  gap: 2px;
+}
+
+.admin-delivery-status {
+  font-weight: 600;
+}
+
+.admin-delivery-status.is-success {
+  color: #a9d5b0;
+}
+
+.admin-delivery-status.is-error,
+.admin-delivery-error {
+  color: #e4aaa1;
+}
+
+.admin-delivery-status.is-neutral,
+.admin-delivery-meta {
+  color: var(--pg-muted);
+}
