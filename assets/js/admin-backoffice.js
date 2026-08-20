@@ -56,6 +56,7 @@
     var path = window.location.pathname;
     if (path.indexOf("/admin/eventos") === 0) return "events";
     if (path.indexOf("/admin/ventas") === 0) return "sales";
+    if (path.indexOf("/admin/contactos") === 0) return "contacts";
     if (path.indexOf("/admin/facturacion") === 0) return "billing";
     if (path.indexOf("/admin/descuentos") === 0) return "discounts";
     if (path.indexOf("/admin/formulario") === 0) return "lead_form";
@@ -128,6 +129,7 @@
             '<a href="/admin/eventos/" data-admin-nav-item="events">Eventos</a>' +
             '<a href="/admin/ventas/" data-admin-nav-item="sales">Pedidos y ventas</a>' +
             (sessionData.is_owner ? '<a href="/admin/facturacion/" data-admin-nav-item="billing">Facturación</a>' : '') +
+            '<a href="/admin/contactos/" data-admin-nav-item="contacts">Base de datos</a>' +
             '<a href="/admin/formulario/" data-admin-nav-item="lead_form">Formulario</a>' +
             '<a href="/admin/descuentos/" data-admin-nav-item="discounts">Códigos de descuento</a>' +
             '<a href="/admin/analitica/" data-admin-nav-item="analytics">Analítica</a>' +
@@ -1228,6 +1230,32 @@
     });
   }
 
+  function initContacts() {
+    var root = document.querySelector("[data-admin-contacts-page]");
+    if (!root) return;
+    requireSession(function (session) {
+      if (session.role !== "admin") { renderPageError("Esta sección está reservada para administración."); return; }
+      var consent = "all";
+      var query = "";
+      function consentLabel(value) { return value === "granted" ? "✓ Autorizado" : value === "revoked" ? "Revocado" : "Sin información"; }
+      function consentClass(value) { return value === "granted" ? "is-granted" : value === "revoked" ? "is-revoked" : ""; }
+      function render(items) {
+        root.innerHTML = '<section class="admin-page-heading admin-page-heading-compact"><div><span class="ticket-eyebrow">Gestión</span><h1>Base de <em>datos.</em></h1><p>Contactos centralizados. Los consentimientos comerciales son independientes de la compra y la privacidad.</p></div><div class="admin-inline-actions"><a class="ticket-btn" href="/api/admin/contactos/export?consent=' + encodeURIComponent(consent) + '">Exportar CSV</a>' + (session.is_owner ? '<button class="ticket-btn" type="button" data-contacts-backfill>Actualizar históricos</button>' : '') + '</div></section><section class="contacts-toolbar"><input type="search" data-contacts-search placeholder="Buscar nombre, email o teléfono" value="' + escapeHtml(query) + '"><div class="contacts-tabs">' + [["all","Todos"],["email","Email autorizado"],["whatsapp","WhatsApp autorizado"],["marketing","Marketing autorizado"],["none","Sin consentimiento"],["revoked","Revocado"]].map(function (item) { return '<button type="button" data-contacts-filter="' + item[0] + '" class="' + (consent === item[0] ? 'is-active' : '') + '">' + item[1] + '</button>'; }).join('') + '</div></section><section class="contacts-list">' + (items.length ? items.map(function (contact) { return '<button type="button" class="contact-row" data-contact-id="' + Number(contact.id) + '"><span><strong>' + escapeHtml(contact.full_name) + '</strong><small>' + escapeHtml(contact.initial_source) + ' · ' + escapeHtml(contact.last_purchase_at || contact.updated_at) + '</small></span><span>' + escapeHtml(contact.email || '—') + '<small>' + escapeHtml(contact.phone || '—') + '</small></span><span class="contact-consent ' + consentClass(contact.email_marketing) + '">Email · ' + consentLabel(contact.email_marketing) + '</span><span class="contact-consent ' + consentClass(contact.whatsapp_marketing) + '">WhatsApp · ' + consentLabel(contact.whatsapp_marketing) + '</span><span>' + Number(contact.order_count || 0) + ' pedidos</span></button>'; }).join('') : '<div class="admin-empty"><strong>No hay contactos todavía.</strong><span>Los pedidos pagados y formularios válidos se sincronizarán aquí.</span></div>') + '</section><section data-contact-detail></section>';
+        bind();
+      }
+      function load() { return request(api + "/admin/contactos?" + new URLSearchParams({ consent: consent, q: query }).toString()).then(function (data) { render(data.contacts || []); }); }
+      function detail(id) { return request(api + "/admin/contactos/" + id).then(function (data) { var c = data.contact; var rows = (data.orders || []).map(function (o) { return '<li>' + escapeHtml(o.event_title || 'Evento') + ' · ' + Number(o.ticket_quantity || 0) + ' entradas · ' + formatMoney(o.total_cents) + '</li>'; }).join('') || '<li>Sin compras</li>'; var consents = (data.consents || []).map(function (item) { return '<li>' + escapeHtml(item.channel) + ' · ' + escapeHtml(item.status) + ' · ' + escapeHtml(item.created_at) + '</li>'; }).join('') || '<li>Sin información</li>'; root.querySelector("[data-contact-detail]").innerHTML = '<section class="contact-detail"><span class="ticket-eyebrow">Ficha de contacto</span><h2>' + escapeHtml(c.full_name) + '</h2><div class="contact-detail-grid"><article><h3>Contacto</h3><p>' + escapeHtml(c.email || 'Sin email') + '<br>' + escapeHtml(c.phone || 'Sin teléfono') + '</p></article><article><h3>Actividad</h3><ul>' + rows + '</ul></article><article><h3>Consentimientos</h3><ul>' + consents + '</ul><button class="contact-action" data-contact-revoke="email" data-contact-id="' + Number(c.id) + '">Revocar email</button> <button class="contact-action" data-contact-revoke="whatsapp" data-contact-id="' + Number(c.id) + '">Revocar WhatsApp</button></article></div></section>'; }); }
+      function bind() {
+        var search = root.querySelector("[data-contacts-search]"); search.addEventListener("input", function () { query = search.value.trim(); load().catch(function (error) { renderPageError(error.message); }); });
+        root.querySelectorAll("[data-contacts-filter]").forEach(function (button) { button.addEventListener("click", function () { consent = button.dataset.contactsFilter; load().catch(function (error) { renderPageError(error.message); }); }); });
+        root.querySelectorAll("[data-contact-id]").forEach(function (button) { button.addEventListener("click", function () { detail(button.dataset.contactId).catch(function (error) { renderPageError(error.message); }); }); });
+        var backfill = root.querySelector("[data-contacts-backfill]"); if (backfill) backfill.addEventListener("click", function () { if (!window.confirm("Importará pedidos pagados y formularios existentes sin conceder consentimiento comercial. ¿Continuar?")) return; backfill.disabled = true; jsonRequest(api + "/admin/contactos/backfill", "POST", {}).then(load).catch(function (error) { renderPageError(error.message); }).finally(function () { backfill.disabled = false; }); });
+        root.querySelectorAll("[data-contact-revoke]").forEach(function (button) { button.addEventListener("click", function () { if (!window.confirm("Se revocará este canal de marketing. Los pedidos no se borrarán.")) return; jsonRequest(api + "/admin/contactos/" + button.dataset.contactId + "/" + button.dataset.contactRevoke + "/revocar", "POST", {}).then(function () { return detail(button.dataset.contactId); }).catch(function (error) { renderPageError(error.message); }); }); });
+      }
+      load().catch(function (error) { renderPageError(error.message); });
+    });
+  }
+
   function initAdminChrome() {
     if (!document.querySelector("[data-admin-nav]") || document.querySelector("[data-admin-dashboard]")) return;
     requireSession(function () { /* The scanner shares the authenticated administrative shell. */ });
@@ -1243,4 +1271,5 @@
   initUsers();
   initDiscountCodes();
   initAnalytics();
+  initContacts();
 })();

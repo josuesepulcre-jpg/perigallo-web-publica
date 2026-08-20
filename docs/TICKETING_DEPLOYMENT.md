@@ -90,6 +90,7 @@ mysql -u DB_USER -p DB_NAME < database/migrations/024_admin_cash_ticket_orders.s
 mysql -u DB_USER -p DB_NAME < database/migrations/025_ticket_attendee_dietary_preferences.sql
 mysql -u DB_USER -p DB_NAME < database/migrations/026_event_test_mode.sql
 mysql -u DB_USER -p DB_NAME < database/migrations/027_whatsapp_document_delivery.sql
+mysql -u DB_USER -p DB_NAME < database/migrations/028_contacts_and_marketing_consents.sql
 ```
 
 La segunda migración amplía eventos y entradas sin borrar pedidos, pagos, códigos ni asistentes ya existentes. La tercera conserva esos datos y añade el identificador común para la integración privada con Suite. La cuarta cambia los textos públicos a `LONGTEXT`, sin eliminar contenido existente. Ejecutarlas antes de desplegar la versión con editor integrado. Para actualizar una instalación existente, ejecutar `008_secure_ticket_delivery_and_qr.sql` **antes** de copiar el PHP nuevo: añade las columnas y estados que este código consulta.

@@ -77,6 +77,11 @@ final class LeadForms
         );
         $insert->execute([$reference, $source, $name, $partnerName ?: null, $email ?: null, $phone ?: null, $eventType, $eventDate ?: null, $guestCount ?: null, json_encode($answers, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), clean_string((string) ($data['privacy_version'] ?? 'web-form-v1'), 64), $ipHash]);
         $id = (int) $this->pdo->lastInsertId();
+        try {
+            (new Contacts($this->pdo))->syncLead($id);
+        } catch (\Throwable $error) {
+            error_log('Perigallo contact sync failed for lead ' . $id . ': ' . $error->getMessage());
+        }
 
         $notification = $this->mailer->sendLeadNotification(
             (string) $settings['recipient_email'],

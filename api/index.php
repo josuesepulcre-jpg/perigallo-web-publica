@@ -5,6 +5,7 @@ require __DIR__ . '/src/bootstrap.php';
 
 use Perigallo\Ticketing\AdminAuth;
 use Perigallo\Ticketing\Analytics;
+use Perigallo\Ticketing\Contacts;
 use Perigallo\Ticketing\Database;
 use Perigallo\Ticketing\Mailer;
 use Perigallo\Ticketing\LeadForms;
@@ -316,6 +317,46 @@ try {
     if ($method === 'GET' && $path === '/admin/orders') {
         AdminAuth::require();
         json_response(['ok' => true, 'orders' => $ticketing->adminOrders()]);
+        return;
+    }
+
+    if ($method === 'GET' && $path === '/admin/contactos') {
+        AdminAuth::require();
+        json_response(['ok' => true, 'contacts' => (new Contacts(Database::pdo()))->list($_GET)]);
+        return;
+    }
+
+    if ($method === 'GET' && $path === '/admin/contactos/export') {
+        AdminAuth::require();
+        $rows = (new Contacts(Database::pdo()))->list($_GET);
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="perigallo-contactos.csv"');
+        echo "\xEF\xBB\xBF";
+        $output = fopen('php://output', 'wb');
+        fputcsv($output, ['Nombre', 'Email', 'Teléfono', 'Origen inicial', 'Fecha alta', 'Última actualización', 'Email marketing', 'WhatsApp marketing', 'Última actividad']);
+        foreach ($rows as $row) {
+            fputcsv($output, [$row['full_name'], $row['email'], $row['phone'], $row['initial_source'], $row['created_at'], $row['updated_at'], $row['email_marketing'] ?: 'sin_informacion', $row['whatsapp_marketing'] ?: 'sin_informacion', $row['last_purchase_at']]);
+        }
+        fclose($output);
+        exit;
+    }
+
+    if ($method === 'GET' && preg_match('#^/admin/contactos/([0-9]+)$#', $path, $m)) {
+        AdminAuth::require();
+        json_response(['ok' => true] + (new Contacts(Database::pdo()))->detail((int) $m[1]));
+        return;
+    }
+
+    if ($method === 'POST' && preg_match('#^/admin/contactos/([0-9]+)/(email|whatsapp)/revocar$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        (new Contacts(Database::pdo()))->revoke((int) $m[1], $m[2], AdminAuth::operatorName());
+        json_response(['ok' => true]);
+        return;
+    }
+
+    if ($method === 'POST' && $path === '/admin/contactos/backfill') {
+        AdminAuth::requireOwner();
+        json_response(['ok' => true, 'backfill' => (new Contacts(Database::pdo()))->backfill()]);
         return;
     }
 

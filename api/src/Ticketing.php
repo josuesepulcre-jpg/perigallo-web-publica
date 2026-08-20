@@ -159,8 +159,8 @@ final class Ticketing
 
             $orderStmt = $this->pdo->prepare(
                 'INSERT INTO ticket_orders
-                 (public_token, redsys_order, first_name, last_name, name, email, phone, whatsapp_phone_input, whatsapp_phone_e164, whatsapp_country_code, whatsapp_consent, whatsapp_consent_at, whatsapp_consent_source, whatsapp_consent_version, age_requirement_accepted, age_requirement_accepted_at, dress_code_accepted, dress_code_accepted_at, dress_code_version, billing_requested, billing_name, billing_tax_id, billing_address, billing_postal_code, billing_city, billing_province, billing_country, billing_email, subtotal_cents, total_cents, currency, status, reservation_expires_at, ip_address, user_agent, is_test, environment, created_at, updated_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, IF(? = 1, NOW(), NULL), ?, ?, 1, NOW(), 1, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, "pending", ?, ?, ?, ?, ?, NOW(), NOW())'
+                 (public_token, redsys_order, first_name, last_name, name, email, phone, whatsapp_phone_input, whatsapp_phone_e164, whatsapp_country_code, whatsapp_consent, whatsapp_consent_at, whatsapp_consent_source, whatsapp_consent_version, marketing_email_consent, marketing_whatsapp_consent, marketing_email_consent_version, marketing_whatsapp_consent_version, age_requirement_accepted, age_requirement_accepted_at, dress_code_accepted, dress_code_accepted_at, dress_code_version, billing_requested, billing_name, billing_tax_id, billing_address, billing_postal_code, billing_city, billing_province, billing_country, billing_email, subtotal_cents, total_cents, currency, status, reservation_expires_at, ip_address, user_agent, is_test, environment, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, IF(? = 1, NOW(), NULL), ?, ?, ?, ?, ?, ?, 1, NOW(), 1, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, "pending", ?, ?, ?, ?, ?, NOW(), NOW())'
             );
             $firstName = clean_string((string) $data['first_name'], 120);
             $lastName = clean_string((string) $data['last_name'], 160);
@@ -183,6 +183,10 @@ final class Ticketing
                 $whatsApp['consent'] ? 1 : 0,
                 $whatsApp['consent'] ? 'checkout' : null,
                 $whatsApp['consent'] ? 'v1' : null,
+                !empty($data['marketing_email_consent']) ? 1 : 0,
+                !empty($data['marketing_whatsapp_consent']) ? 1 : 0,
+                !empty($data['marketing_email_consent']) ? 'marketing_email_v1' : null,
+                !empty($data['marketing_whatsapp_consent']) ? 'marketing_whatsapp_v1' : null,
                 self::DRESS_CODE_VERSION,
                 $billing['requested'],
                 $billing['name'],
@@ -3325,6 +3329,11 @@ final class Ticketing
 
     private function sendConfirmation(int $orderId): void
     {
+        try {
+            (new Contacts($this->pdo))->syncPaidOrder($orderId);
+        } catch (\Throwable $error) {
+            error_log('Perigallo contact sync failed for order ' . $orderId . ': ' . $error->getMessage());
+        }
         // Esta operación solo crea trabajos en base de datos. El cron los procesa
         // después de responder a Redsys, por lo que un envío lento no afecta al pago.
         (new TicketDeliveryQueue($this->pdo, $this->mailer))->enqueuePaidOrder($orderId);

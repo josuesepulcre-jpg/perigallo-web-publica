@@ -1351,6 +1351,8 @@
         phone: form.phone.value,
         whatsapp_country_code: form.whatsapp_country_code ? form.whatsapp_country_code.value : "ES",
         whatsapp_consent: !!(form.whatsapp_consent && form.whatsapp_consent.checked),
+        marketing_email_consent: !!(form.marketing_email_consent && form.marketing_email_consent.checked),
+        marketing_whatsapp_consent: !!(form.marketing_whatsapp_consent && form.marketing_whatsapp_consent.checked),
         billing_requested: !!(billingToggle && billingToggle.checked),
         age_requirement_accepted: form.age_requirement_accepted.checked,
         dress_code_accepted: form.dress_code_accepted.checked,
