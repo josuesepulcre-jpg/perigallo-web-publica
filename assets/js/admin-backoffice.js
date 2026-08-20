@@ -262,11 +262,11 @@
   }
 
   function deliveryStatusLabel(status) {
-    return ({sent:"Enviado",delivered:"Entregado",read:"Leído",queued:"En cola",pending:"Pendiente",blocked:"Bloqueado",failed:"Fallido",not_authorized:"No autorizado"})[status] || "Pendiente";
+    return ({sent:"Enviado",delivered:"Entregado",read:"Leído",manual_sent:"Enviado manualmente",queued:"En cola",pending:"Pendiente",blocked:"Bloqueado",failed:"Fallido",not_authorized:"No autorizado"})[status] || "Pendiente";
   }
 
   function deliveryStatusClass(status) {
-    if (["sent", "delivered", "read"].indexOf(status) !== -1) return "is-success";
+    if (["sent", "delivered", "read", "manual_sent"].indexOf(status) !== -1) return "is-success";
     if (status === "failed") return "is-error";
     return "is-neutral";
   }
@@ -280,7 +280,7 @@
     var actions = '<div class="admin-order-actions"><a class="text-action" href="/entradas/pedido/?token=' + encodeURIComponent(order.public_token) + '" target="_blank" rel="noopener noreferrer">Ver pedido</a>';
     if (Number(order.allergy_attendee_count || 0)) actions += '<button type="button" class="text-action" data-order-allergies data-order-id="' + Number(order.id) + '">Alergias (' + Number(order.allergy_attendee_count) + ')</button>';
     if (order.sales_channel === "cash" && order.cash_payment_status !== "paid" && !isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="cash-payment" data-order-id="' + Number(order.id) + '">Registrar cobro</button>';
-    if (order.sales_channel === "cash" && !isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="send-cash" data-order-id="' + Number(order.id) + '">' + (order.cash_payment_status === "paid" ? "Enviar entradas" : "Enviar reserva") + '</button>';
+    if (order.sales_channel === "cash" && !isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="send-cash" data-order-id="' + Number(order.id) + '">' + (order.cash_payment_status === "paid" ? "Abrir WhatsApp" : "Enviar reserva") + '</button>';
     if (!isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="cancel" data-order-id="' + Number(order.id) + '">Cancelar</button>';
     if (!isClosedOrder(order) && (order.payment_status === "paid" || order.status === "paid")) actions += '<button type="button" class="text-action" data-order-action="refund" data-order-id="' + Number(order.id) + '">Registrar devolución</button>';
     if ((order.payment_status === "paid" || order.status === "paid")) {
@@ -308,7 +308,10 @@
       var paymentNote = order.sales_channel === "cash" && order.cash_payment_notes ? '<small class="admin-order-cash-note">Efectivo: ' + escapeHtml(order.cash_payment_notes) + '</small>' : '';
       var emailDeliveryStatus = ["sent", "queued", "pending", "failed"].indexOf(order.email_delivery_status) !== -1 ? order.email_delivery_status : "pending";
       var whatsAppDeliveryStatus = !Number(order.whatsapp_consent) ? "not_authorized" : (["sent", "delivered", "read", "queued", "pending", "blocked", "failed", "not_authorized"].indexOf(order.whatsapp_delivery_status) !== -1 ? order.whatsapp_delivery_status : "queued");
-      var delivery = '<small class="admin-order-delivery"><span><strong>Entrega:</strong> ' + deliveryStatusMarkup("Email", emailDeliveryStatus) + (order.email_delivery_error ? '<span class="admin-delivery-error"> · ' + escapeHtml(order.email_delivery_error) + '</span>' : '') + '</span><span>' + deliveryStatusMarkup("WhatsApp", whatsAppDeliveryStatus) + (order.whatsapp_recipient ? '<span class="admin-delivery-meta"> · ' + escapeHtml(order.whatsapp_recipient) + '</span>' : '') + (order.whatsapp_template_name ? '<span class="admin-delivery-meta"> · ' + escapeHtml(order.whatsapp_template_name) + '</span>' : '') + (order.whatsapp_delivery_error ? '<span class="admin-delivery-error"> · ' + escapeHtml(order.whatsapp_delivery_error) + '</span>' : '') + '</span></small>';
+      var isPaidCashOrder = order.sales_channel === "cash" && order.cash_payment_status === "paid";
+      var delivery = isPaidCashOrder
+        ? '<small class="admin-order-delivery"><span><strong>Entrega:</strong> ' + deliveryStatusMarkup("WhatsApp", "manual_sent") + '<span class="admin-delivery-meta"> · envío desde WhatsApp Business</span></span></small>'
+        : '<small class="admin-order-delivery"><span><strong>Entrega:</strong> ' + deliveryStatusMarkup("Email", emailDeliveryStatus) + (order.email_delivery_error ? '<span class="admin-delivery-error"> · ' + escapeHtml(order.email_delivery_error) + '</span>' : '') + '</span><span>' + deliveryStatusMarkup("WhatsApp", whatsAppDeliveryStatus) + (order.whatsapp_recipient ? '<span class="admin-delivery-meta"> · ' + escapeHtml(order.whatsapp_recipient) + '</span>' : '') + (order.whatsapp_template_name ? '<span class="admin-delivery-meta"> · ' + escapeHtml(order.whatsapp_template_name) + '</span>' : '') + (order.whatsapp_delivery_error ? '<span class="admin-delivery-error"> · ' + escapeHtml(order.whatsapp_delivery_error) + '</span>' : '') + '</span></small>';
       return '<article class="admin-order-row"><div><strong>' + escapeHtml(order.name || "Comprador sin nombre") + '</strong><small>' + escapeHtml(order.event_title || "Evento por asignar") + ' · ' + escapeHtml(reference) + ' · ' + paymentMethod + cashStatus + allergySummary + (Number(order.is_test) ? ' · Prueba' : '') + '</small>' + paymentNote + holded + delivery + '</div><span>' + Number(order.ticket_quantity || 0) + ' entrada' + (Number(order.ticket_quantity || 0) === 1 ? "" : "s") + '</span><span class="status-pill status-' + escapeHtml(displayStatus) + '">' + escapeHtml(statusLabel(displayStatus)) + '</span><span class="admin-order-amount">' + amount + '</span>' + (compact ? "" : orderActions(order)) + '</article>';
     }).join("");
   }
