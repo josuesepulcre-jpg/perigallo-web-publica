@@ -35,6 +35,7 @@ const required = [
   "database/migrations/021_holded_invoice_delivery.sql",
   "database/migrations/023_ticket_order_tax_breakdown.sql",
   "database/migrations/024_admin_cash_ticket_orders.sql",
+  "database/migrations/029_manual_ticket_reserve_capacity.sql",
   "database/migrations/022_checkout_runtime_compatibility.sql",
   "api/scripts/apply-migration.php",
   "api/scripts/purge-test-ticketing-data.php",
@@ -238,6 +239,7 @@ for (const marker of ["/admin/login/", "data-admin-dashboard", "data-admin-event
   if (!adminBackoffice.includes(marker)) throw new Error(`Missing central backoffice marker: ${marker}`);
 }
 const cashMigration = readFileSync(join(root, "database/migrations/024_admin_cash_ticket_orders.sql"), "utf8");
+const manualReserveMigration = readFileSync(join(root, "database/migrations/029_manual_ticket_reserve_capacity.sql"), "utf8");
 const adminSales = readFileSync(join(root, "admin/ventas/index.html"), "utf8");
 const cashSalesCss = readFileSync(join(root, "assets/css/admin-cash-orders.css"), "utf8");
 for (const marker of ["sales_channel", "cash_payment_status", "cash_payment_recorded_at"]) {
@@ -247,6 +249,11 @@ for (const marker of ["data-cash-order-total", "data-cash-order-total-amount", "
   if (!adminSales.includes(marker)) throw new Error(`Cash-order total UI is missing ${marker}.`);
 }
 if (!cashSalesCss.includes(".admin-cash-order-total")) throw new Error("Cash-order total styles are missing.");
+for (const marker of ["manual_reserve_capacity", "onlineAvailableForType", "Cupo reservado para venta manual"]) {
+  if (!manualReserveMigration.includes(marker) && !ticketing.includes(marker) && !editor.includes(marker)) {
+    throw new Error(`Manual reserve capacity contract is missing ${marker}.`);
+  }
+}
 for (const marker of ["updateCashOrderTotal", "cashWhatsAppUrl", "whatsapp_url", "Total cobrado en efectivo"]) {
   if (!adminBackoffice.includes(marker)) throw new Error(`Cash-order total or WhatsApp behavior is missing ${marker}.`);
 }

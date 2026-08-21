@@ -227,7 +227,7 @@ final class Ticketing
                 if ($quantity < $min || $quantity > $max) {
                     throw new RuntimeException('Cantidad no permitida para ' . $type['name'] . '.');
                 }
-                $available = $this->availableForType($typeId, (int) $type['capacity']);
+                $available = $this->onlineAvailableForType($type);
                 if ($quantity > $available) {
                     throw new RuntimeException('No quedan suficientes entradas para ' . $type['name'] . '.');
                 }
@@ -1413,8 +1413,8 @@ final class Ticketing
         $this->validateTicketType($data);
         $stmt = $this->pdo->prepare(
             'INSERT INTO ticket_types
-             (event_id, name, description, price_cents, reference_price_cents, promotional_label, show_reference_price, capacity, min_quantity, max_per_order, active, sort_order, tax_rate, fee_cents, sale_starts_at, sale_ends_at, status, visible, requires_promo, promo_code_hash, waitlist_enabled, refundable, terms_text, label_color, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())'
+             (event_id, name, description, price_cents, reference_price_cents, promotional_label, show_reference_price, capacity, manual_reserve_capacity, min_quantity, max_per_order, active, sort_order, tax_rate, fee_cents, sale_starts_at, sale_ends_at, status, visible, requires_promo, promo_code_hash, waitlist_enabled, refundable, terms_text, label_color, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())'
         );
         $stmt->execute([
             $eventId,
@@ -1425,6 +1425,7 @@ final class Ticketing
             $this->promotionalLabel($data),
             $this->shouldShowReferencePrice($data) ? 1 : 0,
             (int) $data['capacity'],
+            max(0, (int) ($data['manual_reserve_capacity'] ?? 0)),
             max(1, (int) ($data['min_quantity'] ?? 1)),
             max(1, (int) ($data['max_per_order'] ?? 10)),
             $this->ticketActive($data) ? 1 : 0,
@@ -1876,11 +1877,11 @@ final class Ticketing
             throw new RuntimeException('No puedes reducir el cupo por debajo de las entradas vendidas o reservadas.');
         }
         $stmt = $this->pdo->prepare(
-            'UPDATE ticket_types SET name=?, description=?, price_cents=?, reference_price_cents=?, promotional_label=?, show_reference_price=?, capacity=?, min_quantity=?, max_per_order=?, active=?, sort_order=?, tax_rate=?, fee_cents=?, sale_starts_at=?, sale_ends_at=?, status=?, visible=?, requires_promo=?, promo_code_hash=?, waitlist_enabled=?, refundable=?, terms_text=?, label_color=?, archived_at=?, updated_at=NOW() WHERE id=? AND event_id=?'
+            'UPDATE ticket_types SET name=?, description=?, price_cents=?, reference_price_cents=?, promotional_label=?, show_reference_price=?, capacity=?, manual_reserve_capacity=?, min_quantity=?, max_per_order=?, active=?, sort_order=?, tax_rate=?, fee_cents=?, sale_starts_at=?, sale_ends_at=?, status=?, visible=?, requires_promo=?, promo_code_hash=?, waitlist_enabled=?, refundable=?, terms_text=?, label_color=?, archived_at=?, updated_at=NOW() WHERE id=? AND event_id=?'
         );
         $status = $this->ticketStatus($merged);
         $stmt->execute([
-            clean_string((string) $merged['name'], 160), trim((string) ($merged['description'] ?? '')), max(0, (int) $merged['price_cents']), $this->referencePrice($merged), $this->promotionalLabel($merged), $this->shouldShowReferencePrice($merged) ? 1 : 0, $capacity,
+            clean_string((string) $merged['name'], 160), trim((string) ($merged['description'] ?? '')), max(0, (int) $merged['price_cents']), $this->referencePrice($merged), $this->promotionalLabel($merged), $this->shouldShowReferencePrice($merged) ? 1 : 0, $capacity, max(0, (int) ($merged['manual_reserve_capacity'] ?? 0)),
             max(1, (int) $merged['min_quantity']), max(1, (int) $merged['max_per_order']), $this->ticketActive($merged) ? 1 : 0,
             (int) ($merged['sort_order'] ?? 100), max(0, (float) ($merged['tax_rate'] ?? 0)), max(0, (int) ($merged['fee_cents'] ?? 0)),
             $this->dateValue((string) ($merged['sale_starts_at'] ?? ''), now_mysql()), $this->dateValue((string) ($merged['sale_ends_at'] ?? ''), '2036-12-31 23:59:59'),
@@ -2366,6 +2367,7 @@ final class Ticketing
         $type['fee_cents'] = (int) ($type['fee_cents'] ?? 0);
         $type['tax_rate'] = (float) ($type['tax_rate'] ?? 0);
         $type['capacity'] = (int) $type['capacity'];
+        $type['manual_reserve_capacity'] = max(0, min($type['capacity'], (int) ($type['manual_reserve_capacity'] ?? 0)));
         $type['min_quantity'] = (int) $type['min_quantity'];
         $type['max_per_order'] = (int) $type['max_per_order'];
         $type['sort_order'] = (int) $type['sort_order'];
@@ -2377,10 +2379,11 @@ final class Ticketing
         $type['sold'] = $committed['sold'];
         $type['reserved'] = $committed['reserved'];
         $type['available'] = max(0, $type['capacity'] - $committed['sold'] - $committed['reserved']);
+        $type['online_available'] = $this->onlineAvailableForType($type, $committed);
         $type['final_price_cents'] = $type['price_cents'] + (int) round($type['price_cents'] * $type['tax_rate'] / 100) + $type['fee_cents'];
         $type['has_reference_price'] = $this->visibleReferencePrice($type, $type['final_price_cents']) !== null;
         $type['promotional_label'] = $this->promotionalLabel($type);
-        $type['effective_status'] = $this->ticketEffectiveStatus($type, $type['available']);
+        $type['effective_status'] = $this->ticketEffectiveStatus($type, $type['online_available']);
         return $type;
     }
 
@@ -2403,12 +2406,14 @@ final class Ticketing
         $stmt = $this->pdo->prepare(
             'SELECT
               COALESCE(SUM(CASE WHEN tor.status="paid" THEN toi.quantity ELSE 0 END), 0) AS sold,
-              COALESCE(SUM(CASE WHEN tor.status IN ("pending","payment_processing") AND tor.reservation_expires_at > NOW() THEN toi.quantity ELSE 0 END), 0) AS reserved
+              COALESCE(SUM(CASE WHEN tor.status IN ("pending","payment_processing") AND tor.reservation_expires_at > NOW() THEN toi.quantity ELSE 0 END), 0) AS reserved,
+              COALESCE(SUM(CASE WHEN tor.status="paid" AND tor.sales_channel="cash" THEN toi.quantity ELSE 0 END), 0) AS manual_sold,
+              COALESCE(SUM(CASE WHEN tor.status IN ("pending","payment_processing") AND tor.reservation_expires_at > NOW() AND tor.sales_channel="cash" THEN toi.quantity ELSE 0 END), 0) AS manual_reserved
              FROM ticket_order_items toi JOIN ticket_orders tor ON tor.id=toi.order_id WHERE toi.ticket_type_id=? AND tor.is_test = 0'
         );
         $stmt->execute([$ticketTypeId]);
         $row = $stmt->fetch() ?: [];
-        return ['sold' => (int) ($row['sold'] ?? 0), 'reserved' => (int) ($row['reserved'] ?? 0)];
+        return ['sold' => (int) ($row['sold'] ?? 0), 'reserved' => (int) ($row['reserved'] ?? 0), 'manual_sold' => (int) ($row['manual_sold'] ?? 0), 'manual_reserved' => (int) ($row['manual_reserved'] ?? 0)];
     }
 
     private function eventCommittedQuantity(int $eventId): int
@@ -2472,6 +2477,9 @@ final class Ticketing
         }
         if ((int) ($data['reference_price_cents'] ?? 0) < 0) {
             throw new RuntimeException('El valor de referencia no puede ser negativo.');
+        }
+        if ((int) ($data['manual_reserve_capacity'] ?? 0) > (int) ($data['capacity'] ?? 0)) {
+            throw new RuntimeException('El cupo reservado para venta manual no puede superar el cupo total.');
         }
         $salePrice = (int) ($data['price_cents'] ?? 0) + (int) round((int) ($data['price_cents'] ?? 0) * (float) ($data['tax_rate'] ?? 0) / 100) + (int) ($data['fee_cents'] ?? 0);
         if ($this->shouldShowReferencePrice($data) && $this->referencePrice($data) !== null && $this->referencePrice($data) <= $salePrice) {
@@ -2640,7 +2648,7 @@ final class Ticketing
         $stmt->execute([$eventId]);
         $rows = [];
         foreach ($stmt->fetchAll() as $type) {
-            $available = $this->availableForType((int) $type['id'], (int) $type['capacity']);
+            $available = $this->onlineAvailableForType($type);
             $effectiveStatus = $this->ticketEffectiveStatus($type, $available);
             $rows[] = [
                 'id' => (int) $type['id'],
@@ -2903,6 +2911,18 @@ final class Ticketing
         $stmt->execute([$typeId]);
         $reserved = (int) $stmt->fetchColumn();
         return max(0, $capacity - $reserved);
+    }
+
+    /** Plazas que se pueden comprar online sin consumir la reserva de taquilla. */
+    private function onlineAvailableForType(array $type, ?array $metrics = null): int
+    {
+        $metrics ??= $this->ticketMetrics((int) $type['id']);
+        $capacity = max(0, (int) ($type['capacity'] ?? 0));
+        $manualReserve = max(0, min($capacity, (int) ($type['manual_reserve_capacity'] ?? 0)));
+        $manualCommitted = (int) ($metrics['manual_sold'] ?? 0) + (int) ($metrics['manual_reserved'] ?? 0);
+        $allCommitted = (int) ($metrics['sold'] ?? 0) + (int) ($metrics['reserved'] ?? 0);
+        $onlineCommitted = max(0, $allCommitted - $manualCommitted);
+        return max(0, $capacity - $onlineCommitted - max($manualReserve, $manualCommitted));
     }
 
     /** Convierte el descuento manual en euros a céntimos sin redondeos flotantes. */

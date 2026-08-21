@@ -474,6 +474,7 @@
     data.reference_price_cents = data.reference_price === "" ? null : Math.round(Number(data.reference_price || 0) * 100);
     data.fee_cents = Math.round(Number(data.fee || 0) * 100);
     data.capacity = Number(data.capacity || 0);
+    data.manual_reserve_capacity = Number(data.manual_reserve_capacity || 0);
     data.min_quantity = Number(data.min_quantity || 1);
     data.max_per_order = Number(data.max_per_order || 1);
     data.sort_order = Number(data.sort_order || 100);
@@ -558,6 +559,7 @@
     var ticketId = Number(input(form, "ticket_type_id").value || 0);
     var existing = (state.event && state.event.ticket_types || []).find(function (type) { return Number(type.id) === ticketId; });
     if (maximum < minimum) return "El máximo por compra no puede ser inferior al mínimo.";
+    if (Number(input(form, "manual_reserve_capacity").value || 0) > capacity) return "El cupo reservado para venta manual no puede superar el cupo total.";
     if (tax < 0 || tax > 100) return "El IVA debe estar entre 0 % y 100 %.";
     if (input(form, "show_reference_price").checked && reference && reference <= price + Math.round(price * tax) / 100 + fee) return "El valor de la experiencia debe ser superior al precio final de venta.";
     if (existing && capacity < Number(existing.sold || 0) + Number(existing.reserved || 0)) return "El cupo no puede ser inferior a las entradas vendidas o reservadas.";
