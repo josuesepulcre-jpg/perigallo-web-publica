@@ -492,13 +492,14 @@
         var lines = form && form.querySelector("[data-cash-ticket-lines]");
         if (!lines) return;
         if (!event || !(event.ticket_types || []).length) {
-          lines.innerHTML = '<p>No hay tipos de entrada activos para este evento.</p>';
+          lines.innerHTML = '<p>No hay tipos de entrada disponibles para la venta manual en este evento.</p>';
           updateCashOrderTotal();
           return;
         }
         lines.innerHTML = (event.ticket_types || []).map(function (type) {
           var available = Number(type.available || 0);
-          return '<label><span><strong>' + escapeHtml(type.name) + '</strong><small>' + formatMoney(type.final_price_cents) + ' · ' + available + ' disponibles</small></span><input type="number" min="0" max="' + Math.min(available, Number(type.max_per_order || available)) + '" value="0" data-cash-ticket-quantity data-ticket-type-id="' + Number(type.id) + '" ' + (available ? '' : 'disabled') + '></label>';
+          var manualOnly = ["paused", "closed", "hidden"].includes(type.status);
+          return '<label><span><strong>' + escapeHtml(type.name) + '</strong><small>' + formatMoney(type.final_price_cents) + ' · ' + available + ' disponibles' + (manualOnly ? ' · solo venta manual' : '') + '</small></span><input type="number" min="0" max="' + Math.min(available, Number(type.max_per_order || available)) + '" value="0" data-cash-ticket-quantity data-ticket-type-id="' + Number(type.id) + '" ' + (available ? '' : 'disabled') + '></label>';
         }).join("");
         updateCashOrderTotal();
       }

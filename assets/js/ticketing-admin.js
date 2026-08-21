@@ -95,7 +95,7 @@
   }
 
   function statusLabel(status) {
-    return ({ draft: "Borrador", scheduled: "Programado", published: "Publicado", sold_out: "Agotado", finished: "Finalizado", cancelled: "Cancelado", archived: "Archivado", upcoming: "Próximamente", on_sale: "A la venta", paused: "Pausada", closed: "Cerrada", hidden: "Oculta" })[status] || status;
+    return ({ draft: "Borrador", scheduled: "Programado", published: "Publicado", sold_out: "Agotado", finished: "Finalizado", cancelled: "Cancelado", archived: "Archivado", upcoming: "Próximamente", on_sale: "A la venta", paused: "Pausada · solo manual", closed: "Web cerrada · solo manual", hidden: "Oculta · solo manual" })[status] || status;
   }
 
   function renderEvents(events, filter) {

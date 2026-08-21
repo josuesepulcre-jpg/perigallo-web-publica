@@ -256,6 +256,14 @@ for (const marker of ["cashOrderWhatsAppUrl", "whatsapp_url", "Aplica la migraci
 if (!api.includes("['ok' => true] + $ticketing->adminCreateCashOrder")) {
   throw new Error("Cash-order endpoint must return the WhatsApp URL at the top level.");
 }
+for (const marker of ['status NOT IN ("draft", "archived")', 'entradas cerradas, pausadas u ocultas']) {
+  if (!ticketing.includes(marker)) throw new Error(`Manual-only ticket sales contract is missing ${marker}.`);
+}
+for (const marker of ['Venta web cerrada · solo manual', 'solo venta manual']) {
+  if (!adminBackoffice.includes(marker) && !readFileSync(join(root, "admin/entradas/evento/index.html"), "utf8").includes(marker)) {
+    throw new Error(`Manual-only ticket UI is missing ${marker}.`);
+  }
+}
 const adminLogin = readFileSync(join(root, "admin/login/index.html"), "utf8");
 for (const marker of ["Administración Perigallo", "data-admin-login-page", "data-toggle-password"]) {
   if (!adminLogin.includes(marker)) throw new Error(`Missing central login marker: ${marker}`);

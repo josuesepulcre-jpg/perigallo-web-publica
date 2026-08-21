@@ -923,7 +923,12 @@ final class Ticketing
     public function adminCashOrderMeta(): array
     {
         $events = $this->pdo->query('SELECT id, title, starts_at, status FROM events WHERE status <> "archived" ORDER BY starts_at ASC, id ASC')->fetchAll();
-        $types = $this->pdo->query('SELECT * FROM ticket_types WHERE status <> "archived" AND active = 1 ORDER BY event_id ASC, sort_order ASC, id ASC')->fetchAll();
+        // La visibilidad y el estado de venta online no deben impedir una venta
+        // registrada por el equipo. Por ejemplo, una entrada con la venta web
+        // cerrada sigue teniendo cupo que se puede asignar en efectivo.
+        // Los borradores se excluyen para no poder emitir por error una entrada
+        // que todavía no se ha terminado de configurar.
+        $types = $this->pdo->query('SELECT * FROM ticket_types WHERE status NOT IN ("draft", "archived") ORDER BY event_id ASC, sort_order ASC, id ASC')->fetchAll();
         $byEvent = [];
         foreach ($types as $type) {
             $type = $this->adminTicketTypeRow($type);
@@ -2751,7 +2756,10 @@ final class Ticketing
 
     private function lockCashTicketType(int $typeId, int $eventId): ?array
     {
-        $stmt = $this->pdo->prepare('SELECT * FROM ticket_types WHERE id = ? AND event_id = ? AND active = 1 AND status <> "archived" FOR UPDATE');
+        // Debe coincidir con adminCashOrderMeta(): la taquilla puede usar
+        // entradas cerradas, pausadas u ocultas en la web, pero nunca borradores
+        // ni entradas archivadas.
+        $stmt = $this->pdo->prepare('SELECT * FROM ticket_types WHERE id = ? AND event_id = ? AND status NOT IN ("draft", "archived") FOR UPDATE');
         $stmt->execute([$typeId, $eventId]);
         return $stmt->fetch() ?: null;
     }
