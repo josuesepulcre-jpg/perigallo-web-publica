@@ -611,7 +611,7 @@
         var description = modal.querySelector("[data-cash-order-description]");
         if (title) title.textContent = manualReserve ? "Entrada manual" : "Entrada en efectivo";
         if (description) description.textContent = manualReserve
-          ? "Emite entradas únicamente desde el cupo que reservaste para venta manual. No afecta a la disponibilidad online y nunca supera el aforo total."
+          ? "Emite entradas desde el cupo manual adicional. Es independiente de las plazas de venta online y no se ofrece en la web."
           : "Marca si ya ha pagado o si queda pendiente. Solo una reserva pendiente tiene fecha de caducidad. Las entradas se abren en WhatsApp para enviarlas manualmente.";
         modal.hidden = false;
         renderCashTicketLines();

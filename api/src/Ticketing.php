@@ -1946,11 +1946,11 @@ final class Ticketing
         $capacity = max(0, (int) $merged['capacity']);
         $manualReserve = max(0, (int) ($merged['manual_reserve_capacity'] ?? 0));
         $metrics = $this->ticketMetrics($ticketTypeId);
-        $manualCommitted = $metrics['manual_sold'] + $metrics['manual_reserved'];
-        $standardCommitted = max(0, $metrics['sold'] + $metrics['reserved'] - $manualCommitted);
-        if ($capacity < $standardCommitted) {
-            throw new RuntimeException('No puedes reducir el cupo online por debajo de las entradas vendidas o reservadas.');
+        $committed = $metrics['sold'] + $metrics['reserved'];
+        if ($capacity + $manualReserve < $committed) {
+            throw new RuntimeException('La suma del cupo online y el cupo manual no puede ser inferior a las entradas vendidas o reservadas.');
         }
+        $manualCommitted = $metrics['manual_sold'] + $metrics['manual_reserved'];
         if ($manualReserve < $manualCommitted) {
             throw new RuntimeException('No puedes reducir el cupo manual por debajo de las entradas manuales ya emitidas o reservadas.');
         }
@@ -2997,7 +2997,7 @@ final class Ticketing
         return max(0, (int) ($type['capacity'] ?? 0)) + max(0, (int) ($type['manual_reserve_capacity'] ?? 0));
     }
 
-    /** Plazas que se pueden vender desde el cupo base, sin tocar el manual adicional. */
+    /** Plazas que se pueden vender online sin tocar el cupo manual adicional. */
     private function onlineAvailableForType(array $type, ?array $metrics = null): int
     {
         $metrics ??= $this->ticketMetrics((int) $type['id']);
@@ -3005,7 +3005,7 @@ final class Ticketing
         $manualCommitted = (int) ($metrics['manual_sold'] ?? 0) + (int) ($metrics['manual_reserved'] ?? 0);
         $allCommitted = (int) ($metrics['sold'] ?? 0) + (int) ($metrics['reserved'] ?? 0);
         $standardCommitted = max(0, $allCommitted - $manualCommitted);
-        return max(0, $capacity - $standardCommitted);
+        return max(0, $capacity - min($capacity, $standardCommitted));
     }
 
     private function standardAvailableForType(array $type, ?array $metrics = null): int
@@ -3013,13 +3013,16 @@ final class Ticketing
         return $this->onlineAvailableForType($type, $metrics);
     }
 
-    /** Plazas del cupo reservado que la operativa manual todavía puede emitir. */
+    /** Plazas manuales restantes, incluido el exceso histórico sobre el cupo online. */
     private function manualReserveAvailableForType(array $type, ?array $metrics = null): int
     {
         $metrics ??= $this->ticketMetrics((int) $type['id']);
         $manualReserve = max(0, (int) ($type['manual_reserve_capacity'] ?? 0));
         $manualCommitted = (int) ($metrics['manual_sold'] ?? 0) + (int) ($metrics['manual_reserved'] ?? 0);
-        return max(0, $manualReserve - $manualCommitted);
+        $allCommitted = (int) ($metrics['sold'] ?? 0) + (int) ($metrics['reserved'] ?? 0);
+        $standardCommitted = max(0, $allCommitted - $manualCommitted);
+        $historicalOverflow = max(0, $standardCommitted - max(0, (int) ($type['capacity'] ?? 0)));
+        return max(0, $manualReserve - $manualCommitted - $historicalOverflow);
     }
 
     /** Convierte el descuento manual en euros a céntimos sin redondeos flotantes. */
