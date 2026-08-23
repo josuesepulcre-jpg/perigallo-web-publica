@@ -453,6 +453,7 @@
         if (activeFilter === "cancelled") return displayStatus === "cancelled";
         if (activeFilter === "refunded") return displayStatus === "refunded";
         if (activeFilter === "tests") return Number(order.is_test) === 1;
+        if (activeFilter === "with-notes") return String(order.cash_payment_notes || "").trim() !== "";
         if (activeFilter === "email-failed") return order.email_delivery_status === "failed";
         if (activeFilter === "whatsapp-failed") return order.whatsapp_delivery_status === "failed";
         if (activeFilter === "partial-delivery") return (order.email_delivery_status === "sent") !== ["sent", "delivered", "read", "not_authorized"].includes(order.whatsapp_delivery_status || (Number(order.whatsapp_consent) ? "pending" : "not_authorized"));
