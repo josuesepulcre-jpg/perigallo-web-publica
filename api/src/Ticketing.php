@@ -13,6 +13,7 @@ final class Ticketing
 {
     private ?DiscountCodes $discountCodes = null;
     private ?bool $cashOrderSchemaAvailable = null;
+    private ?bool $manualReserveInventorySchemaAvailable = null;
     private ?bool $ticketItemTaxBreakdownAvailable = null;
     private ?bool $ticketAttendeeDietarySchemaAvailable = null;
     private const FOOD_ALLERGENS = [
@@ -966,6 +967,7 @@ final class Ticketing
         if (!in_array($inventoryMode, ['cash', 'manual_reserve'], true)) {
             throw new InvalidArgumentException('El tipo de emisión manual no es válido.');
         }
+        $this->requireManualReserveInventorySchema();
         $notes = clean_string((string) ($data['cash_payment_notes'] ?? ''), 1000);
         $cashDiscountCents = $this->cashDiscountCents($data['cash_discount_euros'] ?? 0);
         $reservationExpiresAt = $cashStatus === 'reserved' ? $this->cashReservationExpiry((string) ($data['reservation_expires_at'] ?? '')) : null;
@@ -975,8 +977,8 @@ final class Ticketing
             $event = $this->requireAdminEvent($eventId);
             $orderStmt = $this->pdo->prepare(
                 'INSERT INTO ticket_orders
-                 (public_token, redsys_order, first_name, last_name, name, email, phone, age_requirement_accepted, age_requirement_accepted_at, dress_code_accepted, dress_code_accepted_at, dress_code_version, subtotal_cents, total_cents, currency, status, reservation_expires_at, ip_address, user_agent, is_test, environment, sales_channel, cash_payment_status, cash_payment_notes, cash_payment_recorded_by, cash_payment_recorded_at, order_status, payment_status, delivery_status, paid_at, holded_status, holded_excluded, holded_exclusion_reason, created_at, updated_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW(), 1, NOW(), ?, 0, 0, ?, ?, ?, ?, ?, ?, ?, "cash", ?, ?, ?, ?, ?, ?, "generated", ?, "not_required", 1, "cash_sale", NOW(), NOW())'
+                 (public_token, redsys_order, first_name, last_name, name, email, phone, age_requirement_accepted, age_requirement_accepted_at, dress_code_accepted, dress_code_accepted_at, dress_code_version, subtotal_cents, total_cents, currency, status, reservation_expires_at, ip_address, user_agent, is_test, environment, sales_channel, inventory_mode, cash_payment_status, cash_payment_notes, cash_payment_recorded_by, cash_payment_recorded_at, order_status, payment_status, delivery_status, paid_at, holded_status, holded_excluded, holded_exclusion_reason, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW(), 1, NOW(), ?, 0, 0, ?, ?, ?, ?, ?, ?, ?, "cash", ?, ?, ?, ?, ?, ?, ?, "generated", ?, "not_required", 1, "cash_sale", NOW(), NOW())'
             );
             $isPaid = $cashStatus === 'paid';
             $publicToken = public_token();
@@ -984,7 +986,7 @@ final class Ticketing
                 $publicToken, $this->nextRedsysOrder(), $firstName, $lastName, $name, $email, $phone, self::DRESS_CODE_VERSION,
                 env_value('REDSYS_CURRENCY', '978'), $isPaid ? 'paid' : 'pending', $reservationExpiresAt, client_ip(), substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255),
                 !empty($event['is_test']) ? 1 : 0, !empty($event['is_test']) ? 'sandbox' : 'production',
-                $cashStatus, $notes ?: null, $isPaid ? $operator : null, $isPaid ? now_mysql() : null, $isPaid ? 'confirmed' : 'pending_payment', $isPaid ? 'paid' : 'pending', $isPaid ? now_mysql() : null,
+                $inventoryMode === 'manual_reserve' ? 'manual_reserve' : 'standard', $cashStatus, $notes ?: null, $isPaid ? $operator : null, $isPaid ? now_mysql() : null, $isPaid ? 'confirmed' : 'pending_payment', $isPaid ? 'paid' : 'pending', $isPaid ? now_mysql() : null,
             ]);
             $orderId = (int) $this->pdo->lastInsertId();
             $subtotal = 0;
@@ -997,9 +999,13 @@ final class Ticketing
                 $type = $this->lockCashTicketType($typeId, $eventId);
                 if (!$type) throw new RuntimeException('Tipo de entrada no disponible para venta interna.');
                 if ($quantity > (int) $type['max_per_order']) throw new RuntimeException('Cantidad no permitida para ' . $type['name'] . '.');
-                if ($quantity > $this->availableForType($typeId, $this->totalCapacityForType($type))) throw new RuntimeException('No quedan suficientes entradas para ' . $type['name'] . '.');
-                if ($inventoryMode === 'manual_reserve' && $quantity > $this->manualReserveAvailableForType($type)) {
-                    throw new RuntimeException('No quedan suficientes plazas del cupo manual para ' . $type['name'] . '.');
+                $available = $inventoryMode === 'manual_reserve'
+                    ? $this->manualReserveAvailableForType($type)
+                    : $this->standardAvailableForType($type);
+                if ($quantity > $available) {
+                    throw new RuntimeException($inventoryMode === 'manual_reserve'
+                        ? 'No quedan suficientes plazas del cupo manual para ' . $type['name'] . '.'
+                        : 'No quedan suficientes entradas para ' . $type['name'] . '.');
                 }
                 $unitBase = (int) $type['price_cents'];
                 $taxRate = max(0, (float) ($type['tax_rate'] ?? 0));
@@ -1070,7 +1076,10 @@ final class Ticketing
                 $items->execute([$orderId]);
                 foreach ($items->fetchAll() as $item) {
                     $type = $this->lockCashTicketType((int) $item['ticket_type_id'], (int) $item['event_id']);
-                    if (!$type || (int) $item['quantity'] > $this->availableForType((int) $item['ticket_type_id'], $this->totalCapacityForType($type))) throw new RuntimeException('La reserva ha caducado y ya no hay aforo suficiente para confirmarla.');
+                    $available = $type && (($order['inventory_mode'] ?? 'standard') === 'manual_reserve')
+                        ? $this->manualReserveAvailableForType($type)
+                        : ($type ? $this->standardAvailableForType($type) : 0);
+                    if (!$type || (int) $item['quantity'] > $available) throw new RuntimeException('La reserva ha caducado y ya no hay aforo suficiente para confirmarla.');
                 }
             }
             $this->pdo->prepare('UPDATE ticket_orders SET status = "paid", order_status = "confirmed", payment_status = "paid", cash_payment_status = "paid", cash_payment_notes = ?, cash_payment_recorded_by = ?, cash_payment_recorded_at = NOW(), reservation_expires_at = NULL, delivery_status = "generated", paid_at = NOW(), holded_status = "not_required", holded_excluded = 1, holded_exclusion_reason = "cash_sale", holded_next_attempt_at = NULL, holded_last_error = NULL, updated_at = NOW() WHERE id = ?')->execute([$notes ?: ($order['cash_payment_notes'] ?? null), $operator, $orderId]);
@@ -1883,10 +1892,12 @@ final class Ticketing
         $manualReserve = max(0, (int) ($merged['manual_reserve_capacity'] ?? 0));
         $metrics = $this->ticketMetrics($ticketTypeId);
         $manualCommitted = $metrics['manual_sold'] + $metrics['manual_reserved'];
-        $onlineCommitted = max(0, $metrics['sold'] + $metrics['reserved'] - $manualCommitted);
-        $requiredOnlineCapacity = $onlineCommitted + max(0, $manualCommitted - $manualReserve);
-        if ($capacity < $requiredOnlineCapacity) {
+        $standardCommitted = max(0, $metrics['sold'] + $metrics['reserved'] - $manualCommitted);
+        if ($capacity < $standardCommitted) {
             throw new RuntimeException('No puedes reducir el cupo online por debajo de las entradas vendidas o reservadas.');
+        }
+        if ($manualReserve < $manualCommitted) {
+            throw new RuntimeException('No puedes reducir el cupo manual por debajo de las entradas manuales ya emitidas o reservadas.');
         }
         $stmt = $this->pdo->prepare(
             'UPDATE ticket_types SET name=?, description=?, price_cents=?, reference_price_cents=?, promotional_label=?, show_reference_price=?, capacity=?, manual_reserve_capacity=?, min_quantity=?, max_per_order=?, active=?, sort_order=?, tax_rate=?, fee_cents=?, sale_starts_at=?, sale_ends_at=?, status=?, visible=?, requires_promo=?, promo_code_hash=?, waitlist_enabled=?, refundable=?, terms_text=?, label_color=?, archived_at=?, updated_at=NOW() WHERE id=? AND event_id=?'
@@ -2417,12 +2428,13 @@ final class Ticketing
 
     private function ticketMetrics(int $ticketTypeId): array
     {
+        $manualCondition = $this->manualReserveInventorySchemaAvailable() ? 'tor.inventory_mode="manual_reserve"' : '0';
         $stmt = $this->pdo->prepare(
             'SELECT
               COALESCE(SUM(CASE WHEN tor.status="paid" THEN toi.quantity ELSE 0 END), 0) AS sold,
               COALESCE(SUM(CASE WHEN tor.status IN ("pending","payment_processing") AND tor.reservation_expires_at > NOW() THEN toi.quantity ELSE 0 END), 0) AS reserved,
-              COALESCE(SUM(CASE WHEN tor.status="paid" AND tor.sales_channel="cash" THEN toi.quantity ELSE 0 END), 0) AS manual_sold,
-              COALESCE(SUM(CASE WHEN tor.status IN ("pending","payment_processing") AND tor.reservation_expires_at > NOW() AND tor.sales_channel="cash" THEN toi.quantity ELSE 0 END), 0) AS manual_reserved
+              COALESCE(SUM(CASE WHEN tor.status="paid" AND ' . $manualCondition . ' THEN toi.quantity ELSE 0 END), 0) AS manual_sold,
+              COALESCE(SUM(CASE WHEN tor.status IN ("pending","payment_processing") AND tor.reservation_expires_at > NOW() AND ' . $manualCondition . ' THEN toi.quantity ELSE 0 END), 0) AS manual_reserved
              FROM ticket_order_items toi JOIN ticket_orders tor ON tor.id=toi.order_id WHERE toi.ticket_type_id=? AND tor.is_test = 0'
         );
         $stmt->execute([$ticketTypeId]);
@@ -2924,24 +2936,26 @@ final class Ticketing
         return max(0, $capacity - $reserved);
     }
 
-    /** Plazas físicas totales: cupo web más cupo adicional para emisión manual. */
+    /** Plazas físicas totales: cupo base más cupo adicional para emisión manual. */
     private function totalCapacityForType(array $type): int
     {
         return max(0, (int) ($type['capacity'] ?? 0)) + max(0, (int) ($type['manual_reserve_capacity'] ?? 0));
     }
 
-    /** Plazas que se pueden comprar online sin consumir el cupo manual adicional. */
+    /** Plazas que se pueden vender desde el cupo base, sin tocar el manual adicional. */
     private function onlineAvailableForType(array $type, ?array $metrics = null): int
     {
         $metrics ??= $this->ticketMetrics((int) $type['id']);
         $capacity = max(0, (int) ($type['capacity'] ?? 0));
-        $manualReserve = max(0, (int) ($type['manual_reserve_capacity'] ?? 0));
         $manualCommitted = (int) ($metrics['manual_sold'] ?? 0) + (int) ($metrics['manual_reserved'] ?? 0);
         $allCommitted = (int) ($metrics['sold'] ?? 0) + (int) ($metrics['reserved'] ?? 0);
-        $onlineCommitted = max(0, $allCommitted - $manualCommitted);
-        // Las ventas manuales anteriores al cupo reservado consumen primero
-        // dicho cupo y, solo si lo superan, descuentan disponibilidad online.
-        return max(0, $capacity - $onlineCommitted - max(0, $manualCommitted - $manualReserve));
+        $standardCommitted = max(0, $allCommitted - $manualCommitted);
+        return max(0, $capacity - $standardCommitted);
+    }
+
+    private function standardAvailableForType(array $type, ?array $metrics = null): int
+    {
+        return $this->onlineAvailableForType($type, $metrics);
     }
 
     /** Plazas del cupo reservado que la operativa manual todavía puede emitir. */
@@ -3008,6 +3022,26 @@ final class Ticketing
     {
         if (!$this->cashOrderSchemaAvailable()) {
             throw new RuntimeException('La operativa de efectivo aún no está preparada en la base de datos. Aplica la migración 024 y vuelve a intentarlo.', 422);
+        }
+    }
+
+    private function manualReserveInventorySchemaAvailable(): bool
+    {
+        if ($this->manualReserveInventorySchemaAvailable !== null) {
+            return $this->manualReserveInventorySchemaAvailable;
+        }
+        try {
+            $this->pdo->query('SELECT inventory_mode FROM ticket_orders LIMIT 0');
+            return $this->manualReserveInventorySchemaAvailable = true;
+        } catch (\Throwable) {
+            return $this->manualReserveInventorySchemaAvailable = false;
+        }
+    }
+
+    private function requireManualReserveInventorySchema(): void
+    {
+        if (!$this->manualReserveInventorySchemaAvailable()) {
+            throw new RuntimeException('La emisión desde cupo manual aún no está preparada en la base de datos. Aplica la migración 030 y vuelve a intentarlo.', 422);
         }
     }
 
