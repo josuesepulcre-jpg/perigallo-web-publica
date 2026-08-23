@@ -811,7 +811,6 @@
 
     function applyNoAllergies() {
       attendeeState.forEach(function (attendee, index) {
-        if (index > 0 && !attendee.name.trim()) attendee.name = "Asistente " + (index + 1);
         attendee.hasAllergies = false;
         attendee.allergens = [];
         attendee.severeAllergy = false;
@@ -820,6 +819,28 @@
         attendee.dietaryNotes = "";
         attendee.open = false;
       });
+    }
+
+    function buyerAttendeeName() {
+      return [form.first_name.value.trim(), form.last_name.value.trim()].filter(Boolean).join(" ") || "Titular";
+    }
+
+    function automaticCompanionName(index) {
+      return "Acompañante " + (index + 1) + " de " + buyerAttendeeName();
+    }
+
+    function syncAutomaticAttendeeNames() {
+      var changed = false;
+      attendeeState.forEach(function (attendee, index) {
+        if (index > 0 && attendee.autoName) {
+          var name = automaticCompanionName(index);
+          if (attendee.name !== name) {
+            attendee.name = name;
+            changed = true;
+          }
+        }
+      });
+      return changed;
     }
 
     function renderWizard() {
@@ -866,7 +887,7 @@
         if (!form.dress_code_accepted.checked) return { valid: false, message: "Acepta el código de vestimenta Total White para continuar.", focus: form.dress_code_accepted };
       }
       if (step === 5) {
-        if (form.dataset.allergyAnswer === "yes") return checkoutAttendeeValidation(selected);
+        return checkoutAttendeeValidation(selected);
       }
       if (step === 6) {
         if (!form.dataset.discountAnswer) return { valid: false, message: "Indica si tienes un código de descuento.", focus: discountChoice };
@@ -966,6 +987,7 @@
           renderAttendees();
         } else if (target.matches("[data-attendee-name]")) {
           attendee.name = target.value;
+          attendee.autoName = false;
           renderAttendeeProgress();
         }
         refreshCheckout();
@@ -975,7 +997,10 @@
         var card = target.closest("[data-attendee-index]");
         var index = Number(card && card.dataset.attendeeIndex);
         if (!Number.isInteger(index) || !attendeeState[index]) return;
-        if (target.matches("[data-attendee-name]")) attendeeState[index].name = target.value;
+        if (target.matches("[data-attendee-name]")) {
+          attendeeState[index].name = target.value;
+          attendeeState[index].autoName = false;
+        }
         if (target.matches("[data-attendee-notes]")) {
           attendeeState[index].notes = target.value.slice(0, 500);
           var count = card.querySelector("[data-attendee-notes-count]");
@@ -999,6 +1024,7 @@
     form.querySelectorAll(".checkout-field input").forEach(function (input) {
       input.addEventListener("input", function () {
         if (input.closest(".checkout-field").classList.contains("has-error")) updateCheckoutField(input, true);
+        if (input === form.first_name || input === form.last_name) syncAutomaticAttendeeNames();
         refreshCheckout();
       });
       input.addEventListener("change", refreshCheckout);
@@ -1023,7 +1049,6 @@
       form.dataset.allergyAnswer = answer;
       setDecision(allergyChoice, answer);
       if (answer === "no") applyNoAllergies();
-      if (attendeesDetail) attendeesDetail.hidden = answer !== "yes";
       renderAttendees();
       refreshCheckout();
     });
@@ -1126,12 +1151,13 @@
     }
 
     function attendeeName(attendee, index) {
-      if (index === 0) return [form.first_name.value.trim(), form.last_name.value.trim()].filter(Boolean).join(" ") || "Comprador/a";
+      if (index === 0) return buyerAttendeeName();
       return attendee.name.trim() || "Pendiente de identificar";
     }
 
     function attendeeComplete(attendee, index) {
       if (index > 0 && !attendee.name.trim()) return false;
+      if (form.dataset.allergyAnswer !== "yes") return true;
       if (attendee.hasAllergies === null) return false;
       if (attendee.hasAllergies && (!attendee.allergens.length || attendee.severeAllergy === null)) return false;
       if (!attendee.dietaryPreference) return false;
@@ -1151,6 +1177,7 @@
 
     function attendeeCardMarkup(attendee, index) {
       var isBuyer = index === 0;
+      var showFoodDetails = form.dataset.allergyAnswer === "yes";
       var hasAllergies = attendee.hasAllergies;
       var diets = { none: "Sin dieta especial", vegetarian: "Vegetariana", vegan: "Vegana", pescatarian: "Pescetariana", other: "Otra necesidad" };
       var allergySummary = hasAllergies === false
@@ -1183,17 +1210,19 @@
         : "";
       return [
         '<details class="checkout-attendee-card" data-attendee-index="' + index + '"' + (attendee.open ? ' open' : '') + '>',
-        '<summary><span><strong>Asistente ' + (index + 1) + ' · ' + escapeHtml(attendeeName(attendee, index)) + '</strong></span><small>' + escapeHtml(summary) + '</small></summary>',
+        '<summary><span><strong>Asistente ' + (index + 1) + ' · ' + escapeHtml(attendeeName(attendee, index)) + '</strong></span><small>' + escapeHtml(showFoodDetails ? summary : 'Nombre asignado') + '</small></summary>',
         '<div class="checkout-attendee-card-body">',
-        isBuyer ? '<p class="checkout-attendee-status">Este asistente corresponde a los datos de compra.</p>' : '<label class="checkout-field checkout-attendee-name"><span>Nombre del asistente</span><input data-attendee-name value="' + escapeAttr(attendee.name) + '" autocomplete="name" placeholder="Nombre y apellidos"></label>',
-        '<fieldset class="checkout-attendee-question"><legend>¿Tiene alguna alergia o intolerancia alimentaria?</legend><div class="checkout-attendee-choice-row">',
-        '<label class="checkout-attendee-choice"><input type="radio" name="attendee_allergy_' + index + '" data-attendee-allergy-answer value="no"' + (hasAllergies === false ? ' checked' : '') + '><span>No</span></label>',
-        '<label class="checkout-attendee-choice"><input type="radio" name="attendee_allergy_' + index + '" data-attendee-allergy-answer value="yes"' + (hasAllergies === true ? ' checked' : '') + '><span>Sí</span></label>',
-        '</div></fieldset>',
-        allergyDetails,
-        '<fieldset class="checkout-attendee-question"><legend>¿Sigue alguna dieta o preferencia alimentaria?</legend><div class="checkout-attendee-choice-row">' + dietOptions + '</div></fieldset>',
-        dietDetails,
-        '<p class="checkout-attendee-status">Comunícanos solo necesidades reales para poder preparar la experiencia con antelación.</p>',
+        isBuyer ? '<p class="checkout-attendee-status">El titular se toma de los datos de compra.</p>' : '<label class="checkout-field checkout-attendee-name"><span>Nombre del asistente</span><input data-attendee-name value="' + escapeAttr(attendee.name) + '" autocomplete="name" placeholder="Nombre y apellidos"></label>',
+        showFoodDetails ? [
+          '<fieldset class="checkout-attendee-question"><legend>¿Tiene alguna alergia o intolerancia alimentaria?</legend><div class="checkout-attendee-choice-row">',
+          '<label class="checkout-attendee-choice"><input type="radio" name="attendee_allergy_' + index + '" data-attendee-allergy-answer value="no"' + (hasAllergies === false ? ' checked' : '') + '><span>No</span></label>',
+          '<label class="checkout-attendee-choice"><input type="radio" name="attendee_allergy_' + index + '" data-attendee-allergy-answer value="yes"' + (hasAllergies === true ? ' checked' : '') + '><span>Sí</span></label>',
+          '</div></fieldset>',
+          allergyDetails,
+          '<fieldset class="checkout-attendee-question"><legend>¿Sigue alguna dieta o preferencia alimentaria?</legend><div class="checkout-attendee-choice-row">' + dietOptions + '</div></fieldset>',
+          dietDetails,
+          '<p class="checkout-attendee-status">Comunícanos solo necesidades reales para poder preparar la experiencia con antelación.</p>'
+        ].join("") : '<p class="checkout-attendee-status">Puedes modificar este nombre. Si hay necesidades alimentarias, indícalo arriba.</p>',
         '</div></details>'
       ].join("");
     }
@@ -1209,17 +1238,19 @@
       var quantity = selectedTicketInputs().reduce(function (total, input) { return total + Number(input.value || 0); }, 0);
       if (!quantity) {
         attendeeState = [];
+        attendeesBox.innerHTML = "";
         return;
       }
       var changed = false;
       while (attendeeState.length < quantity) {
-        attendeeState.push({ name: "", hasAllergies: false, allergens: [], severeAllergy: false, notes: "", dietaryPreference: "none", dietaryNotes: "", open: false });
+        attendeeState.push({ name: "", autoName: true, hasAllergies: false, allergens: [], severeAllergy: false, notes: "", dietaryPreference: "none", dietaryNotes: "", open: false });
         changed = true;
       }
       if (attendeeState.length > quantity) {
         attendeeState = attendeeState.slice(0, quantity);
         changed = true;
       }
+      if (syncAutomaticAttendeeNames()) changed = true;
       if (form.dataset.allergyAnswer === "no") applyNoAllergies();
       if (changed || !attendeesBox.children.length || form.dataset.allergyAnswer === "no") {
         renderAttendees();
@@ -1232,9 +1263,11 @@
 
     function checkoutAttendeeValidation(selected) {
       if (attendeeState.length !== selected.reduce(function (total, input) { return total + Number(input.value || 0); }, 0)) return { valid: false, message: "Completa la información de alergias de cada asistente para continuar.", focus: attendeesBox };
+      if (!form.dataset.allergyAnswer) return { valid: false, message: "Indica si quieres comunicar necesidades alimentarias.", focus: allergyChoice };
       for (var index = 0; index < attendeeState.length; index++) {
         var attendee = attendeeState[index];
         if (index > 0 && !String(attendee.name || "").trim()) return { valid: false, message: "Indica el nombre del asistente " + (index + 1) + ".", focus: attendeesBox };
+        if (form.dataset.allergyAnswer !== "yes") continue;
         if (attendee.hasAllergies === null || typeof attendee.hasAllergies === "undefined") return { valid: false, message: "Indica si el asistente " + (index + 1) + " tiene alergias alimentarias.", focus: attendeesBox };
         if (attendee.hasAllergies && (!Array.isArray(attendee.allergens) || !attendee.allergens.length)) return { valid: false, message: "Selecciona al menos un alérgeno para el asistente " + (index + 1) + ".", focus: attendeesBox };
         if (attendee.hasAllergies && (attendee.severeAllergy === null || typeof attendee.severeAllergy === "undefined")) return { valid: false, message: "Indica si la alergia del asistente " + (index + 1) + " es grave.", focus: attendeesBox };
@@ -1487,9 +1520,11 @@
     if (!form.dress_code_accepted.checked) return { valid: false, message: "Debes aceptar el código de vestimenta Total White para continuar.", focus: form.dress_code_accepted };
     attendees = Array.isArray(attendees) ? attendees : [];
     if (attendees.length !== selected.reduce(function (total, input) { return total + Number(input.value || 0); }, 0)) return { valid: false, message: "Completa la información de alergias de cada asistente para continuar." };
+    if (!form.dataset.allergyAnswer) return { valid: false, message: "Indica si quieres comunicar necesidades alimentarias." };
     for (var index = 0; index < attendees.length; index++) {
       var attendee = attendees[index];
       if (index > 0 && !String(attendee.name || "").trim()) return { valid: false, message: "Indica el nombre del asistente " + (index + 1) + "." };
+      if (form.dataset.allergyAnswer !== "yes") continue;
       if (attendee.hasAllergies === null || typeof attendee.hasAllergies === "undefined") return { valid: false, message: "Indica si el asistente " + (index + 1) + " tiene alergias alimentarias." };
       if (attendee.hasAllergies && (!Array.isArray(attendee.allergens) || !attendee.allergens.length)) return { valid: false, message: "Selecciona al menos un alérgeno para el asistente " + (index + 1) + "." };
       if (attendee.hasAllergies && (attendee.severeAllergy === null || typeof attendee.severeAllergy === "undefined")) return { valid: false, message: "Indica si la alergia del asistente " + (index + 1) + " es grave." };
