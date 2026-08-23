@@ -426,6 +426,12 @@ try {
         return;
     }
 
+    if ($method === 'PUT' && preg_match('#^/admin/orders/([0-9]+)/contact$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        json_response(['ok' => true, 'order' => $ticketing->adminUpdateOrderContact((int) $m[1], read_json_body(), AdminAuth::operatorName())]);
+        return;
+    }
+
     if ($method === 'GET' && $path === '/admin/discount-codes/meta') {
         AdminAuth::require();
         json_response(['ok' => true] + $ticketing->adminDiscountCodeMeta());

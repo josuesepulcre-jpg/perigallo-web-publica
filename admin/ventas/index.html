@@ -62,8 +62,26 @@
         </form>
       </div>
     </div>
+    <div class="admin-cash-modal" data-admin-order-edit-modal hidden>
+      <div class="admin-cash-modal-card" role="dialog" aria-modal="true" aria-labelledby="order-edit-title">
+        <button type="button" class="ticket-access-modal-close" data-close-order-edit aria-label="Cerrar">×</button>
+        <span class="ticket-eyebrow">Corrección administrativa</span>
+        <h2 id="order-edit-title">Editar pedido</h2>
+        <p>Corrige los datos de contacto del titular. No modifica el importe, el pago, las entradas ni los datos de facturación. Si corriges un WhatsApp autorizado, el próximo reenvío usará el nuevo número.</p>
+        <form class="admin-cash-order-form" data-admin-order-edit-form>
+          <input type="hidden" name="order_id">
+          <label>Nombre<input name="first_name" required maxlength="120" autocomplete="given-name"></label>
+          <label>Apellidos<input name="last_name" maxlength="160" autocomplete="family-name"></label>
+          <label class="admin-form-span">Email<input type="email" name="email" maxlength="190" autocomplete="email" inputmode="email"></label>
+          <label class="admin-form-span">Teléfono / WhatsApp<input name="phone" required maxlength="60" autocomplete="tel" inputmode="tel" placeholder="600 000 000 o +34 600 000 000"></label>
+          <label class="admin-form-span" data-order-edit-cash-note>Apunte de pago o reserva<textarea name="cash_payment_notes" maxlength="1000" placeholder="Ej.: paga al llegar; 174 € recibidos en efectivo."></textarea></label>
+          <p class="admin-form-status admin-form-span" data-order-edit-status aria-live="polite"></p>
+          <div class="admin-cash-form-actions admin-form-span"><button type="button" class="ticket-btn" data-close-order-edit>Cancelar</button><button type="submit" class="ticket-btn primary">Guardar corrección</button></div>
+        </form>
+      </div>
+    </div>
   </main>
 </div>
-<script src="/assets/js/admin-backoffice.js?v=20260823-cash-attendees-v1" defer></script>
+<script src="/assets/js/admin-backoffice.js?v=20260823-order-edit-v1" defer></script>
 </body>
 </html>

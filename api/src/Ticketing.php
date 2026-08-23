@@ -1093,6 +1093,61 @@ final class Ticketing
         }
     }
 
+    /** Corrige los datos de contacto sin alterar el importe, las entradas ni la facturación del pedido. */
+    public function adminUpdateOrderContact(int $orderId, array $data, string $operator): array
+    {
+        $firstName = clean_string((string) ($data['first_name'] ?? ''), 120);
+        $lastName = clean_string((string) ($data['last_name'] ?? ''), 160);
+        $name = trim($firstName . ' ' . $lastName);
+        $email = mb_strtolower(clean_string((string) ($data['email'] ?? ''), 190));
+        $phone = clean_string((string) ($data['phone'] ?? ''), 60);
+
+        if ($name === '') throw new InvalidArgumentException('Indica al menos el nombre de la persona titular.');
+        if ($phone === '') throw new InvalidArgumentException('Indica un teléfono o WhatsApp.');
+        if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) === false) throw new InvalidArgumentException('El email no es válido.');
+
+        $this->pdo->beginTransaction();
+        try {
+            $order = $this->lockedOrder($orderId);
+            $set = 'first_name = ?, last_name = ?, name = ?, email = ?, phone = ?, whatsapp_phone_input = ?';
+            $values = [$firstName, $lastName, $name, $email, $phone, $phone];
+            $changed = [];
+
+            foreach (['first_name' => $firstName, 'last_name' => $lastName, 'email' => $email, 'phone' => $phone] as $field => $value) {
+                if (trim((string) ($order[$field] ?? '')) !== $value) $changed[] = $field;
+            }
+
+            // Si ya autorizó la entrega por WhatsApp, una corrección de teléfono
+            // debe afectar también al destinatario que usa la API al reenviar.
+            if (!empty($order['whatsapp_consent'])) {
+                $whatsApp = $this->normaliseWhatsAppPhone([
+                    'phone' => $phone,
+                    'whatsapp_country_code' => (string) ($order['whatsapp_country_code'] ?? 'ES'),
+                    'whatsapp_consent' => true,
+                ]);
+                $set .= ', whatsapp_phone_e164 = ?, whatsapp_country_code = ?';
+                $values[] = $whatsApp['e164'];
+                $values[] = $whatsApp['country'];
+            }
+
+            if (($order['sales_channel'] ?? 'web') === 'cash' && array_key_exists('cash_payment_notes', $data)) {
+                $notes = clean_string((string) $data['cash_payment_notes'], 1000);
+                $set .= ', cash_payment_notes = ?';
+                $values[] = $notes ?: null;
+                if ((string) ($order['cash_payment_notes'] ?? '') !== $notes) $changed[] = 'cash_payment_notes';
+            }
+
+            $values[] = $orderId;
+            $this->pdo->prepare('UPDATE ticket_orders SET ' . $set . ', updated_at = NOW() WHERE id = ?')->execute($values);
+            $this->auditAdminOperation($operator, 'order_contact_updated', $orderId, ['fields' => $changed]);
+            $this->pdo->commit();
+            return $this->adminOrderById($orderId);
+        } catch (\Throwable $error) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            throw $error;
+        }
+    }
+
     public function adminSendCashOrder(int $orderId, string $operator): array
     {
         $this->requireCashOrderSchema();
@@ -1122,7 +1177,7 @@ final class Ticketing
             : 'COALESCE((SELECT pa.payment_method FROM payment_attempts pa WHERE pa.order_id = o.id ORDER BY pa.id DESC LIMIT 1), "card")';
         return $this->pdo->query(
             'SELECT o.id, o.public_token, o.redsys_order, o.test_reference, o.is_test, o.environment,
-                    o.order_status, o.payment_status, o.delivery_status, ' . $cashColumns . ', o.name, o.email, o.phone, o.whatsapp_consent,
+                    o.order_status, o.payment_status, o.delivery_status, ' . $cashColumns . ', o.first_name, o.last_name, o.name, o.email, o.phone, o.whatsapp_consent,
                     (SELECT ed.status FROM email_deliveries ed WHERE ed.order_id = o.id AND ed.idempotency_key IS NOT NULL ORDER BY ed.id DESC LIMIT 1) AS email_delivery_status,
                     (SELECT ed.sent_at FROM email_deliveries ed WHERE ed.order_id = o.id AND ed.idempotency_key IS NOT NULL ORDER BY ed.id DESC LIMIT 1) AS email_delivery_at,
                     (SELECT ed.error_message FROM email_deliveries ed WHERE ed.order_id = o.id AND ed.idempotency_key IS NOT NULL ORDER BY ed.id DESC LIMIT 1) AS email_delivery_error,
@@ -1328,7 +1383,7 @@ final class Ticketing
             : 'COALESCE((SELECT pa.payment_method FROM payment_attempts pa WHERE pa.order_id = o.id ORDER BY pa.id DESC LIMIT 1), "card")';
         $statement = $this->pdo->prepare(
             'SELECT o.id, o.public_token, o.redsys_order, o.test_reference, o.is_test, o.environment,
-                    o.order_status, o.payment_status, o.delivery_status, ' . $cashColumns . ', o.name, o.email, o.phone, o.whatsapp_consent,
+                    o.order_status, o.payment_status, o.delivery_status, ' . $cashColumns . ', o.first_name, o.last_name, o.name, o.email, o.phone, o.whatsapp_consent,
                     (SELECT ed.status FROM email_deliveries ed WHERE ed.order_id = o.id AND ed.idempotency_key IS NOT NULL ORDER BY ed.id DESC LIMIT 1) AS email_delivery_status,
                     (SELECT dl.status FROM ticket_delivery_logs dl WHERE dl.order_id = o.id AND dl.channel = "whatsapp" AND dl.idempotency_key IS NOT NULL ORDER BY dl.id DESC LIMIT 1) AS whatsapp_delivery_status,
                     (SELECT dl.recipient FROM ticket_delivery_logs dl WHERE dl.order_id = o.id AND dl.channel = "whatsapp" AND dl.idempotency_key IS NOT NULL ORDER BY dl.id DESC LIMIT 1) AS whatsapp_recipient,

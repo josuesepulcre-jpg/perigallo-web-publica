@@ -279,7 +279,7 @@
 
   function orderActions(order) {
     if (!state.session || state.session.role !== "admin") return "";
-    var actions = '<div class="admin-order-actions"><a class="text-action" href="/entradas/pedido/?token=' + encodeURIComponent(order.public_token) + '" target="_blank" rel="noopener noreferrer">Ver pedido</a>';
+    var actions = '<div class="admin-order-actions"><a class="text-action" href="/entradas/pedido/?token=' + encodeURIComponent(order.public_token) + '" target="_blank" rel="noopener noreferrer">Ver pedido</a><button type="button" class="text-action" data-order-action="edit" data-order-id="' + Number(order.id) + '">Editar</button>';
     if (Number(order.allergy_attendee_count || 0)) actions += '<button type="button" class="text-action" data-order-allergies data-order-id="' + Number(order.id) + '">Alergias (' + Number(order.allergy_attendee_count) + ')</button>';
     if (order.sales_channel === "cash" && order.cash_payment_status !== "paid" && !isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="cash-payment" data-order-id="' + Number(order.id) + '">Registrar cobro</button>';
     if (order.sales_channel === "cash" && !isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="send-cash" data-order-id="' + Number(order.id) + '">' + (order.cash_payment_status === "paid" ? "Abrir WhatsApp" : "Enviar reserva") + '</button>';
@@ -433,6 +433,8 @@
       var status = root.querySelector("[data-admin-orders-status]");
       var modal = root.querySelector("[data-admin-cash-modal]");
       var form = root.querySelector("[data-admin-cash-order-form]");
+      var editModal = root.querySelector("[data-admin-order-edit-modal]");
+      var editForm = root.querySelector("[data-admin-order-edit-form]");
       var cashMeta = { events: [] };
       function renderSalesSummary() {
         var summary = root.querySelector("[data-admin-sales-summary]");
@@ -479,6 +481,38 @@
       function closeCashModal() {
         if (modal) modal.hidden = true;
         setCashStatus("");
+      }
+      function setEditStatus(message, stateName) {
+        var target = editForm && editForm.querySelector("[data-order-edit-status]");
+        if (!target) return;
+        target.textContent = message || "";
+        if (stateName) target.setAttribute("data-state", stateName); else target.removeAttribute("data-state");
+      }
+      function closeEditModal() {
+        if (editModal) editModal.hidden = true;
+        setEditStatus("");
+      }
+      function openEditModal(order) {
+        if (!editModal || !editForm || !order) return;
+        var fullName = String(order.name || "").trim();
+        var parts = fullName ? fullName.split(/\s+/) : [];
+        var fallbackFirstName = parts.shift() || "";
+        var fallbackLastName = parts.join(" ");
+        var firstName = String(order.first_name || fallbackFirstName);
+        var lastName = String(order.last_name || fallbackLastName);
+        editForm.order_id.value = String(order.id);
+        editForm.first_name.value = firstName;
+        editForm.last_name.value = lastName;
+        editForm.email.value = String(order.email || "");
+        editForm.phone.value = String(order.phone || "");
+        var cashNotes = editForm.querySelector("[data-order-edit-cash-note]");
+        if (cashNotes) {
+          cashNotes.hidden = order.sales_channel !== "cash";
+          editForm.cash_payment_notes.value = String(order.cash_payment_notes || "");
+        }
+        setEditStatus("");
+        editModal.hidden = false;
+        editForm.first_name.focus();
       }
       function setDefaultExpiry() {
         var input = form && form.querySelector("[data-cash-expiry]");
@@ -627,6 +661,8 @@
         root.querySelectorAll("[data-open-manual-order]").forEach(function (button) { button.addEventListener("click", function () { openCashModal("manual_reserve"); }); });
         root.querySelectorAll("[data-close-cash-order]").forEach(function (button) { button.addEventListener("click", closeCashModal); });
         modal.addEventListener("click", function (event) { if (event.target === modal) closeCashModal(); });
+        root.querySelectorAll("[data-close-order-edit]").forEach(function (button) { button.addEventListener("click", closeEditModal); });
+        if (editModal) editModal.addEventListener("click", function (event) { if (event.target === editModal) closeEditModal(); });
         form.event_id.addEventListener("change", renderCashTicketLines);
         form.cash_payment_status.addEventListener("change", updateCashPaymentFields);
         form.addEventListener("input", function (event) {
@@ -661,6 +697,25 @@
             form.reset(); renderCashTicketLines(); closeCashModal(); reload();
           }).catch(function (error) { if (popup) popup.close(); setCashStatus(error.message || "No se ha podido generar el pedido."); }).finally(function () { submit.disabled = false; });
         });
+        if (editForm) editForm.addEventListener("submit", function (event) {
+          event.preventDefault();
+          var orderId = Number(editForm.order_id.value);
+          if (!orderId) return;
+          var submit = editForm.querySelector('[type="submit"]');
+          var payload = {
+            first_name: editForm.first_name.value.trim(),
+            last_name: editForm.last_name.value.trim(),
+            email: editForm.email.value.trim(),
+            phone: editForm.phone.value.trim(),
+            cash_payment_notes: editForm.cash_payment_notes.value.trim()
+          };
+          submit.disabled = true;
+          setEditStatus("Guardando corrección…");
+          jsonRequest(api + "/admin/orders/" + orderId + "/contact", "PUT", payload).then(function () {
+            closeEditModal();
+            reload();
+          }).catch(function (error) { setEditStatus(error.message || "No se han podido guardar los cambios.", "error"); }).finally(function () { submit.disabled = false; });
+        });
         root.addEventListener("click", function (event) {
           var allergiesButton = event.target.closest("[data-order-allergies]");
           if (allergiesButton) {
@@ -674,6 +729,11 @@
           if (!button) return;
           var action = button.getAttribute("data-order-action");
           var id = Number(button.getAttribute("data-order-id"));
+          if (action === "edit") {
+            var editableOrder = (state.orders || []).find(function (order) { return Number(order.id) === id; });
+            if (editableOrder) openEditModal(editableOrder);
+            return;
+          }
           if (!id || !window.confirm(actionMessage(action))) return;
           if (action === "send-cash") {
             var cashOrder = (state.orders || []).find(function (order) { return Number(order.id) === id; });
