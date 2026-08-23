@@ -495,6 +495,7 @@
         if (!lines) return;
         if (!event || !(event.ticket_types || []).length) {
           lines.innerHTML = '<p>No hay tipos de entrada disponibles para esta emisión interna.</p>';
+          renderCashAttendees();
           updateCashOrderTotal();
           return;
         }
@@ -504,7 +505,42 @@
           var availabilityLabel = manualReserve ? ' plazas del cupo manual' : ' disponibles';
           return '<label><span><strong>' + escapeHtml(type.name) + '</strong><small>' + formatMoney(type.final_price_cents) + ' · ' + available + availabilityLabel + (manualOnly ? ' · solo venta manual' : '') + '</small></span><input type="number" min="0" max="' + Math.min(available, Number(type.max_per_order || available)) + '" value="0" data-cash-ticket-quantity data-ticket-type-id="' + Number(type.id) + '" ' + (available ? '' : 'disabled') + '></label>';
         }).join("");
+        renderCashAttendees();
         updateCashOrderTotal();
+      }
+      function cashBuyerName() {
+        return [form && form.first_name ? form.first_name.value : "", form && form.last_name ? form.last_name.value : ""].map(function (value) { return String(value || "").trim(); }).filter(Boolean).join(" ");
+      }
+      function renderCashAttendees() {
+        var section = form && form.querySelector("[data-cash-attendees]");
+        var fields = section && section.querySelector("[data-cash-attendee-fields]");
+        if (!section || !fields) return;
+        var previous = Array.prototype.slice.call(fields.querySelectorAll("[data-cash-attendee-name]")).map(function (input) { return { name: input.value, automatic: input.getAttribute("data-cash-attendee-auto") === "true" }; });
+        var eventId = Number(form.event_id.value);
+        var event = cashMeta.events.filter(function (row) { return Number(row.id) === eventId; })[0];
+        var tickets = [];
+        Array.prototype.slice.call(form.querySelectorAll("[data-cash-ticket-quantity]")).forEach(function (input) {
+          var quantity = Math.max(0, Math.floor(Number(input.value) || 0));
+          var type = event && (event.ticket_types || []).filter(function (row) { return Number(row.id) === Number(input.getAttribute("data-ticket-type-id")); })[0];
+          for (var index = 0; index < quantity; index++) tickets.push(type || {});
+        });
+        section.hidden = !tickets.length;
+        if (!tickets.length) { fields.innerHTML = ""; return; }
+        var buyer = cashBuyerName();
+        fields.innerHTML = tickets.map(function (type, index) {
+          var position = index + 1;
+          var defaultName = position === 1
+            ? buyer
+            : "Acompañante " + position + (buyer ? " de " + buyer : "");
+          var saved = previous[index] || null;
+          var name = saved ? saved.name : defaultName;
+          var automatic = saved ? saved.automatic : true;
+          var label = position === 1 ? "Titular" : "Acompañante " + position;
+          return '<label><span>' + label + (type.name ? ' · ' + escapeHtml(type.name) : '') + '</span><input type="text" maxlength="190" required data-cash-attendee-name data-cash-attendee-auto="' + automatic + '" value="' + escapeHtml(name) + '"></label>';
+        }).join("");
+      }
+      function cashAttendeesPayload() {
+        return Array.prototype.slice.call(form.querySelectorAll("[data-cash-attendee-name]")).map(function (input) { return { name: input.value.trim() }; });
       }
       function updateCashOrderTotal() {
         var eventId = Number(form && form.event_id.value);
@@ -593,14 +629,30 @@
         modal.addEventListener("click", function (event) { if (event.target === modal) closeCashModal(); });
         form.event_id.addEventListener("change", renderCashTicketLines);
         form.cash_payment_status.addEventListener("change", updateCashPaymentFields);
-        form.addEventListener("input", function (event) { if (event.target.matches("[data-cash-ticket-quantity], [data-cash-discount]")) updateCashOrderTotal(); });
+        form.addEventListener("input", function (event) {
+          if (event.target.matches("[data-cash-ticket-quantity]")) {
+            renderCashAttendees();
+            updateCashOrderTotal();
+          } else if (event.target.matches("[data-cash-discount]")) {
+            updateCashOrderTotal();
+          } else if (event.target.matches('[name="first_name"], [name="last_name"]')) {
+            var buyer = cashBuyerName();
+            var attendeeInputs = Array.prototype.slice.call(form.querySelectorAll("[data-cash-attendee-name]"));
+            attendeeInputs.filter(function (input) { return input.getAttribute("data-cash-attendee-auto") === "true"; }).forEach(function (input) {
+              var position = attendeeInputs.indexOf(input) + 1;
+              input.value = position === 1 ? buyer : "Acompañante " + position + (buyer ? " de " + buyer : "");
+            });
+          } else if (event.target.matches("[data-cash-attendee-name]")) {
+            event.target.setAttribute("data-cash-attendee-auto", "false");
+          }
+        });
         updateCashPaymentFields();
         form.addEventListener("submit", function (event) {
           event.preventDefault();
           var items = Array.prototype.slice.call(form.querySelectorAll("[data-cash-ticket-quantity]")).map(function (input) { return { ticket_type_id: Number(input.getAttribute("data-ticket-type-id")), quantity: Number(input.value || 0) }; }).filter(function (item) { return item.quantity > 0; });
           if (!items.length) { setCashStatus("Selecciona al menos una entrada."); return; }
           var submit = form.querySelector('[type="submit"]');
-          var payload = { event_id: Number(form.event_id.value), first_name: form.first_name.value.trim(), last_name: form.last_name.value.trim(), phone: form.phone.value.trim(), cash_payment_status: form.cash_payment_status.value, reservation_expires_at: form.reservation_expires_at.value, cash_discount_euros: form.cash_discount_euros.value, cash_payment_notes: form.cash_payment_notes.value.trim(), inventory_mode: form.inventory_mode.value, items: items };
+          var payload = { event_id: Number(form.event_id.value), first_name: form.first_name.value.trim(), last_name: form.last_name.value.trim(), phone: form.phone.value.trim(), cash_payment_status: form.cash_payment_status.value, reservation_expires_at: form.reservation_expires_at.value, cash_discount_euros: form.cash_discount_euros.value, cash_payment_notes: form.cash_payment_notes.value.trim(), inventory_mode: form.inventory_mode.value, attendees: cashAttendeesPayload(), items: items };
           var popup = window.open("about:blank", "perigallo-cash-whatsapp");
           submit.disabled = true;
           setCashStatus("Generando pedido…");

@@ -1040,7 +1040,7 @@ final class Ticketing
                 throw new InvalidArgumentException('El descuento no puede superar el total de las entradas.');
             }
             $total = $subtotal - $cashDiscountCents;
-            $this->persistCashAttendees($orderId, $orderItems, $name);
+            $this->persistCashAttendees($orderId, $orderItems, $this->normaliseCashAttendees($data['attendees'] ?? null, $quantityTotal, $name));
             $this->pdo->prepare('UPDATE ticket_orders SET subtotal_cents = ?, discount_type = ?, discount_value_snapshot = ?, discount_amount_cents = ?, discount_snapshot = ?, discount_applied_at = ?, total_cents = ?, updated_at = NOW() WHERE id = ?')->execute([
                 $subtotal,
                 $cashDiscountCents > 0 ? 'fixed' : null,
@@ -3283,15 +3283,38 @@ final class Ticketing
         }
     }
 
-    private function persistCashAttendees(int $orderId, array $orderItems, string $buyerName): void
+    /** Nombres de las entradas creadas en la operativa interna. */
+    private function normaliseCashAttendees(mixed $value, int $quantity, string $buyerName): array
+    {
+        $rawAttendees = is_array($value) ? array_values($value) : [];
+        $attendees = [];
+        for ($position = 0; $position < $quantity; $position++) {
+            $provided = $rawAttendees[$position] ?? [];
+            $name = is_array($provided) ? clean_string((string) ($provided['name'] ?? ''), 190) : '';
+            if ($name === '') {
+                $name = $position === 0
+                    ? $buyerName
+                    : 'Acompañante ' . ($position + 1) . ($buyerName !== '' ? ' de ' . $buyerName : '');
+            }
+            $attendees[] = ['name' => $name];
+        }
+        return $attendees;
+    }
+
+    private function persistCashAttendees(int $orderId, array $orderItems, array $attendees): void
     {
         $insert = $this->pdo->prepare(
             'INSERT INTO ticket_attendees (order_id, order_item_id, ticket_sequence, attendee_name, has_allergies, severe_allergy, created_at, updated_at)
              VALUES (?, ?, ?, ?, 0, 0, NOW(), NOW())'
         );
+        $position = 0;
         foreach ($orderItems as $item) {
             for ($sequence = 1; $sequence <= (int) $item['quantity']; $sequence++) {
-                $insert->execute([$orderId, (int) $item['id'], $sequence, $buyerName]);
+                $attendee = $attendees[$position++] ?? null;
+                if (!$attendee) {
+                    throw new RuntimeException('No se ha podido asociar el nombre de cada asistente a las entradas.');
+                }
+                $insert->execute([$orderId, (int) $item['id'], $sequence, $attendee['name']]);
             }
         }
     }

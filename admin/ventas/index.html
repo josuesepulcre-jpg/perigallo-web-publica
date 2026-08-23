@@ -48,6 +48,7 @@
           <input type="hidden" name="inventory_mode" value="cash" data-cash-inventory-mode>
           <label class="admin-form-span">Evento<select name="event_id" required data-cash-event><option value="">Selecciona un evento</option></select></label>
           <div class="admin-cash-ticket-lines" data-cash-ticket-lines><p>Selecciona un evento para elegir las entradas.</p></div>
+          <section class="admin-cash-attendees admin-form-span" data-cash-attendees hidden><div><span>Asignar entradas</span><small>Los nombres son editables. El titular recibe un único enlace de WhatsApp con todas las entradas.</small></div><div data-cash-attendee-fields></div></section>
           <div class="admin-cash-order-total admin-form-span" data-cash-order-total hidden aria-live="polite"><span data-cash-order-total-label>Total en efectivo</span><strong data-cash-order-total-amount>0,00 €</strong></div>
           <label>Descuento (€)<input type="number" name="cash_discount_euros" min="0" step="0.01" inputmode="decimal" value="0" data-cash-discount placeholder="0,00"><small>Se descuenta del total de las entradas.</small></label>
           <label>Nombre<input name="first_name" required maxlength="120" autocomplete="given-name"></label>
@@ -63,6 +64,6 @@
     </div>
   </main>
 </div>
-<script src="/assets/js/admin-backoffice.js?v=20260823-notes-filter-v1" defer></script>
+<script src="/assets/js/admin-backoffice.js?v=20260823-cash-attendees-v1" defer></script>
 </body>
 </html>
