@@ -490,16 +490,18 @@
         var eventId = Number(form && form.event_id.value);
         var event = cashMeta.events.filter(function (row) { return Number(row.id) === eventId; })[0];
         var lines = form && form.querySelector("[data-cash-ticket-lines]");
+        var manualReserve = !!(form && form.inventory_mode && form.inventory_mode.value === "manual_reserve");
         if (!lines) return;
         if (!event || !(event.ticket_types || []).length) {
-          lines.innerHTML = '<p>No hay tipos de entrada disponibles para la venta manual en este evento.</p>';
+          lines.innerHTML = '<p>No hay tipos de entrada disponibles para esta emisión interna.</p>';
           updateCashOrderTotal();
           return;
         }
         lines.innerHTML = (event.ticket_types || []).map(function (type) {
-          var available = Number(type.available || 0);
+          var available = Number(manualReserve ? type.manual_available : type.available) || 0;
           var manualOnly = ["paused", "closed", "hidden"].includes(type.status);
-          return '<label><span><strong>' + escapeHtml(type.name) + '</strong><small>' + formatMoney(type.final_price_cents) + ' · ' + available + ' disponibles' + (manualOnly ? ' · solo venta manual' : '') + '</small></span><input type="number" min="0" max="' + Math.min(available, Number(type.max_per_order || available)) + '" value="0" data-cash-ticket-quantity data-ticket-type-id="' + Number(type.id) + '" ' + (available ? '' : 'disabled') + '></label>';
+          var availabilityLabel = manualReserve ? ' plazas del cupo manual' : ' disponibles';
+          return '<label><span><strong>' + escapeHtml(type.name) + '</strong><small>' + formatMoney(type.final_price_cents) + ' · ' + available + availabilityLabel + (manualOnly ? ' · solo venta manual' : '') + '</small></span><input type="number" min="0" max="' + Math.min(available, Number(type.max_per_order || available)) + '" value="0" data-cash-ticket-quantity data-ticket-type-id="' + Number(type.id) + '" ' + (available ? '' : 'disabled') + '></label>';
         }).join("");
         updateCashOrderTotal();
       }
@@ -530,9 +532,18 @@
         if (!select) return;
         select.innerHTML = '<option value="">Selecciona un evento</option>' + cashMeta.events.map(function (event) { return '<option value="' + Number(event.id) + '">' + escapeHtml(event.title) + ' · ' + escapeHtml(formatDate(event.starts_at, true)) + '</option>'; }).join("");
       }
-      function openCashModal() {
+      function openCashModal(mode) {
         if (!modal) return;
+        var manualReserve = mode === "manual_reserve";
+        form.inventory_mode.value = manualReserve ? "manual_reserve" : "cash";
+        var title = modal.querySelector("[data-cash-order-title]");
+        var description = modal.querySelector("[data-cash-order-description]");
+        if (title) title.textContent = manualReserve ? "Entrada manual" : "Entrada en efectivo";
+        if (description) description.textContent = manualReserve
+          ? "Emite entradas únicamente desde el cupo que reservaste para venta manual. No afecta a la disponibilidad online y nunca supera el aforo total."
+          : "Marca si ya ha pagado o si queda pendiente. Solo una reserva pendiente tiene fecha de caducidad. Las entradas se abren en WhatsApp para enviarlas manualmente.";
         modal.hidden = false;
+        renderCashTicketLines();
         updateCashPaymentFields();
         updateCashOrderTotal();
         form.querySelector('[name="first_name"]').focus();
@@ -575,7 +586,8 @@
             render(search.value);
           });
         });
-        root.querySelectorAll("[data-open-cash-order]").forEach(function (button) { button.addEventListener("click", openCashModal); });
+        root.querySelectorAll("[data-open-cash-order]").forEach(function (button) { button.addEventListener("click", function () { openCashModal("cash"); }); });
+        root.querySelectorAll("[data-open-manual-order]").forEach(function (button) { button.addEventListener("click", function () { openCashModal("manual_reserve"); }); });
         root.querySelectorAll("[data-close-cash-order]").forEach(function (button) { button.addEventListener("click", closeCashModal); });
         modal.addEventListener("click", function (event) { if (event.target === modal) closeCashModal(); });
         form.event_id.addEventListener("change", renderCashTicketLines);
@@ -587,7 +599,7 @@
           var items = Array.prototype.slice.call(form.querySelectorAll("[data-cash-ticket-quantity]")).map(function (input) { return { ticket_type_id: Number(input.getAttribute("data-ticket-type-id")), quantity: Number(input.value || 0) }; }).filter(function (item) { return item.quantity > 0; });
           if (!items.length) { setCashStatus("Selecciona al menos una entrada."); return; }
           var submit = form.querySelector('[type="submit"]');
-          var payload = { event_id: Number(form.event_id.value), first_name: form.first_name.value.trim(), last_name: form.last_name.value.trim(), phone: form.phone.value.trim(), cash_payment_status: form.cash_payment_status.value, reservation_expires_at: form.reservation_expires_at.value, cash_discount_euros: form.cash_discount_euros.value, cash_payment_notes: form.cash_payment_notes.value.trim(), items: items };
+          var payload = { event_id: Number(form.event_id.value), first_name: form.first_name.value.trim(), last_name: form.last_name.value.trim(), phone: form.phone.value.trim(), cash_payment_status: form.cash_payment_status.value, reservation_expires_at: form.reservation_expires_at.value, cash_discount_euros: form.cash_discount_euros.value, cash_payment_notes: form.cash_payment_notes.value.trim(), inventory_mode: form.inventory_mode.value, items: items };
           var popup = window.open("about:blank", "perigallo-cash-whatsapp");
           submit.disabled = true;
           setCashStatus("Generando pedido…");

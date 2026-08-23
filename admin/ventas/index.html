@@ -17,7 +17,7 @@
   <aside class="admin-sidebar" data-admin-nav></aside>
   <main class="admin-workspace" data-admin-sales-page>
     <p class="ticket-status is-error" data-admin-page-status hidden></p>
-    <header class="admin-page-heading admin-page-heading-compact"><div><span class="ticket-eyebrow">Gestión</span><h1>Pedidos y <em>ventas</em></h1><p>Consulta el estado comercial de cada compra sin salir del backoffice.</p></div><button type="button" class="ticket-btn primary" data-open-cash-order>Generar entrada en efectivo</button></header>
+    <header class="admin-page-heading admin-page-heading-compact"><div><span class="ticket-eyebrow">Gestión</span><h1>Pedidos y <em>ventas</em></h1><p>Consulta el estado comercial de cada compra sin salir del backoffice.</p></div><div class="admin-sales-actions"><button type="button" class="ticket-btn" data-open-cash-order>Generar entrada en efectivo</button><button type="button" class="ticket-btn primary" data-open-manual-order>Generar entrada manual</button></div></header>
     <section class="admin-sales-summary" data-admin-sales-summary aria-label="Resumen global de ventas"></section>
     <p class="admin-orders-status" data-admin-whatsapp-template-status aria-live="polite"></p>
     <section class="admin-order-toolbar" aria-label="Filtros de pedidos">
@@ -41,9 +41,10 @@
       <div class="admin-cash-modal-card" role="dialog" aria-modal="true" aria-labelledby="cash-order-title">
         <button type="button" class="ticket-access-modal-close" data-close-cash-order aria-label="Cerrar">×</button>
         <span class="ticket-eyebrow">Operativa interna</span>
-        <h2 id="cash-order-title">Entrada en efectivo</h2>
-        <p>Marca si ya ha pagado o si queda pendiente. Solo una reserva pendiente tiene fecha de caducidad. Las entradas se abren en WhatsApp para enviarlas manualmente.</p>
+        <h2 id="cash-order-title" data-cash-order-title>Entrada en efectivo</h2>
+        <p data-cash-order-description>Marca si ya ha pagado o si queda pendiente. Solo una reserva pendiente tiene fecha de caducidad. Las entradas se abren en WhatsApp para enviarlas manualmente.</p>
         <form class="admin-cash-order-form" data-admin-cash-order-form>
+          <input type="hidden" name="inventory_mode" value="cash" data-cash-inventory-mode>
           <label class="admin-form-span">Evento<select name="event_id" required data-cash-event><option value="">Selecciona un evento</option></select></label>
           <div class="admin-cash-ticket-lines" data-cash-ticket-lines><p>Selecciona un evento para elegir las entradas.</p></div>
           <div class="admin-cash-order-total admin-form-span" data-cash-order-total hidden aria-live="polite"><span data-cash-order-total-label>Total en efectivo</span><strong data-cash-order-total-amount>0,00 €</strong></div>
@@ -61,6 +62,6 @@
     </div>
   </main>
 </div>
-<script src="/assets/js/admin-backoffice.js?v=20260821-manual-sales-v1" defer></script>
+<script src="/assets/js/admin-backoffice.js?v=20260823-manual-reserve-v1" defer></script>
 </body>
 </html>

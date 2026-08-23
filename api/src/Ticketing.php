@@ -962,6 +962,10 @@ final class Ticketing
         if (!in_array($cashStatus, ['reserved', 'paid'], true)) {
             throw new InvalidArgumentException('El estado del pago en efectivo no es válido.');
         }
+        $inventoryMode = (string) ($data['inventory_mode'] ?? 'cash');
+        if (!in_array($inventoryMode, ['cash', 'manual_reserve'], true)) {
+            throw new InvalidArgumentException('El tipo de emisión manual no es válido.');
+        }
         $notes = clean_string((string) ($data['cash_payment_notes'] ?? ''), 1000);
         $cashDiscountCents = $this->cashDiscountCents($data['cash_discount_euros'] ?? 0);
         $reservationExpiresAt = $cashStatus === 'reserved' ? $this->cashReservationExpiry((string) ($data['reservation_expires_at'] ?? '')) : null;
@@ -994,6 +998,9 @@ final class Ticketing
                 if (!$type) throw new RuntimeException('Tipo de entrada no disponible para venta interna.');
                 if ($quantity > (int) $type['max_per_order']) throw new RuntimeException('Cantidad no permitida para ' . $type['name'] . '.');
                 if ($quantity > $this->availableForType($typeId, (int) $type['capacity'])) throw new RuntimeException('No quedan suficientes entradas para ' . $type['name'] . '.');
+                if ($inventoryMode === 'manual_reserve' && $quantity > $this->manualReserveAvailableForType($type)) {
+                    throw new RuntimeException('No quedan suficientes plazas del cupo manual para ' . $type['name'] . '.');
+                }
                 $unitBase = (int) $type['price_cents'];
                 $taxRate = max(0, (float) ($type['tax_rate'] ?? 0));
                 $unitTax = (int) round($unitBase * $taxRate / 100);
@@ -1039,7 +1046,7 @@ final class Ticketing
                 $orderId,
             ]);
             $this->generateTicketsOnce($orderId, $isPaid ? 'issued' : 'blocked');
-            $this->auditAdminOperation($operator, $isPaid ? 'cash_order_created_paid' : 'cash_order_reserved', $orderId, ['event_id' => $eventId, 'quantity' => $quantityTotal, 'cash_discount_cents' => $cashDiscountCents, 'notes' => $notes]);
+            $this->auditAdminOperation($operator, $isPaid ? 'cash_order_created_paid' : 'cash_order_reserved', $orderId, ['event_id' => $eventId, 'quantity' => $quantityTotal, 'cash_discount_cents' => $cashDiscountCents, 'inventory_mode' => $inventoryMode, 'notes' => $notes]);
             $this->pdo->commit();
             return ['order' => $this->adminOrderById($orderId), 'whatsapp_url' => $this->cashOrderWhatsAppUrl($phone, $name, (string) $event['title'], $publicToken)];
         } catch (\Throwable $error) {
@@ -2379,6 +2386,7 @@ final class Ticketing
         $type['sold'] = $committed['sold'];
         $type['reserved'] = $committed['reserved'];
         $type['available'] = max(0, $type['capacity'] - $committed['sold'] - $committed['reserved']);
+        $type['manual_available'] = $this->manualReserveAvailableForType($type, $committed);
         $type['online_available'] = $this->onlineAvailableForType($type, $committed);
         $type['final_price_cents'] = $type['price_cents'] + (int) round($type['price_cents'] * $type['tax_rate'] / 100) + $type['fee_cents'];
         $type['has_reference_price'] = $this->visibleReferencePrice($type, $type['final_price_cents']) !== null;
@@ -2923,6 +2931,18 @@ final class Ticketing
         $allCommitted = (int) ($metrics['sold'] ?? 0) + (int) ($metrics['reserved'] ?? 0);
         $onlineCommitted = max(0, $allCommitted - $manualCommitted);
         return max(0, $capacity - $onlineCommitted - max($manualReserve, $manualCommitted));
+    }
+
+    /** Plazas del cupo reservado que la operativa manual todavía puede emitir. */
+    private function manualReserveAvailableForType(array $type, ?array $metrics = null): int
+    {
+        $metrics ??= $this->ticketMetrics((int) $type['id']);
+        $capacity = max(0, (int) ($type['capacity'] ?? 0));
+        $manualReserve = max(0, min($capacity, (int) ($type['manual_reserve_capacity'] ?? 0)));
+        $manualCommitted = (int) ($metrics['manual_sold'] ?? 0) + (int) ($metrics['manual_reserved'] ?? 0);
+        $allCommitted = (int) ($metrics['sold'] ?? 0) + (int) ($metrics['reserved'] ?? 0);
+        $physicalAvailable = max(0, $capacity - $allCommitted);
+        return min($physicalAvailable, max(0, $manualReserve - $manualCommitted));
     }
 
     /** Convierte el descuento manual en euros a céntimos sin redondeos flotantes. */
