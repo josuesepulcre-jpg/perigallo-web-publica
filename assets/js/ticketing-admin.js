@@ -505,6 +505,29 @@
     target.innerHTML = money.format(price + taxAmount + fee) + '<small>Base ' + money.format(price) + (taxAmount ? ' · IVA ' + money.format(taxAmount) : '') + (fee ? ' · Gestión ' + money.format(fee) : '') + '</small>';
   }
 
+  function updateTicketCapacitySummary(form) {
+    var target = form.querySelector("[data-ticket-capacity-summary]");
+    if (!target) return;
+    var ticketId = Number(input(form, "ticket_type_id").value || 0);
+    var existing = (state.event && state.event.ticket_types || []).find(function (type) { return Number(type.id) === ticketId; }) || {};
+    var onlineCapacity = Math.max(0, Number(input(form, "capacity").value || 0));
+    var manualCapacity = Math.max(0, Number(input(form, "manual_reserve_capacity").value || 0));
+    var allCommitted = Math.max(0, Number(existing.sold || 0) + Number(existing.reserved || 0));
+    var explicitlyManual = Math.max(0, Number(existing.manual_sold || 0) + Number(existing.manual_reserved || 0));
+    var standardCommitted = Math.max(0, allCommitted - explicitlyManual);
+    var onlineCommitted = Math.min(onlineCapacity, standardCommitted);
+    var historicalOverflow = Math.max(0, standardCommitted - onlineCapacity);
+    var manualCommitted = explicitlyManual + historicalOverflow;
+    var onlineAvailable = Math.max(0, onlineCapacity - onlineCommitted);
+    var manualAvailable = Math.max(0, manualCapacity - manualCommitted);
+    var totalCapacity = onlineCapacity + manualCapacity;
+    var totalAvailable = Math.max(0, totalCapacity - allCommitted);
+    var invalid = totalCapacity < allCommitted;
+    target.innerHTML = '<article><span>Venta online</span><strong>' + onlineAvailable + ' disponibles</strong><small>' + onlineCommitted + ' ocupadas de ' + onlineCapacity + '</small></article>' +
+      '<article><span>Venta manual</span><strong>' + manualAvailable + ' disponibles</strong><small>' + manualCommitted + ' ocupadas de ' + manualCapacity + '</small></article>' +
+      '<article class="ticket-capacity-total' + (invalid ? ' is-warning' : '') + '"><span>Total conjunto</span><strong>' + totalAvailable + ' disponibles</strong><small>' + allCommitted + ' ocupadas de ' + totalCapacity + (invalid ? ' · Amplía algún cupo para guardar.' : '') + '</small></article>';
+  }
+
   function fillTicketForm(ticket) {
     var form = document.querySelector("[data-ticket-type-form]");
     if (!form) return;
@@ -524,6 +547,7 @@
     document.querySelector("[data-ticket-form-title]").textContent = ticket ? "Editar entrada" : "Nueva entrada";
     document.querySelector("[data-ticket-submit]").textContent = ticket ? "Guardar cambios" : "Crear entrada";
     updateTicketPricePreview(form);
+    updateTicketCapacitySummary(form);
     ticketDrawerState.dirty = false;
   }
 
@@ -633,8 +657,8 @@
     document.querySelector("[data-open-ticket-form]").addEventListener("click", function () { openTicketDrawer(null); });
     document.querySelectorAll("[data-close-ticket-drawer]").forEach(function (button) { button.addEventListener("click", function () { closeTicketDrawer(false); }); });
     document.addEventListener("keydown", function (event) { if (event.key === "Escape") closeTicketDrawer(false); });
-    form.addEventListener("input", function () { ticketDrawerState.dirty = true; updateTicketPricePreview(form); });
-    form.addEventListener("change", function () { ticketDrawerState.dirty = true; updateTicketPricePreview(form); });
+    form.addEventListener("input", function () { ticketDrawerState.dirty = true; updateTicketPricePreview(form); updateTicketCapacitySummary(form); });
+    form.addEventListener("change", function () { ticketDrawerState.dirty = true; updateTicketPricePreview(form); updateTicketCapacitySummary(form); });
     form.addEventListener("submit", function (event) {
       event.preventDefault();
       var validationError = validateTicketForm(form);

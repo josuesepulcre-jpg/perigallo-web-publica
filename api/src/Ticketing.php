@@ -2456,10 +2456,14 @@ final class Ticketing
         unset($type['promo_code_hash']);
         $type['sold'] = $committed['sold'];
         $type['reserved'] = $committed['reserved'];
+        $type['manual_sold'] = $committed['manual_sold'];
+        $type['manual_reserved'] = $committed['manual_reserved'];
         $type['total_capacity'] = $this->totalCapacityForType($type);
         $type['available'] = max(0, $type['total_capacity'] - $committed['sold'] - $committed['reserved']);
         $type['manual_available'] = $this->manualReserveAvailableForType($type, $committed);
         $type['online_available'] = $this->onlineAvailableForType($type, $committed);
+        $type['online_committed'] = max(0, $type['capacity'] - $type['online_available']);
+        $type['manual_committed'] = max(0, $type['manual_reserve_capacity'] - $type['manual_available']);
         $type['final_price_cents'] = $type['price_cents'] + (int) round($type['price_cents'] * $type['tax_rate'] / 100) + $type['fee_cents'];
         $type['has_reference_price'] = $this->visibleReferencePrice($type, $type['final_price_cents']) !== null;
         $type['promotional_label'] = $this->promotionalLabel($type);
