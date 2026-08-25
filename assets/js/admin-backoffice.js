@@ -634,6 +634,11 @@
       function attendeeDietaryPreference(attendee) {
         return ({ vegetarian: "Vegetariano", vegan: "Vegano", pescatarian: "Pescetariano", other: "Otro (ver notas)" })[attendee.dietary_preference] || "";
       }
+      function attendeeHasSpecialMenu(attendee) { return String(attendee.dietary_preference || "none") !== "none"; }
+      function attendeePriority(attendee) {
+        if (attendeeHasAllergies(attendee)) return 0;
+        return attendeeHasSpecialMenu(attendee) ? 1 : 2;
+      }
       function attendeeFileName(event) {
         return String((event && event.title) || "evento").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "").toLowerCase() || "evento";
       }
@@ -654,7 +659,7 @@
           { label: "MENÚ ESPECIAL", width: 38, key: "dietary" },
           { label: "NOTAS", width: 73, key: "notes" }
         ];
-        var orderLabel = ({ allergies: "Alergias primero", notes: "Observaciones primero", name: "Nombre" })[sort] || "Alergias primero";
+        var orderLabel = ({ priority: "Alergias y menús especiales primero", allergies: "Alergias primero", notes: "Observaciones primero", name: "Nombre" })[sort] || "Alergias y menús especiales primero";
         function addHeading() {
           pdf.setDrawColor(0);
           pdf.setTextColor(0);
@@ -730,7 +735,7 @@
         var eventId = Number(attendeeExportEvent && attendeeExportEvent.value);
         if (!eventId) { setAttendeeExportStatus("Selecciona el evento del que quieres descargar el listado.", "error"); return; }
         var event = cashMeta.events.find(function (item) { return Number(item.id) === eventId; });
-        var sort = attendeeExportSort ? attendeeExportSort.value : "allergies";
+        var sort = attendeeExportSort ? attendeeExportSort.value : "priority";
         attendeeExportButton.disabled = true;
         setAttendeeExportStatus("Preparando listado…");
         request(api + "/admin/events/" + eventId + "/attendees/print-list").then(function (data) {
@@ -740,7 +745,7 @@
             var rightAllergies = attendeeHasAllergies(right) ? 1 : 0;
             var leftNotes = attendeeObservations(left) ? 1 : 0;
             var rightNotes = attendeeObservations(right) ? 1 : 0;
-            var priority = sort === "notes" ? rightNotes - leftNotes : sort === "allergies" ? rightAllergies - leftAllergies : 0;
+            var priority = sort === "priority" ? attendeePriority(left) - attendeePriority(right) : sort === "notes" ? rightNotes - leftNotes : sort === "allergies" ? rightAllergies - leftAllergies : 0;
             if (priority) return priority;
             if (sort === "allergies") {
               var severity = Number(right.severe_allergy) - Number(left.severe_allergy);

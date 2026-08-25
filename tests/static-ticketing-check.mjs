@@ -248,10 +248,10 @@ for (const marker of ["sales_channel", "cash_payment_status", "cash_payment_reco
 for (const marker of ["data-cash-order-total", "data-cash-order-total-amount", "Total en efectivo"]) {
   if (!adminSales.includes(marker)) throw new Error(`Cash-order total UI is missing ${marker}.`);
 }
-for (const marker of ["data-attendee-export-event", "data-attendee-export-sort", "data-download-attendee-list", "Descargar listado PDF", "jspdf.umd.min.js"]) {
+for (const marker of ["data-attendee-export-event", "data-attendee-export-sort", "Alergias y menús especiales primero", "data-download-attendee-list", "Descargar listado PDF", "jspdf.umd.min.js"]) {
   if (!adminSales.includes(marker)) throw new Error(`Attendee-export UI is missing ${marker}.`);
 }
-for (const marker of ["downloadAttendeeList", "createAttendeePdf", "attendee.status === \"issued\"", "Impresión en blanco y negro", "pdf.save(\"listado-asistentes-"]) {
+for (const marker of ["downloadAttendeeList", "createAttendeePdf", "attendeePriority", "attendee.status === \"issued\"", "Impresión en blanco y negro", "pdf.save(\"listado-asistentes-"]) {
   if (!adminBackoffice.includes(marker)) throw new Error(`Attendee-export behavior is missing ${marker}.`);
 }
 for (const marker of ["attendees/print-list", "includeOrderNotes", "cash_payment_notes AS order_notes"]) {
