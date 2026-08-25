@@ -8,7 +8,7 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/ticketing.css?v=20260820-delivery-status-v1">
-<link rel="stylesheet" href="/assets/css/admin-orders.css?v=20260817-cash-expiry-v1">
+<link rel="stylesheet" href="/assets/css/admin-orders.css?v=20260825-attendee-export-v1">
 <link rel="stylesheet" href="/assets/css/admin-cash-orders.css?v=20260817-cash-total-v1">
 <link rel="stylesheet" href="/assets/css/admin-delivery-status.css?v=20260820-v2">
 </head>
@@ -20,6 +20,19 @@
     <header class="admin-page-heading admin-page-heading-compact"><div><span class="ticket-eyebrow">Gestión</span><h1>Pedidos y <em>ventas</em></h1><p>Consulta el estado comercial de cada compra sin salir del backoffice.</p></div><div class="admin-sales-actions"><button type="button" class="ticket-btn" data-open-cash-order>Generar entrada en efectivo</button><button type="button" class="ticket-btn primary" data-open-manual-order>Generar entrada manual</button></div></header>
     <section class="admin-sales-summary" data-admin-sales-summary aria-label="Resumen global de ventas"></section>
     <p class="admin-orders-status" data-admin-whatsapp-template-status aria-live="polite"></p>
+    <section class="admin-attendee-export" aria-labelledby="attendee-export-title">
+      <div>
+        <span class="ticket-eyebrow">Operativa de cocina</span>
+        <h2 id="attendee-export-title">Listado de asistentes</h2>
+        <p>Descarga las entradas activas del evento con sus alergias y observaciones. El archivo no incluye datos de contacto.</p>
+      </div>
+      <div class="admin-attendee-export-controls">
+        <label>Evento<select data-attendee-export-event aria-label="Evento del listado"><option value="">Selecciona un evento</option></select></label>
+        <label>Ordenar por<select data-attendee-export-sort><option value="allergies">Alergias primero</option><option value="notes">Con observaciones primero</option><option value="name">Nombre</option></select></label>
+        <button type="button" class="ticket-btn primary" data-download-attendee-list>Descargar listado CSV</button>
+      </div>
+      <p class="admin-attendee-export-status" data-attendee-export-status aria-live="polite"></p>
+    </section>
     <section class="admin-order-toolbar" aria-label="Filtros de pedidos">
       <div class="admin-filter-group" role="group" aria-label="Estado del pedido">
         <button type="button" class="is-active" data-admin-order-filter="active">Entradas activas</button>
@@ -82,6 +95,6 @@
     </div>
   </main>
 </div>
-<script src="/assets/js/admin-backoffice.js?v=20260823-order-edit-v1" defer></script>
+<script src="/assets/js/admin-backoffice.js?v=20260825-attendee-export-v1" defer></script>
 </body>
 </html>

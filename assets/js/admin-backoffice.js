@@ -436,6 +436,10 @@
       var editModal = root.querySelector("[data-admin-order-edit-modal]");
       var editForm = root.querySelector("[data-admin-order-edit-form]");
       var cashMeta = { events: [] };
+      var attendeeExportEvent = root.querySelector("[data-attendee-export-event]");
+      var attendeeExportSort = root.querySelector("[data-attendee-export-sort]");
+      var attendeeExportButton = root.querySelector("[data-download-attendee-list]");
+      var attendeeExportStatus = root.querySelector("[data-attendee-export-status]");
       function renderSalesSummary() {
         var summary = root.querySelector("[data-admin-sales-summary]");
         if (!summary) return;
@@ -603,6 +607,76 @@
         if (!select) return;
         select.innerHTML = '<option value="">Selecciona un evento</option>' + cashMeta.events.map(function (event) { return '<option value="' + Number(event.id) + '">' + escapeHtml(event.title) + ' · ' + escapeHtml(formatDate(event.starts_at, true)) + '</option>'; }).join("");
       }
+      function setAttendeeExportStatus(message, stateName) {
+        if (!attendeeExportStatus) return;
+        attendeeExportStatus.textContent = message || "";
+        if (stateName) attendeeExportStatus.setAttribute("data-state", stateName); else attendeeExportStatus.removeAttribute("data-state");
+      }
+      function populateAttendeeExportEvents() {
+        if (!attendeeExportEvent) return;
+        var requestedEventId = Number(new URLSearchParams(window.location.search).get("event"));
+        attendeeExportEvent.innerHTML = '<option value="">Selecciona un evento</option>' + cashMeta.events.map(function (event) {
+          return '<option value="' + Number(event.id) + '">' + escapeHtml(event.title) + ' · ' + escapeHtml(formatDate(event.starts_at, true)) + '</option>';
+        }).join("");
+        if (requestedEventId && cashMeta.events.some(function (event) { return Number(event.id) === requestedEventId; })) attendeeExportEvent.value = String(requestedEventId);
+      }
+      function attendeeHasAllergies(attendee) { return Number(attendee.has_allergies) === 1 || String(attendee.allergens || "").trim() !== ""; }
+      function attendeeObservations(attendee) {
+        return [attendee.allergy_notes, attendee.dietary_notes].map(function (value) { return String(value || "").trim(); }).filter(Boolean).join(" · ");
+      }
+      function attendeeDietaryPreference(attendee) {
+        return ({ vegetarian: "Vegetariana", vegan: "Vegana", pescatarian: "Pescetariana", other: "Otra" })[attendee.dietary_preference] || "";
+      }
+      function csvCell(value) { return '"' + String(value == null ? "" : value).replace(/"/g, '""') + '"'; }
+      function downloadAttendeeList() {
+        var eventId = Number(attendeeExportEvent && attendeeExportEvent.value);
+        if (!eventId) { setAttendeeExportStatus("Selecciona el evento del que quieres descargar el listado.", "error"); return; }
+        var event = cashMeta.events.find(function (item) { return Number(item.id) === eventId; });
+        var sort = attendeeExportSort ? attendeeExportSort.value : "allergies";
+        attendeeExportButton.disabled = true;
+        setAttendeeExportStatus("Preparando listado…");
+        request(api + "/admin/events/" + eventId + "/attendees").then(function (data) {
+          var attendees = (data.attendees || []).filter(function (attendee) { return attendee.status === "issued"; });
+          attendees.sort(function (left, right) {
+            var leftAllergies = attendeeHasAllergies(left) ? 1 : 0;
+            var rightAllergies = attendeeHasAllergies(right) ? 1 : 0;
+            var leftNotes = attendeeObservations(left) ? 1 : 0;
+            var rightNotes = attendeeObservations(right) ? 1 : 0;
+            var priority = sort === "notes" ? rightNotes - leftNotes : sort === "allergies" ? rightAllergies - leftAllergies : 0;
+            if (priority) return priority;
+            if (sort === "allergies") {
+              var severity = Number(right.severe_allergy) - Number(left.severe_allergy);
+              if (severity) return severity;
+            }
+            return String(left.name || "").localeCompare(String(right.name || ""), "es");
+          });
+          var rows = [["Orden", "Asistente", "Tipo de entrada", "Alergias", "Alergia grave", "Dieta especial", "Observaciones", "Referencia de pedido"]];
+          attendees.forEach(function (attendee, index) {
+            rows.push([
+              index + 1,
+              attendee.name || "",
+              attendee.ticket_type_name || "",
+              attendeeHasAllergies(attendee) ? (String(attendee.allergens || "").trim() || "Indicada sin detalle") : "Sin alergias indicadas",
+              Number(attendee.severe_allergy) === 1 ? "SÍ" : "No",
+              attendeeDietaryPreference(attendee),
+              attendeeObservations(attendee),
+              attendee.order_reference || ""
+            ]);
+          });
+          var csv = "\uFEFF" + rows.map(function (row) { return row.map(csvCell).join(";"); }).join("\r\n");
+          var fileName = String((event && event.title) || "evento").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "").toLowerCase() || "evento";
+          var link = document.createElement("a");
+          link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+          link.download = "listado-asistentes-" + fileName + ".csv";
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(link.href);
+          setAttendeeExportStatus(attendees.length + (attendees.length === 1 ? " asistente exportado." : " asistentes exportados."), "success");
+        }).catch(function (error) {
+          setAttendeeExportStatus(error.message || "No se ha podido preparar el listado.", "error");
+        }).finally(function () { attendeeExportButton.disabled = false; });
+      }
       function openCashModal(mode) {
         if (!modal) return;
         var manualReserve = mode === "manual_reserve";
@@ -648,6 +722,7 @@
           templateStatus.textContent = "Plantilla de WhatsApp · " + (template.template || "entradas_perigallo_confirmadas_v1") + ": " + (labels[template.status] || template.status || "Sin estado") + (template.reason ? " · " + template.reason : "");
         }
         populateCashEvents();
+        populateAttendeeExportEvents();
         render();
         search.addEventListener("input", function () { render(search.value); });
         filters.forEach(function (button) {
@@ -659,6 +734,7 @@
         });
         root.querySelectorAll("[data-open-cash-order]").forEach(function (button) { button.addEventListener("click", function () { openCashModal("cash"); }); });
         root.querySelectorAll("[data-open-manual-order]").forEach(function (button) { button.addEventListener("click", function () { openCashModal("manual_reserve"); }); });
+        if (attendeeExportButton) attendeeExportButton.addEventListener("click", downloadAttendeeList);
         root.querySelectorAll("[data-close-cash-order]").forEach(function (button) { button.addEventListener("click", closeCashModal); });
         modal.addEventListener("click", function (event) { if (event.target === modal) closeCashModal(); });
         root.querySelectorAll("[data-close-order-edit]").forEach(function (button) { button.addEventListener("click", closeEditModal); });
