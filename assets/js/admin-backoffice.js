@@ -627,7 +627,100 @@
       function attendeeDietaryPreference(attendee) {
         return ({ vegetarian: "Vegetariana", vegan: "Vegana", pescatarian: "Pescetariana", other: "Otra" })[attendee.dietary_preference] || "";
       }
-      function csvCell(value) { return '"' + String(value == null ? "" : value).replace(/"/g, '""') + '"'; }
+      function attendeeFileName(event) {
+        return String((event && event.title) || "evento").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "").toLowerCase() || "evento";
+      }
+      function attendeePdfText(value) {
+        return String(value == null ? "" : value).replace(/[\u2013\u2014]/g, "-").replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/\u2026/g, "...");
+      }
+      function createAttendeePdf(attendees, event, sort) {
+        if (!window.jspdf || !window.jspdf.jsPDF) throw new Error("No se ha podido cargar el generador de PDF. Recarga la página e inténtalo de nuevo.");
+        var pdf = new window.jspdf.jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+        var pageWidth = 297;
+        var pageHeight = 210;
+        var margin = 12;
+        var columns = [
+          { label: "#", width: 8, key: "number" },
+          { label: "ASISTENTE", width: 52, key: "name" },
+          { label: "ENTRADA", width: 38, key: "ticket" },
+          { label: "ALERGIAS", width: 61, key: "allergies" },
+          { label: "GRAVE", width: 17, key: "severe" },
+          { label: "DIETA", width: 29, key: "dietary" },
+          { label: "OBSERVACIONES", width: 56, key: "notes" }
+        ];
+        var orderLabel = ({ allergies: "Alergias primero", notes: "Observaciones primero", name: "Nombre" })[sort] || "Alergias primero";
+        function addHeading() {
+          pdf.setDrawColor(0);
+          pdf.setTextColor(0);
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(15);
+          pdf.text("LISTADO DE ASISTENTES", margin, 13);
+          pdf.setFont("helvetica", "normal");
+          pdf.setFontSize(9);
+          pdf.text(attendeePdfText((event && event.title) || "Evento"), margin, 19);
+          pdf.text("Orden: " + orderLabel + " · " + attendees.length + (attendees.length === 1 ? " asistente" : " asistentes"), pageWidth - margin, 19, { align: "right" });
+          pdf.setFontSize(7);
+          pdf.text("Uso interno · Alergias y observaciones · Impresión en blanco y negro", margin, 24);
+          var headerY = 29;
+          var x = margin;
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(7);
+          columns.forEach(function (column) {
+            pdf.setFillColor(235);
+            pdf.rect(x, headerY, column.width, 8, "FD");
+            pdf.setTextColor(0);
+            pdf.text(column.label, x + 2, headerY + 5);
+            x += column.width;
+          });
+          return headerY + 8;
+        }
+        function rowValues(attendee, number) {
+          return {
+            number: String(number),
+            name: attendeePdfText(attendee.name),
+            ticket: attendeePdfText(attendee.ticket_type_name),
+            allergies: attendeePdfText(attendeeHasAllergies(attendee) ? (String(attendee.allergens || "").trim() || "Indicada sin detalle") : "Sin alergias indicadas"),
+            severe: Number(attendee.severe_allergy) === 1 ? "SI" : "No",
+            dietary: attendeePdfText(attendeeDietaryPreference(attendee)),
+            notes: attendeePdfText(attendeeObservations(attendee))
+          };
+        }
+        function addFooter() {
+          var pages = pdf.getNumberOfPages();
+          for (var page = 1; page <= pages; page++) {
+            pdf.setPage(page);
+            pdf.setTextColor(0);
+            pdf.setFont("helvetica", "normal");
+            pdf.setFontSize(7);
+            pdf.text("Perigallo · listado confidencial para la operativa del evento", margin, pageHeight - 8);
+            pdf.text("Página " + page + " de " + pages, pageWidth - margin, pageHeight - 8, { align: "right" });
+          }
+        }
+        var y = addHeading();
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(8);
+        attendees.forEach(function (attendee, index) {
+          var values = rowValues(attendee, index + 1);
+          var cells = columns.map(function (column) { return pdf.splitTextToSize(values[column.key], Math.max(4, column.width - 4)); });
+          var lines = cells.reduce(function (largest, cell) { return Math.max(largest, cell.length); }, 1);
+          var rowHeight = Math.max(8, lines * 3.6 + 3);
+          if (y + rowHeight > pageHeight - 15) {
+            pdf.addPage();
+            y = addHeading();
+            pdf.setFont("helvetica", "normal");
+            pdf.setFontSize(8);
+          }
+          var x = margin;
+          columns.forEach(function (column, columnIndex) {
+            pdf.rect(x, y, column.width, rowHeight);
+            pdf.text(cells[columnIndex], x + 2, y + 4);
+            x += column.width;
+          });
+          y += rowHeight;
+        });
+        addFooter();
+        pdf.save("listado-asistentes-" + attendeeFileName(event) + ".pdf");
+      }
       function downloadAttendeeList() {
         var eventId = Number(attendeeExportEvent && attendeeExportEvent.value);
         if (!eventId) { setAttendeeExportStatus("Selecciona el evento del que quieres descargar el listado.", "error"); return; }
@@ -650,29 +743,8 @@
             }
             return String(left.name || "").localeCompare(String(right.name || ""), "es");
           });
-          var rows = [["Orden", "Asistente", "Tipo de entrada", "Alergias", "Alergia grave", "Dieta especial", "Observaciones", "Referencia de pedido"]];
-          attendees.forEach(function (attendee, index) {
-            rows.push([
-              index + 1,
-              attendee.name || "",
-              attendee.ticket_type_name || "",
-              attendeeHasAllergies(attendee) ? (String(attendee.allergens || "").trim() || "Indicada sin detalle") : "Sin alergias indicadas",
-              Number(attendee.severe_allergy) === 1 ? "SÍ" : "No",
-              attendeeDietaryPreference(attendee),
-              attendeeObservations(attendee),
-              attendee.order_reference || ""
-            ]);
-          });
-          var csv = "\uFEFF" + rows.map(function (row) { return row.map(csvCell).join(";"); }).join("\r\n");
-          var fileName = String((event && event.title) || "evento").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "").toLowerCase() || "evento";
-          var link = document.createElement("a");
-          link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-          link.download = "listado-asistentes-" + fileName + ".csv";
-          document.body.appendChild(link);
-          link.click();
-          link.remove();
-          URL.revokeObjectURL(link.href);
-          setAttendeeExportStatus(attendees.length + (attendees.length === 1 ? " asistente exportado." : " asistentes exportados."), "success");
+          createAttendeePdf(attendees, event, sort);
+          setAttendeeExportStatus(attendees.length + (attendees.length === 1 ? " asistente incluido en el PDF." : " asistentes incluidos en el PDF."), "success");
         }).catch(function (error) {
           setAttendeeExportStatus(error.message || "No se ha podido preparar el listado.", "error");
         }).finally(function () { attendeeExportButton.disabled = false; });

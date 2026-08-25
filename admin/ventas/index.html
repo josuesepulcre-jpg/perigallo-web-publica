@@ -24,12 +24,12 @@
       <div>
         <span class="ticket-eyebrow">Operativa de cocina</span>
         <h2 id="attendee-export-title">Listado de asistentes</h2>
-        <p>Descarga las entradas activas del evento con sus alergias y observaciones. El archivo no incluye datos de contacto.</p>
+        <p>Genera un PDF en blanco y negro, listo para imprimir, con las entradas activas, alergias y observaciones. No incluye datos de contacto.</p>
       </div>
       <div class="admin-attendee-export-controls">
         <label>Evento<select data-attendee-export-event aria-label="Evento del listado"><option value="">Selecciona un evento</option></select></label>
         <label>Ordenar por<select data-attendee-export-sort><option value="allergies">Alergias primero</option><option value="notes">Con observaciones primero</option><option value="name">Nombre</option></select></label>
-        <button type="button" class="ticket-btn primary" data-download-attendee-list>Descargar listado CSV</button>
+        <button type="button" class="ticket-btn primary" data-download-attendee-list>Descargar listado PDF</button>
       </div>
       <p class="admin-attendee-export-status" data-attendee-export-status aria-live="polite"></p>
     </section>
@@ -95,6 +95,7 @@
     </div>
   </main>
 </div>
-<script src="/assets/js/admin-backoffice.js?v=20260825-attendee-export-v1" defer></script>
+<script src="/assets/vendor/jspdf.umd.min.js?v=20260825-pdf-list-v1" defer></script>
+<script src="/assets/js/admin-backoffice.js?v=20260825-attendee-pdf-v1" defer></script>
 </body>
 </html>
