@@ -622,10 +622,17 @@
       }
       function attendeeHasAllergies(attendee) { return Number(attendee.has_allergies) === 1 || String(attendee.allergens || "").trim() !== ""; }
       function attendeeObservations(attendee) {
-        return [attendee.allergy_notes, attendee.dietary_notes].map(function (value) { return String(value || "").trim(); }).filter(Boolean).join(" · ");
+        return [
+          { label: "Alergia", value: attendee.allergy_notes },
+          { label: "Menú", value: attendee.dietary_notes },
+          { label: "Nota manual", value: attendee.order_notes }
+        ].map(function (note) {
+          var value = String(note.value || "").trim();
+          return value ? note.label + ": " + value : "";
+        }).filter(Boolean).join(" · ");
       }
       function attendeeDietaryPreference(attendee) {
-        return ({ vegetarian: "Vegetariana", vegan: "Vegana", pescatarian: "Pescetariana", other: "Otra" })[attendee.dietary_preference] || "";
+        return ({ vegetarian: "Vegetariano", vegan: "Vegano", pescatarian: "Pescetariano", other: "Otro (ver notas)" })[attendee.dietary_preference] || "";
       }
       function attendeeFileName(event) {
         return String((event && event.title) || "evento").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "").toLowerCase() || "evento";
@@ -641,12 +648,11 @@
         var margin = 12;
         var columns = [
           { label: "#", width: 8, key: "number" },
-          { label: "ASISTENTE", width: 52, key: "name" },
-          { label: "ENTRADA", width: 38, key: "ticket" },
-          { label: "ALERGIAS", width: 61, key: "allergies" },
-          { label: "GRAVE", width: 17, key: "severe" },
-          { label: "DIETA", width: 29, key: "dietary" },
-          { label: "OBSERVACIONES", width: 56, key: "notes" }
+          { label: "ASISTENTE", width: 62, key: "name" },
+          { label: "ALERGIAS", width: 64, key: "allergies" },
+          { label: "GRAVE", width: 16, key: "severe" },
+          { label: "MENÚ ESPECIAL", width: 38, key: "dietary" },
+          { label: "NOTAS", width: 73, key: "notes" }
         ];
         var orderLabel = ({ allergies: "Alergias primero", notes: "Observaciones primero", name: "Nombre" })[sort] || "Alergias primero";
         function addHeading() {
@@ -660,7 +666,7 @@
           pdf.text(attendeePdfText((event && event.title) || "Evento"), margin, 19);
           pdf.text("Orden: " + orderLabel + " · " + attendees.length + (attendees.length === 1 ? " asistente" : " asistentes"), pageWidth - margin, 19, { align: "right" });
           pdf.setFontSize(7);
-          pdf.text("Uso interno · Alergias y observaciones · Impresión en blanco y negro", margin, 24);
+          pdf.text("Uso interno · Alergias, menús especiales y notas manuales · Impresión en blanco y negro", margin, 24);
           var headerY = 29;
           var x = margin;
           pdf.setFont("helvetica", "bold");
@@ -678,10 +684,9 @@
           return {
             number: String(number),
             name: attendeePdfText(attendee.name),
-            ticket: attendeePdfText(attendee.ticket_type_name),
             allergies: attendeePdfText(attendeeHasAllergies(attendee) ? (String(attendee.allergens || "").trim() || "Indicada sin detalle") : "Sin alergias indicadas"),
             severe: Number(attendee.severe_allergy) === 1 ? "SI" : "No",
-            dietary: attendeePdfText(attendeeDietaryPreference(attendee)),
+            dietary: attendeePdfText(attendeeDietaryPreference(attendee) || "-"),
             notes: attendeePdfText(attendeeObservations(attendee))
           };
         }
@@ -728,7 +733,7 @@
         var sort = attendeeExportSort ? attendeeExportSort.value : "allergies";
         attendeeExportButton.disabled = true;
         setAttendeeExportStatus("Preparando listado…");
-        request(api + "/admin/events/" + eventId + "/attendees").then(function (data) {
+        request(api + "/admin/events/" + eventId + "/attendees/print-list").then(function (data) {
           var attendees = (data.attendees || []).filter(function (attendee) { return attendee.status === "issued"; });
           attendees.sort(function (left, right) {
             var leftAllergies = attendeeHasAllergies(left) ? 1 : 0;

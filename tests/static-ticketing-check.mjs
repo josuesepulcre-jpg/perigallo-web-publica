@@ -254,6 +254,9 @@ for (const marker of ["data-attendee-export-event", "data-attendee-export-sort",
 for (const marker of ["downloadAttendeeList", "createAttendeePdf", "attendee.status === \"issued\"", "Impresión en blanco y negro", "pdf.save(\"listado-asistentes-"]) {
   if (!adminBackoffice.includes(marker)) throw new Error(`Attendee-export behavior is missing ${marker}.`);
 }
+for (const marker of ["attendees/print-list", "includeOrderNotes", "cash_payment_notes AS order_notes"]) {
+  if (!(api + ticketing).includes(marker)) throw new Error(`Attendee-export notes contract is missing ${marker}.`);
+}
 if (!cashSalesCss.includes(".admin-cash-order-total")) throw new Error("Cash-order total styles are missing.");
 for (const marker of ["manual_reserve_capacity", "onlineAvailableForType", "Cupo reservado para venta manual"]) {
   if (!manualReserveMigration.includes(marker) && !ticketing.includes(marker) && !editor.includes(marker)) {

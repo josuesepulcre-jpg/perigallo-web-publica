@@ -2159,16 +2159,19 @@ final class Ticketing
         }
     }
 
-    public function adminEventAttendees(int $eventId): array
+    public function adminEventAttendees(int $eventId, bool $includeOrderNotes = false): array
     {
         $this->requireAdminEvent($eventId);
         $dietaryFields = $this->ticketAttendeeDietarySchemaAvailable()
             ? 'ta.dietary_preference, ta.dietary_notes'
             : 'NULL AS dietary_preference, NULL AS dietary_notes';
+        $orderNotes = $includeOrderNotes && $this->cashOrderSchemaAvailable()
+            ? 'o.cash_payment_notes AS order_notes'
+            : 'NULL AS order_notes';
         $rows = $this->pdo->prepare(
             'SELECT t.id, t.public_code, t.status, t.access_status, t.first_entry_at, t.last_entry_at, t.last_exit_at, t.entry_count, t.exit_count, t.last_access_action, t.last_access_by, toi.ticket_type_name,
                     COALESCE(ta.attendee_name, o.name) AS name, o.email, o.phone, COALESCE(o.test_reference, o.redsys_order) AS order_reference,
-                    ta.has_allergies, ta.severe_allergy, ta.allergy_notes, ' . $dietaryFields . ',
+                    ta.has_allergies, ta.severe_allergy, ta.allergy_notes, ' . $dietaryFields . ', ' . $orderNotes . ',
                     COALESCE((SELECT GROUP_CONCAT(taa.allergen_label ORDER BY taa.allergen_label SEPARATOR " · ") FROM ticket_attendee_allergens taa WHERE taa.attendee_id = ta.id), "") AS allergens
              FROM tickets t
              JOIN ticket_order_items toi ON toi.id = t.order_item_id
