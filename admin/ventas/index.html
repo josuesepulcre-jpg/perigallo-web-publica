@@ -59,6 +59,7 @@
         <p data-cash-order-description>Marca si ya ha pagado o si queda pendiente. Solo una reserva pendiente tiene fecha de caducidad. Las entradas se abren en WhatsApp para enviarlas manualmente.</p>
         <form class="admin-cash-order-form" data-admin-cash-order-form>
           <input type="hidden" name="inventory_mode" value="cash" data-cash-inventory-mode>
+          <input type="hidden" name="payment_flow" value="cash" data-cash-payment-flow>
           <label class="admin-form-span">Evento<select name="event_id" required data-cash-event><option value="">Selecciona un evento</option></select></label>
           <div class="admin-cash-ticket-lines" data-cash-ticket-lines><p>Selecciona un evento para elegir las entradas.</p></div>
           <section class="admin-cash-attendees admin-form-span" data-cash-attendees hidden><div><span>Asignar entradas</span><small>Los nombres son editables. El titular recibe un único enlace de WhatsApp con todas las entradas.</small></div><div data-cash-attendee-fields></div></section>
@@ -67,7 +68,8 @@
           <label>Nombre<input name="first_name" required maxlength="120" autocomplete="given-name"></label>
           <label>Apellidos<input name="last_name" maxlength="160" autocomplete="family-name"></label>
           <label class="admin-form-span">Teléfono / WhatsApp<input name="phone" required maxlength="60" autocomplete="tel" inputmode="tel" placeholder="600 000 000 o +34 600 000 000"></label>
-          <label>¿Ha pagado?<select name="cash_payment_status" data-cash-payment-status><option value="paid">Sí, ha pagado en efectivo</option><option value="reserved">No, pendiente de pagar</option></select></label>
+          <label data-cash-payment-wrap>¿Ha pagado?<select name="cash_payment_status" data-cash-payment-status><option value="paid">Sí, ha pagado en efectivo</option><option value="reserved">No, pendiente de pagar</option></select></label>
+          <p class="admin-form-span" data-manual-card-payment-note hidden>Se generará un enlace seguro para pagar con tarjeta. Las entradas se emitirán automáticamente cuando Redsys confirme el cobro.</p>
           <label data-cash-expiry-wrap>La reserva caduca el<input type="datetime-local" name="reservation_expires_at" data-cash-expiry><small>Solo se usa si está pendiente de pagar.</small></label>
           <label class="admin-form-span">Apunte de pago o reserva<textarea name="cash_payment_notes" maxlength="1000" placeholder="Ej.: paga al llegar; 174 € recibidos en efectivo."></textarea></label>
           <p class="admin-form-status admin-form-span" data-cash-order-status aria-live="polite"></p>

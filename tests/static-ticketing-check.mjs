@@ -36,6 +36,8 @@ const required = [
   "database/migrations/023_ticket_order_tax_breakdown.sql",
   "database/migrations/024_admin_cash_ticket_orders.sql",
   "database/migrations/029_manual_ticket_reserve_capacity.sql",
+  "database/migrations/030_manual_ticket_inventory_mode.sql",
+  "database/migrations/031_manual_card_payment_links.sql",
   "database/migrations/022_checkout_runtime_compatibility.sql",
   "api/scripts/apply-migration.php",
   "api/scripts/purge-test-ticketing-data.php",
@@ -240,10 +242,17 @@ for (const marker of ["/admin/login/", "data-admin-dashboard", "data-admin-event
 }
 const cashMigration = readFileSync(join(root, "database/migrations/024_admin_cash_ticket_orders.sql"), "utf8");
 const manualReserveMigration = readFileSync(join(root, "database/migrations/029_manual_ticket_reserve_capacity.sql"), "utf8");
+const manualCardMigration = readFileSync(join(root, "database/migrations/031_manual_card_payment_links.sql"), "utf8");
 const adminSales = readFileSync(join(root, "admin/ventas/index.html"), "utf8");
 const cashSalesCss = readFileSync(join(root, "assets/css/admin-cash-orders.css"), "utf8");
 for (const marker of ["sales_channel", "cash_payment_status", "cash_payment_recorded_at"]) {
   if (!cashMigration.includes(marker)) throw new Error(`Cash-order migration is missing ${marker}.`);
+}
+for (const marker of ["manual_card", "idx_ticket_orders_manual_card"]) {
+  if (!manualCardMigration.includes(marker)) throw new Error(`Manual-card migration is missing ${marker}.`);
+}
+for (const marker of ["startManualCardPayment", "start-card-payment", "manualCardPaymentUrl", "manual_card"]) {
+  if (!(api + ticketing + adminBackoffice).includes(marker)) throw new Error(`Manual card-payment link contract is missing ${marker}.`);
 }
 for (const marker of ["data-cash-order-total", "data-cash-order-total-amount", "Total en efectivo"]) {
   if (!adminSales.includes(marker)) throw new Error(`Cash-order total UI is missing ${marker}.`);

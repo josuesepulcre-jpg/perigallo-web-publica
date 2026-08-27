@@ -258,9 +258,16 @@
   function cashWhatsAppUrl(order) {
     var phone = String(order.phone || "").replace(/\D/g, "");
     if (phone.length === 9 && /^[67]/.test(phone)) phone = "34" + phone;
-    var link = window.location.origin + "/entradas/pedido/?token=" + encodeURIComponent(order.public_token);
-    var message = "Hola " + (order.name || "") + ",\n\nAquí tienes tus entradas para " + (order.event_title || "Perigallo") + ".\n" + link;
+    var manualCard = order.sales_channel === "manual_card";
+    var link = window.location.origin + "/entradas/pedido/?token=" + encodeURIComponent(order.public_token) + (manualCard ? "&pay=1" : "");
+    var message = manualCard
+      ? "Hola " + (order.name || "") + ",\n\nHemos reservado tus entradas para " + (order.event_title || "Perigallo") + ". Completa el pago seguro con tarjeta aquí:\n" + link + "\n\nLas entradas se emitirán automáticamente al confirmarse el pago."
+      : "Hola " + (order.name || "") + ",\n\nAquí tienes tus entradas para " + (order.event_title || "Perigallo") + ".\n" + link;
     return "https://wa.me/" + encodeURIComponent(phone) + "?text=" + encodeURIComponent(message);
+  }
+
+  function manualCardPaymentUrl(order) {
+    return window.location.origin + "/entradas/pedido/?token=" + encodeURIComponent(order.public_token) + "&pay=1";
   }
 
   function deliveryStatusLabel(status) {
@@ -283,6 +290,7 @@
     if (Number(order.allergy_attendee_count || 0)) actions += '<button type="button" class="text-action" data-order-allergies data-order-id="' + Number(order.id) + '">Alergias (' + Number(order.allergy_attendee_count) + ')</button>';
     if (order.sales_channel === "cash" && order.cash_payment_status !== "paid" && !isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="cash-payment" data-order-id="' + Number(order.id) + '">Registrar cobro</button>';
     if (order.sales_channel === "cash" && !isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="send-cash" data-order-id="' + Number(order.id) + '">' + (order.cash_payment_status === "paid" ? "Abrir WhatsApp" : "Enviar reserva") + '</button>';
+    if (order.sales_channel === "manual_card" && order.payment_status !== "paid" && !isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="copy-payment-link" data-order-id="' + Number(order.id) + '">Copiar enlace de pago</button><button type="button" class="text-action" data-order-action="send-manual-card" data-order-id="' + Number(order.id) + '">Enviar link por WhatsApp</button>';
     if (!isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="cancel" data-order-id="' + Number(order.id) + '">Cancelar</button>';
     if (!isClosedOrder(order) && (order.payment_status === "paid" || order.status === "paid")) actions += '<button type="button" class="text-action" data-order-action="refund" data-order-id="' + Number(order.id) + '">Registrar devolución</button>';
     if ((order.payment_status === "paid" || order.status === "paid") && order.sales_channel !== "cash") {
@@ -301,7 +309,7 @@
       var reference = order.redsys_order || order.test_reference || ("Pedido " + order.id);
       var displayStatus = order.display_status || order.payment_status || order.status;
       var paymentMethod = order.payment_method === "cash" ? "Efectivo" : (order.payment_method === "bizum" ? "Bizum" : "Tarjeta");
-      var cashStatus = order.sales_channel === "cash" ? ' · ' + (order.cash_payment_status === "paid" ? "Cobrado" : "Reserva pendiente") : "";
+      var cashStatus = order.sales_channel === "cash" ? ' · ' + (order.cash_payment_status === "paid" ? "Cobrado" : "Reserva pendiente") : (order.sales_channel === "manual_card" ? ' · ' + (order.payment_status === "paid" ? "Cobrado con tarjeta" : "Pago con tarjeta pendiente") : "");
       var discount = Number(order.discount_amount_cents || 0);
       var amount = discount
         ? '<strong><s>' + formatMoney(order.subtotal_cents) + '</s> ' + formatMoney(order.total_cents) + '</strong><small class="admin-order-discount">' + (order.discount_code ? 'Cupón ' + escapeHtml(order.discount_code) : 'Descuento manual') + ' · −' + formatMoney(discount) + '</small>'
@@ -447,8 +455,8 @@
         var cashPaid = paid.filter(function (order) { return order.sales_channel === "cash"; });
         var cashReserved = state.orders.filter(function (order) { return Number(order.is_test) !== 1 && !isClosedOrder(order) && order.sales_channel === "cash" && order.cash_payment_status === "reserved"; });
         function tickets(rows) { return rows.reduce(function (total, order) { return total + Number(order.ticket_quantity || 0); }, 0); }
-        summary.innerHTML = '<article><span>Entradas vendidas · global</span><strong>' + tickets(paid) + '</strong><small>Web y efectivo cobrados</small></article>' +
-          '<article><span>Ingresos cobrados · global</span><strong>' + formatMoney(paid.reduce(function (total, order) { return total + Number(order.total_cents || 0); }, 0)) + '</strong><small>Web y efectivo cobrados</small></article>' +
+        summary.innerHTML = '<article><span>Entradas vendidas · global</span><strong>' + tickets(paid) + '</strong><small>Web, tarjeta y efectivo cobrados</small></article>' +
+          '<article><span>Ingresos cobrados · global</span><strong>' + formatMoney(paid.reduce(function (total, order) { return total + Number(order.total_cents || 0); }, 0)) + '</strong><small>Web, tarjeta y efectivo cobrados</small></article>' +
           '<article><span>Efectivo cobrado</span><strong>' + tickets(cashPaid) + '</strong><small>' + formatMoney(cashPaid.reduce(function (total, order) { return total + Number(order.total_cents || 0); }, 0)) + '</small></article>' +
           '<article><span>Reservas en efectivo</span><strong>' + tickets(cashReserved) + '</strong><small>Pendientes de cobro</small></article>';
       }
@@ -598,7 +606,7 @@
         var discountCents = Math.max(0, Math.round(Number((discountInput && discountInput.value) || 0) * 100) || 0);
         if (discountInput) discountInput.max = (subtotalCents / 100).toFixed(2);
         var totalCents = Math.max(0, subtotalCents - discountCents);
-        label.textContent = form.cash_payment_status.value === "paid" ? "Total cobrado en efectivo" : "Total pendiente de cobro";
+        label.textContent = form.payment_flow.value === "manual_card" ? "Total a cobrar con tarjeta" : (form.cash_payment_status.value === "paid" ? "Total cobrado en efectivo" : "Total pendiente de cobro");
         amount.textContent = formatMoney(totalCents);
         total.hidden = false;
       }
@@ -763,12 +771,16 @@
         if (!modal) return;
         var manualReserve = mode === "manual_reserve";
         form.inventory_mode.value = manualReserve ? "manual_reserve" : "cash";
+        form.payment_flow.value = manualReserve ? "manual_card" : "cash";
+        form.cash_payment_status.value = "reserved";
         var title = modal.querySelector("[data-cash-order-title]");
         var description = modal.querySelector("[data-cash-order-description]");
-        if (title) title.textContent = manualReserve ? "Entrada manual" : "Entrada en efectivo";
+        if (title) title.textContent = manualReserve ? "Entrada manual con pago por tarjeta" : "Entrada en efectivo";
         if (description) description.textContent = manualReserve
-          ? "Emite entradas desde el cupo manual adicional. Es independiente de las plazas de venta online y no se ofrece en la web."
+          ? "Emite entradas desde el cupo manual adicional y genera un enlace seguro de pago con tarjeta para compartir por WhatsApp."
           : "Marca si ya ha pagado o si queda pendiente. Solo una reserva pendiente tiene fecha de caducidad. Las entradas se abren en WhatsApp para enviarlas manualmente.";
+        var submit = form.querySelector('[type="submit"]');
+        if (submit) submit.textContent = manualReserve ? "Generar enlace y abrir WhatsApp" : "Generar y abrir WhatsApp";
         modal.hidden = false;
         renderCashTicketLines();
         updateCashPaymentFields();
@@ -777,7 +789,12 @@
       }
       function updateCashPaymentFields() {
         var expiry = form.querySelector("[data-cash-expiry-wrap]");
-        var reserved = form.cash_payment_status.value === "reserved";
+        var manualCard = form.payment_flow.value === "manual_card";
+        var reserved = manualCard || form.cash_payment_status.value === "reserved";
+        var paymentWrap = form.querySelector("[data-cash-payment-wrap]");
+        var cardNote = form.querySelector("[data-manual-card-payment-note]");
+        if (paymentWrap) paymentWrap.hidden = manualCard;
+        if (cardNote) cardNote.hidden = !manualCard;
         expiry.hidden = !reserved;
         form.reservation_expires_at.required = reserved;
         if (reserved) setDefaultExpiry();
@@ -789,6 +806,8 @@
         if (action === "holded-retry") return "Se volverá a dejar el pedido en cola para Holded. No se emitirá ningún documento desde el navegador. ¿Continuar?";
         if (action === "cash-payment") return "¿Confirmas que ya se ha recibido el pago en efectivo? Se activarán las entradas y se sumará a las ventas cobradas.";
         if (action === "send-cash") return "Se abrirá WhatsApp con el enlace de las entradas preparado. ¿Continuar?";
+        if (action === "send-manual-card") return "Se abrirá WhatsApp con el enlace seguro de pago por tarjeta. ¿Continuar?";
+        if (action === "copy-payment-link") return "Se copiará el enlace seguro de pago por tarjeta. ¿Continuar?";
         if (action === "delivery-email") return "Se programará un nuevo correo con el mismo PDF de entradas. ¿Continuar?";
         if (action === "delivery-email-confirm") return "Confirma esto solo si sabes que el correo ya llegó. No se enviará ningún mensaje nuevo. ¿Marcar como enviado?";
         if (action === "delivery-whatsapp") return "Se programará un nuevo WhatsApp con el mismo PDF de entradas. ¿Continuar?";
@@ -846,7 +865,7 @@
           var items = Array.prototype.slice.call(form.querySelectorAll("[data-cash-ticket-quantity]")).map(function (input) { return { ticket_type_id: Number(input.getAttribute("data-ticket-type-id")), quantity: Number(input.value || 0) }; }).filter(function (item) { return item.quantity > 0; });
           if (!items.length) { setCashStatus("Selecciona al menos una entrada."); return; }
           var submit = form.querySelector('[type="submit"]');
-          var payload = { event_id: Number(form.event_id.value), first_name: form.first_name.value.trim(), last_name: form.last_name.value.trim(), phone: form.phone.value.trim(), cash_payment_status: form.cash_payment_status.value, reservation_expires_at: form.reservation_expires_at.value, cash_discount_euros: form.cash_discount_euros.value, cash_payment_notes: form.cash_payment_notes.value.trim(), inventory_mode: form.inventory_mode.value, attendees: cashAttendeesPayload(), items: items };
+          var payload = { event_id: Number(form.event_id.value), first_name: form.first_name.value.trim(), last_name: form.last_name.value.trim(), phone: form.phone.value.trim(), cash_payment_status: form.cash_payment_status.value, payment_flow: form.payment_flow.value, reservation_expires_at: form.reservation_expires_at.value, cash_discount_euros: form.cash_discount_euros.value, cash_payment_notes: form.cash_payment_notes.value.trim(), inventory_mode: form.inventory_mode.value, attendees: cashAttendeesPayload(), items: items };
           var popup = window.open("about:blank", "perigallo-cash-whatsapp");
           submit.disabled = true;
           setCashStatus("Generando pedido…");
@@ -896,6 +915,19 @@
           if (action === "send-cash") {
             var cashOrder = (state.orders || []).find(function (order) { return Number(order.id) === id; });
             if (cashOrder) window.open(cashWhatsAppUrl(cashOrder), "_blank", "noopener");
+            return;
+          }
+          if (action === "send-manual-card") {
+            var manualCardOrder = (state.orders || []).find(function (order) { return Number(order.id) === id; });
+            if (manualCardOrder) window.open(cashWhatsAppUrl(manualCardOrder), "_blank", "noopener");
+            return;
+          }
+          if (action === "copy-payment-link") {
+            var orderWithLink = (state.orders || []).find(function (order) { return Number(order.id) === id; });
+            if (!orderWithLink) return;
+            navigator.clipboard.writeText(manualCardPaymentUrl(orderWithLink)).then(function () {
+              button.textContent = "Enlace copiado";
+            }).catch(function () { renderPageError("No se ha podido copiar el enlace de pago."); });
             return;
           }
           var holdedConfirmation = false;

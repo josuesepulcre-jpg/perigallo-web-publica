@@ -13,6 +13,7 @@ final class Ticketing
 {
     private ?DiscountCodes $discountCodes = null;
     private ?bool $cashOrderSchemaAvailable = null;
+    private ?bool $manualCardPaymentSchemaAvailable = null;
     private ?bool $manualReserveInventorySchemaAvailable = null;
     private ?bool $ticketItemTaxBreakdownAvailable = null;
     private ?bool $ticketAttendeeDietarySchemaAvailable = null;
@@ -414,6 +415,8 @@ final class Ticketing
         $emailDelivery = $this->pdo->prepare('SELECT status, created_at FROM email_deliveries WHERE order_id = ? ORDER BY id DESC LIMIT 1');
         $emailDelivery->execute([(int) $order['id']]);
 
+        $manualCard = ($order['sales_channel'] ?? 'web') === 'manual_card';
+        $manualCardExpired = $manualCard && !empty($order['reservation_expires_at']) && strtotime((string) $order['reservation_expires_at']) <= time();
         return [
             'token' => $order['public_token'],
             'status' => $this->effectiveOrderStatus($order),
@@ -423,6 +426,10 @@ final class Ticketing
             'order_status' => $order['order_status'] ?? null,
             'payment_status' => $order['payment_status'] ?? null,
             'payment_method' => $order['payment_method'] ?? null,
+            'can_pay_by_card' => $manualCard
+                && !$manualCardExpired
+                && !in_array($this->effectiveOrderStatus($order), ['paid', 'cancelled', 'refunded', 'expired'], true),
+            'manual_card_payment_state' => !$manualCard ? null : ($manualCardExpired ? 'expired' : ((string) ($order['payment_status'] ?? $order['status']))),
             'delivery_status' => $order['delivery_status'] ?? null,
             'name' => $order['name'],
             'email' => $order['email'],
@@ -959,9 +966,17 @@ final class Ticketing
         if ($name === '' || $phone === '') {
             throw new InvalidArgumentException('Indica nombre y teléfono de WhatsApp para enviar las entradas.');
         }
+        $paymentFlow = (string) ($data['payment_flow'] ?? 'cash');
+        if (!in_array($paymentFlow, ['cash', 'manual_card'], true)) {
+            throw new InvalidArgumentException('La forma de cobro de la emisión manual no es válida.');
+        }
+        if ($paymentFlow === 'manual_card') $this->requireManualCardPaymentSchema();
         $cashStatus = (string) ($data['cash_payment_status'] ?? 'reserved');
         if (!in_array($cashStatus, ['reserved', 'paid'], true)) {
             throw new InvalidArgumentException('El estado del pago en efectivo no es válido.');
+        }
+        if ($paymentFlow === 'manual_card' && $cashStatus === 'paid') {
+            throw new InvalidArgumentException('Una entrada con enlace de tarjeta queda pendiente hasta recibir la confirmación de Redsys.');
         }
         $inventoryMode = (string) ($data['inventory_mode'] ?? 'cash');
         if (!in_array($inventoryMode, ['cash', 'manual_reserve'], true)) {
@@ -970,7 +985,7 @@ final class Ticketing
         $this->requireManualReserveInventorySchema();
         $notes = clean_string((string) ($data['cash_payment_notes'] ?? ''), 1000);
         $cashDiscountCents = $this->cashDiscountCents($data['cash_discount_euros'] ?? 0);
-        $reservationExpiresAt = $cashStatus === 'reserved' ? $this->cashReservationExpiry((string) ($data['reservation_expires_at'] ?? '')) : null;
+        $reservationExpiresAt = ($cashStatus === 'reserved' || $paymentFlow === 'manual_card') ? $this->cashReservationExpiry((string) ($data['reservation_expires_at'] ?? '')) : null;
 
         $this->pdo->beginTransaction();
         try {
@@ -978,15 +993,20 @@ final class Ticketing
             $orderStmt = $this->pdo->prepare(
                 'INSERT INTO ticket_orders
                  (public_token, redsys_order, first_name, last_name, name, email, phone, age_requirement_accepted, age_requirement_accepted_at, dress_code_accepted, dress_code_accepted_at, dress_code_version, subtotal_cents, total_cents, currency, status, reservation_expires_at, ip_address, user_agent, is_test, environment, sales_channel, inventory_mode, cash_payment_status, cash_payment_notes, cash_payment_recorded_by, cash_payment_recorded_at, order_status, payment_status, delivery_status, paid_at, holded_status, holded_excluded, holded_exclusion_reason, created_at, updated_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW(), 1, NOW(), ?, 0, 0, ?, ?, ?, ?, ?, ?, ?, "cash", ?, ?, ?, ?, ?, ?, ?, "generated", ?, "not_required", 1, "cash_sale", NOW(), NOW())'
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW(), 1, NOW(), ?, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "generated", ?, ?, ?, ?, NOW(), NOW())'
             );
-            $isPaid = $cashStatus === 'paid';
+            $isPaid = $paymentFlow === 'cash' && $cashStatus === 'paid';
+            $salesChannel = $paymentFlow === 'manual_card' ? 'manual_card' : 'cash';
+            $cashDatabaseStatus = $paymentFlow === 'manual_card' ? 'not_applicable' : $cashStatus;
+            $holdedStatus = $paymentFlow === 'cash' ? 'not_required' : 'pending';
+            $holdedExcluded = $paymentFlow === 'cash' ? 1 : 0;
+            $holdedExclusionReason = $paymentFlow === 'cash' ? 'cash_sale' : null;
             $publicToken = public_token();
             $orderStmt->execute([
                 $publicToken, $this->nextRedsysOrder(), $firstName, $lastName, $name, $email, $phone, self::DRESS_CODE_VERSION,
                 env_value('REDSYS_CURRENCY', '978'), $isPaid ? 'paid' : 'pending', $reservationExpiresAt, client_ip(), substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255),
                 !empty($event['is_test']) ? 1 : 0, !empty($event['is_test']) ? 'sandbox' : 'production',
-                $inventoryMode === 'manual_reserve' ? 'manual_reserve' : 'standard', $cashStatus, $notes ?: null, $isPaid ? $operator : null, $isPaid ? now_mysql() : null, $isPaid ? 'confirmed' : 'pending_payment', $isPaid ? 'paid' : 'pending', $isPaid ? now_mysql() : null,
+                $salesChannel, $inventoryMode === 'manual_reserve' ? 'manual_reserve' : 'standard', $cashDatabaseStatus, $notes ?: null, $isPaid ? $operator : null, $isPaid ? now_mysql() : null, $isPaid ? 'confirmed' : 'pending_payment', $isPaid ? 'paid' : 'pending', $isPaid ? now_mysql() : null, $holdedStatus, $holdedExcluded, $holdedExclusionReason,
             ]);
             $orderId = (int) $this->pdo->lastInsertId();
             $subtotal = 0;
@@ -1052,9 +1072,61 @@ final class Ticketing
                 $orderId,
             ]);
             $this->generateTicketsOnce($orderId, $isPaid ? 'issued' : 'blocked');
-            $this->auditAdminOperation($operator, $isPaid ? 'cash_order_created_paid' : 'cash_order_reserved', $orderId, ['event_id' => $eventId, 'quantity' => $quantityTotal, 'cash_discount_cents' => $cashDiscountCents, 'inventory_mode' => $inventoryMode, 'notes' => $notes]);
+            $this->auditAdminOperation($operator, $paymentFlow === 'manual_card' ? 'manual_card_order_created' : ($isPaid ? 'cash_order_created_paid' : 'cash_order_reserved'), $orderId, ['event_id' => $eventId, 'quantity' => $quantityTotal, 'cash_discount_cents' => $cashDiscountCents, 'inventory_mode' => $inventoryMode, 'notes' => $notes]);
             $this->pdo->commit();
-            return ['order' => $this->adminOrderById($orderId), 'whatsapp_url' => $this->cashOrderWhatsAppUrl($phone, $name, (string) $event['title'], $publicToken)];
+            $paymentUrl = $this->manualCardPaymentUrl($publicToken);
+            return [
+                'order' => $this->adminOrderById($orderId),
+                'payment_url' => $paymentFlow === 'manual_card' ? $paymentUrl : null,
+                'whatsapp_url' => $paymentFlow === 'manual_card'
+                    ? $this->manualCardOrderWhatsAppUrl($phone, $name, (string) $event['title'], $paymentUrl)
+                    : $this->cashOrderWhatsAppUrl($phone, $name, (string) $event['title'], $publicToken),
+            ];
+        } catch (\Throwable $error) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            throw $error;
+        }
+    }
+
+    /** Prepara un POST firmado a Redsys para un enlace de pago manual. */
+    public function startManualCardPayment(string $token): array
+    {
+        $this->requireCashOrderSchema();
+        $this->pdo->beginTransaction();
+        try {
+            $statement = $this->pdo->prepare('SELECT * FROM ticket_orders WHERE public_token = ? FOR UPDATE');
+            $statement->execute([$token]);
+            $order = $statement->fetch();
+            if (!$order) throw new RuntimeException('Pedido no encontrado.');
+            if (($order['sales_channel'] ?? 'web') !== 'manual_card') {
+                throw new RuntimeException('Este enlace no corresponde a un pago manual con tarjeta.');
+            }
+            if (in_array((string) $order['status'], ['paid', 'cancelled', 'refunded'], true)) {
+                throw new RuntimeException('Este pedido ya no admite un pago con tarjeta.');
+            }
+            if (!empty($order['reservation_expires_at']) && strtotime((string) $order['reservation_expires_at']) <= time()) {
+                throw new RuntimeException('Este enlace de pago ha caducado. Contacta con Perigallo para renovar la reserva.');
+            }
+            if ((int) $order['total_cents'] <= 0) {
+                throw new RuntimeException('Este pedido no tiene un importe pendiente que cobrar.');
+            }
+            $eventStatement = $this->pdo->prepare('SELECT e.* FROM ticket_order_items oi JOIN events e ON e.id = oi.event_id WHERE oi.order_id = ? ORDER BY oi.id ASC LIMIT 1');
+            $eventStatement->execute([(int) $order['id']]);
+            $event = $eventStatement->fetch();
+            if (!$event) throw new RuntimeException('No se pudo localizar el evento del pedido.');
+
+            $this->redsys->assertConfigured();
+            $attemptExists = $this->pdo->prepare('SELECT COUNT(*) FROM payment_attempts WHERE redsys_order = ?');
+            $attemptExists->execute([(string) $order['redsys_order']]);
+            // En el primer intento se conserva la referencia visible del pedido.
+            // Un reintento usa una nueva referencia para respetar la unicidad de Redsys.
+            $redsysOrder = (int) $attemptExists->fetchColumn() === 0 ? (string) $order['redsys_order'] : $this->nextRedsysOrder();
+            $this->pdo->prepare(
+                'INSERT INTO payment_attempts (order_id, redsys_order, environment, amount_cents, currency, signature_version, payment_method, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, "card", "created", NOW(), NOW())'
+            )->execute([(int) $order['id'], $redsysOrder, env_value('REDSYS_ENV', 'test'), (int) $order['total_cents'], (string) $order['currency'], env_value('REDSYS_SIGNATURE_VERSION', 'HMAC_SHA256_V1')]);
+            $this->pdo->prepare('UPDATE ticket_orders SET status = "payment_processing", order_status = "pending_payment", payment_status = "pending", updated_at = NOW() WHERE id = ?')->execute([(int) $order['id']]);
+            $this->pdo->commit();
+            return $this->redsysForm($redsysOrder, (int) $order['total_cents'], $event, (string) $order['public_token'], 'card');
         } catch (\Throwable $error) {
             if ($this->pdo->inTransaction()) $this->pdo->rollBack();
             throw $error;
@@ -3070,6 +3142,19 @@ final class Ticketing
         return 'https://wa.me/' . rawurlencode($recipient) . '?text=' . rawurlencode("Hola {$name},\n\nAquí tienes tus entradas para {$eventTitle}.\n{$ticketUrl}");
     }
 
+    private function manualCardPaymentUrl(string $publicToken): string
+    {
+        return app_base_url() . '/entradas/pedido/?token=' . rawurlencode($publicToken) . '&pay=1';
+    }
+
+    private function manualCardOrderWhatsAppUrl(string $phone, string $name, string $eventTitle, string $paymentUrl): string
+    {
+        $recipient = preg_replace('/\D+/', '', $phone) ?: '';
+        if (strlen($recipient) === 9 && (str_starts_with($recipient, '6') || str_starts_with($recipient, '7'))) $recipient = '34' . $recipient;
+        $message = "Hola {$name},\n\nHemos reservado tus entradas para {$eventTitle}. Completa el pago seguro con tarjeta aquí:\n{$paymentUrl}\n\nLas entradas se emitirán automáticamente cuando el banco confirme el pago.\n\nEquipo Perigallo";
+        return 'https://wa.me/' . rawurlencode($recipient) . '?text=' . rawurlencode($message);
+    }
+
     private function cashOrderSchemaAvailable(): bool
     {
         if ($this->cashOrderSchemaAvailable !== null) {
@@ -3087,6 +3172,24 @@ final class Ticketing
     {
         if (!$this->cashOrderSchemaAvailable()) {
             throw new RuntimeException('La operativa de efectivo aún no está preparada en la base de datos. Aplica la migración 024 y vuelve a intentarlo.', 422);
+        }
+    }
+
+    private function manualCardPaymentSchemaAvailable(): bool
+    {
+        if ($this->manualCardPaymentSchemaAvailable !== null) return $this->manualCardPaymentSchemaAvailable;
+        try {
+            $column = $this->pdo->query("SHOW COLUMNS FROM ticket_orders LIKE 'sales_channel'")->fetch();
+            return $this->manualCardPaymentSchemaAvailable = str_contains((string) ($column['Type'] ?? ''), "'manual_card'");
+        } catch (\Throwable) {
+            return $this->manualCardPaymentSchemaAvailable = false;
+        }
+    }
+
+    private function requireManualCardPaymentSchema(): void
+    {
+        if (!$this->manualCardPaymentSchemaAvailable()) {
+            throw new RuntimeException('Los enlaces de pago manual aún no están preparados en la base de datos. Aplica la migración 031 y vuelve a intentarlo.', 422);
         }
     }
 
@@ -3114,8 +3217,8 @@ final class Ticketing
     {
         for ($i = 0; $i < 8; $i++) {
             $order = date('ymd') . str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-            $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM ticket_orders WHERE redsys_order = ?');
-            $stmt->execute([$order]);
+            $stmt = $this->pdo->prepare('SELECT (SELECT COUNT(*) FROM ticket_orders WHERE redsys_order = ?) + (SELECT COUNT(*) FROM payment_attempts WHERE redsys_order = ?)');
+            $stmt->execute([$order, $order]);
             if ((int) $stmt->fetchColumn() === 0) {
                 return $order;
             }

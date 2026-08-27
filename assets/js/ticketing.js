@@ -1669,6 +1669,38 @@
 
   function renderOrderStatus(root, order, token, allowResend) {
       allowResend = allowResend !== false;
+      if (order.can_pay_by_card) {
+        root.innerHTML = [
+          '<div class="ticket-panel">',
+          '<span class="ticket-eyebrow">Reserva pendiente de pago</span>',
+          '<h1 class="ticket-title">Completa tu pago <em>seguro</em></h1>',
+          '<p class="ticket-copy">Hola ' + escapeHtml(order.name || '') + '. Hemos reservado tus entradas. El pago se realiza en la pasarela bancaria segura de Redsys.</p>',
+          '<dl class="ticket-order-summary"><div><dt>Pedido</dt><dd>' + escapeHtml(order.reference || '—') + '</dd></div><div><dt>Total a pagar</dt><dd>' + cents(order.total_cents) + '</dd></div>' + (order.reservation_expires_at ? '<div><dt>Reserva válida hasta</dt><dd>' + escapeHtml(fmtDate(order.reservation_expires_at)) + '</dd></div>' : '') + '</dl>',
+          '<div class="ticket-actions"><button class="ticket-btn primary" type="button" data-start-manual-card-payment>Pagar ' + cents(order.total_cents) + ' con tarjeta</button></div>',
+          '<p class="ticket-delivery-note">Tus entradas se emitirán automáticamente cuando el banco confirme el pago.</p>',
+          '</div>'
+        ].join('');
+        var payButton = root.querySelector('[data-start-manual-card-payment]');
+        payButton.addEventListener('click', function () {
+          payButton.disabled = true;
+          payButton.textContent = 'Conectando con Redsys…';
+          request(api + '/orders/' + encodeURIComponent(token) + '/start-card-payment', { method: 'POST' })
+            .then(function (data) { submitPaymentForm(data.payment); })
+            .catch(function (error) {
+              payButton.disabled = false;
+              payButton.textContent = 'Pagar ' + cents(order.total_cents) + ' con tarjeta';
+              root.querySelector('.ticket-delivery-note').textContent = error.message;
+            });
+        });
+        return;
+      }
+      if (order.manual_card_payment_state && order.manual_card_payment_state !== 'paid') {
+        var unavailableCopy = order.manual_card_payment_state === 'expired'
+          ? 'Este enlace de pago ha caducado. Contacta con Perigallo para renovar la reserva.'
+          : 'Este enlace de pago ya no está disponible. Contacta con Perigallo si necesitas ayuda con la reserva.';
+        root.innerHTML = '<div class="ticket-panel"><span class="ticket-eyebrow">Pago no disponible</span><h1 class="ticket-title">Tu reserva necesita <em>atención</em></h1><p class="ticket-copy">' + unavailableCopy + '</p></div>';
+        return;
+      }
       var tickets = order.tickets || [];
       var invoice = order.invoice || {};
       var invoiceAction = invoice.available && token

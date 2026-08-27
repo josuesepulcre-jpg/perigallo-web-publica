@@ -146,6 +146,11 @@ try {
         return;
     }
 
+    if ($method === 'POST' && preg_match('#^/orders/([A-Za-z0-9_-]+)/start-card-payment$#', $path, $m)) {
+        json_response(['ok' => true, 'payment' => $ticketing->startManualCardPayment($m[1])]);
+        return;
+    }
+
     if ($method === 'GET' && preg_match('#^/orders/([A-Za-z0-9_-]+)/invoice$#', $path, $m)) {
         $invoice = $ticketing->invoicePdfByToken($m[1]);
         if (!$invoice) {
