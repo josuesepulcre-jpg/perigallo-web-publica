@@ -33,6 +33,18 @@
       </div>
       <p class="admin-attendee-export-status" data-attendee-export-status aria-live="polite"></p>
     </section>
+    <section class="admin-attendee-export admin-card-order-export" aria-labelledby="card-order-export-title">
+      <div>
+        <span class="ticket-eyebrow">Operativa de puerta</span>
+        <h2 id="card-order-export-title">Listado de invitados</h2>
+        <p>Genera un PDF con todas las entradas activas del evento: compras con tarjeta y entradas creadas manualmente. Incluye una casilla para comprobar cada llegada.</p>
+      </div>
+      <div class="admin-card-order-export-controls">
+        <label>Evento<select data-door-list-event aria-label="Evento del listado de invitados"><option value="">Selecciona un evento</option></select></label>
+        <button type="button" class="ticket-btn primary" data-download-door-list>Descargar lista de puerta</button>
+      </div>
+      <p class="admin-attendee-export-status" data-door-list-status aria-live="polite"></p>
+    </section>
     <section class="admin-order-toolbar" aria-label="Filtros de pedidos">
       <div class="admin-filter-group" role="group" aria-label="Estado del pedido">
         <button type="button" class="is-active" data-admin-order-filter="active">Entradas activas</button>
@@ -98,6 +110,6 @@
   </main>
 </div>
 <script src="/assets/vendor/jspdf.umd.min.js?v=20260825-pdf-list-v1" defer></script>
-<script src="/assets/js/admin-backoffice.js?v=20260827-manual-card-payment-v1" defer></script>
+<script src="/assets/js/admin-backoffice.js?v=20260829-card-orders-list-v1" defer></script>
 </body>
 </html>

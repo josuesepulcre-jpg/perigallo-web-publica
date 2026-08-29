@@ -448,6 +448,9 @@
       var attendeeExportSort = root.querySelector("[data-attendee-export-sort]");
       var attendeeExportButton = root.querySelector("[data-download-attendee-list]");
       var attendeeExportStatus = root.querySelector("[data-attendee-export-status]");
+      var doorListEvent = root.querySelector("[data-door-list-event]");
+      var doorListButton = root.querySelector("[data-download-door-list]");
+      var doorListStatus = root.querySelector("[data-door-list-status]");
       function renderSalesSummary() {
         var summary = root.querySelector("[data-admin-sales-summary]");
         if (!summary) return;
@@ -621,12 +624,16 @@
         if (stateName) attendeeExportStatus.setAttribute("data-state", stateName); else attendeeExportStatus.removeAttribute("data-state");
       }
       function populateAttendeeExportEvents() {
-        if (!attendeeExportEvent) return;
+        var selects = [attendeeExportEvent, doorListEvent].filter(Boolean);
+        if (!selects.length) return;
         var requestedEventId = Number(new URLSearchParams(window.location.search).get("event"));
-        attendeeExportEvent.innerHTML = '<option value="">Selecciona un evento</option>' + cashMeta.events.map(function (event) {
+        var options = '<option value="">Selecciona un evento</option>' + cashMeta.events.map(function (event) {
           return '<option value="' + Number(event.id) + '">' + escapeHtml(event.title) + ' · ' + escapeHtml(formatDate(event.starts_at, true)) + '</option>';
         }).join("");
-        if (requestedEventId && cashMeta.events.some(function (event) { return Number(event.id) === requestedEventId; })) attendeeExportEvent.value = String(requestedEventId);
+        selects.forEach(function (select) {
+          select.innerHTML = options;
+          if (requestedEventId && cashMeta.events.some(function (event) { return Number(event.id) === requestedEventId; })) select.value = String(requestedEventId);
+        });
       }
       function attendeeHasAllergies(attendee) { return Number(attendee.has_allergies) === 1 || String(attendee.allergens || "").trim() !== ""; }
       function attendeeObservations(attendee) {
@@ -739,6 +746,92 @@
         addFooter();
         pdf.save("listado-asistentes-" + attendeeFileName(event) + ".pdf");
       }
+      function createDoorListPdf(attendees, event) {
+        if (!window.jspdf || !window.jspdf.jsPDF) throw new Error("No se ha podido cargar el generador de PDF. Recarga la página e inténtalo de nuevo.");
+        var pdf = new window.jspdf.jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+        var pageWidth = 297;
+        var pageHeight = 210;
+        var margin = 12;
+        var columns = [
+          { label: "#", width: 9, key: "number" },
+          { label: "LLEGADA", width: 19, key: "check" },
+          { label: "INVITADO", width: 90, key: "name" },
+          { label: "TIPO DE ENTRADA", width: 65, key: "ticketType" },
+          { label: "PEDIDO", width: 43, key: "reference" },
+          { label: "ESTADO", width: 47, key: "status" }
+        ];
+        function addHeading() {
+          pdf.setDrawColor(0);
+          pdf.setTextColor(0);
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(15);
+          pdf.text("LISTADO DE INVITADOS · PUERTA", margin, 13);
+          pdf.setFont("helvetica", "normal");
+          pdf.setFontSize(9);
+          pdf.text(attendeePdfText((event && event.title) || "Evento"), margin, 19);
+          pdf.text(attendees.length + (attendees.length === 1 ? " entrada activa" : " entradas activas"), pageWidth - margin, 19, { align: "right" });
+          pdf.setFontSize(7);
+          pdf.text("Incluye compras con tarjeta y entradas creadas manualmente · Marca la casilla al comprobar la llegada", margin, 24);
+          var headerY = 29;
+          var x = margin;
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(7);
+          columns.forEach(function (column) {
+            pdf.setFillColor(235);
+            pdf.rect(x, headerY, column.width, 8, "FD");
+            pdf.setTextColor(0);
+            pdf.text(column.label, x + 2, headerY + 5);
+            x += column.width;
+          });
+          return headerY + 8;
+        }
+        function addFooter() {
+          var pages = pdf.getNumberOfPages();
+          for (var page = 1; page <= pages; page++) {
+            pdf.setPage(page);
+            pdf.setTextColor(0);
+            pdf.setFont("helvetica", "normal");
+            pdf.setFontSize(7);
+            pdf.text("Perigallo · listado interno para control de acceso", margin, pageHeight - 8);
+            pdf.text("Página " + page + " de " + pages, pageWidth - margin, pageHeight - 8, { align: "right" });
+          }
+        }
+        var y = addHeading();
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(8);
+        attendees.forEach(function (attendee, index) {
+          var values = {
+            number: String(index + 1),
+            name: attendeePdfText(attendee.name || "Sin nombre"),
+            ticketType: attendeePdfText(attendee.ticket_type_name || "Entrada"),
+            reference: attendeePdfText(attendee.order_reference || "—"),
+            status: attendee.access_status === "inside" ? "Ya dentro" : "Pendiente"
+          };
+          var cells = columns.map(function (column) { return column.key === "check" ? [""] : pdf.splitTextToSize(values[column.key], Math.max(4, column.width - 4)); });
+          var lines = cells.reduce(function (largest, cell) { return Math.max(largest, cell.length); }, 1);
+          var rowHeight = Math.max(8, lines * 3.6 + 3);
+          if (y + rowHeight > pageHeight - 15) {
+            pdf.addPage();
+            y = addHeading();
+            pdf.setFont("helvetica", "normal");
+            pdf.setFontSize(8);
+          }
+          var x = margin;
+          columns.forEach(function (column, columnIndex) {
+            pdf.rect(x, y, column.width, rowHeight);
+            if (column.key === "check") {
+              var size = Math.min(5, rowHeight - 3);
+              pdf.rect(x + (column.width - size) / 2, y + (rowHeight - size) / 2, size, size);
+            } else {
+              pdf.text(cells[columnIndex], x + 2, y + 4);
+            }
+            x += column.width;
+          });
+          y += rowHeight;
+        });
+        addFooter();
+        pdf.save("listado-puerta-" + attendeeFileName(event) + ".pdf");
+      }
       function downloadAttendeeList() {
         var eventId = Number(attendeeExportEvent && attendeeExportEvent.value);
         if (!eventId) { setAttendeeExportStatus("Selecciona el evento del que quieres descargar el listado.", "error"); return; }
@@ -766,6 +859,29 @@
         }).catch(function (error) {
           setAttendeeExportStatus(error.message || "No se ha podido preparar el listado.", "error");
         }).finally(function () { attendeeExportButton.disabled = false; });
+      }
+      function setDoorListStatus(message, stateName) {
+        if (!doorListStatus) return;
+        doorListStatus.textContent = message || "";
+        if (stateName) doorListStatus.setAttribute("data-state", stateName); else doorListStatus.removeAttribute("data-state");
+      }
+      function downloadDoorList() {
+        var eventId = Number(doorListEvent && doorListEvent.value);
+        if (!eventId) { setDoorListStatus("Selecciona el evento del que quieres descargar la lista de puerta.", "error"); return; }
+        var event = cashMeta.events.find(function (item) { return Number(item.id) === eventId; });
+        doorListButton.disabled = true;
+        setDoorListStatus("Preparando lista de invitados…");
+        request(api + "/admin/events/" + eventId + "/attendees/print-list").then(function (data) {
+          var attendees = (data.attendees || []).filter(function (attendee) { return attendee.status === "issued"; });
+          attendees.sort(function (left, right) {
+            var byName = String(left.name || "").localeCompare(String(right.name || ""), "es");
+            return byName || String(left.order_reference || "").localeCompare(String(right.order_reference || ""), "es");
+          });
+          createDoorListPdf(attendees, event);
+          setDoorListStatus(attendees.length + (attendees.length === 1 ? " invitado incluido en el PDF." : " invitados incluidos en el PDF."), "success");
+        }).catch(function (error) {
+          setDoorListStatus(error.message || "No se ha podido preparar la lista de puerta.", "error");
+        }).finally(function () { doorListButton.disabled = false; });
       }
       function openCashModal(mode) {
         if (!modal) return;
@@ -836,6 +952,7 @@
         root.querySelectorAll("[data-open-cash-order]").forEach(function (button) { button.addEventListener("click", function () { openCashModal("cash"); }); });
         root.querySelectorAll("[data-open-manual-order]").forEach(function (button) { button.addEventListener("click", function () { openCashModal("manual_reserve"); }); });
         if (attendeeExportButton) attendeeExportButton.addEventListener("click", downloadAttendeeList);
+        if (doorListButton) doorListButton.addEventListener("click", downloadDoorList);
         root.querySelectorAll("[data-close-cash-order]").forEach(function (button) { button.addEventListener("click", closeCashModal); });
         modal.addEventListener("click", function (event) { if (event.target === modal) closeCashModal(); });
         root.querySelectorAll("[data-close-order-edit]").forEach(function (button) { button.addEventListener("click", closeEditModal); });
