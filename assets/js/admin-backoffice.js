@@ -771,7 +771,7 @@
           pdf.text(attendeePdfText((event && event.title) || "Evento"), margin, 19);
           pdf.text(attendees.length + (attendees.length === 1 ? " entrada activa" : " entradas activas"), pageWidth - margin, 19, { align: "right" });
           pdf.setFontSize(7);
-          pdf.text("Incluye compras con tarjeta y entradas creadas manualmente · Marca la casilla al comprobar la llegada", margin, 24);
+          pdf.text("Ordenado por compra · Incluye tarjeta y entradas creadas manualmente · Marca la casilla al comprobar la llegada", margin, 24);
           var headerY = 29;
           var x = margin;
           pdf.setFont("helvetica", "bold");
@@ -873,10 +873,6 @@
         setDoorListStatus("Preparando lista de invitados…");
         request(api + "/admin/events/" + eventId + "/attendees/print-list").then(function (data) {
           var attendees = (data.attendees || []).filter(function (attendee) { return attendee.status === "issued"; });
-          attendees.sort(function (left, right) {
-            var byName = String(left.name || "").localeCompare(String(right.name || ""), "es");
-            return byName || String(left.order_reference || "").localeCompare(String(right.order_reference || ""), "es");
-          });
           createDoorListPdf(attendees, event);
           setDoorListStatus(attendees.length + (attendees.length === 1 ? " invitado incluido en el PDF." : " invitados incluidos en el PDF."), "success");
         }).catch(function (error) {
