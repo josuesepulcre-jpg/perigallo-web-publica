@@ -251,6 +251,9 @@ for (const marker of ["sales_channel", "cash_payment_status", "cash_payment_reco
 for (const marker of ["manual_card", "idx_ticket_orders_manual_card"]) {
   if (!manualCardMigration.includes(marker)) throw new Error(`Manual-card migration is missing ${marker}.`);
 }
+for (const marker of ["issuePaidManualCardTicketsForOrder", "issuePaidManualCardTicketsForEvent", "t.status = \"blocked\"", "sales_channel = \"manual_card\""]) {
+  if (!ticketing.includes(marker)) throw new Error(`Manual-card ticket activation is missing ${marker}.`);
+}
 for (const marker of ["startManualCardPayment", "start-card-payment", "manualCardPaymentUrl", "manual_card"]) {
   if (!(api + ticketing + adminBackoffice).includes(marker)) throw new Error(`Manual card-payment link contract is missing ${marker}.`);
 }

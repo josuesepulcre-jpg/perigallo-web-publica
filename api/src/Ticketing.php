@@ -848,6 +848,12 @@ final class Ticketing
                     $this->discounts()->releaseForOrder((int) $order['id'], 'cancelled');
                 }
             }
+            // Los enlaces de tarjeta creados desde taquilla reservan las entradas
+            // como "blocked" antes del pago. Una vez validado por Redsys hay que
+            // activarlas: generateTicketsOnce no las recrea porque ya existen.
+            if ($accepted) {
+                $this->issuePaidManualCardTicketsForOrder((int) $order['id']);
+            }
 
             $this->pdo->commit();
             if ($accepted && $order['status'] !== 'paid') {
@@ -2285,6 +2291,9 @@ final class Ticketing
     public function adminEventPaymentReport(int $eventId): array
     {
         $this->requireAdminEvent($eventId);
+        // Repara de forma idempotente las ventas manuales confirmadas antes de
+        // que existiera la activación posterior al callback de Redsys.
+        $this->issuePaidManualCardTicketsForEvent($eventId);
         $paymentMethod = $this->cashOrderSchemaAvailable()
             ? 'CASE WHEN o.sales_channel = "cash" THEN "cash" ELSE COALESCE((SELECT pa.payment_method FROM payment_attempts pa WHERE pa.order_id = o.id ORDER BY pa.id DESC LIMIT 1), "card") END'
             : 'COALESCE((SELECT pa.payment_method FROM payment_attempts pa WHERE pa.order_id = o.id ORDER BY pa.id DESC LIMIT 1), "card")';
@@ -3583,6 +3592,34 @@ final class Ticketing
                 $attendeeUpdate->execute([(int) $this->pdo->lastInsertId(), (int) $item['id'], $i + 1]);
             }
         }
+    }
+
+    /** Activa las entradas ya reservadas al cobrar un enlace manual de tarjeta. */
+    private function issuePaidManualCardTicketsForOrder(int $orderId): void
+    {
+        if (!$this->manualCardPaymentSchemaAvailable()) return;
+        $this->pdo->prepare(
+            'UPDATE tickets t
+             JOIN ticket_order_items toi ON toi.id = t.order_item_id
+             JOIN ticket_orders o ON o.id = toi.order_id
+             SET t.status = "issued", t.updated_at = NOW()
+             WHERE toi.order_id = ? AND t.status = "blocked" AND o.sales_channel = "manual_card"
+               AND (o.status = "paid" OR o.payment_status = "paid")'
+        )->execute([$orderId]);
+    }
+
+    /** Repara las entradas reservadas de tarjeta de un evento ya cobradas. */
+    private function issuePaidManualCardTicketsForEvent(int $eventId): void
+    {
+        if (!$this->manualCardPaymentSchemaAvailable()) return;
+        $this->pdo->prepare(
+            'UPDATE tickets t
+             JOIN ticket_order_items toi ON toi.id = t.order_item_id
+             JOIN ticket_orders o ON o.id = toi.order_id
+             SET t.status = "issued", t.updated_at = NOW()
+             WHERE toi.event_id = ? AND t.status = "blocked" AND o.sales_channel = "manual_card"
+               AND (o.status = "paid" OR o.payment_status = "paid")'
+        )->execute([$eventId]);
     }
 
     private function getOrderRecordByToken(string $token): ?array
