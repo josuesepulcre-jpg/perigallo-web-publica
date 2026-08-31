@@ -2281,6 +2281,53 @@ final class Ticketing
         return ['metrics' => $metrics, 'attendees' => $tickets, 'history' => $history->fetchAll()];
     }
 
+    /** Pedidos cobrados de un evento, listos para el PDF de cierre de caja. */
+    public function adminEventPaymentReport(int $eventId): array
+    {
+        $this->requireAdminEvent($eventId);
+        $paymentMethod = $this->cashOrderSchemaAvailable()
+            ? 'CASE WHEN o.sales_channel = "cash" THEN "cash" ELSE COALESCE((SELECT pa.payment_method FROM payment_attempts pa WHERE pa.order_id = o.id ORDER BY pa.id DESC LIMIT 1), "card") END'
+            : 'COALESCE((SELECT pa.payment_method FROM payment_attempts pa WHERE pa.order_id = o.id ORDER BY pa.id DESC LIMIT 1), "card")';
+        $attendeeNotes = $this->ticketAttendeeDietarySchemaAvailable()
+            ? 'NULLIF(TRIM(CONCAT_WS(" · ", NULLIF(ta.allergy_notes, ""), NULLIF(ta.dietary_notes, ""))), "")'
+            : 'NULLIF(TRIM(ta.allergy_notes), "")';
+        $notes = $this->cashOrderSchemaAvailable()
+            ? 'CONCAT_WS(" | ", NULLIF(o.cash_payment_notes, ""), NULLIF(issued.attendee_notes, ""))'
+            : 'issued.attendee_notes';
+        $rows = $this->pdo->prepare(
+            'SELECT o.id AS order_id, o.name AS customer_name, COALESCE(o.test_reference, o.redsys_order) AS order_reference,
+                    o.total_cents, ' . $paymentMethod . ' AS payment_method, ' . $notes . ' AS notes,
+                    issued.ticket_quantity
+             FROM ticket_orders o
+             JOIN (
+                SELECT toi.order_id, COUNT(*) AS ticket_quantity,
+                       GROUP_CONCAT(DISTINCT ' . $attendeeNotes . ' SEPARATOR " | ") AS attendee_notes
+                FROM ticket_order_items toi
+                JOIN tickets t ON t.order_item_id = toi.id
+                LEFT JOIN ticket_attendees ta ON ta.ticket_id = t.id
+                WHERE toi.event_id = ? AND t.event_id = ? AND t.status = "issued"
+                GROUP BY toi.order_id
+             ) issued ON issued.order_id = o.id
+             ORDER BY o.created_at ASC, o.id ASC'
+        );
+        $rows->execute([$eventId, $eventId]);
+        $orders = $rows->fetchAll();
+        $totals = ['cash_cents' => 0, 'card_cents' => 0, 'bizum_cents' => 0, 'total_cents' => 0];
+        foreach ($orders as $order) {
+            $amount = (int) ($order['total_cents'] ?? 0);
+            $method = (string) ($order['payment_method'] ?? 'card');
+            if ($method === 'cash') {
+                $totals['cash_cents'] += $amount;
+            } elseif ($method === 'bizum') {
+                $totals['bizum_cents'] += $amount;
+            } else {
+                $totals['card_cents'] += $amount;
+            }
+            $totals['total_cents'] += $amount;
+        }
+        return ['orders' => $orders, 'totals' => $totals];
+    }
+
     public function reverseTicketCheckIn(int $eventId, string $code, string $reason = ''): array
     {
         $this->requireAdminEvent($eventId);

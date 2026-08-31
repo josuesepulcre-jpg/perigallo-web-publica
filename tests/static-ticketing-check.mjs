@@ -263,6 +263,15 @@ for (const marker of ["data-attendee-export-event", "data-attendee-export-sort",
 for (const marker of ["downloadAttendeeList", "createAttendeePdf", "attendeePriority", "attendee.status === \"issued\"", "Impresión en blanco y negro", "pdf.save(\"listado-asistentes-"]) {
   if (!adminBackoffice.includes(marker)) throw new Error(`Attendee-export behavior is missing ${marker}.`);
 }
+for (const marker of ["data-payment-export-event", "data-download-payment-list", "Listado de cobros", "efectivo, tarjeta y Bizum"]) {
+  if (!adminSales.includes(marker)) throw new Error(`Payment-report UI is missing ${marker}.`);
+}
+for (const marker of ["downloadPaymentList", "createPaymentListPdf", "listado-cobros-", "Efectivo: ", "Tarjeta: "]) {
+  if (!adminBackoffice.includes(marker)) throw new Error(`Payment-report behavior is missing ${marker}.`);
+}
+for (const marker of ["payments/print-list", "adminEventPaymentReport", "cash_cents", "bizum_cents"]) {
+  if (!(api + ticketing).includes(marker)) throw new Error(`Payment-report API contract is missing ${marker}.`);
+}
 for (const marker of ["attendees/print-list", "includeOrderNotes", "cash_payment_notes AS order_notes"]) {
   if (!(api + ticketing).includes(marker)) throw new Error(`Attendee-export notes contract is missing ${marker}.`);
 }
@@ -392,7 +401,7 @@ if (incompleteFaq.rows.length !== 2 || incompleteFaq.invalidLines.join(",") !== 
 }
 
 const publicJs = readFileSync(join(root, "assets/js/ticketing.js"), "utf8");
-for (const marker of ["Información de la experiencia", "Código de vestimenta", "event.contact_info", "experienceInformation", "experienceDesktopGuide", "initExperienceAccordions", "aria-expanded", "eventMetadata", "event-story-editorial", "Probar recorrido de compra", "Comprar entradas", "ticketPurchaseAction", "ticket-access-secondary", "event-hero-introduction", "event-hero-facts", "renderCheckoutPreview", "Modo de pruebas", "checkoutTicketMarkup", "data-quantity-action", "data-event-quantity-action", "renderCheckoutSummary", "storyCtaUrl", "storyCtaLabel", "Descubrir la historia", "event-card-primary-link", "https://perigallo.com/la-perigalla-01/", "data-analytics-click=\"descubrir-historia\""]) {
+for (const marker of ["Información de la experiencia", "Código de vestimenta", "event.contact_info", "experienceInformation", "experienceDesktopGuide", "initExperienceAccordions", "aria-expanded", "eventMetadata", "event-story-editorial", "Probar recorrido de compra", "Comprar entradas", "ticketPurchaseAction", "ticket-access-secondary", "event-hero-introduction", "event-hero-facts", "renderCheckoutPreview", "Modo de pruebas", "checkoutTicketMarkup", "data-quantity-action", "data-event-quantity-action", "renderCheckoutSummary", "storyCtaUrl", "storyCtaLabel", "Descubrir la historia", "event-card-primary-link", '"/la-perigalla-01/"', "data-analytics-click=\"descubrir-historia\""]) {
   if (!publicJs.includes(marker)) throw new Error(`Missing public information rendering: ${marker}`);
 }
 for (const marker of ["dressCodeNotice", "perigallaDressCodeFact", "Código de vestimenta obligatorio", "Es obligatorio acudir vestido íntegramente de blanco", "No se permitirá el acceso"]) {

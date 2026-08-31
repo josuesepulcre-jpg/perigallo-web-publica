@@ -740,6 +740,12 @@ try {
         return;
     }
 
+    if ($method === 'GET' && preg_match('#^/admin/events/([0-9]+)/payments/print-list$#', $path, $m)) {
+        AdminAuth::require();
+        json_response(['ok' => true] + $ticketing->adminEventPaymentReport((int) $m[1]));
+        return;
+    }
+
     if ($method === 'GET' && preg_match('#^/admin/events/([0-9]+)/attendees$#', $path, $m)) {
         AdminAuth::requireAccess();
         json_response(['ok' => true] + $ticketing->adminEventAttendees((int) $m[1]));

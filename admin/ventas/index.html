@@ -8,7 +8,7 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/ticketing.css?v=20260820-delivery-status-v1">
-<link rel="stylesheet" href="/assets/css/admin-orders.css?v=20260825-attendee-export-v1">
+<link rel="stylesheet" href="/assets/css/admin-orders.css?v=20260831-payment-report-v1">
 <link rel="stylesheet" href="/assets/css/admin-cash-orders.css?v=20260817-cash-total-v1">
 <link rel="stylesheet" href="/assets/css/admin-delivery-status.css?v=20260820-v2">
 </head>
@@ -44,6 +44,18 @@
         <button type="button" class="ticket-btn primary" data-download-door-list>Descargar lista de puerta</button>
       </div>
       <p class="admin-attendee-export-status" data-door-list-status aria-live="polite"></p>
+    </section>
+    <section class="admin-attendee-export admin-payment-export" aria-labelledby="payment-export-title">
+      <div>
+        <span class="ticket-eyebrow">Cierre de caja</span>
+        <h2 id="payment-export-title">Listado de cobros</h2>
+        <p>Genera un PDF por cliente/pedido con la forma de pago, el importe y las notas. Incluye el total separado de efectivo, tarjeta y Bizum.</p>
+      </div>
+      <div class="admin-card-order-export-controls">
+        <label>Evento<select data-payment-export-event aria-label="Evento del listado de cobros"><option value="">Selecciona un evento</option></select></label>
+        <button type="button" class="ticket-btn primary" data-download-payment-list>Descargar listado de cobros</button>
+      </div>
+      <p class="admin-attendee-export-status" data-payment-list-status aria-live="polite"></p>
     </section>
     <section class="admin-order-toolbar" aria-label="Filtros de pedidos">
       <div class="admin-filter-group" role="group" aria-label="Estado del pedido">
@@ -110,6 +122,6 @@
   </main>
 </div>
 <script src="/assets/vendor/jspdf.umd.min.js?v=20260825-pdf-list-v1" defer></script>
-<script src="/assets/js/admin-backoffice.js?v=20260829-card-orders-list-v1" defer></script>
+<script src="/assets/js/admin-backoffice.js?v=20260831-payment-report-v1" defer></script>
 </body>
 </html>

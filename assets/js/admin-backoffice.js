@@ -451,6 +451,9 @@
       var doorListEvent = root.querySelector("[data-door-list-event]");
       var doorListButton = root.querySelector("[data-download-door-list]");
       var doorListStatus = root.querySelector("[data-door-list-status]");
+      var paymentListEvent = root.querySelector("[data-payment-export-event]");
+      var paymentListButton = root.querySelector("[data-download-payment-list]");
+      var paymentListStatus = root.querySelector("[data-payment-list-status]");
       function renderSalesSummary() {
         var summary = root.querySelector("[data-admin-sales-summary]");
         if (!summary) return;
@@ -624,7 +627,7 @@
         if (stateName) attendeeExportStatus.setAttribute("data-state", stateName); else attendeeExportStatus.removeAttribute("data-state");
       }
       function populateAttendeeExportEvents() {
-        var selects = [attendeeExportEvent, doorListEvent].filter(Boolean);
+        var selects = [attendeeExportEvent, doorListEvent, paymentListEvent].filter(Boolean);
         if (!selects.length) return;
         var requestedEventId = Number(new URLSearchParams(window.location.search).get("event"));
         var options = '<option value="">Selecciona un evento</option>' + cashMeta.events.map(function (event) {
@@ -879,6 +882,114 @@
           setDoorListStatus(error.message || "No se ha podido preparar la lista de puerta.", "error");
         }).finally(function () { doorListButton.disabled = false; });
       }
+      function paymentMethodLabel(method) {
+        return ({ cash: "Efectivo", bizum: "Bizum", card: "Tarjeta" })[method] || "Tarjeta";
+      }
+      function setPaymentListStatus(message, stateName) {
+        if (!paymentListStatus) return;
+        paymentListStatus.textContent = message || "";
+        if (stateName) paymentListStatus.setAttribute("data-state", stateName); else paymentListStatus.removeAttribute("data-state");
+      }
+      function createPaymentListPdf(orders, totals, event) {
+        if (!window.jspdf || !window.jspdf.jsPDF) throw new Error("No se ha podido cargar el generador de PDF. Recarga la página e inténtalo de nuevo.");
+        var pdf = new window.jspdf.jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+        var pageWidth = 297;
+        var pageHeight = 210;
+        var margin = 12;
+        var columns = [
+          { label: "#", width: 9, key: "number" },
+          { label: "CLIENTE", width: 59, key: "customer" },
+          { label: "PEDIDO", width: 36, key: "reference" },
+          { label: "ENTRADAS", width: 20, key: "tickets" },
+          { label: "PAGO", width: 30, key: "method" },
+          { label: "IMPORTE", width: 30, key: "amount" },
+          { label: "NOTAS", width: 89, key: "notes" }
+        ];
+        function addHeading() {
+          pdf.setDrawColor(0);
+          pdf.setTextColor(0);
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(15);
+          pdf.text("LISTADO DE COBROS", margin, 13);
+          pdf.setFont("helvetica", "normal");
+          pdf.setFontSize(9);
+          pdf.text(attendeePdfText((event && event.title) || "Evento"), margin, 19);
+          pdf.text(orders.length + (orders.length === 1 ? " pedido cobrado" : " pedidos cobrados"), pageWidth - margin, 19, { align: "right" });
+          var summary = "Total: " + formatMoney(totals.total_cents) + " · Efectivo: " + formatMoney(totals.cash_cents) + " · Tarjeta: " + formatMoney(totals.card_cents);
+          if (Number(totals.bizum_cents || 0) > 0) summary += " · Bizum: " + formatMoney(totals.bizum_cents);
+          pdf.setFontSize(7);
+          pdf.text(summary, margin, 24);
+          var headerY = 29;
+          var x = margin;
+          pdf.setFont("helvetica", "bold");
+          columns.forEach(function (column) {
+            pdf.setFillColor(235);
+            pdf.rect(x, headerY, column.width, 8, "FD");
+            pdf.setTextColor(0);
+            pdf.text(column.label, x + 2, headerY + 5);
+            x += column.width;
+          });
+          return headerY + 8;
+        }
+        function addFooter() {
+          var pages = pdf.getNumberOfPages();
+          for (var page = 1; page <= pages; page++) {
+            pdf.setPage(page);
+            pdf.setTextColor(0);
+            pdf.setFont("helvetica", "normal");
+            pdf.setFontSize(7);
+            pdf.text("Perigallo · listado interno de cobros", margin, pageHeight - 8);
+            pdf.text("Página " + page + " de " + pages, pageWidth - margin, pageHeight - 8, { align: "right" });
+          }
+        }
+        var y = addHeading();
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(8);
+        orders.forEach(function (order, index) {
+          var values = {
+            number: String(index + 1),
+            customer: attendeePdfText(order.customer_name || "Sin nombre"),
+            reference: attendeePdfText(order.order_reference || "—"),
+            tickets: String(order.ticket_quantity || 0),
+            method: paymentMethodLabel(order.payment_method),
+            amount: attendeePdfText(formatMoney(order.total_cents)),
+            notes: attendeePdfText(order.notes || "—")
+          };
+          var cells = columns.map(function (column) { return pdf.splitTextToSize(values[column.key], Math.max(4, column.width - 4)); });
+          var lines = cells.reduce(function (largest, cell) { return Math.max(largest, cell.length); }, 1);
+          var rowHeight = Math.max(8, lines * 3.6 + 3);
+          if (y + rowHeight > pageHeight - 15) {
+            pdf.addPage();
+            y = addHeading();
+            pdf.setFont("helvetica", "normal");
+            pdf.setFontSize(8);
+          }
+          var x = margin;
+          columns.forEach(function (column, columnIndex) {
+            pdf.rect(x, y, column.width, rowHeight);
+            pdf.text(cells[columnIndex], x + 2, y + 4);
+            x += column.width;
+          });
+          y += rowHeight;
+        });
+        addFooter();
+        pdf.save("listado-cobros-" + attendeeFileName(event) + ".pdf");
+      }
+      function downloadPaymentList() {
+        var eventId = Number(paymentListEvent && paymentListEvent.value);
+        if (!eventId) { setPaymentListStatus("Selecciona el evento del que quieres descargar el listado de cobros.", "error"); return; }
+        var event = cashMeta.events.find(function (item) { return Number(item.id) === eventId; });
+        paymentListButton.disabled = true;
+        setPaymentListStatus("Preparando listado de cobros…");
+        request(api + "/admin/events/" + eventId + "/payments/print-list").then(function (data) {
+          var orders = data.orders || [];
+          if (!orders.length) throw new Error("No hay pedidos cobrados con entradas activas para este evento.");
+          createPaymentListPdf(orders, data.totals || {}, event);
+          setPaymentListStatus(orders.length + (orders.length === 1 ? " pedido incluido en el PDF." : " pedidos incluidos en el PDF."), "success");
+        }).catch(function (error) {
+          setPaymentListStatus(error.message || "No se ha podido preparar el listado de cobros.", "error");
+        }).finally(function () { paymentListButton.disabled = false; });
+      }
       function openCashModal(mode) {
         if (!modal) return;
         var manualReserve = mode === "manual_reserve";
@@ -949,6 +1060,7 @@
         root.querySelectorAll("[data-open-manual-order]").forEach(function (button) { button.addEventListener("click", function () { openCashModal("manual_reserve"); }); });
         if (attendeeExportButton) attendeeExportButton.addEventListener("click", downloadAttendeeList);
         if (doorListButton) doorListButton.addEventListener("click", downloadDoorList);
+        if (paymentListButton) paymentListButton.addEventListener("click", downloadPaymentList);
         root.querySelectorAll("[data-close-cash-order]").forEach(function (button) { button.addEventListener("click", closeCashModal); });
         modal.addEventListener("click", function (event) { if (event.target === modal) closeCashModal(); });
         root.querySelectorAll("[data-close-order-edit]").forEach(function (button) { button.addEventListener("click", closeEditModal); });
