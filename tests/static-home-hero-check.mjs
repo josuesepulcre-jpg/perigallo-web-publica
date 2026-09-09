@@ -48,7 +48,7 @@ const required = [
   '.nav-links-left .nav-social-link{width:auto;height:36px;min-height:36px;padding:0 13px;gap:8px;',
   '.nav-links-left .nav-social-link svg{width:17px;height:17px;display:block;overflow:visible;stroke:currentColor;',
   'background:#29474d',
-  'favicon.svg?v=perigallo-monogram-20260808',
+  'favicon.svg?v=20260909-v1',
   '<section class="manifest" id="quienes-somos" aria-labelledby="about-title">',
   'class="manifest-portrait manifest-portrait--josue reveal"',
   'src="assets/images/about/josue-portrait-illustrated-v6.png"',
