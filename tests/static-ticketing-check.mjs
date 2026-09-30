@@ -430,7 +430,7 @@ const storyAssets = Array.from(perigallaStoryPage.matchAll(/(?:src|href)="(\/la-
 const storyAssetPath = (asset) => asset.split("?", 1)[0];
 const storyJavaScriptAssets = storyAssets.filter((asset) => storyAssetPath(asset).endsWith(".js"));
 const storyStylesheetAssets = storyAssets.filter((asset) => storyAssetPath(asset).endsWith(".css"));
-const storyApplicationAsset = storyJavaScriptAssets.find((asset) => /\/index-[^/]+\.js$/.test(asset));
+const storyApplicationAsset = storyJavaScriptAssets.find((asset) => /\/index-[^/]+\.js$/.test(storyAssetPath(asset)));
 if (!storyApplicationAsset || storyStylesheetAssets.length < 1) throw new Error("La Perigalla story page must reference its application bundle and at least one stylesheet asset.");
 for (const asset of storyAssets) {
   if (!existsSync(join(root, storyAssetPath(asset).slice(1)))) throw new Error(`La Perigalla story asset is missing: ${asset}`);

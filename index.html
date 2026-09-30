@@ -493,36 +493,13 @@ footer::after{content:'';position:absolute;z-index:-1;inset:0;pointer-events:non
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"Perigallo","url":"https://perigallo.com/","logo":"https://perigallo.com/assets/images/perigallo-logo-original.png"},{"@type":"WebSite","name":"Perigallo","url":"https://perigallo.com/"}]}
 </script>
+<link rel="stylesheet" href="/assets/css/brand-system.css?v=20260930">
 </head>
 <body>
-<nav id="navbar">
-  <ul class="nav-links-left">
-    <li><a href="/#descubre-perigallo">Descubre Perigallo</a></li>
-    <li><a class="nav-button--reserve" href="/#fechas">Reservar</a></li>
-    <li><a class="nav-social-link" href="https://www.instagram.com/somosperigallo/" target="_blank" rel="noopener noreferrer" aria-label="Instagram de Somos Perigallo"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"></circle></svg><span class="nav-social-label">Somos Perigallo</span></a></li>
-  </ul>
-  <a href="/" class="nav-logo">
-    <img class="nav-logo-img" src="assets/images/perigallo-logo-original.png" alt="Perigallo">
-  </a>
-  <button class="mobile-menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-menu-panel">
-    <span class="sr-only">Abrir menú</span>
-    <span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>
-  </button>
-  <ul class="nav-links-right">
-    <li><a class="nav-button--about" href="/#quienes-somos">Quiénes somos</a></li>
-    <li><a class="nav-button--finca" href="/#finca">La Finca</a></li>
-    <li><a class="nav-button--contact" href="/#contact">Contacto</a></li>
-  </ul>
-</nav>
+<a class="brand-skip" href="#contenido">Saltar al contenido</a>
+<header class="brand-header" id="navbar" data-brand-header><a class="brand-logo" href="/" aria-label="Perigallo · Inicio"><img src="/assets/images/perigallo-logo-original.png" alt="Perigallo" width="861" height="789"></a><button class="brand-menu" type="button" aria-expanded="false" aria-controls="brand-navigation">Menú <span aria-hidden="true">☰</span></button><div class="brand-navigation" id="brand-navigation" role="navigation" aria-label="Principal"><a href="/bodas-alicante/">Bodas</a><a href="/celebraciones-familiares-alicante/">Celebraciones</a><a href="/experiencias/">Experiencias</a><a href="/finca-la-llaguna/">La finca</a><a href="/sobre-perigallo/">Nosotros</a><a href="/contacto/">Contacto</a><a class="brand-proposal" href="https://suite.perigallo.com/solicitud?origen=web-perigallo">Solicitar propuesta <span aria-hidden="true">↗</span></a></div></header>
 
-<div class="mobile-menu-panel" id="mobile-menu-panel" aria-label="Navegación principal" aria-hidden="true">
-  <a href="/#descubre-perigallo">Descubre Perigallo</a>
-  <a class="mobile-menu-reserve" href="/#fechas">Reservar</a>
-  <a href="/#quienes-somos">Quiénes somos</a>
-  <a href="/#finca">La Finca</a>
-  <a href="/#contact">Contacto</a>
-</div>
-
+<main id="contenido">
 <!-- HERO -->
 <section class="hero" id="hero">
   <div class="hero-brand-background" aria-hidden="true"></div>
@@ -549,7 +526,7 @@ footer::after{content:'';position:absolute;z-index:-1;inset:0;pointer-events:non
 <!-- QUIÉNES SOMOS -->
 <section class="manifest" id="quienes-somos" aria-labelledby="about-title">
   <figure class="manifest-portrait manifest-portrait--josue reveal" aria-label="Josué, cofundador de Perigallo">
-    <img class="manifest-portrait-image" src="assets/images/about/josue-portrait-illustrated-v6.png" alt="Josué, cofundador de Perigallo" width="1023" height="1537" loading="lazy" decoding="async">
+    <img class="manifest-portrait-image" src="assets/images/about/josue-portrait-illustrated-v6.webp" alt="Josué, cofundador de Perigallo" width="1023" height="1537" loading="lazy" decoding="async">
     <img class="manifest-uniform-logo" src="assets/images/perigallo-logo-original.png" alt="" aria-hidden="true" width="861" height="789" loading="lazy" decoding="async">
   </figure>
   <div class="manifest-inner">
@@ -559,7 +536,7 @@ footer::after{content:'';position:absolute;z-index:-1;inset:0;pointer-events:non
     <p class="manifest-copy manifest-copy--closing reveal reveal-delay-3">Creamos celebraciones, pop-ups y experiencias a medida donde la cocina se convierte en <em>relato</em> y cada encuentro se vive como algo <em>irrepetible</em>.</p>
   </div>
   <figure class="manifest-portrait manifest-portrait--david reveal" aria-label="David, cofundador de Perigallo">
-    <img class="manifest-portrait-image" src="assets/images/about/david-portrait-illustrated-v6.png" alt="David, cofundador de Perigallo" width="1023" height="1537" loading="lazy" decoding="async">
+    <img class="manifest-portrait-image" src="assets/images/about/david-portrait-illustrated-v6.webp" alt="David, cofundador de Perigallo" width="1023" height="1537" loading="lazy" decoding="async">
     <img class="manifest-uniform-logo" src="assets/images/perigallo-logo-original.png" alt="" aria-hidden="true" width="861" height="789" loading="lazy" decoding="async">
   </figure>
 </section>
@@ -612,13 +589,13 @@ footer::after{content:'';position:absolute;z-index:-1;inset:0;pointer-events:non
   <div id="reservas" class="booking-anchor"></div>
   <div class="booking-bridge-inner">
     <span class="section-eyebrow reveal">Reservas Perigallo</span>
-    <h2 class="booking-bridge-title reveal reveal-delay-1" id="booking-bridge-title">Elige tu fecha.<em>Nosotros hacemos el resto.</em></h2>
-    <p class="booking-bridge-copy reveal reveal-delay-2">Consulta la disponibilidad real y reserva directamente en nuestro portal oficial.</p>
-    <a class="btn-primary reveal reveal-delay-3" href="https://reservas.perigallo.com/reservar?source=web" target="_blank" rel="noopener noreferrer">Abrir reservas</a>
+    <h2 class="booking-bridge-title reveal reveal-delay-1" id="booking-bridge-title">La próxima ocasión<em>para vivir Perigallo.</em></h2>
+    <p class="booking-bridge-copy reveal reveal-delay-2">Descubre las próximas ediciones. Cuando una fecha esté abierta, podrás consultar el formato, el menú y las entradas disponibles.</p>
+    <a class="btn-primary reveal reveal-delay-3" href="/experiencias/" target="_blank" rel="noopener noreferrer">Ver próximas experiencias</a>
     <ul class="booking-bridge-meta reveal reveal-delay-3" aria-label="Características de la reserva">
-      <li>Disponibilidad real</li>
-      <li>Confirmación directa</li>
-      <li>Reserva oficial</li>
+      <li>Fechas anunciadas</li>
+      <li>Formato y gastronomía</li>
+      <li>Entradas oficiales</li>
     </ul>
   </div>
 </section>
@@ -658,7 +635,7 @@ footer::after{content:'';position:absolute;z-index:-1;inset:0;pointer-events:non
     <div class="finca-text">
       <span class="section-eyebrow reveal">Perigallo en Finca La Llaguna</span>
       <h2 class="section-title reveal reveal-delay-1">Un escenario<br><em>singular</em></h2>
-      <blockquote class="finca-quote reveal reveal-delay-2">Finca La Llaguna es uno de los espacios donde Perigallo desarrolla parte de sus experiencias gastronómicas, pop-ups y celebraciones privadas.</blockquote>
+      <blockquote class="finca-quote reveal reveal-delay-2">En Finca La Llaguna, en Crevillent, Alicante, diseñamos bodas, celebraciones privadas y experiencias gastronómicas abiertas al público.</blockquote>
       <p class="section-body reveal reveal-delay-3">Una finca mediterránea donde el entorno, la luz y el silencio se vuelven parte del menú. Allí celebramos bodas, eventos privados y abrimos el restaurante pop-up a quien quiera vivir la gastronomía de Perigallo en un escenario poco habitual.</p>
       <div style="display:flex;gap:18px;margin-top:36px;flex-wrap:wrap" class="reveal reveal-delay-4">
         <a href="/experiencias/" class="btn-primary">Ver experiencias en la finca</a>
@@ -669,7 +646,7 @@ footer::after{content:'';position:absolute;z-index:-1;inset:0;pointer-events:non
     <div class="finca-visual reveal">
       <div class="finca-visual-img" role="img" aria-label="Vista principal de Finca La Llaguna" style="background-image:url('assets/images/finca-la-llaguna-principal.jpg');background-size:cover;background-position:center"></div>
       <div class="finca-overlay"></div>
-      <span class="finca-badge">— Espacio asociado</span>
+      <span class="finca-badge">— Finca La Llaguna · Crevillent</span>
     </div>
   </div>
 </section>
@@ -682,9 +659,9 @@ footer::after{content:'';position:absolute;z-index:-1;inset:0;pointer-events:non
       <div class="contact-heading">
         <span class="section-eyebrow reveal">Contacto · Solicitud de propuesta</span>
         <h2 class="contact-title reveal reveal-delay-1">Cuéntanos tu<br><em>celebración</em></h2>
-        <p class="contact-subtitle reveal reveal-delay-2">Cada gran historia comienza con una conversación. Comparte la vuestra y diseñaremos una propuesta gastronómica que tenga sentido para vuestra fecha, vuestro lugar y vuestra manera de celebrar.</p>
+        <p class="contact-subtitle reveal reveal-delay-2">Cada gran historia comienza con una conversación. Comparte la vuestra y diseñaremos una propuesta gastronómica que tenga sentido para vuestra fecha, Finca La Llaguna y vuestra manera de celebrar.</p>
       </div>
-      <p class="contact-side-note reveal reveal-delay-2">No partimos de un menú cerrado. Empezamos escuchando.<strong>Respuesta personal en menos de 48 horas</strong></p>
+      <p class="contact-side-note reveal reveal-delay-2">No partimos de un menú cerrado. Empezamos escuchando.<strong>Respuesta en 24–48 horas laborables</strong></p>
     </div>
 
     <div class="proposal-entry reveal reveal-delay-3" id="form">
@@ -709,54 +686,18 @@ footer::after{content:'';position:absolute;z-index:-1;inset:0;pointer-events:non
     <div class="contact-info reveal reveal-delay-4">
       <div><span class="contact-detail-label">Teléfono</span><span class="contact-detail-value"><a href="tel:+34691499985">691 499 985</a></span></div>
       <div><span class="contact-detail-label">Base</span><span class="contact-detail-value">Crevillent, Alicante</span></div>
-      <div><span class="contact-detail-label">Primera respuesta</span><span class="contact-detail-value">En menos de 48 horas</span></div>
+      <div><span class="contact-detail-label">Primera respuesta</span><span class="contact-detail-value">En 24–48 horas laborables</span></div>
     </div>
   </div>
 </section>
 
 <!-- FOOTER -->
-<footer>
-  <div class="footer-grid">
-    <div>
-      <img class="footer-brand-img" src="assets/images/perigallo-logo-original.png" alt="Perigallo">
-      <p class="footer-brand-text">Perigallo desarrolla experiencias gastronómicas, pop-ups y celebraciones privadas. Algunas de nuestras propuestas tienen lugar en Finca La Llaguna.</p>
-    </div>
-    <div>
-      <span class="footer-col-title">Servicios</span>
-      <ul class="footer-col-list">
-        <li><a href="/bodas-alicante/">Bodas gastronómicas</a></li>
-        <li><a href="/celebraciones-familiares-alicante/">Celebraciones familiares</a></li>
-        <li><a href="/eventos-empresa-alicante/">Eventos de empresa</a></li>
-      </ul>
-    </div>
-    <div>
-      <span class="footer-col-title">Empresa</span>
-      <ul class="footer-col-list">
-        <li><a href="/experiencias/">Próximas experiencias</a></li>
-        <li><a href="/finca-la-llaguna/">Finca La Llaguna</a></li>
-        <li><a href="/sobre-perigallo/">Sobre Perigallo</a></li>
-        <li><a href="/#contact">Contacto</a></li>
-        <li><a href="/politica-privacidad/">Política de privacidad</a></li>
-        <li><a href="/aviso-legal/">Aviso legal</a></li>
-        <li><a href="/cookies/">Cookies</a></li>
-        <li><a href="/condiciones/">Condiciones</a></li>
-      </ul>
-    </div>
-    <div class="footer-contact">
-      <span class="footer-col-title">Contacto</span>
-      <a class="footer-phone" href="tel:+34691499985">691 499 985</a>
-      <p class="footer-location"><strong>Finca La Llaguna</strong>Crevillent · Alicante</p>
-      <a class="footer-map-link" href="https://www.google.com/maps/search/?api=1&amp;query=Finca%20La%20Llaguna%2C%20Crevillent%2C%20Alicante" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11Z"></path><circle cx="12" cy="10" r="2.1"></circle></svg>Abrir ubicación <span aria-hidden="true">→</span></a>
-    </div>
-  </div>
-  <div class="footer-bottom">
-    <p class="footer-disclaimer">Perigallo es una marca gastronómica operada por JYD Events, S.L. — CIF B-26664524. Finca La Llaguna es uno de los espacios donde desarrollamos parte de nuestras experiencias.</p>
-    <span class="footer-copy">© 2026 Perigallo</span>
-  </div>
-</footer>
+</main>
+<footer class="brand-footer"><div class="brand-footer-main"><div><a href="/" aria-label="Perigallo · Inicio"><img src="/assets/images/perigallo-logo-original.png" alt="Perigallo" width="861" height="789" loading="lazy"></a><p>Gastronomía, servicio y puesta en escena.<br>Finca La Llaguna · Crevillent, Alicante.</p></div><div><h2>Celebrar con Perigallo</h2><a href="/bodas-alicante/">Bodas</a><a href="/celebraciones-familiares-alicante/">Celebraciones familiares</a><a href="/eventos-empresa-alicante/">Eventos de empresa</a><a href="/experiencias/">Próximas experiencias</a></div><div><h2>Empecemos a hablar</h2><a href="https://suite.perigallo.com/solicitud?origen=web-perigallo">Solicitar una propuesta</a><a href="/contacto/">Contacto</a><a class="footer-phone" href="tel:+34691499985">691 499 985</a><a href="/mis-entradas/">Mis entradas</a><a href="https://www.instagram.com/somosperigallo/" target="_blank" rel="noopener noreferrer" aria-label="Instagram de Somos Perigallo">Instagram ↗</a><p>Respuesta en 24–48 horas laborables.</p></div></div><div class="brand-footer-bottom"><span>© Perigallo</span><a href="/aviso-legal/">Aviso legal</a><a href="/politica-privacidad/">Privacidad</a><a href="/cookies/">Cookies</a><a href="/condiciones/">Condiciones</a><a href="/politica-cancelacion/">Cancelaciones</a><a href="/politica-reembolso/">Reembolsos</a></div></footer>
 
 <script src="/assets/js/analytics.js" defer></script>
-<script src="assets/js/home-experiences.js?v=20260808-agenda-v3" defer></script>
+<script src="/assets/js/public-agenda.js?v=20260930" defer></script>
+<script src="assets/js/home-experiences.js?v=20260930-premium-v1" defer></script>
 <script src="assets/js/home-celebrations.js?v=20260808-celebrations-v1" defer></script>
 <script>
 window.addEventListener('scroll',function(){
@@ -818,5 +759,6 @@ document.querySelectorAll('a[href^="#"],a[href^="/#"]').forEach(function(a){
   a.addEventListener('click',function(e){var href=a.getAttribute('href');var hash=href&&href.indexOf('/#')===0?href.slice(1):href;var t=hash&&document.querySelector(hash);if(t&&window.location.pathname==='/'){e.preventDefault();t.scrollIntoView({behavior:'smooth'});window.history.replaceState(null,'',hash)}});
 });
 </script>
+<script src="/assets/js/brand-navigation.js?v=20260930" defer></script>
 </body>
 </html>

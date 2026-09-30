@@ -6,10 +6,10 @@ const styles = readFileSync(resolve('assets/css/weddings-page.css'), 'utf8');
 const script = readFileSync(resolve('assets/js/weddings-page.js'), 'utf8');
 
 for (const fragment of [
-  'class="wedding-nav" id="weddingNav"',
-  'href="/#descubre-perigallo">Descubre Perigallo</a>',
-  'href="/#quienes-somos">Quiénes somos</a>',
-  'href="/#contact">Contacto</a>',
+  'class="brand-header" id="navbar" data-brand-header',
+  'href="/experiencias/">Experiencias</a>',
+  'href="/sobre-perigallo/">Nosotros</a>',
+  'href="/contacto/">Contacto</a>',
   'Una boda que se recuerda',
   'Una celebración<br>con <em>vuestro relato.</em>',
   'Todo tiene que<br><em>sentirse conectado.</em>',
@@ -17,8 +17,8 @@ for (const fragment of [
   'data-wedding-carousel-current',
   'gastronomy-carousel/foreground/fortune-cookie.webp',
   'Empecemos por<br><em>imaginarla juntos.</em>',
-  'assets/css/weddings-page.css?v=20260808-weddings-v2',
-  'assets/js/weddings-page.js?v=20260808-weddings-v3',
+  'assets/css/weddings-page.css',
+  'assets/js/weddings-page.js',
 ]) {
   if (!page.includes(fragment)) throw new Error(`Falta en la página de bodas: ${fragment}`);
 }

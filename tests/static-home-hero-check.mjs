@@ -44,29 +44,28 @@ const required = [
   'left:clamp(188px,20vw,396px)',
   'https://www.instagram.com/somosperigallo/',
   'aria-label="Instagram de Somos Perigallo"',
-  '<span class="nav-social-label">Somos Perigallo</span>',
   '.nav-links-left .nav-social-link{width:auto;height:36px;min-height:36px;padding:0 13px;gap:8px;',
   '.nav-links-left .nav-social-link svg{width:17px;height:17px;display:block;overflow:visible;stroke:currentColor;',
   'background:#29474d',
   'favicon.svg?v=20260909-v1',
   '<section class="manifest" id="quienes-somos" aria-labelledby="about-title">',
   'class="manifest-portrait manifest-portrait--josue reveal"',
-  'src="assets/images/about/josue-portrait-illustrated-v6.png"',
+  'src="assets/images/about/josue-portrait-illustrated-v6.webp"',
   'class="manifest-portrait manifest-portrait--david reveal"',
-  'src="assets/images/about/david-portrait-illustrated-v6.png"',
+  'src="assets/images/about/david-portrait-illustrated-v6.webp"',
   'class="manifest-eyebrow reveal">Quiénes somos</p>',
   'id="about-title">Perigallo nace de la visión',
   'class="manifest-copy manifest-copy--closing reveal reveal-delay-3"',
   'height:calc(100svh - var(--header-anchor-offset))',
   '.manifest-portrait-image{display:block;width:auto;height:100%;',
   'prefers-reduced-motion:reduce',
-  'href="/#descubre-perigallo">Descubre Perigallo</a>',
-  'href="/#fechas">Reservar</a>',
-  'href="/#finca">La Finca</a>',
-  'href="/#quienes-somos">Quiénes somos</a>',
-  'href="/#contact">Contacto</a>',
-  'class="mobile-menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-menu-panel"',
-  'class="mobile-menu-panel" id="mobile-menu-panel"',
+  'href="/experiencias/">Experiencias</a>',
+  'href="/experiencias/">Experiencias</a>',
+  'href="/finca-la-llaguna/">La finca</a>',
+  'href="/sobre-perigallo/">Nosotros</a>',
+  'href="/contacto/">Contacto</a>',
+  'class="brand-menu" type="button" aria-expanded="false" aria-controls="brand-navigation"',
+  'class="brand-navigation" id="brand-navigation"',
   'function setMobileMenu(open)',
   "mobileMenuPanel.classList.toggle('is-open',open)",
   "event.key==='Escape'",
@@ -102,24 +101,22 @@ const required = [
   'filter:brightness(.9) contrast(1.035) saturate(.94)',
   'agendaVisual',
   'agendaContent',
-  'home-experiences.js?v=20260808-agenda-v3',
+  'home-experiences.js?v=20260930-premium-v1',
   '<section class="booking-bridge" id="fechas" aria-labelledby="booking-bridge-title">',
   'Reservas Perigallo',
-  'Elige tu fecha.<em>Nosotros hacemos el resto.</em>',
-  'Consulta la disponibilidad real y reserva directamente en nuestro portal oficial.',
-  'https://reservas.perigallo.com/reservar?source=web',
-  'Disponibilidad real</li>',
-  'Confirmación directa</li>',
-  'Reserva oficial</li>',
-  'class="footer-contact"',
-  'class="footer-map-link"',
+  'La próxima ocasión<em>para vivir Perigallo.</em>',
+  'Descubre las próximas ediciones.',
+  '/experiencias/',
+  'Fechas anunciadas</li>',
+  'Formato y gastronomía</li>',
+  'Entradas oficiales</li>',
+  'class="brand-footer-main"',
+  'class="brand-footer-bottom"',
   "font-family:'Montserrat',sans-serif;font-size:.92rem;font-weight:500;",
   "font-family:'Montserrat',sans-serif;font-size:.63rem;font-weight:400;",
   '<a class="footer-phone" href="tel:+34691499985">691 499 985</a>',
   '<span class="contact-detail-value"><a href="tel:+34691499985">691 499 985</a>',
   ".proposal-entry::after{content:'';position:absolute;",
-  'Finca La Llaguna</strong>Crevillent · Alicante',
-  'https://www.google.com/maps/search/?api=1&amp;query=Finca%20La%20Llaguna%2C%20Crevillent%2C%20Alicante',
   '<section class="contact" id="contact">',
   'Empezamos por <em>vuestra historia</em>',
   'No partimos de un menú cerrado. Empezamos escuchando.',
@@ -185,12 +182,6 @@ for (const obsoleteBookingBlock of [
   }
 }
 
-for (const obsoleteLabel of ['>Bodas</a>', '>Celebraciones</a>', '>Experiencias</a>']) {
-  if (home.includes(obsoleteLabel)) {
-    throw new Error(`La navegación principal conserva el enlace obsoleto: ${obsoleteLabel}`);
-  }
-}
-
 const carouselSlides = (home.match(/id:'[a-z-]+',src:'assets\/images\/gastronomy-carousel\/foreground\/[a-z-]+\.webp'/g) ?? []).length;
 if (carouselSlides !== 12) {
   throw new Error(`La configuración del carrusel debe incluir 12 sujetos WebP transparentes; incluye ${carouselSlides}.`);
@@ -204,7 +195,7 @@ if (home.includes('manifest-artwork') || home.includes('quienes-somos-perigallo.
   throw new Error('Quiénes somos debe usar retratos y contenido HTML, no una composición plana.');
 }
 
-for (const asset of ['assets/images/about/josue-portrait-illustrated-v6.png', 'assets/images/about/david-portrait-illustrated-v6.png']) {
+for (const asset of ['assets/images/about/josue-portrait-illustrated-v6.webp', 'assets/images/about/david-portrait-illustrated-v6.webp']) {
   if (!existsSync(resolve(asset))) {
     throw new Error(`Falta el retrato independiente: ${asset}`);
   }

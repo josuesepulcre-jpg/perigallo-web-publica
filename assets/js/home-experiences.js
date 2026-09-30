@@ -46,14 +46,7 @@
   }
 
   function publicEvents(events) {
-    var today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return events.filter(function (event) {
-      var date = eventDate(event.starts_at);
-      return date && date >= today;
-    }).sort(function (a, b) {
-      return eventDate(a.starts_at) - eventDate(b.starts_at);
-    });
+    return window.PerigalloAgenda.upcoming(events);
   }
 
   function availability(event) {

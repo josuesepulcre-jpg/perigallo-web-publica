@@ -1,0 +1,48 @@
+{
+  "ok": true,
+  "event": {
+    "id": "local-perigalla-01",
+    "title": "La Perigalla 01",
+    "slug": "la-perigalla-01-ibicenca",
+    "subtitle": "Una boda ficticia. Una experiencia real.",
+    "short_description": "Una noche de gastronomía, puesta en escena, música y celebración en Finca La Llaguna.",
+    "description": "Una experiencia creada para recorrer la noche entre sabores, historia y celebración.",
+    "starts_at": "2026-08-29 19:00:00",
+    "ends_at": "2026-08-30 02:00:00",
+    "doors_open_at": "2026-08-29 19:00:00",
+    "location": "Finca La Llaguna",
+    "locality": "Crevillente",
+    "province": "Alicante",
+    "maps_url": "https://www.google.com/maps/search/?api=1&query=Finca%20La%20Llaguna%2C%20Crevillente",
+    "parking_info": "Parking disponible en la propia finca para los asistentes.",
+    "included_text": "Acceso completo a La Perigalla 01. Experiencia gastronómica en formato cóctel. Puesta en escena, música y programación de la noche.",
+    "access_conditions": "Para acceder es necesario disponer de una entrada válida y cumplir las condiciones comunicadas durante la reserva.",
+    "dress_code": "TOTAL WHITE. Es obligatorio acudir vestido íntegramente de blanco. No se permitirá el acceso a quienes no cumplan este código de vestimenta.",
+    "minor_policy": "Acceso exclusivo para mayores de 18 años.",
+    "recommendations": "Llega con tiempo para comenzar la experiencia desde el inicio.",
+    "accessibility_info": "Si necesitas una adaptación concreta, ponte en contacto con Perigallo antes de realizar la reserva para poder valorar la mejor atención posible.",
+    "refund_policy": "Consulta las condiciones de compra y cancelación antes de confirmar tu reserva.",
+    "contact_info": "Para consultas sobre tu reserva, contacta con Perigallo.",
+    "faq": [
+      { "question": "¿La entrada incluye toda la experiencia?", "answer": "La entrada da acceso a La Perigalla 01 y a la experiencia gastronómica, artística y escénica programada para la noche." },
+      { "question": "¿Qué debo llevar?", "answer": "El código de vestimenta es Total White: es obligatorio asistir vestido íntegramente de blanco." },
+      { "question": "¿Puedo llegar en coche?", "answer": "Sí. La finca dispone de parking para asistentes." }
+    ],
+    "ticket_types": [
+      {
+        "id": "preview-general",
+        "name": "Entrada general",
+        "description": "Una entrada individual para vivir La Perigalla 01.",
+        "price_cents": 5800,
+        "final_price_cents": 5800,
+        "reference_price_cents": 9000,
+        "show_reference_price": true,
+        "promotional_label": "Precio especial de lanzamiento",
+        "available": 300,
+        "max_per_order": 10,
+        "status": "on_sale",
+        "effective_status": "on_sale"
+      }
+    ]
+  }
+}
