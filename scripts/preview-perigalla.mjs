@@ -6,10 +6,12 @@ import { extname, resolve } from 'node:path';
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const port = Number(process.env.PORT || 4173);
 const eventPath = '/experiencias/la-perigalla-01-ibicenca/';
+const localEventFixture = resolve(root, 'scripts/fixtures/la-perigalla-01.local.json');
 const types = { '.avif': 'image/avif', '.css': 'text/css; charset=utf-8', '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.webp': 'image/webp', '.woff2': 'font/woff2' };
 
 function localFile(pathname) {
-  const relative = pathname === eventPath || pathname === '/eventos/evento/' ? 'eventos/evento.html' : pathname.replace(/^\/+/, '');
+  let relative = pathname === eventPath || pathname === '/eventos/evento/' ? 'eventos/evento.html' : pathname.replace(/^\/+/, '');
+  if (pathname.endsWith('/') && relative !== 'eventos/evento.html') relative += 'index.html';
   const file = resolve(root, relative || 'index.html');
   return file.startsWith(root) ? file : null;
 }
@@ -19,31 +21,18 @@ createServer(async (req, res) => {
   if (url.pathname.startsWith('/api/')) {
     if (req.method !== 'GET') { res.writeHead(405); res.end('Preview read-only'); return; }
     try {
-      if (url.pathname === '/api/events/la-perigalla-01-ibicenca') {
-        const listing = await fetch('https://perigallo.com/api/events', { headers: { accept: 'application/json' } });
-        const listingData = await listing.json();
-        const event = (listingData.events || []).find((item) => item.slug === 'la-perigalla-01-ibicenca');
-        if (!event) throw new Error('event not found');
-        // La API pública desplegada todavía no expone la ficha individual. El
-        // adaptador solo completa la forma de lectura que espera la plantilla;
-        // no escribe ni simula ninguna transacción de pago.
-        event.ticket_types = [{ id: 'preview-general', name: 'Entrada general', price_cents: event.price_from_cents, reference_price_cents: event.reference_price_from_cents, final_price_cents: event.price_from_cents, show_reference_price: true, promotional_label: 'Precio especial de lanzamiento', available: 300, max_per_order: 10, status: 'on_sale', effective_status: 'on_sale' }];
+      if (url.pathname === '/api/events') {
         res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
-        res.end(JSON.stringify({ ok: true, event }));
+        res.end(JSON.stringify({ ok: true, events: [{ id: 1, slug: 'la-perigalla-01-ibicenca', title: 'La Perigalla 01', starts_at: '2026-08-29 19:00:00', status: 'published' }] }));
         return;
       }
-      const upstream = await fetch(`https://perigallo.com${url.pathname}${url.search}`, { headers: { accept: 'application/json' } });
-      res.writeHead(upstream.status, { 'content-type': upstream.headers.get('content-type') || 'application/json', 'cache-control': 'no-store' });
-      res.end(Buffer.from(await upstream.arrayBuffer()));
-    } catch { res.writeHead(502); res.end('No se pudo obtener la información pública del evento.'); }
-    return;
-  }
-  if (url.pathname.startsWith('/assets/uploads/')) {
-    try {
-      const upstream = await fetch(`https://perigallo.com${url.pathname}`);
-      res.writeHead(upstream.status, { 'content-type': upstream.headers.get('content-type') || 'application/octet-stream', 'cache-control': 'no-store' });
-      res.end(Buffer.from(await upstream.arrayBuffer()));
-    } catch { res.writeHead(502); res.end('No se pudo obtener el recurso público.'); }
+      if (url.pathname === '/api/events/la-perigalla-01-ibicenca') {
+        res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+        res.end(await readFile(localEventFixture));
+        return;
+      }
+      res.writeHead(404); res.end('API no disponible en la vista previa local.');
+    } catch { res.writeHead(500); res.end('No se pudo cargar el contenido local de prueba.'); }
     return;
   }
   try {

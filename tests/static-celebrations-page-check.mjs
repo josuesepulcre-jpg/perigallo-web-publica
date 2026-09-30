@@ -5,8 +5,8 @@ const page = readFileSync(resolve('celebraciones-familiares-alicante/index.html'
 const styles = readFileSync(resolve('assets/css/celebrations-page.css'), 'utf8');
 
 for (const fragment of [
-  'class="wedding-nav" id="weddingNav"',
-  'href="/#descubre-perigallo">Descubre Perigallo</a>',
+  'class="brand-header" id="navbar" data-brand-header',
+  'href="/experiencias/">Experiencias</a>',
   'El día de la familia',
   'Una fecha importante',
   'Todo tiene que<br><em>sentirse cercano.</em>',
@@ -15,9 +15,9 @@ for (const fragment of [
   'href="/comuniones-alicante/"',
   'href="/bautizos-alicante/"',
   'href="/eventos-privados-alicante/"',
-  'assets/css/weddings-page.css?v=20260808-weddings-v2',
+  'assets/css/weddings-page.css',
   'assets/css/celebrations-page.css?v=20260808-celebrations-v1',
-  'assets/js/weddings-page.js?v=20260808-weddings-v3'
+  'assets/js/weddings-page.js'
 ]) {
   if (!page.includes(fragment)) throw new Error(`Falta en la página de celebraciones: ${fragment}`);
 }

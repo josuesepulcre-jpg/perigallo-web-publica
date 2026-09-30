@@ -1684,6 +1684,22 @@ body.ticketing-page summary:focus-visible {
   transform: translateX(0.2rem);
 }
 
+.event-floating-purchase-whatsapp {
+  padding: 0.5rem 0.15rem;
+  color: var(--wedding-gold-light, #e2cdb5);
+  font-family: Montserrat, Arial, sans-serif;
+  font-size: 0.56rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.event-floating-purchase-whatsapp:hover,
+.event-floating-purchase-whatsapp:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 0.25rem;
+}
 @media (max-width: 640px) {
   .event-floating-purchase-spacer {
     height: 5.25rem;
@@ -1710,6 +1726,9 @@ body.ticketing-page summary:focus-visible {
     flex: 1 1 auto;
     min-height: 2.85rem;
     padding-inline: 0.8rem;
+  }
+  .event-floating-purchase-whatsapp {
+    display: none;
   }
 }
 

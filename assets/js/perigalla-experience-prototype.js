@@ -4,6 +4,10 @@
   var savedScrollY = 0;
   var lastTrigger = null;
 
+  function focusableElements(container) {
+    return Array.prototype.slice.call(container.querySelectorAll('a[href], button:not([disabled]), iframe, [tabindex]:not([tabindex="-1"])'));
+  }
+
   function isLanding() {
     return document.body.classList.contains("perigalla-landing-page");
   }
@@ -16,10 +20,13 @@
       overlay.hidden = false;
       overlay.setAttribute("aria-hidden", "false");
       document.body.classList.add("perigalla-overlay-open");
+      document.documentElement.classList.add("perigalla-overlay-open");
       var frameHost = overlay.querySelector("[data-story-frame]");
       if (frameHost && !frameHost.querySelector("iframe")) {
         var frame = document.createElement("iframe");
-        frame.src = "https://perigallo.com/la-perigalla-01/#historia=cover&escena=0";
+        // Same-origin relative URL keeps the local preview self-contained and
+        // prevents local tests from accidentally loading an older production build.
+        frame.src = "/la-perigalla-01/#historia=cover&escena=0";
         frame.title = "La historia de La Perigalla 01";
         frame.allow = "autoplay; fullscreen";
         frame.setAttribute("allowfullscreen", "");
@@ -34,6 +41,7 @@
     var activeFrame = overlay.querySelector("iframe");
     if (activeFrame) activeFrame.remove();
     document.body.classList.remove("perigalla-overlay-open");
+    document.documentElement.classList.remove("perigalla-overlay-open");
     window.scrollTo(0, savedScrollY);
     if (lastTrigger && lastTrigger.focus) lastTrigger.focus();
   }
@@ -99,9 +107,28 @@
   });
 
   document.addEventListener("keydown", function (event) {
-    if (event.key !== "Escape") return;
     var overlay = document.querySelector("[data-story-overlay]");
-    if (overlay && !overlay.hidden) return setOverlayOpen(overlay, false);
+    if (overlay && !overlay.hidden) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        return setOverlayOpen(overlay, false);
+      }
+      if (event.key === "Tab") {
+        var focusable = focusableElements(overlay);
+        if (!focusable.length) return;
+        var first = focusable[0];
+        var last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+      return;
+    }
+    if (event.key !== "Escape") return;
     var dialog = document.querySelector("[data-gastronomy-dialog]");
     if (dialog && !dialog.hidden) closeDish(dialog);
     closeMobileNavigation();

@@ -111,7 +111,7 @@
   function eventCard(event) {
     var href = "/experiencias/" + encodeURIComponent(event.slug) + "/";
     var isPerigalla01 = /la\s+perigalla\s*0?1/i.test(String(event.title || ""));
-    var storyHref = isPerigalla01 ? "https://perigallo.com/la-perigalla-01/" : href;
+    var storyHref = isPerigalla01 ? "/la-perigalla-01/" : href;
     var storyLabel = isPerigalla01 ? "Descubrir la historia" : "Descubrir la experiencia";
     var salePrice = Number(event.price_from_cents || 0);
     var reference = referencePrice(event.reference_price_from_cents, salePrice, true);
@@ -127,9 +127,9 @@
       '<h3>' + escapeHtml(event.title) + '</h3>',
       '<div class="event-meta"><span>' + escapeHtml(fmtAgendaDate(event.starts_at)) + '</span><span>' + escapeHtml(event.subtitle || "") + '</span></div>',
       '<span class="event-card-divider" aria-hidden="true"></span>',
-      '<span class="event-availability">Plazas limitadas</span>',
+      '<span class="event-availability">' + (event.status === "sold_out" ? "Completo" : "Consulta disponibilidad") + '</span>',
       '<span class="event-price">' + eventPrice + '</span>',
-      '<a class="ticket-btn primary event-card-action" data-analytics-click="comprar-entradas" href="' + href + '">Comprar entradas <b aria-hidden="true">→</b></a>',
+      '<a class="ticket-btn primary event-card-action" data-analytics-click="comprar-entradas" href="' + href + '">' + (event.status === "sold_out" ? "Ver experiencia" : "Ver entradas") + ' <b aria-hidden="true">→</b></a>',
       '<a class="event-card-discover" data-analytics-click="descubrir-historia" href="' + escapeAttr(storyHref) + '">' + escapeHtml(storyLabel) + ' <b aria-hidden="true">→</b></a>',
       '</div>',
       '</div>',
@@ -143,11 +143,12 @@
     function loadEvents() {
       target.setAttribute("aria-busy", "true");
       request(api + "/events").then(function (data) {
-        if (!data.events.length) {
+        var events = window.PerigalloAgenda.upcoming(data.events);
+        if (!events.length) {
           target.innerHTML = '<div class="ticket-panel experience-empty"><span class="ticket-eyebrow">Próximamente</span><h2>La próxima experiencia está en camino</h2><p class="ticket-copy">Estamos ultimando la siguiente edición Perigallo. Síguenos para descubrirla antes que nadie.</p><a class="ticket-btn primary" href="https://www.instagram.com/somosperigallo/" target="_blank" rel="noopener noreferrer">Seguir novedades</a></div>';
           return;
         }
-        target.innerHTML = data.events.map(eventCard).join("");
+        target.innerHTML = events.map(eventCard).join("");
       }).catch(function (error) {
         target.innerHTML = '<div class="ticket-panel"><p class="ticket-status">' + escapeHtml(error.message) + '</p><button class="ticket-btn" type="button" data-retry-events>Reintentar</button></div>';
       }).finally(function () {
@@ -178,6 +179,8 @@
     var endpoint = preview ? api + "/admin/events/" + encodeURIComponent(previewId) + "/preview" : api + "/events/" + encodeURIComponent(slug);
     request(endpoint, preview ? { cache: "no-store" } : undefined).then(function (data) {
       var event = data.event;
+      var ended = !preview && Number.isFinite(window.PerigalloAgenda.timestamp(event.ends_at || event.starts_at)) && window.PerigalloAgenda.timestamp(event.ends_at || event.starts_at) <= Date.now();
+      if (ended) event.ticket_types = (event.ticket_types || []).map(function (type) { return Object.assign({}, type, { effective_status: "closed", available: 0 }); });
       if (!preview) {
         var publicUrl = window.location.origin + "/experiencias/" + encodeURIComponent(event.slug) + "/";
         document.title = (event.seo_title || event.title) + " | Experiencias Perigallo";
@@ -187,7 +190,7 @@
         if (ogUrl) ogUrl.content = publicUrl;
         setEventSchema(event, publicUrl);
       }
-      root.innerHTML = renderEventDetail(event, preview);
+      root.innerHTML = (ended ? '<div class="event-past-notice" role="status">Esta experiencia ya se ha celebrado. <a href="/experiencias/">Ver próximas experiencias →</a></div>' : "") + renderEventDetail(event, preview);
       document.body.classList.toggle("perigalla-landing-page", isPerigalla01Event(event));
       initEventPurchaseControls(root);
       initExperienceAccordions(root);
@@ -254,7 +257,24 @@
       '</div><footer class="perigalla-gastronomy-finale"><span>Y cuando el recorrido termina…</span><h3>Más sorpresas, dulces, espectáculo, fiesta y resopón.</h3><p>La historia continúa hasta las dos de la mañana.</p></footer>';
   }
 
-  function eventFloatingPurchaseCta(event, types, targetId) {
+  function perigallaWhatsAppUrl(event) {
+    var source = String(event.contact_info || "");
+    var match = source.match(/(?:\+?34[\s.-]?)?(?:\d[\s.-]?){8,}\d/);
+    // Reuses the site-wide destination declared in assets/js/site.js and
+    // eventos/index.html. Set PERIGALLO_WHATSAPP_URL to replace it per site.
+    if (!match && window.PERIGALLO_WHATSAPP_URL) return String(window.PERIGALLO_WHATSAPP_URL);
+    if (!match) return "https://wa.me/34691499985";
+    var phone = match[0].replace(/\D/g, "");
+    if (phone.length === 9) phone = "34" + phone;
+    return phone.length >= 11 ? "https://wa.me/" + phone : "";
+  }
+
+  function perigallaMapEmbedUrl(event) {
+    var place = [event.location, event.address, event.locality, event.province].filter(Boolean).join(", ");
+    return place ? "https://www.google.com/maps?output=embed&q=" + encodeURIComponent(place) : "";
+  }
+
+  function eventFloatingPurchaseCta(event, types, targetId, whatsAppUrl) {
     var availableTypes = (types || []).filter(function (type) {
       return (type.effective_status || type.status || "on_sale") === "on_sale" && Number(type.available || 0) > 0;
     });
@@ -263,12 +283,16 @@
     var firstType = availableTypes[0];
     var salePrice = Number(firstType.final_price_cents != null ? firstType.final_price_cents : firstType.price_cents || 0);
     var priceLabel = availableTypes.length > 1 ? "Desde " + cents(salePrice) : cents(salePrice);
+    var whatsApp = whatsAppUrl
+      ? '<a class="event-floating-purchase-whatsapp" href="' + escapeAttr(whatsAppUrl) + '" target="_blank" rel="noopener noreferrer">WhatsApp</a>'
+      : "";
 
     return [
       '<div class="event-floating-purchase-spacer" aria-hidden="true"></div>',
       '<aside class="event-floating-purchase" aria-label="Comprar entradas para ' + escapeAttr(event.title) + '">',
       '<div class="event-floating-purchase-summary"><span>Entradas</span><strong>' + escapeHtml(priceLabel) + '</strong></div>',
       '<a class="event-floating-purchase-button wedding-button wedding-button--solid" data-analytics-click="comprar-entradas-flotante" href="#' + escapeAttr(targetId) + '"><span>Comprar entradas</span><b aria-hidden="true">→</b></a>',
+      whatsApp,
       '</aside>'
     ].join("");
   }
@@ -278,6 +302,10 @@
     var experienceImageUrl = "/assets/images/perigalla-01/sofia-carlos-experience.png";
     var ticketCards = types.length ? types.map(function (type) { return ticketTypeRow(type, event, preview); }).join("") : '<p class="ticket-status event-access-empty">Próximamente anunciaremos las entradas.</p>';
     var information = experienceInformation(event);
+    var whatsApp = perigallaWhatsAppUrl(event);
+    var mapEmbedUrl = perigallaMapEmbedUrl(event);
+    var locality = [event.locality || "Crevillente", event.province || "Alicante"].filter(Boolean).join(", ");
+    var parking = event.parking_info ? escapeHtml(event.parking_info) : "Parking disponible en la propia finca para los asistentes.";
     return [
       '<div class="event-detail-layout perigalla-landing">',
       '<section class="perigalla-welcome" id="perigallo" data-analytics-section="bienvenida">',
@@ -290,12 +318,13 @@
       '</section>',
       '<section class="perigalla-timeline" id="historia" aria-labelledby="perigalla-timeline-title" data-analytics-section="historia"><header><h2 id="perigalla-timeline-title">Recorrido de la <em>experiencia</em></h2><p>Una noche que avanza en cuatro capítulos: de la primera bienvenida al último brindis.</p></header><ol><li><span>01 · 19:00</span><strong>Apertura de puertas</strong><p>Recepción de invitados y bienvenida.</p></li><li><span>02 · 20:00</span><strong>Ceremonia</strong><p>Comienza la historia y la puesta en escena.</p></li><li><span>03 · 21:00</span><strong>Recorrido gastronómico</strong><p>Diecinueve piezas que recorren la isla y sus sabores.</p></li><li><span>04 · 23:00–02:00</span><strong>Sorpresas, fiesta y resopón</strong><p>Celebración hasta el final de la noche.</p></li></ol><aside class="perigalla-timeline-story"><div><span class="ticket-eyebrow">La historia de Sofía y Carlos</span><h3>¿Quieres vivirla desde el principio?</h3><p>Entra directamente en el cuento y vuelve a la celebración cuando quieras.</p></div><button class="wedding-button wedding-button--solid" type="button" data-story-overlay-open><span>Conocer la historia</span></button></aside></section>',
       '<section class="perigalla-gastronomy" id="gastronomia" data-analytics-section="gastronomia"><header><span class="ticket-eyebrow">04 · Gastronomía</span><h2>La isla en <em>diecinueve piezas</em></h2><p>Dos viajes, diecinueve paradas y una misma historia por compartir.</p></header>' + perigallaGastronomyMarkup() + '</section>',
-      '<section class="perigalla-venue" id="finca" data-analytics-section="finca"><div><span class="ticket-eyebrow">05 · El escenario</span><h2>Finca <em>La Llaguna</em></h2><p>Crevillent · Alicante</p><a class="wedding-button wedding-button--outline" href="https://fincalallaguna.com/" target="_blank" rel="noopener noreferrer"><span>Descubrir la finca</span></a></div><figure><img loading="lazy" src="/assets/images/finca-la-llaguna-principal.jpg" alt="Finca La Llaguna"></figure></section>',
+      '<section class="perigalla-venue" id="finca" data-analytics-section="finca"><div><span class="ticket-eyebrow">05 · El escenario</span><h2>Finca <em>La Llaguna</em></h2><p>' + escapeHtml(locality) + '</p><div class="perigalla-venue-copy"><p>Una finca para recorrer la noche entre gastronomía, escena y celebración.</p></div></div><figure><img loading="lazy" src="/assets/images/finca-la-llaguna-principal.jpg" alt="Finca La Llaguna"></figure></section>',
+      '<section class="perigalla-location" aria-labelledby="perigalla-location-title"><div class="perigalla-location-copy"><span class="ticket-eyebrow">Ubicación</span><h2 id="perigalla-location-title">Dónde será</h2><p><strong>Finca La Llaguna</strong><br>' + escapeHtml(locality) + '</p><p class="perigalla-location-parking">' + parking + '</p>' + (event.maps_url ? '<a class="wedding-button wedding-button--outline" href="' + escapeAttr(event.maps_url) + '" target="_blank" rel="noopener noreferrer"><span>Cómo llegar</span></a>' : '') + '</div>' + (mapEmbedUrl ? '<div class="perigalla-location-map"><iframe title="Mapa de ubicación de Finca La Llaguna" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="' + escapeAttr(mapEmbedUrl) + '"></iframe></div>' : '') + '</section>',
       '<section class="event-access perigalla-ticketing" id="entradas" data-analytics-section="entradas"><header><span class="ticket-eyebrow">06 · Entradas</span><h2>Reserva tu lugar en la historia</h2></header><div class="ticket-types">' + ticketCards + '</div></section>',
       information ? '<section class="event-public-information event-public-information-accordions perigalla-information" id="info" data-analytics-section="detalles"><div class="event-chapter-inner event-details-layout"><header class="experience-information-heading"><span class="ticket-eyebrow">07 · Información</span><h2>Todo lo que necesitas saber</h2><p>Horarios, ubicación, acceso, recomendaciones y preguntas frecuentes.</p></header><div class="event-details-body">' + information + '</div></div></section>' : '',
       '<div class="perigalla-story-overlay" data-story-overlay hidden aria-hidden="true" role="dialog" aria-modal="true" aria-label="La historia de La Perigalla 01"><div class="perigalla-story-overlay-bar"><span>La Perigalla 01</span><button type="button" data-story-overlay-close>Cerrar <b aria-hidden="true">×</b></button></div><div class="perigalla-story-frame" data-story-frame></div></div>',
       '<div class="perigalla-gastronomy-dialog" data-gastronomy-dialog hidden aria-hidden="true" role="dialog" aria-modal="true" aria-label="Detalle del plato"><button type="button" data-gastronomy-close aria-label="Cerrar detalle">×</button><figure><img data-gastronomy-image alt=""></figure><div><span data-gastronomy-index-label></span><h2 data-gastronomy-title></h2><p data-gastronomy-dish></p><p class="perigalla-gastronomy-allergens" data-gastronomy-allergens></p></div></div>',
-      eventFloatingPurchaseCta(event, types, "entradas"),
+      eventFloatingPurchaseCta(event, types, "entradas", whatsApp),
       '</div>'
     ].join("");
   }

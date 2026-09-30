@@ -4,7 +4,7 @@ const html = await readFile(new URL('../experiencias/index.html', import.meta.ur
 const css = await readFile(new URL('../assets/css/experiences-page.css', import.meta.url), 'utf8');
 
 const expectations = [
-  ['cabecera compartida', 'class="wedding-nav"'],
+  ['cabecera compartida', 'class="brand-header"'],
   ['sin cabecera anterior', !html.includes('class="pg-nav"')],
   ['agenda dinámica', 'data-events-list'],
   ['enlace a mis entradas', 'href="/mis-entradas/"'],
