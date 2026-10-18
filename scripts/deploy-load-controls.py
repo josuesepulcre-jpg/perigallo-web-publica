@@ -5,9 +5,9 @@ prepare builds separately; activate checks source fingerprints and retains rollb
 import argparse, hashlib, json, os, shutil, subprocess
 from pathlib import Path
 
-def fingerprint(root):
-    paths=[]
-    for name in ['src','package.json','package-lock.json','next.config.js','tsconfig.json','server.js']:
+def fingerprint(root, layout="standard"):
+    paths=list(root.glob('*.css'))
+    for name in ['src','app','lib','staff','scripts','prisma','db','package.json','package-lock.json','next.config.js','next.config.ts','next.config.mjs','.eslintrc.json','eslint.config.mjs','eslint.config.js','tsconfig.json','server.js']:
         p=root/name
         if p.is_dir(): paths.extend(x for x in p.rglob('*') if x.is_file())
         elif p.is_file(): paths.append(p)
@@ -18,6 +18,7 @@ def run():
     parser.add_argument('mode', choices=['prepare','activate','rollback'])
     parser.add_argument('--app',required=True);parser.add_argument('--work',required=True)
     parser.add_argument('--changes');parser.add_argument('--expected-build',required=True)
+    parser.add_argument('--layout', choices=['standard','lab'], default='standard')
     a=parser.parse_args();app=Path(a.app).resolve();work=Path(a.work).resolve()
     if app == work or app in work.parents: raise SystemExit('Work folder must be outside the app.')
     stage=work/'build'; backup=work/'backup';manifest=work/'manifest.json'
@@ -30,7 +31,8 @@ def run():
         staged={}
         for change in changes:
             name=change['file']; target=(app/name).resolve()
-            if not name.startswith('src/') or app not in target.parents:raise SystemExit('Only src changes are permitted.')
+            allowed = ('src/',) if a.layout == 'standard' else ('app/','lib/')
+            if not name.startswith(allowed) or app not in target.parents:raise SystemExit('Only application source changes are permitted.')
             if name not in staged:staged[name]=(app/name).read_text() if (app/name).exists() else ''
             old=change['old'];new=change['new']
             if old:
@@ -40,8 +42,11 @@ def run():
                 if staged[name]:raise SystemExit('New source already exists: '+name)
                 staged[name]=new
         work.mkdir(mode=0o700,parents=True);stage.mkdir();backup.mkdir()
-        shutil.copytree(app/'src',stage/'src')
-        for name in ['package.json','package-lock.json','next.config.js','tsconfig.json','next-env.d.ts','postcss.config.js','postcss.config.mjs','tailwind.config.ts','tailwind.config.js','DEPLOYED_COMMIT']:
+        for name in ['src','app','lib','staff','scripts','prisma','db','tests']:
+            if (app/name).is_dir():
+                shutil.copytree(app/name,stage/name,ignore=shutil.ignore_patterns('node_modules','.next','.env*','storage','backups','__pycache__'))
+        for css in app.glob('*.css'):shutil.copy2(css,stage/css.name)
+        for name in ['package.json','package-lock.json','next.config.js','next.config.ts','next.config.mjs','.eslintrc.json','eslint.config.mjs','eslint.config.js','tsconfig.json','next-env.d.ts','postcss.config.js','postcss.config.mjs','jsconfig.json','tailwind.config.ts','tailwind.config.js','DEPLOYED_COMMIT']:
             if (app/name).is_file():shutil.copy2(app/name,stage/name)
         # Native dependencies stay identical. Hardlinks prevent a second install or updates.
         shutil.copytree(app/'node_modules',stage/'node_modules',copy_function=os.link,symlinks=True)
@@ -70,6 +75,10 @@ def run():
         if (backup/'.next').exists():raise SystemExit('Already activated.')
         # Keep previous hashed assets available to tabs already open during rollout.
         shutil.copytree(app/'.next/static',stage/'.next/static',dirs_exist_ok=True)
+        standalone=stage/'.next/standalone'
+        if (standalone/'server.js').is_file():
+            shutil.copytree(stage/'.next/static',standalone/'.next/static',dirs_exist_ok=True)
+            if (stage/'public').is_dir():shutil.copytree(stage/'public',standalone/'public',dirs_exist_ok=True)
         for name in m['changed']:
             (app/name).parent.mkdir(parents=True,exist_ok=True)
             shutil.copy2(stage/name,app/name)
