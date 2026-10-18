@@ -11,13 +11,14 @@ def transform(source):
  lines=source.splitlines(keepends=True)
  matches=[i for i,line in enumerate(lines) if not line.lstrip().startswith('#') and ('scripts/export-critical-data-backup-server.mjs' in line or 'scripts/run-critical-backup-guarded.sh' in line)]
  if len(matches)!=1:raise ValueError('Expected exactly one reservation backup task.')
- i=matches[0];line=lines[i]
+ i=matches[0];line=lines[i];parts=line.split(maxsplit=5)
+ if len(parts)!=6:raise ValueError('Malformed cron task.')
  if NEW in line:
-  if not line.startswith('43 * * * * '):raise ValueError('Unexpected existing wrapper schedule.')
+  if parts[:5]!=['43','*','*','*','*']:raise ValueError('Unexpected existing wrapper schedule.')
   return source
- if not line.startswith('17 3 * * * '):raise ValueError('Unexpected original backup schedule.')
+ if parts[:5]!=['17','3','*','*','*']:raise ValueError('Unexpected original backup schedule.')
  if len(OLD.findall(line))!=1:raise ValueError('Unexpected backup executable.')
- lines[i]='43 * * * * '+OLD.sub(NEW,line[len('17 3 * * * '):],count=1)
+ lines[i]='43 * * * * '+OLD.sub(NEW,parts[5],count=1)
  return ''.join(lines)
 
 def main():

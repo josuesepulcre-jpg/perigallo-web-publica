@@ -9,6 +9,9 @@ class BackupCron(unittest.TestCase):
   actual=module.transform(source)
   self.assertTrue(actual.startswith(other));self.assertIn('--if-stale --retention=20 >> logs/critical-backup-cron.log 2>&1',actual)
   self.assertEqual(module.transform(actual),actual);self.assertIn('43 * * * * cd ',actual)
+ def test_plesk_whitespace_is_supported(self):
+  source='17\t3  * * * cd app && /opt/plesk/node/25/bin/node scripts/export-critical-data-backup-server.mjs >> log 2>&1\n'
+  self.assertIn('43 * * * * cd app && /bin/bash scripts/run-critical-backup-guarded.sh --if-stale >> log 2>&1',module.transform(source))
  def test_duplicates_and_unexpected_schedules_are_rejected(self):
   task='17 3 * * * /opt/plesk/node/25/bin/node scripts/export-critical-data-backup-server.mjs\n'
   for source in ['',task*2,task.replace('17 3','18 3')]:
