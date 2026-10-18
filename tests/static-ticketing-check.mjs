@@ -290,7 +290,7 @@ for (const marker of ["updateCashOrderTotal", "cashWhatsAppUrl", "whatsapp_url",
 for (const marker of ["cashOrderWhatsAppUrl", "whatsapp_url", "Aplica la migración 024"]) {
   if (!ticketing.includes(marker)) throw new Error(`Cash-order API contract is missing ${marker}.`);
 }
-if (!api.includes("['ok' => true] + $ticketing->adminCreateCashOrder")) {
+if (!api.includes("['ok' => true] + $ticketing()->adminCreateCashOrder")) {
   throw new Error("Cash-order endpoint must return the WhatsApp URL at the top level.");
 }
 for (const marker of ['status NOT IN ("draft", "archived")', 'entradas cerradas, pausadas u ocultas']) {
@@ -686,7 +686,7 @@ for (const marker of ["function track", "function dashboard", "function sendDueR
 for (const marker of ["sendBeacon", "IntersectionObserver", "scroll_depth", "checkout_start", "payment_start", "perigallo-analytics-consent"]) {
   if (!analyticsClient.includes(marker)) throw new Error(`Analytics client is missing ${marker}.`);
 }
-for (const marker of ["/analytics/events", "/admin/analytics", "requireOwner", "analytics->dashboard"]) {
+for (const marker of ["/analytics/events", "/admin/analytics", "requireOwner", "analytics()->dashboard"]) {
   if (!api.includes(marker)) throw new Error(`Analytics API route is missing ${marker}.`);
 }
 for (const marker of ["data-admin-analytics-page", "admin-backoffice.js"]) {

@@ -108,6 +108,7 @@
   }
 
   function flush() {
+    if (flushTimer) { window.clearTimeout(flushTimer); flushTimer = null; }
     if (!queue.length || consent() !== "granted") return;
     var events = queue.splice(0, 12);
     var body = JSON.stringify(payload(events));
@@ -122,7 +123,7 @@
     var event = Object.assign({ name: name, page_path: pagePath(), page_title: pageTitle(), page_type: pageType(), experience_slug: experienceSlug() }, detail || {});
     queue.push(event);
     if (queue.length >= 8) flush();
-    else if (!flushTimer) flushTimer = window.setTimeout(function () { flushTimer = null; flush(); }, 1400);
+    else if (!flushTimer) flushTimer = window.setTimeout(function () { flushTimer = null; flush(); }, 5000);
   }
 
   function sectionName(node, index) {
@@ -204,7 +205,12 @@
     document.addEventListener("submit", function (event) {
       if (event.target && event.target.matches("[data-ticket-checkout]")) queueEvent("payment_start");
     }, { capture: true });
-    window.setInterval(function () { queueEvent("session_ping"); }, 60000);
+    window.setInterval(function () {
+      if (document.visibilityState === "visible") queueEvent("session_ping");
+    }, 60000);
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "hidden") flush();
+    });
     window.addEventListener("pagehide", flush);
     window.dispatchEvent(new CustomEvent("perigalloanalyticsready"));
   }

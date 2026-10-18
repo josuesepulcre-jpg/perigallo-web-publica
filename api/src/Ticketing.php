@@ -1244,9 +1244,13 @@ final class Ticketing
         return $this->adminOrderById($orderId);
     }
 
-    public function adminOrders(int $limit = 200): array
+    public function adminOrders(int $limit = 200, ?int $eventId = null): array
     {
         $limit = max(1, min(200, $limit));
+        if ($eventId !== null && $eventId < 1) throw new InvalidArgumentException('Evento no válido.');
+        $eventWhere = $eventId === null ? '' : ' WHERE EXISTS (SELECT 1 FROM ticket_order_items event_item WHERE event_item.order_id = o.id AND event_item.event_id = ' . (int) $eventId . ')';
+        // Selected-event totals must include its older orders, beyond the global recent-order cap.
+        $limitSql = $eventId === null ? ' LIMIT ' . $limit : '';
         $cashColumns = $this->cashOrderSchemaAvailable()
             ? 'o.sales_channel, o.cash_payment_status, o.cash_payment_notes, o.cash_payment_recorded_by, o.cash_payment_recorded_at'
             : '"web" AS sales_channel, "not_applicable" AS cash_payment_status, NULL AS cash_payment_notes, NULL AS cash_payment_recorded_by, NULL AS cash_payment_recorded_at';
@@ -1291,8 +1295,7 @@ final class Ticketing
                 FROM ticket_attendees ta
                 GROUP BY ta.order_id
              ) attendee_data ON attendee_data.order_id = o.id
-             ORDER BY o.id DESC
-             LIMIT ' . $limit
+             ' . $eventWhere . ' ORDER BY o.id DESC ' . $limitSql
         )->fetchAll();
     }
 

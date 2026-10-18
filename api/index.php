@@ -8,6 +8,7 @@ use Perigallo\Ticketing\Analytics;
 use Perigallo\Ticketing\Contacts;
 use Perigallo\Ticketing\Database;
 use Perigallo\Ticketing\Mailer;
+use Perigallo\Ticketing\PublicEventCache;
 use Perigallo\Ticketing\LeadForms;
 use Perigallo\Ticketing\HoldedClient;
 use Perigallo\Ticketing\HoldedSyncService;
@@ -26,9 +27,20 @@ $path = rtrim($path, '/') ?: '/';
 
 try {
     $mailer = new Mailer();
-    $ticketing = new Ticketing(Database::pdo(), new Redsys(), $mailer);
-    $analytics = new Analytics(Database::pdo(), $mailer);
-    $holded = new HoldedSyncService(Database::pdo(), new HoldedClient());
+    // Do not connect for bots, rejected requests, authentication or unknown routes.
+    // Each service is created only after its route and access checks need it.
+    $ticketing = static function () use ($mailer): Ticketing {
+        static $instance;
+        return $instance ??= new Ticketing(Database::pdo(), new Redsys(), $mailer);
+    };
+    $analytics = static function () use ($mailer): Analytics {
+        static $instance;
+        return $instance ??= new Analytics(Database::pdo(), $mailer);
+    };
+    $holded = static function (): HoldedSyncService {
+        static $instance;
+        return $instance ??= new HoldedSyncService(Database::pdo(), new HoldedClient());
+    };
 
     if ($method === 'GET' && $path === '/whatsapp/webhook') {
         $whatsApp = new WhatsAppDeliveryService();
@@ -70,17 +82,17 @@ try {
             json_response(['ok' => true, 'accepted' => 0]);
             return;
         }
-        json_response(['ok' => true] + $analytics->track(read_json_body()), 202);
+        json_response(['ok' => true] + $analytics()->track(read_json_body()), 202);
         return;
     }
 
     if ($method === 'GET' && $path === '/events') {
-        json_response(['ok' => true, 'events' => $ticketing->listEvents()]);
+        json_response(['ok' => true, 'events' => PublicEventCache::forApplication()->remember(static fn () => $ticketing()->listEvents())]);
         return;
     }
 
     if ($method === 'GET' && preg_match('#^/events/([a-z0-9-]+)$#', $path, $m)) {
-        $event = $ticketing->getEventBySlug($m[1]);
+        $event = $ticketing()->getEventBySlug($m[1]);
         if (!$event) {
             json_response(['ok' => false, 'error' => 'Evento no encontrado.'], 404);
             return;
@@ -90,17 +102,17 @@ try {
     }
 
     if ($method === 'GET' && $path === '/payment-methods') {
-        json_response(['ok' => true, 'methods' => $ticketing->publicPaymentMethods()]);
+        json_response(['ok' => true, 'methods' => (new Redsys())->availablePaymentMethods()]);
         return;
     }
 
     if ($method === 'POST' && $path === '/discounts/validate') {
-        json_response(['ok' => true, 'discount' => $ticketing->validateDiscount(read_json_body())]);
+        json_response(['ok' => true, 'discount' => $ticketing()->validateDiscount(read_json_body())]);
         return;
     }
 
     if ($method === 'POST' && $path === '/orders') {
-        $result = $ticketing->createOrder(read_json_body());
+        $result = $ticketing()->createOrder(read_json_body());
         json_response(['ok' => true] + $result, 201);
         return;
     }
@@ -122,12 +134,12 @@ try {
     }
 
     if ($method === 'POST' && $path === '/orders/recover') {
-        json_response(['ok' => true] + $ticketing->requestOrderAccessRecovery(read_json_body()));
+        json_response(['ok' => true] + $ticketing()->requestOrderAccessRecovery(read_json_body()));
         return;
     }
 
     if ($method === 'GET' && preg_match('#^/orders/access/([A-Za-z0-9_-]+)$#', $path, $m)) {
-        $order = $ticketing->getOrderByAccessLink($m[1]);
+        $order = $ticketing()->getOrderByAccessLink($m[1]);
         if (!$order) {
             json_response(['ok' => false, 'error' => 'Este enlace ya no está disponible. Solicita uno nuevo para acceder a tus entradas.'], 404);
             return;
@@ -137,7 +149,7 @@ try {
     }
 
     if ($method === 'GET' && preg_match('#^/orders/([A-Za-z0-9_-]+)$#', $path, $m)) {
-        $order = $ticketing->getOrderByToken($m[1]);
+        $order = $ticketing()->getOrderByToken($m[1]);
         if (!$order) {
             json_response(['ok' => false, 'error' => 'Pedido no encontrado.'], 404);
             return;
@@ -147,12 +159,12 @@ try {
     }
 
     if ($method === 'POST' && preg_match('#^/orders/([A-Za-z0-9_-]+)/start-card-payment$#', $path, $m)) {
-        json_response(['ok' => true, 'payment' => $ticketing->startManualCardPayment($m[1])]);
+        json_response(['ok' => true, 'payment' => $ticketing()->startManualCardPayment($m[1])]);
         return;
     }
 
     if ($method === 'GET' && preg_match('#^/orders/([A-Za-z0-9_-]+)/invoice$#', $path, $m)) {
-        $invoice = $ticketing->invoicePdfByToken($m[1]);
+        $invoice = $ticketing()->invoicePdfByToken($m[1]);
         if (!$invoice) {
             json_response(['ok' => false, 'error' => 'La factura todavía no está disponible.'], 404);
             return;
@@ -166,7 +178,7 @@ try {
     }
 
     if ($method === 'GET' && preg_match('#^/orders/tickets/([A-Za-z0-9_-]+)$#', $path, $m)) {
-        $document = $ticketing->ticketPdfByToken($m[1]);
+        $document = $ticketing()->ticketPdfByToken($m[1]);
         if (!$document) {
             json_response(['ok' => false, 'error' => 'Las entradas todavía no están disponibles.'], 404);
             return;
@@ -180,12 +192,12 @@ try {
     }
 
     if ($method === 'POST' && preg_match('#^/orders/([A-Za-z0-9_-]+)/resend-email$#', $path, $m)) {
-        json_response(['ok' => true] + $ticketing->resendOrderEmail($m[1]));
+        json_response(['ok' => true] + $ticketing()->resendOrderEmail($m[1]));
         return;
     }
 
     if ($method === 'POST' && preg_match('#^/orders/([A-Za-z0-9_-]+)/resend-whatsapp$#', $path, $m)) {
-        json_response(['ok' => true] + $ticketing->resendOrderWhatsApp($m[1]));
+        json_response(['ok' => true] + $ticketing()->resendOrderWhatsApp($m[1]));
         return;
     }
 
@@ -195,7 +207,7 @@ try {
             parse_str((string) file_get_contents('php://input'), $notification);
         }
         error_log('Perigallo Redsys notification received: remote=' . client_ip() . ' keys=' . implode(',', array_keys($notification)));
-        $result = $ticketing->processRedsysNotification($notification);
+        $result = $ticketing()->processRedsysNotification($notification);
         json_response($result);
         return;
     }
@@ -208,18 +220,18 @@ try {
 
         if ($method === 'GET' && $path === '/internal/experiences') {
             $type = isset($_GET['type']) ? (string) $_GET['type'] : null;
-            json_response(['ok' => true, 'experiences' => $ticketing->integrationListExperiences($type)]);
+            json_response(['ok' => true, 'experiences' => $ticketing()->integrationListExperiences($type)]);
             return;
         }
 
         if ($method === 'POST' && $path === '/internal/experiences') {
-            json_response(['ok' => true, 'experience' => $ticketing->integrationCreateExperience(read_json_body(), $sourceApp, $idempotencyKey)], 201);
+            json_response(['ok' => true, 'experience' => $ticketing()->integrationCreateExperience(read_json_body(), $sourceApp, $idempotencyKey)], 201);
             return;
         }
 
         if (preg_match('#^/internal/experiences/([a-f0-9-]{36})$#i', $path, $m)) {
             if ($method === 'GET') {
-                $experience = $ticketing->integrationGetExperience($m[1]);
+                $experience = $ticketing()->integrationGetExperience($m[1]);
                 if (!$experience) {
                     json_response(['ok' => false, 'error' => 'Experiencia no encontrada.'], 404);
                     return;
@@ -228,38 +240,38 @@ try {
                 return;
             }
             if ($method === 'PATCH') {
-                json_response(['ok' => true, 'experience' => $ticketing->integrationUpdateExperience($m[1], read_json_body(), $sourceApp, $idempotencyKey)]);
+                json_response(['ok' => true, 'experience' => $ticketing()->integrationUpdateExperience($m[1], read_json_body(), $sourceApp, $idempotencyKey)]);
                 return;
             }
         }
 
         if ($method === 'POST' && preg_match('#^/internal/experiences/([a-f0-9-]{36})/(publish|unpublish)$#i', $path, $m)) {
-            json_response(['ok' => true, 'experience' => $ticketing->integrationSetPublication($m[1], $m[2] === 'publish', $sourceApp, $idempotencyKey)]);
+            json_response(['ok' => true, 'experience' => $ticketing()->integrationSetPublication($m[1], $m[2] === 'publish', $sourceApp, $idempotencyKey)]);
             return;
         }
 
         if ($method === 'GET' && preg_match('#^/internal/experiences/([a-f0-9-]{36})/sales-summary$#i', $path, $m)) {
-            json_response(['ok' => true, 'summary' => $ticketing->integrationSalesSummary($m[1])]);
+            json_response(['ok' => true, 'summary' => $ticketing()->integrationSalesSummary($m[1])]);
             return;
         }
 
         if ($method === 'GET' && preg_match('#^/internal/experiences/([a-f0-9-]{36})/orders$#i', $path, $m)) {
-            json_response(['ok' => true, 'orders' => $ticketing->integrationOrders($m[1])]);
+            json_response(['ok' => true, 'orders' => $ticketing()->integrationOrders($m[1])]);
             return;
         }
 
         if ($method === 'POST' && preg_match('#^/internal/experiences/([a-f0-9-]{36})/ticket-types$#i', $path, $m)) {
-            json_response(['ok' => true, 'ticket_type' => $ticketing->integrationCreateTicketType($m[1], read_json_body(), $sourceApp, $idempotencyKey)], 201);
+            json_response(['ok' => true, 'ticket_type' => $ticketing()->integrationCreateTicketType($m[1], read_json_body(), $sourceApp, $idempotencyKey)], 201);
             return;
         }
 
         if ($method === 'PATCH' && preg_match('#^/internal/experiences/([a-f0-9-]{36})/ticket-types/([0-9]+)$#i', $path, $m)) {
-            json_response(['ok' => true, 'ticket_type' => $ticketing->integrationUpdateTicketType($m[1], (int) $m[2], read_json_body(), $sourceApp, $idempotencyKey)]);
+            json_response(['ok' => true, 'ticket_type' => $ticketing()->integrationUpdateTicketType($m[1], (int) $m[2], read_json_body(), $sourceApp, $idempotencyKey)]);
             return;
         }
 
         if ($method === 'DELETE' && preg_match('#^/internal/experiences/([a-f0-9-]{36})/ticket-types/([0-9]+)$#i', $path, $m)) {
-            json_response(['ok' => true] + $ticketing->integrationArchiveTicketType($m[1], (int) $m[2], $sourceApp, $idempotencyKey));
+            json_response(['ok' => true] + $ticketing()->integrationArchiveTicketType($m[1], (int) $m[2], $sourceApp, $idempotencyKey));
             return;
         }
 
@@ -291,37 +303,39 @@ try {
 
     if ($method === 'GET' && $path === '/admin/summary') {
         AdminAuth::require();
-        json_response(['ok' => true, 'summary' => $ticketing->adminSummary()]);
+        json_response(['ok' => true, 'summary' => $ticketing()->adminSummary()]);
         return;
     }
 
     if ($method === 'GET' && $path === '/admin/analytics') {
         AdminAuth::require();
-        json_response(['ok' => true, 'analytics' => $analytics->dashboard($_GET)]);
+        json_response(['ok' => true, 'analytics' => $analytics()->dashboard($_GET)]);
         return;
     }
 
     if ($method === 'GET' && $path === '/admin/analytics/settings') {
         AdminAuth::require();
-        json_response(['ok' => true, 'settings' => $analytics->settings()]);
+        json_response(['ok' => true, 'settings' => $analytics()->settings()]);
         return;
     }
 
     if ($method === 'PUT' && $path === '/admin/analytics/settings') {
         AdminAuth::requireOwner();
-        json_response(['ok' => true, 'settings' => $analytics->saveSettings(read_json_body())]);
+        json_response(['ok' => true, 'settings' => $analytics()->saveSettings(read_json_body())]);
         return;
     }
 
     if ($method === 'POST' && $path === '/admin/analytics/send-test-report') {
         AdminAuth::requireOwner();
-        json_response(['ok' => true, 'report' => $analytics->sendTestReport()]);
+        json_response(['ok' => true, 'report' => $analytics()->sendTestReport()]);
         return;
     }
 
     if ($method === 'GET' && $path === '/admin/orders') {
         AdminAuth::require();
-        json_response(['ok' => true, 'orders' => $ticketing->adminOrders()]);
+        $eventId = isset($_GET['event']) ? filter_var($_GET['event'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) : null;
+        if ($eventId === false) throw new InvalidArgumentException('Selecciona un evento válido.');
+        json_response(['ok' => true, 'orders' => $ticketing()->adminOrders(200, $eventId)]);
         return;
     }
 
@@ -373,19 +387,19 @@ try {
 
     if ($method === 'GET' && $path === '/admin/cash-orders/meta') {
         AdminAuth::require();
-        json_response(['ok' => true] + $ticketing->adminCashOrderMeta());
+        json_response(['ok' => true] + $ticketing()->adminCashOrderMeta());
         return;
     }
 
     if ($method === 'POST' && $path === '/admin/cash-orders') {
         AdminAuth::requireCsrf();
-        json_response(['ok' => true] + $ticketing->adminCreateCashOrder(read_json_body(), AdminAuth::operatorName()), 201);
+        json_response(['ok' => true] + $ticketing()->adminCreateCashOrder(read_json_body(), AdminAuth::operatorName()), 201);
         return;
     }
 
     if ($method === 'GET' && $path === '/admin/holded/health') {
         AdminAuth::requireOwnerSession();
-        json_response(['ok' => true, 'holded' => $holded->health()]);
+        json_response(['ok' => true, 'holded' => $holded()->health()]);
         return;
     }
 
@@ -427,74 +441,74 @@ try {
 
     if ($method === 'GET' && preg_match('#^/admin/orders/([0-9]+)/attendees$#', $path, $m)) {
         AdminAuth::require();
-        json_response(['ok' => true] + $ticketing->adminOrderAttendees((int) $m[1]));
+        json_response(['ok' => true] + $ticketing()->adminOrderAttendees((int) $m[1]));
         return;
     }
 
     if ($method === 'PUT' && preg_match('#^/admin/orders/([0-9]+)/contact$#', $path, $m)) {
         AdminAuth::requireCsrf();
-        json_response(['ok' => true, 'order' => $ticketing->adminUpdateOrderContact((int) $m[1], read_json_body(), AdminAuth::operatorName())]);
+        json_response(['ok' => true, 'order' => $ticketing()->adminUpdateOrderContact((int) $m[1], read_json_body(), AdminAuth::operatorName())]);
         return;
     }
 
     if ($method === 'GET' && $path === '/admin/discount-codes/meta') {
         AdminAuth::require();
-        json_response(['ok' => true] + $ticketing->adminDiscountCodeMeta());
+        json_response(['ok' => true] + $ticketing()->adminDiscountCodeMeta());
         return;
     }
 
     if ($method === 'GET' && $path === '/admin/discount-codes') {
         AdminAuth::require();
-        json_response(['ok' => true, 'discount_codes' => $ticketing->adminDiscountCodes($_GET)]);
+        json_response(['ok' => true, 'discount_codes' => $ticketing()->adminDiscountCodes($_GET)]);
         return;
     }
 
     if ($method === 'POST' && $path === '/admin/discount-codes') {
         AdminAuth::requireCsrf();
-        json_response(['ok' => true, 'discount_code' => $ticketing->adminSaveDiscountCode(read_json_body(), AdminAuth::operatorName())], 201);
+        json_response(['ok' => true, 'discount_code' => $ticketing()->adminSaveDiscountCode(read_json_body(), AdminAuth::operatorName())], 201);
         return;
     }
 
     if ($method === 'GET' && preg_match('#^/admin/discount-codes/([0-9]+)$#', $path, $m)) {
         AdminAuth::require();
-        json_response(['ok' => true, 'discount_code' => $ticketing->adminDiscountCode((int) $m[1])]);
+        json_response(['ok' => true, 'discount_code' => $ticketing()->adminDiscountCode((int) $m[1])]);
         return;
     }
 
     if ($method === 'PUT' && preg_match('#^/admin/discount-codes/([0-9]+)$#', $path, $m)) {
         AdminAuth::requireCsrf();
-        json_response(['ok' => true, 'discount_code' => $ticketing->adminSaveDiscountCode(read_json_body(), AdminAuth::operatorName(), (int) $m[1])]);
+        json_response(['ok' => true, 'discount_code' => $ticketing()->adminSaveDiscountCode(read_json_body(), AdminAuth::operatorName(), (int) $m[1])]);
         return;
     }
 
     if ($method === 'POST' && preg_match('#^/admin/discount-codes/([0-9]+)/duplicate$#', $path, $m)) {
         AdminAuth::requireCsrf();
-        json_response(['ok' => true, 'discount_code' => $ticketing->adminDuplicateDiscountCode((int) $m[1], AdminAuth::operatorName())], 201);
+        json_response(['ok' => true, 'discount_code' => $ticketing()->adminDuplicateDiscountCode((int) $m[1], AdminAuth::operatorName())], 201);
         return;
     }
 
     if ($method === 'POST' && preg_match('#^/admin/discount-codes/([0-9]+)/archive$#', $path, $m)) {
         AdminAuth::requireCsrf();
-        json_response(['ok' => true, 'discount_code' => $ticketing->adminArchiveDiscountCode((int) $m[1], AdminAuth::operatorName())]);
+        json_response(['ok' => true, 'discount_code' => $ticketing()->adminArchiveDiscountCode((int) $m[1], AdminAuth::operatorName())]);
         return;
     }
 
     if ($method === 'DELETE' && preg_match('#^/admin/discount-codes/([0-9]+)$#', $path, $m)) {
         AdminAuth::requireCsrf();
-        json_response(['ok' => true] + $ticketing->adminDeleteUnusedDiscountCode((int) $m[1], AdminAuth::operatorName()));
+        json_response(['ok' => true] + $ticketing()->adminDeleteUnusedDiscountCode((int) $m[1], AdminAuth::operatorName()));
         return;
     }
 
     if ($method === 'GET' && preg_match('#^/admin/discount-codes/([0-9]+)/history$#', $path, $m)) {
         AdminAuth::require();
-        json_response(['ok' => true, 'usages' => $ticketing->adminDiscountCodeHistory((int) $m[1])]);
+        json_response(['ok' => true, 'usages' => $ticketing()->adminDiscountCodeHistory((int) $m[1])]);
         return;
     }
 
     if ($method === 'POST' && preg_match('#^/admin/orders/([0-9]+)/cancel$#', $path, $m)) {
         AdminAuth::requireCsrf();
         $data = read_json_body();
-        json_response(['ok' => true, 'order' => $ticketing->adminCancelOrder((int) $m[1], AdminAuth::operatorName(), (string) ($data['reason'] ?? ''))]);
+        json_response(['ok' => true, 'order' => $ticketing()->adminCancelOrder((int) $m[1], AdminAuth::operatorName(), (string) ($data['reason'] ?? ''))]);
         return;
     }
 
@@ -504,38 +518,38 @@ try {
         if (empty($data['confirmed'])) {
             throw new InvalidArgumentException('Confirma que el abono se ha realizado fuera de esta aplicación.');
         }
-        json_response(['ok' => true, 'order' => $ticketing->adminRecordRefund((int) $m[1], AdminAuth::operatorName(), (string) ($data['reason'] ?? ''))]);
+        json_response(['ok' => true, 'order' => $ticketing()->adminRecordRefund((int) $m[1], AdminAuth::operatorName(), (string) ($data['reason'] ?? ''))]);
         return;
     }
 
     if ($method === 'POST' && preg_match('#^/admin/orders/([0-9]+)/cash-payment$#', $path, $m)) {
         AdminAuth::requireCsrf();
-        json_response(['ok' => true, 'order' => $ticketing->adminRecordCashPayment((int) $m[1], read_json_body(), AdminAuth::operatorName())]);
+        json_response(['ok' => true, 'order' => $ticketing()->adminRecordCashPayment((int) $m[1], read_json_body(), AdminAuth::operatorName())]);
         return;
     }
 
     if ($method === 'POST' && preg_match('#^/admin/orders/([0-9]+)/send-cash$#', $path, $m)) {
         AdminAuth::requireCsrf();
-        json_response(['ok' => true, 'order' => $ticketing->adminSendCashOrder((int) $m[1], AdminAuth::operatorName())]);
+        json_response(['ok' => true, 'order' => $ticketing()->adminSendCashOrder((int) $m[1], AdminAuth::operatorName())]);
         return;
     }
 
     if ($method === 'POST' && preg_match('#^/admin/orders/([0-9]+)/delivery/(email|whatsapp)/retry$#', $path, $m)) {
         AdminAuth::requireCsrf();
-        json_response(['ok' => true, 'delivery' => $ticketing->adminRetryDelivery((int) $m[1], $m[2], AdminAuth::operatorName())]);
+        json_response(['ok' => true, 'delivery' => $ticketing()->adminRetryDelivery((int) $m[1], $m[2], AdminAuth::operatorName())]);
         return;
     }
 
     if ($method === 'POST' && preg_match('#^/admin/orders/([0-9]+)/delivery/email/confirm$#', $path, $m)) {
         AdminAuth::requireCsrf();
-        json_response(['ok' => true, 'order' => $ticketing->adminConfirmEmailDelivered((int) $m[1], AdminAuth::operatorName())]);
+        json_response(['ok' => true, 'order' => $ticketing()->adminConfirmEmailDelivered((int) $m[1], AdminAuth::operatorName())]);
         return;
     }
 
     if ($method === 'POST' && preg_match('#^/admin/orders/([0-9]+)/holded/retry$#', $path, $m)) {
         AdminAuth::requireOwner();
         $body = read_json_body();
-        json_response(['ok' => true, 'holded' => $holded->retry((int) $m[1], !empty($body['confirm_no_external_document']))]);
+        json_response(['ok' => true, 'holded' => $holded()->retry((int) $m[1], !empty($body['confirm_no_external_document']))]);
         return;
     }
 
@@ -543,13 +557,13 @@ try {
         AdminAuth::requireOwner();
         $body = read_json_body();
         $limit = isset($body['limit']) ? (int) $body['limit'] : 100;
-        json_response(['ok' => true, 'holded' => $holded->requeueRecoverableOrders($limit, !empty($body['apply']))]);
+        json_response(['ok' => true, 'holded' => $holded()->requeueRecoverableOrders($limit, !empty($body['apply']))]);
         return;
     }
 
     if ($method === 'DELETE' && preg_match('#^/admin/orders/([0-9]+)/test$#', $path, $m)) {
         AdminAuth::requireOwner();
-        $ticketing->adminPurgeTestOrder((int) $m[1], AdminAuth::operatorName());
+        $ticketing()->adminPurgeTestOrder((int) $m[1], AdminAuth::operatorName());
         json_response(['ok' => true]);
         return;
     }
@@ -582,25 +596,25 @@ try {
 
     if ($method === 'POST' && preg_match('#^/admin/events/([0-9]+)/test-orders$#', $path, $m)) {
         AdminAuth::requireCsrf();
-        json_response(['ok' => true] + $ticketing->createTestOrder((int) $m[1], read_json_body()), 201);
+        json_response(['ok' => true] + $ticketing()->createTestOrder((int) $m[1], read_json_body()), 201);
         return;
     }
 
     if ($method === 'POST' && preg_match('#^/admin/events/([0-9]+)/discounts/validate$#', $path, $m)) {
         AdminAuth::requireCsrf();
-        json_response(['ok' => true, 'discount' => $ticketing->validateTestDiscount((int) $m[1], read_json_body())]);
+        json_response(['ok' => true, 'discount' => $ticketing()->validateTestDiscount((int) $m[1], read_json_body())]);
         return;
     }
 
     if ($method === 'GET' && $path === '/admin/events') {
         AdminAuth::requireAccess();
-        json_response(['ok' => true, 'events' => $ticketing->adminListEvents()]);
+        json_response(['ok' => true, 'events' => $ticketing()->adminListEvents()]);
         return;
     }
 
     if ($method === 'GET' && preg_match('#^/admin/events/([0-9]+)$#', $path, $m)) {
         AdminAuth::require();
-        $event = $ticketing->adminGetEvent((int) $m[1]);
+        $event = $ticketing()->adminGetEvent((int) $m[1]);
         if (!$event) {
             json_response(['ok' => false, 'error' => 'Evento no encontrado.'], 404);
             return;
@@ -611,7 +625,7 @@ try {
 
     if ($method === 'GET' && preg_match('#^/admin/events/([0-9]+)/preview$#', $path, $m)) {
         AdminAuth::require();
-        $event = $ticketing->adminGetEvent((int) $m[1]);
+        $event = $ticketing()->adminGetEvent((int) $m[1]);
         if (!$event) {
             json_response(['ok' => false, 'error' => 'Evento no encontrado.'], 404);
             return;
@@ -622,7 +636,7 @@ try {
 
     if ($method === 'POST' && $path === '/admin/events') {
         AdminAuth::requireCsrf();
-        json_response(['ok' => true, 'event' => $ticketing->adminCreateEvent(read_json_body())], 201);
+        json_response(['ok' => true, 'event' => $ticketing()->adminCreateEvent(read_json_body())], 201);
         return;
     }
 
@@ -634,19 +648,19 @@ try {
             json_response(['ok' => false, 'error' => 'El archivo supera el límite del servidor. Configura upload_max_filesize y post_max_size en al menos 64M en Plesk.'], 413);
             return;
         }
-        json_response(['ok' => true, 'media' => $ticketing->adminUploadImage($_FILES['file'] ?? [], (string) ($_POST['kind'] ?? 'image'))], 201);
+        json_response(['ok' => true, 'media' => $ticketing()->adminUploadImage($_FILES['file'] ?? [], (string) ($_POST['kind'] ?? 'image'))], 201);
         return;
     }
 
     if ($method === 'PUT' && preg_match('#^/admin/events/([0-9]+)$#', $path, $m)) {
         AdminAuth::requireCsrf();
-        json_response(['ok' => true, 'event' => $ticketing->adminUpdateEvent((int) $m[1], read_json_body())]);
+        json_response(['ok' => true, 'event' => $ticketing()->adminUpdateEvent((int) $m[1], read_json_body())]);
         return;
     }
 
     if ($method === 'PATCH' && preg_match('#^/admin/events/([0-9]+)/public-information$#', $path, $m)) {
         AdminAuth::requireCsrf();
-        $event = $ticketing->adminUpdatePublicInformation((int) $m[1], read_json_body());
+        $event = $ticketing()->adminUpdatePublicInformation((int) $m[1], read_json_body());
         json_response(['ok' => true, 'event' => $event, 'public_information' => [
             'included_text' => $event['included_text'] ?? '',
             'access_conditions' => $event['access_conditions'] ?? '',
@@ -663,107 +677,119 @@ try {
 
     if ($method === 'POST' && preg_match('#^/admin/events/([0-9]+)/(publish|unpublish)$#', $path, $m)) {
         AdminAuth::requireCsrf();
-        json_response(['ok' => true, 'event' => $ticketing->adminSetEventPublication((int) $m[1], $m[2] === 'publish')]);
+        json_response(['ok' => true, 'event' => $ticketing()->adminSetEventPublication((int) $m[1], $m[2] === 'publish')]);
         return;
     }
 
     if ($method === 'POST' && preg_match('#^/admin/events/([0-9]+)/duplicate$#', $path, $m)) {
         AdminAuth::requireCsrf();
-        json_response(['ok' => true, 'event' => $ticketing->adminDuplicateEvent((int) $m[1])], 201);
+        json_response(['ok' => true, 'event' => $ticketing()->adminDuplicateEvent((int) $m[1])], 201);
         return;
     }
 
     if ($method === 'POST' && preg_match('#^/admin/events/([0-9]+)/(archive|restore)$#', $path, $m)) {
         AdminAuth::requireCsrf();
-        json_response(['ok' => true, 'event' => $ticketing->adminSetEventArchived((int) $m[1], $m[2] === 'archive')]);
+        json_response(['ok' => true, 'event' => $ticketing()->adminSetEventArchived((int) $m[1], $m[2] === 'archive')]);
         return;
     }
 
     if ($method === 'DELETE' && preg_match('#^/admin/events/([0-9]+)$#', $path, $m)) {
         AdminAuth::requireOwner();
-        json_response(['ok' => true] + $ticketing->adminDeleteEvent((int) $m[1], AdminAuth::operatorName()));
+        json_response(['ok' => true] + $ticketing()->adminDeleteEvent((int) $m[1], AdminAuth::operatorName()));
         return;
     }
 
     if ($method === 'POST' && preg_match('#^/admin/events/([0-9]+)/ticket-types$#', $path, $m)) {
         AdminAuth::requireCsrf();
-        json_response(['ok' => true, 'ticket_type' => $ticketing->adminCreateTicketType((int) $m[1], read_json_body())], 201);
+        json_response(['ok' => true, 'ticket_type' => $ticketing()->adminCreateTicketType((int) $m[1], read_json_body())], 201);
         return;
     }
 
     if ($method === 'PUT' && preg_match('#^/admin/events/([0-9]+)/ticket-types/([0-9]+)$#', $path, $m)) {
         AdminAuth::requireCsrf();
-        json_response(['ok' => true, 'ticket_type' => $ticketing->adminUpdateTicketType((int) $m[1], (int) $m[2], read_json_body())]);
+        json_response(['ok' => true, 'ticket_type' => $ticketing()->adminUpdateTicketType((int) $m[1], (int) $m[2], read_json_body())]);
         return;
     }
 
     if ($method === 'POST' && preg_match('#^/admin/events/([0-9]+)/ticket-types/([0-9]+)/duplicate$#', $path, $m)) {
         AdminAuth::requireCsrf();
-        json_response(['ok' => true, 'ticket_type' => $ticketing->adminDuplicateTicketType((int) $m[1], (int) $m[2])], 201);
+        json_response(['ok' => true, 'ticket_type' => $ticketing()->adminDuplicateTicketType((int) $m[1], (int) $m[2])], 201);
         return;
     }
 
     if ($method === 'POST' && preg_match('#^/admin/events/([0-9]+)/ticket-types/reorder$#', $path, $m)) {
         AdminAuth::requireCsrf();
         $data = read_json_body();
-        json_response(['ok' => true, 'ticket_types' => $ticketing->adminReorderTicketTypes((int) $m[1], is_array($data['ids'] ?? null) ? $data['ids'] : [])]);
+        json_response(['ok' => true, 'ticket_types' => $ticketing()->adminReorderTicketTypes((int) $m[1], is_array($data['ids'] ?? null) ? $data['ids'] : [])]);
         return;
     }
 
     if ($method === 'DELETE' && preg_match('#^/admin/events/([0-9]+)/ticket-types/([0-9]+)$#', $path, $m)) {
         AdminAuth::requireCsrf();
-        json_response(['ok' => true] + $ticketing->adminArchiveOrDeleteTicketType((int) $m[1], (int) $m[2]));
+        json_response(['ok' => true] + $ticketing()->adminArchiveOrDeleteTicketType((int) $m[1], (int) $m[2]));
         return;
     }
 
     if ($method === 'POST' && $path === '/admin/tickets/scan') {
         AdminAuth::requireAccessCsrf();
-        json_response(['ok' => true] + $ticketing->scanTicket(read_json_body()));
+        json_response(['ok' => true] + $ticketing()->scanTicket(read_json_body()));
         return;
     }
 
     if ($method === 'POST' && $path === '/admin/tickets/access-preview') {
         AdminAuth::requireAccessCsrf();
-        json_response(['ok' => true] + $ticketing->previewTicketAccess(read_json_body()));
+        json_response(['ok' => true] + $ticketing()->previewTicketAccess(read_json_body()));
         return;
     }
 
     if ($method === 'POST' && $path === '/admin/tickets/access-movement') {
         AdminAuth::requireAccessCsrf();
-        json_response(['ok' => true] + $ticketing->registerAccessMovement(read_json_body()));
+        json_response(['ok' => true] + $ticketing()->registerAccessMovement(read_json_body()));
         return;
     }
 
     if ($method === 'GET' && preg_match('#^/admin/events/([0-9]+)/attendees/print-list$#', $path, $m)) {
         AdminAuth::require();
-        json_response(['ok' => true] + $ticketing->adminEventAttendees((int) $m[1], true));
+        json_response(['ok' => true] + $ticketing()->adminEventAttendees((int) $m[1], true));
         return;
     }
 
     if ($method === 'GET' && preg_match('#^/admin/events/([0-9]+)/payments/print-list$#', $path, $m)) {
         AdminAuth::require();
-        json_response(['ok' => true] + $ticketing->adminEventPaymentReport((int) $m[1]));
+        json_response(['ok' => true] + $ticketing()->adminEventPaymentReport((int) $m[1]));
         return;
     }
 
     if ($method === 'GET' && preg_match('#^/admin/events/([0-9]+)/attendees$#', $path, $m)) {
         AdminAuth::requireAccess();
-        json_response(['ok' => true] + $ticketing->adminEventAttendees((int) $m[1]));
+        json_response(['ok' => true] + $ticketing()->adminEventAttendees((int) $m[1]));
         return;
     }
 
     if ($method === 'POST' && preg_match('#^/admin/events/([0-9]+)/tickets/([^/]+)/revert$#', $path, $m)) {
         AdminAuth::requireCsrf();
         $data = read_json_body();
-        json_response(['ok' => true] + $ticketing->reverseTicketCheckIn((int) $m[1], rawurldecode($m[2]), (string) ($data['reason'] ?? '')));
+        json_response(['ok' => true] + $ticketing()->reverseTicketCheckIn((int) $m[1], rawurldecode($m[2]), (string) ($data['reason'] ?? '')));
         return;
     }
 
     json_response(['ok' => false, 'error' => 'Endpoint no encontrado.'], 404);
 } catch (InvalidArgumentException $e) {
     json_response(['ok' => false, 'error' => $e->getMessage()], 422);
+} catch (PDOException $e) {
+    if (Database::isConnectionLimit($e)) {
+        // A transient infrastructure error must never be presented as a declined
+        // payment. Do not retry writes here: Redsys/clients control redelivery.
+        error_log('Perigallo database connection limit reached.');
+        header('Retry-After: 15');
+        json_response(['ok' => false, 'error' => 'El servicio está temporalmente ocupado. Espera unos segundos antes de comprobar el estado. Si ya has pagado, no repitas el pago.'], 503);
+        return;
+    }
+    error_log('Perigallo database operation failed. SQLSTATE: ' . (string) $e->getCode());
+    json_response(['ok' => false, 'error' => 'No se pudo procesar la solicitud.'], 500);
 } catch (RuntimeException $e) {
-    if (in_array($e->getCode(), [409, 422, 429], true)) {
+    if (in_array($e->getCode(), [409, 422, 429, 503], true)) {
+        if ($e->getCode() === 503) header('Retry-After: 15');
         json_response(['ok' => false, 'error' => $e->getMessage()], $e->getCode());
         return;
     }

@@ -32,6 +32,9 @@ final class Database
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES => false,
+            // Una sola conexión por petición; no dejar sesiones entre procesos FPM.
+            PDO::ATTR_PERSISTENT => false,
+            PDO::ATTR_TIMEOUT => 5,
         ]);
         // Las fechas introducidas desde el editor (ventas, publicación y
         // horarios) se guardan como hora civil de la aplicación. La sesión
@@ -43,5 +46,11 @@ final class Database
         self::$pdo->exec('SET time_zone = ' . self::$pdo->quote($offset));
 
         return self::$pdo;
+    }
+
+    public static function isConnectionLimit(\Throwable $error): bool
+    {
+        return $error instanceof \PDOException
+            && in_array((int) ($error->errorInfo[1] ?? $error->getCode()), [1040, 1203], true);
     }
 }

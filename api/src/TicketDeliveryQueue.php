@@ -39,6 +39,15 @@ final class TicketDeliveryQueue
         if ($channel === 'whatsapp' && (empty($order['whatsapp_consent']) || empty($order['whatsapp_phone_e164']))) {
             throw new RuntimeException('Este pedido no autorizó la recepción de entradas por WhatsApp.', 409);
         }
+        $active = $this->pdo->prepare('SELECT idempotency_key, status, last_error FROM ticket_delivery_jobs WHERE order_id = ? AND channel = ? AND communication_type = "tickets" ORDER BY id DESC LIMIT 1');
+        $active->execute([$orderId, $channel]);
+        $previous = $active->fetch();
+        if ($previous && str_starts_with((string) ($previous['last_error'] ?? ''), 'requires_review:')) {
+            throw new RuntimeException('La entrega anterior requiere conciliación antes de reenviar.', 409);
+        }
+        if ($previous && in_array($previous['status'], ['queued', 'retry', 'blocked', 'processing'], true)) {
+            return ['idempotency_key' => $previous['idempotency_key'], 'status' => $previous['status']];
+        }
         $count = $this->pdo->prepare('SELECT COUNT(*) FROM ticket_delivery_jobs WHERE order_id = ? AND channel = ? AND communication_type = "tickets"');
         $count->execute([$orderId, $channel]);
         $key = self::key($orderId, $channel) . ':retry-' . ((int) $count->fetchColumn() + 1);
@@ -49,21 +58,51 @@ final class TicketDeliveryQueue
     /** @return array{processed:int,sent:int,retried:int,blocked:int,failed:int} */
     public function processDue(int $limit = 20): array
     {
-        $summary = ['processed' => 0, 'sent' => 0, 'retried' => 0, 'blocked' => 0, 'failed' => 0];
-        for ($index = 0; $index < max(1, min(100, $limit)); $index++) {
-            $job = $this->claimNext();
-            if ($job === null) {
-                break;
-            }
-            $summary['processed']++;
-            $outcome = $this->process($job);
-            $summary[$outcome]++;
+        if ($this->pdo->inTransaction()) throw new RuntimeException('Worker cannot run inside a transaction.');
+        if ((int) $this->pdo->query("SELECT GET_LOCK('perigallo-ticket-delivery', 0)")->fetchColumn() !== 1) {
+            return ['processed' => 0, 'sent' => 0, 'retried' => 0, 'blocked' => 0, 'failed' => 0];
         }
-        return $summary;
+        try {
+            // No worker holding this DB lock remains alive. Stale I/O has an unknown outcome.
+            $this->pdo->exec('UPDATE ticket_delivery_jobs SET status = "failed", last_error = "requires_review:interrupted_processing", locked_at = NULL, locked_by = NULL, completed_at = NOW(), updated_at = NOW() WHERE status = "processing"');
+            $this->pdo->exec('UPDATE ticket_delivery_jobs SET status = "failed", last_error = "retry_limit_reached", completed_at = NOW(), updated_at = NOW() WHERE status IN ("queued", "retry", "blocked") AND attempt_count >= max_attempts');
+            $summary = ['processed' => 0, 'sent' => 0, 'retried' => 0, 'blocked' => 0, 'failed' => 0];
+            for ($index = 0; $index < max(1, min(100, $limit)); $index++) {
+                $job = $this->claimNext();
+                if ($job === null) {
+                    break;
+                }
+                $summary['processed']++;
+                $outcome = $this->process($job);
+                $summary[$outcome]++;
+            }
+            return $summary;
+        } finally {
+            $this->pdo->query("SELECT RELEASE_LOCK('perigallo-ticket-delivery')");
+        }
+    }
+
+    /** SELECTs only. Does not claim jobs, generate documents, mutate QR or call providers. */
+    public function inspect(): array
+    {
+        $result = [
+            'mode' => 'read_only',
+            'queue' => $this->pdo->query('SELECT channel, status, COUNT(*) AS total FROM ticket_delivery_jobs GROUP BY channel, status')->fetchAll(),
+            'due' => (int) $this->pdo->query('SELECT COUNT(*) FROM ticket_delivery_jobs WHERE status IN ("queued", "retry", "blocked") AND available_at <= NOW() AND attempt_count < max_attempts')->fetchColumn(),
+            'interrupted' => (int) $this->pdo->query('SELECT COUNT(*) FROM ticket_delivery_jobs WHERE status = "processing"')->fetchColumn(),
+            'emails' => $this->pdo->query('SELECT status, COUNT(*) AS total FROM email_deliveries GROUP BY status')->fetchAll(),
+            'documents' => (int) $this->pdo->query('SELECT COUNT(*) FROM ticket_delivery_documents')->fetchColumn(),
+            'mail_function' => function_exists('mail'), 'sendmail_path' => ini_get('sendmail_path'),
+            'smtp_env_used' => false,
+            'paid_orders_without_document' => (int) $this->pdo->query('SELECT COUNT(*) FROM ticket_orders o WHERE o.status = "paid" AND o.payment_status = "paid" AND NOT EXISTS (SELECT 1 FROM ticket_delivery_documents d WHERE d.order_id = o.id)')->fetchColumn(),
+            'ticket_quantity_mismatches' => (int) $this->pdo->query('SELECT COUNT(*) FROM ticket_order_items i JOIN ticket_orders o ON o.id = i.order_id LEFT JOIN (SELECT order_item_id, COUNT(*) AS n FROM tickets GROUP BY order_item_id) t ON t.order_item_id = i.id WHERE o.status = "paid" AND COALESCE(t.n, 0) <> i.quantity')->fetchColumn(),
+        ];
+        return $result;
     }
 
     private function process(array $job): string
     {
+        $stage = 'prepare';
         try {
             $order = $this->order((int) $job['order_id']);
             if (!$order || !$this->isPaid($order)) {
@@ -76,7 +115,16 @@ final class TicketDeliveryQueue
                 return 'failed';
             }
             $quantity = $this->quantity((int) $order['id']);
+            if (!$this->ticketsReady((int) $order['id'])) {
+                $this->finish($job, 'failed', 'requires_review:ticket_quantity_or_qr_mismatch');
+                return 'failed';
+            }
             $document = (new TicketDocumentService())->ensureOrderDocument($this->pdo, (int) $order['id']);
+            if (!str_starts_with($document['content'], '%PDF-') || !hash_equals($document['sha256'], hash('sha256', $document['content']))) {
+                $this->finish($job, 'failed', 'requires_review:document_integrity');
+                return 'failed';
+            }
+            $stage = 'transport';
             if ($job['channel'] === 'email') {
                 $status = $this->mailer->sendTicketDocumentEmail(
                     $this->pdo,
@@ -93,7 +141,11 @@ final class TicketDeliveryQueue
                     $this->refreshOrderDeliveryStatus((int) $order['id']);
                     return 'sent';
                 }
-                $this->retryOrFail($job, 'No se pudo enviar el correo de entradas.');
+                if ($status === 'pending') {
+                    $this->finish($job, 'failed', 'requires_review:mail_outcome_unknown');
+                    return 'failed';
+                }
+                $this->retryOrFail($job, 'mail_not_accepted');
                 $this->refreshOrderDeliveryStatus((int) $order['id']);
                 return (int) $job['attempt_count'] >= (int) $job['max_attempts'] ? 'failed' : 'retried';
             }
@@ -109,15 +161,30 @@ final class TicketDeliveryQueue
                 return 'blocked';
             }
             if ($result['status'] === 'blocked') {
+                if ((int) $job['attempt_count'] >= (int) $job['max_attempts']) {
+                    $this->finish($job, 'failed', 'retry_limit_reached:whatsapp_blocked');
+                    return 'failed';
+                }
                 $this->finish($job, 'blocked', $result['error'] ?: 'La plantilla de WhatsApp no está aprobada.', 30);
                 $this->refreshOrderDeliveryStatus((int) $order['id']);
                 return 'blocked';
             }
-            $this->retryOrFail($job, $result['error'] ?: 'No se pudo enviar WhatsApp.');
+            // A timeout or missing response may follow Meta accepting the message.
+            $this->finish($job, 'failed', 'requires_review:whatsapp_outcome_unknown');
             $this->refreshOrderDeliveryStatus((int) $order['id']);
-            return (int) $job['attempt_count'] >= (int) $job['max_attempts'] ? 'failed' : 'retried';
+            return 'failed';
         } catch (\Throwable $error) {
-            $this->retryOrFail($job, 'No se pudo preparar la entrega de entradas.');
+            $diagnostic = TicketDeliveryDiagnostics::error($error, $stage, ['job_id' => (int) $job['id'], 'order_id' => (int) $job['order_id'], 'channel' => $job['channel'], 'attempt' => (int) $job['attempt_count']]);
+            TicketDeliveryDiagnostics::log($diagnostic);
+            if (str_starts_with($error->getMessage(), 'requires_review:')) {
+                $this->finish($job, 'failed', $error->getMessage());
+                return 'failed';
+            }
+            if ($stage === 'transport') {
+                $this->finish($job, 'failed', 'requires_review:transport_outcome_unknown');
+                return 'failed';
+            }
+            $this->retryOrFail($job, substr($diagnostic['error_type'] . ': ' . $diagnostic['message'], 0, 1000));
             return (int) $job['attempt_count'] >= (int) $job['max_attempts'] ? 'failed' : 'retried';
         }
     }
@@ -126,7 +193,7 @@ final class TicketDeliveryQueue
     {
         $this->pdo->beginTransaction();
         try {
-            $statement = $this->pdo->query('SELECT * FROM ticket_delivery_jobs WHERE status IN ("queued", "retry", "blocked") AND available_at <= NOW() ORDER BY available_at ASC, id ASC LIMIT 1 FOR UPDATE');
+            $statement = $this->pdo->query('SELECT * FROM ticket_delivery_jobs WHERE status IN ("queued", "retry", "blocked") AND attempt_count < max_attempts AND available_at <= NOW() ORDER BY available_at ASC, id ASC LIMIT 1 FOR UPDATE');
             $job = $statement->fetch();
             if (!$job) {
                 $this->pdo->commit();
@@ -157,6 +224,14 @@ final class TicketDeliveryQueue
         $availableAt = $delayMinutes > 0 ? date('Y-m-d H:i:s', time() + $delayMinutes * 60) : null;
         $statement = $this->pdo->prepare('UPDATE ticket_delivery_jobs SET status = ?, last_error = ?, available_at = COALESCE(?, available_at), completed_at = IF(? IN ("sent", "failed", "not_authorized"), NOW(), NULL), locked_at = NULL, locked_by = NULL, updated_at = NOW() WHERE id = ?');
         $statement->execute([$status, $error, $availableAt, $status, $job['id']]);
+        if ($error !== null) {
+            TicketDeliveryDiagnostics::log([
+                'event' => 'ticket_delivery_outcome', 'job_id' => (int) $job['id'],
+                'order_id' => (int) $job['order_id'], 'channel' => $job['channel'],
+                'attempt' => (int) $job['attempt_count'], 'status' => $status,
+                'reason' => $error, 'next_attempt_at' => $availableAt, 'time' => date(DATE_ATOM),
+            ]);
+        }
     }
 
     private function retryOrFail(array $job, string $error): void
@@ -176,7 +251,9 @@ final class TicketDeliveryQueue
         $emailStatus = (string) ($email->fetchColumn() ?: 'pending');
         $whatsapp = $this->pdo->prepare('SELECT status FROM ticket_delivery_logs WHERE order_id = ? AND channel = "whatsapp" AND idempotency_key IS NOT NULL ORDER BY id DESC LIMIT 1');
         $whatsapp->execute([$orderId]);
-        $whatsappStatus = (string) ($whatsapp->fetchColumn() ?: 'pending');
+        $order = $this->order($orderId);
+        $defaultWhatsAppStatus = !empty($order['whatsapp_consent']) && !empty($order['whatsapp_phone_e164']) ? 'pending' : 'not_authorized';
+        $whatsappStatus = (string) ($whatsapp->fetchColumn() ?: $defaultWhatsAppStatus);
         $status = $emailStatus === 'sent' && in_array($whatsappStatus, ['sent', 'delivered', 'read', 'not_authorized'], true) ? 'sent' : ($emailStatus === 'sent' ? 'partially_sent' : ($emailStatus === 'failed' && $whatsappStatus === 'failed' ? 'failed' : 'generated'));
         $update = $this->pdo->prepare('UPDATE ticket_orders SET delivery_status = ?, updated_at = NOW() WHERE id = ?');
         $update->execute([$status, $orderId]);
@@ -205,7 +282,19 @@ final class TicketDeliveryQueue
 
     private function isPaid(array $order): bool
     {
-        return ($order['status'] ?? '') === 'paid' || ($order['payment_status'] ?? '') === 'paid';
+        return ($order['status'] ?? '') === 'paid' && ($order['payment_status'] ?? '') === 'paid';
+    }
+
+    private function ticketsReady(int $orderId): bool
+    {
+        $statement = $this->pdo->prepare('SELECT i.quantity, COUNT(t.id) AS actual, SUM(CASE WHEN t.status IN ("issued", "used") AND t.qr_token_ciphertext IS NOT NULL AND t.qr_token_ciphertext <> "" THEN 1 ELSE 0 END) AS usable FROM ticket_order_items i LEFT JOIN tickets t ON t.order_item_id = i.id WHERE i.order_id = ? GROUP BY i.id, i.quantity');
+        $statement->execute([$orderId]);
+        $items = $statement->fetchAll();
+        if (!$items) return false;
+        foreach ($items as $item) {
+            if ((int) $item['quantity'] < 1 || (int) $item['actual'] !== (int) $item['quantity'] || (int) $item['usable'] !== (int) $item['quantity']) return false;
+        }
+        return true;
     }
 
     private static function key(int $orderId, string $channel): string
