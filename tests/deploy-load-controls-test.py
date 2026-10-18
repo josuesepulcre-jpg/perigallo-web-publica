@@ -14,7 +14,7 @@ class DeploymentSafety(unittest.TestCase):
   (self.app/'public/image.txt').write_text('unchanged')
   (self.app/'.next/BUILD_ID').write_text('before');(self.app/'.next/static/old.js').write_text('old asset')
   (self.app/'.env').write_text('DB_PASSWORD=private-secret\nNEXT_PUBLIC_APP_URL=https://example.test\n')
-  self.changes=self.root/'changes.json';self.changes.write_text(json.dumps([{'file':'src/component.ts','old':'old polling\n','new':'controlled polling\n'},{'file':'src/new.ts','old':'','new':'new helper\n'}]))
+  self.changes=self.root/'changes.json';self.changes.write_text(json.dumps([{'file':'src/component.ts','old':'old polling\n','new':'controlled polling\n'},{'file':'src/nested/new.ts','old':'','new':'new helper\n'}]))
  def call(self,mode):
   return subprocess.run(['python3',str(SCRIPT),mode,'--app',str(self.app),'--work',str(self.work),'--changes',str(self.changes),'--expected-build','before'],capture_output=True,text=True)
  def prepare(self):self.assertEqual(self.call('prepare').returncode,0)
@@ -31,7 +31,7 @@ class DeploymentSafety(unittest.TestCase):
   self.assertTrue((self.app/'.next/static/old.js').exists());self.assertTrue((self.app/'.next/static/new.js').exists())
   self.assertEqual((self.app/'src/component.ts').read_text(),'existing UI\ncontrolled polling\n')
   self.assertEqual(self.call('rollback').returncode,0)
-  self.assertEqual((self.app/'.next/BUILD_ID').read_text(),'before');self.assertFalse((self.app/'src/new.ts').exists())
+  self.assertEqual((self.app/'.next/BUILD_ID').read_text(),'before');self.assertFalse((self.app/'src/nested/new.ts').exists())
   self.assertEqual((self.app/'src/component.ts').read_text(),'existing UI\nold polling\n')
  def test_live_source_changes_block_activation(self):
   self.prepare();self.build();(self.app/'src/other.ts').write_text('another deployment')

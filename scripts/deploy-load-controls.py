@@ -70,7 +70,9 @@ def run():
         if (backup/'.next').exists():raise SystemExit('Already activated.')
         # Keep previous hashed assets available to tabs already open during rollout.
         shutil.copytree(app/'.next/static',stage/'.next/static',dirs_exist_ok=True)
-        for name in m['changed']:shutil.copy2(stage/name,app/name)
+        for name in m['changed']:
+            (app/name).parent.mkdir(parents=True,exist_ok=True)
+            shutil.copy2(stage/name,app/name)
         (app/'.next').rename(backup/'.next')
         try:(stage/'.next').rename(app/'.next')
         except BaseException:
