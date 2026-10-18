@@ -13,8 +13,9 @@ $calls = 0;
 $load = static function () use (&$calls): array { $calls++; return [['slug' => 'fixture', 'title' => 'Test']]; };
 try {
     $cache = new PublicEventCache($directory, 15);
+    check($cache->remember($load)[0]['slug'] === 'fixture' && $cache->status() === 'MISS', 'First load must be a cache miss');
     for ($i = 0; $i < 100; $i++) check($cache->remember($load)[0]['slug'] === 'fixture', 'Listing changed');
-    check($calls === 1, '100 reads must perform one load');
+    check($calls === 1 && $cache->status() === 'HIT', 'Repeated reads must perform one load');
     file_put_contents($directory . '/events.json', json_encode(['created' => time() - 16, 'events' => []]));
     check(count($cache->remember($load)) === 1 && $calls === 2, 'Expired listing must refresh');
     file_put_contents($directory . '/events.json', '{broken');

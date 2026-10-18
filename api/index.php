@@ -87,7 +87,10 @@ try {
     }
 
     if ($method === 'GET' && $path === '/events') {
-        json_response(['ok' => true, 'events' => PublicEventCache::forApplication()->remember(static fn () => $ticketing()->listEvents())]);
+        $cache = PublicEventCache::forApplication();
+        $events = $cache->remember(static fn () => $ticketing()->listEvents());
+        header('X-Perigallo-Events-Cache: ' . (method_exists($cache, 'status') ? $cache->status() : 'UNKNOWN'));
+        json_response(['ok' => true, 'events' => $events]);
         return;
     }
 
