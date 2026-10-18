@@ -60,4 +60,12 @@ class DeploymentSafety(unittest.TestCase):
   self.assertTrue((self.app/'.next/standalone/.next/static/new.js').exists())
   self.assertTrue((self.app/'.next/standalone/public/image.txt').exists())
 
+ def test_standalone_private_configuration_is_restored_only_after_build(self):
+  old=self.app/'.next/standalone';old.mkdir();(old/'.env').write_text('old config')
+  self.prepare();self.assertFalse((self.work/'build/.env').exists())
+  self.build();p=self.work/'build/.next/standalone';p.mkdir();(p/'server.js').write_text('standalone server')
+  self.assertEqual(self.call('activate').returncode,0)
+  self.assertIn('private-secret',(self.app/'.next/standalone/.env').read_text())
+  self.assertEqual((self.app/'.next/standalone/.env').stat().st_mode & 0o777,0o600)
+
 if __name__=='__main__':unittest.main()

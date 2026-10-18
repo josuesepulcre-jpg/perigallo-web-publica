@@ -79,6 +79,13 @@ def run():
         if (standalone/'server.js').is_file():
             shutil.copytree(stage/'.next/static',standalone/'.next/static',dirs_exist_ok=True)
             if (stage/'public').is_dir():shutil.copytree(stage/'public',standalone/'public',dirs_exist_ok=True)
+            # Preserve an existing standalone runtime's private configuration,
+            # after compilation only, matching the native Staff deploy script.
+            for name in ['.env','.env.production','.env.local','.env.production.local']:
+                previous=app/'.next/standalone'/name
+                if previous.is_file():
+                    source=app/name if (app/name).is_file() else previous
+                    shutil.copy2(source,standalone/name);(standalone/name).chmod(0o600)
         for name in m['changed']:
             (app/name).parent.mkdir(parents=True,exist_ok=True)
             shutil.copy2(stage/name,app/name)
