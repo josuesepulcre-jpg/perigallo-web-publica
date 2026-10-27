@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "branch": "main",
+  "controller": "OVH systemd ovh-main-deploy.timer",
+  "poll_interval": "3 minutes after previous run",
+  "mode": "pull with per-repository read-only deploy key",
+  "backups": "private application + shared data + transaction snapshot before activation",
+  "checks": [
+    "source drift",
+    "fast-forward ancestry",
+    "protected paths",
+    "isolated tests without network or production credentials",
+    "build",
+    "strict TLS read-only GET health"
+  ],
+  "rollback": "atomic application pointer; production databases never restored automatically",
+  "no_real_test_messages": true
+}
