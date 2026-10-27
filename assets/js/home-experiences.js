@@ -136,7 +136,7 @@
     var isSingle = experiences.length === 1;
     var time = event.ends_at ? formatTime(event.starts_at) + " — " + formatTime(event.ends_at) : formatTime(event.starts_at);
 
-    root.className = "experience-carousel" + (isSingle ? " is-single" : "");
+    root.className = "experience-carousel" + (isSingle ? " is-single" : "") + (event.slug === "perigalla-comedy" ? " experience-carousel--poster" : "");
     root.removeAttribute("aria-busy");
     root.setAttribute("tabindex", "0");
     root.innerHTML = [

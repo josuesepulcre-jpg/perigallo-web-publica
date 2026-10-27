@@ -96,7 +96,7 @@ function require_suite_service(): void
 function require_fields(array $data, array $fields): void
 {
     foreach ($fields as $field) {
-        if (!isset($data[$field]) || trim((string) $data[$field]) === '') {
+        if (!isset($data[$field]) || (is_array($data[$field]) ? $data[$field] === [] : trim((string) $data[$field]) === '')) {
             throw new InvalidArgumentException('Falta el campo ' . $field . '.');
         }
     }

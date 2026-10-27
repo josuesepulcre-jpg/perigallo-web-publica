@@ -21,7 +21,10 @@
   <main class="admin-workspace" data-admin-sales-page>
     <p class="ticket-status is-error" data-admin-page-status hidden></p>
     <header class="admin-page-heading admin-page-heading-compact"><div><span class="ticket-eyebrow">Gestión</span><h1>Pedidos y <em>ventas</em></h1><p>Consulta el estado comercial de cada compra sin salir del backoffice.</p></div><div class="admin-sales-actions"><button type="button" class="ticket-btn primary" data-open-manual-order>Generar entrada manual</button></div></header>
-    <section class="admin-sales-summary" data-admin-sales-summary aria-label="Resumen global de ventas"></section>
+    <section class="admin-order-toolbar admin-discount-list-filters" aria-label="Seleccionar evento de ventas">
+      <label>Evento<select data-admin-sales-event aria-label="Evento de ventas" disabled><option value="">Selecciona un evento</option></select></label>
+    </section>
+    <section class="admin-sales-summary" data-admin-sales-summary aria-label="Resumen de ventas del evento"></section>
     <p class="admin-orders-status" data-admin-whatsapp-template-status aria-live="polite"></p>
     <section class="admin-attendee-export" aria-labelledby="attendee-export-title">
       <div>
@@ -125,6 +128,6 @@
   </main>
 </div>
 <script src="/assets/vendor/jspdf.umd.min.js?v=20260825-pdf-list-v1" defer></script>
-<script src="/assets/js/admin-backoffice.js?v=20260831-payment-report-v1" defer></script>
+<script src="/assets/js/admin-backoffice.js?v=20261027-parity" defer></script>
 </body>
 </html>

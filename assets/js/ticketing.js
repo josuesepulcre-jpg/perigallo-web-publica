@@ -90,7 +90,7 @@
       (reference ? '<span class="ticket-reference-price"><span>Valor de la experiencia</span><del>' + cents(reference) + '</del></span>' : '') +
       '<strong>' + cents(salePrice) + '</strong>' +
       '<span class="ticket-promo-label">' +
-        escapeHtml(reference ? promotionalLabel(type.promotional_label) : 'Precio por persona') + ' por persona' + breakdown + '</span>' +
+        escapeHtml(reference ? promotionalLabel(type.promotional_label) + ' por persona' : 'Precio por persona') + breakdown + '</span>' +
     '</div>';
   }
 
@@ -192,6 +192,14 @@
       }
       root.innerHTML = (ended ? '<div class="event-past-notice" role="status">Esta experiencia ya se ha celebrado. <a href="/experiencias/">Ver próximas experiencias →</a></div>' : "") + renderEventDetail(event, preview);
       document.body.classList.toggle("perigalla-landing-page", isPerigalla01Event(event));
+      document.body.classList.toggle("perigalla-comedy-page", event.slug === "perigalla-comedy");
+      if (event.slug === "perigalla-comedy") {
+        var comedyAnchors = { "#perigallo": "#entrada", "#gastronomia": "#menu-coctel", "#finca": "#detalles", "#entradas": "#reservar", "#info": "#detalles" };
+        document.querySelectorAll(".event-page-navigation a, #eventMobileNavigation a").forEach(function (link) {
+          var destination = comedyAnchors[link.getAttribute("href")];
+          if (destination) link.setAttribute("href", destination);
+        });
+      }
       initEventPurchaseControls(root);
       initExperienceAccordions(root);
       initIncludedInformationLink(root);
@@ -329,12 +337,29 @@
     ].join("");
   }
 
+  function eventCocktailMenu(event) {
+    if (event.slug !== "perigalla-comedy") return "";
+    var menu = String(event.included_text || "").split(/MENÚ CÓCTEL[^\n]*/i)[1];
+    if (!menu) return "";
+    var groups = menu.trim().split(/\n\s*\n/).filter(Boolean).map(function (group) {
+      var lines = group.split("\n").filter(Boolean);
+      var title = lines.shift();
+      var dishes = lines.filter(function (line) { return /^\d+\.\s/.test(line); });
+      var notes = lines.filter(function (line) { return !/^\d+\.\s/.test(line); });
+      return '<section class="event-menu-group"><h4>' + escapeHtml(title) + '</h4><ul>' + dishes.map(function (dish) {
+        return '<li>' + escapeHtml(dish.replace(/^\d+\.\s*/, "")) + '</li>';
+      }).join("") + '</ul>' + notes.map(function (note) { return '<p>' + escapeHtml(note) + '</p>'; }).join("") + '</section>';
+    }).join("");
+    return '<section class="event-cocktail-menu" aria-labelledby="cocktail-menu-title" id="menu-coctel"><header><span class="ticket-eyebrow">La propuesta gastronómica</span><h3 id="cocktail-menu-title">Menú cóctel</h3><p>Bebidas incluidas durante el cóctel. Las copas se pagan aparte.</p></header><div class="event-menu-groups">' + groups + '</div></section>';
+  }
+
   function renderEventDetail(event, preview) {
       var types = event.ticket_types || [];
       var gallery = (event.gallery || []).filter(Boolean).map(function (url) { return '<img loading="lazy" src="' + escapeAttr(previewAssetUrl(url, preview)) + '" alt="Detalle de ' + escapeHtml(event.title) + '">'; }).join("");
       var imageUrl = previewAssetUrl(event.image_url || "/assets/images/finca-la-llaguna-principal.jpg", preview);
       var isPerigalla01 = /la\s+perigalla\s*0?1/i.test(String(event.title || ""));
       if (isPerigalla01) return renderPerigalla01Landing(event, preview);
+      var storyLede = event.slug === "perigalla-comedy" ? "Cena cóctel, una noche entre amigos y el humor de Rubén Serrano." : "Una noche donde gastronomía, música y puesta en escena cuentan una misma historia.";
       var experienceName = isPerigalla01 ? "La Perigalla 01" : event.title;
       var experienceUrl = isPerigalla01 ? "/la-perigalla-01/" : "/experiencias/" + encodeURIComponent(event.slug) + "/";
       var storyCtaUrl = isPerigalla01 ? experienceUrl : "#experiencia";
@@ -343,6 +368,7 @@
       var storyText = isPerigalla01
         ? '<p>La Perigalla 01 inaugura una forma de celebrar donde cocina, música y puesta en escena cuentan una misma historia.</p><p>Una noche en Finca La Llaguna, al aire libre y vestida de blanco, creada para vivirla despacio.</p>'
         : textParagraphs(event.short_description || event.description || "");
+      if (event.slug === "perigalla-comedy") storyText += '<p class="event-artist-social"><a href="https://www.instagram.com/rubenserranocomico/" target="_blank" rel="noopener noreferrer" data-analytics-click="instagram-ruben-serrano"><span class="event-artist-instagram-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.5" cy="6.5" r=".8" fill="currentColor" stroke="none"></circle></svg></span><span class="event-artist-instagram-copy"><strong>Ver a Rubén Serrano</strong><small>Sus vídeos en Instagram</small></span><b aria-hidden="true">↗</b></a></p>';
       var storyVenue = isPerigalla01
         ? '<aside class="event-story-venue" aria-label="Ubicación de la experiencia"><span>El escenario</span><strong>Finca La Llaguna</strong><p>Crevillent · Alicante</p><a class="event-story-venue-cta wedding-button wedding-button--outline" href="https://fincalallaguna.com/" target="_blank" rel="noopener noreferrer"><span>Descubrir la finca</span><b aria-hidden="true">→</b></a></aside><p class="event-story-microdata">29 AGO 2026 <span>·</span> NOCHE <span>·</span> TOTAL WHITE</p>'
         : '';
@@ -371,7 +397,7 @@
         '</div>',
         '<div class="event-chapter-inner event-chapter-entry-progress"><a class="event-chapter-next event-chapter-next-entry" href="' + escapeAttr(storyCtaUrl) + '"><span class="event-chapter-next-index">01 / 03</span><span>' + escapeHtml(storyCtaLabel) + '</span><b aria-hidden="true">→</b></a></div>',
         '</section>',
-        '<section class="event-story event-story-layout event-chapter event-chapter-story" id="experiencia" data-analytics-section="experiencia"><span class="event-anchor" id="historia" aria-hidden="true"></span><div class="event-chapter-inner event-story-editorial">' + storyVisual + '<div class="event-story-copy"><span class="ticket-eyebrow">02 / 03 · La experiencia</span><h2>' + escapeHtml(experienceName) + '</h2><p class="event-story-lede">Una noche donde gastronomía, música y puesta en escena cuentan una misma historia.</p><div class="ticket-copy event-story-text">' + storyText + '</div>' + storyVenue + '</div><a class="event-chapter-next event-chapter-next-story" data-analytics-click="ver-detalles" href="#detalles"><span class="event-chapter-next-index">02 / 03</span><span>Todos los detalles</span><b aria-hidden="true">↓</b></a></div></section>',
+        '<section class="event-story event-story-layout event-chapter event-chapter-story" id="experiencia" data-analytics-section="experiencia"><span class="event-anchor" id="historia" aria-hidden="true"></span><div class="event-chapter-inner event-story-editorial">' + storyVisual + '<div class="event-story-copy"><span class="ticket-eyebrow">02 / 03 · La experiencia</span><h2>' + escapeHtml(experienceName) + '</h2><p class="event-story-lede">' + escapeHtml(storyLede) + '</p><div class="ticket-copy event-story-text">' + storyText + '</div>' + storyVenue + '</div>' + eventCocktailMenu(event) + '<a class="event-chapter-next event-chapter-next-story" data-analytics-click="ver-detalles" href="#detalles"><span class="event-chapter-next-index">02 / 03</span><span>Todos los detalles</span><b aria-hidden="true">↓</b></a></div></section>',
         gallery ? '<section class="event-gallery" id="galeria" data-analytics-section="galeria">' + gallery + '</section>' : '',
         information ? '<section class="event-public-information event-public-information-accordions event-chapter event-chapter-details" id="detalles" data-analytics-section="detalles"><span class="event-anchor" id="faq" aria-hidden="true"></span><div class="event-chapter-inner event-details-layout"><header class="experience-information-heading"><span class="ticket-eyebrow">03 / 03 · Detalles</span><h2>Todo lo que necesitas saber</h2><p>Los detalles de la experiencia.</p></header><div class="event-details-body">' + information + '</div></div></section>' : '',
         eventFloatingPurchaseCta(event, types, "reservar"),
@@ -666,7 +692,7 @@
     var includesLink = event.included_text
       ? '<button class="ticket-access-includes" type="button" data-open-included-information aria-expanded="false" aria-controls="ticket-included-' + escapeAttr(type.id) + '"><span>Ver todo lo que incluye</span><b aria-hidden="true">+</b></button><div class="ticket-access-included-panel" id="ticket-included-' + escapeAttr(type.id) + '" hidden>' + textParagraphs(event.included_text) + '</div>'
       : "";
-    var dress = shortDetail(event.dress_code);
+    var dress = event.slug === "perigalla-comedy" ? String(event.dress_code || "") : shortDetail(event.dress_code);
     var salePrice = Number(type.final_price_cents != null ? type.final_price_cents : type.price_cents || 0);
     return [
       '<article class="ticket-type ticket-access-card">',
@@ -678,7 +704,7 @@
       includes,
       includesLink,
       '</div>',
-      '<div class="ticket-access-decision"><span class="ticket-access-decision-kicker">Tu acceso</span>' + commercialPriceMarkup(type, salePrice, 'ticket-type-price') + eventQuantityPicker(type, salePrice) + ticketPurchaseAction(type, event, preview) + '</div>',
+      '<div class="ticket-access-decision"><span class="ticket-access-decision-kicker">Tu acceso</span>' + commercialPriceMarkup(type, salePrice, 'ticket-type-price').replace('Precio por persona por persona', 'Precio por persona') + eventQuantityPicker(type, salePrice) + ticketPurchaseAction(type, event, preview) + '</div>',
       '</div>',
       '<div class="ticket-access-secondary">',
       dress ? dressCodeNotice(event, dress) : '',
@@ -756,6 +782,17 @@
       var current = Math.max(0, Number(output ? output.textContent : 0));
       updatePicker(picker, current + (button.dataset.eventQuantityAction === "increase" ? 1 : -1));
     });
+  }
+
+  function configureCheckoutDressCode(form, event) {
+    if (event.slug !== "perigalla-comedy") return;
+    var condition = form.querySelector(".checkout-dress-code-condition");
+    if (!condition) return;
+    condition.querySelector(".ticket-eyebrow").textContent = "Recomendaciones de vestimenta";
+    condition.querySelector("p").textContent = String(event.dress_code || "Recomendamos ropa cómoda y calzado adecuado para una finca.");
+    condition.querySelector(".checkout-dress-code-list").hidden = true;
+    condition.querySelector(".checkout-access-warning").hidden = true;
+    condition.querySelector(".checkout-access-check > span:last-child").textContent = "He leído las recomendaciones de vestimenta de esta experiencia.";
   }
 
   function initCheckout() {
@@ -913,7 +950,7 @@
       }
       if (step === 4) {
         if (!form.age_requirement_accepted.checked) return { valid: false, message: "Confirma que eres mayor de 18 años para continuar.", focus: form.age_requirement_accepted };
-        if (!form.dress_code_accepted.checked) return { valid: false, message: "Acepta el código de vestimenta Total White para continuar.", focus: form.dress_code_accepted };
+        if (!form.dress_code_accepted.checked) return { valid: false, message: "Confirma que has leído la información de vestimenta para continuar.", focus: form.dress_code_accepted };
       }
       if (step === 5) {
         return checkoutAttendeeValidation(selected);
@@ -951,6 +988,7 @@
       var data = responses[0];
       var paymentOptions = responses[1];
       var event = data.event;
+      configureCheckoutDressCode(form, event);
       renderPaymentMethods(paymentMethodsBox, paymentOptions.methods || ["card"]);
       if (eventTitle) eventTitle.textContent = event.title;
       var types = (event.ticket_types || []).filter(function (type) {
@@ -1546,7 +1584,7 @@
       if (billingInvalid || !/^[A-Za-z]{2}$/.test(form.billing_country.value.trim())) return { valid: false, message: "Completa los datos fiscales para solicitar factura.", focus: billingInvalid || form.billing_country };
     }
     if (!form.age_requirement_accepted.checked) return { valid: false, message: "Confirma que eres mayor de 18 años.", focus: form.age_requirement_accepted };
-    if (!form.dress_code_accepted.checked) return { valid: false, message: "Debes aceptar el código de vestimenta Total White para continuar.", focus: form.dress_code_accepted };
+    if (!form.dress_code_accepted.checked) return { valid: false, message: "Confirma que has leído la información de vestimenta para continuar.", focus: form.dress_code_accepted };
     attendees = Array.isArray(attendees) ? attendees : [];
     if (attendees.length !== selected.reduce(function (total, input) { return total + Number(input.value || 0); }, 0)) return { valid: false, message: "Completa la información de alergias de cada asistente para continuar." };
     if (!form.dataset.allergyAnswer) return { valid: false, message: "Indica si quieres comunicar necesidades alimentarias." };
@@ -1743,7 +1781,7 @@
         '<span class="ticket-eyebrow">Pedido ' + escapeHtml(order.reference || order.status) + '</span>',
         '<h1 class="ticket-title">Tus entradas están <em>listas</em></h1>',
         '<p class="ticket-copy">' + escapeHtml(order.name) + ', hemos preparado ' + tickets.length + ' ' + (tickets.length === 1 ? 'entrada' : 'entradas') + ' para tu experiencia. Guárdalas en tu teléfono o descárgalas ahora.</p>',
-        '<dl class="ticket-order-summary"><div><dt>Pedido</dt><dd>' + escapeHtml(order.reference || '—') + '</dd></div>' + (Number(order.reference_total_cents || 0) > Number(order.total_cents || 0) ? '<div><dt>Valor de la experiencia</dt><dd><del>' + cents(order.reference_total_cents) + '</del></dd></div>' : '') + '<div><dt>Importe pagado</dt><dd>' + cents(order.total_cents) + '</dd></div><div><dt>Correo</dt><dd>' + escapeHtml(deliveryLabel(order, "email")) + '</dd></div><div><dt>WhatsApp</dt><dd>' + escapeHtml(deliveryLabel(order, "whatsapp")) + '</dd></div></dl>',
+        '<dl class="ticket-order-summary"><div><dt>Pedido</dt><dd>' + escapeHtml(order.reference || '—') + '</dd></div>' + (Number(order.reference_total_cents || 0) > Number(order.total_cents || 0) ? '<div><dt>Valor de la experiencia</dt><dd><del>' + cents(order.reference_total_cents) + '</del></dd></div>' : '') + '<div><dt>' + (order.payment_status === 'paid' || order.status === 'paid' ? 'Importe pagado' : 'Importe pendiente de cobro') + '</dt><dd>' + cents(order.total_cents) + '</dd></div><div><dt>Correo</dt><dd>' + escapeHtml(deliveryLabel(order, "email")) + '</dd></div><div><dt>WhatsApp</dt><dd>' + escapeHtml(deliveryLabel(order, "whatsapp")) + '</dd></div></dl>',
         '<div class="ticket-actions ticket-delivery-actions"><button class="ticket-btn primary" type="button" data-download-all>Descargar todas las entradas</button>' + invoiceAction + (allowResend ? '<button class="ticket-btn" type="button" data-resend-email>Enviar de nuevo por correo</button><button class="ticket-btn" type="button" data-resend-whatsapp>Enviar por WhatsApp</button>' : '') + '<a class="ticket-btn" href="#entradas">Ver detalles del pedido</a></div>',
         '<p class="ticket-delivery-note">Las entradas se han preparado para <strong>' + escapeHtml(order.email) + '</strong>. Presenta el QR en el acceso: cada código es válido para una sola entrada.</p>',
         '<div class="ticket-list" id="entradas">' + tickets.map(function (ticket, index) { return ticketPass(ticket, order.is_test, index + 1); }).join("") + '</div>',
@@ -1892,7 +1930,7 @@
     return '<article class="ticket-pass"><div class="ticket-pass-main">' +
       '<span class="ticket-eyebrow">Entrada ' + String(number).padStart(2, "0") + ' · ' + escapeHtml(status) + '</span>' +
       '<h3>' + escapeHtml(ticket.event_title) + '</h3>' +
-      '<dl class="ticket-pass-details"><div><dt>Fecha</dt><dd>' + escapeHtml(fmtDate(ticket.starts_at)) + '</dd></div>' + (ticket.doors_open_at ? '<div><dt>Apertura</dt><dd>' + escapeHtml(fmtTime(ticket.doors_open_at)) + '</dd></div>' : '') + '<div><dt>Lugar</dt><dd>' + escapeHtml([ticket.location, ticket.address, ticket.locality].filter(Boolean).join(", ") || "Por confirmar") + '</dd></div><div><dt>Tipo</dt><dd>' + escapeHtml(ticket.ticket_type_name || "Entrada") + '</dd></div><div><dt>Código</dt><dd class="ticket-code">' + escapeHtml(ticket.public_code) + '</dd></div></dl>' +
+      '<dl class="ticket-pass-details"><div><dt>Asistente</dt><dd>' + escapeHtml(ticket.attendee_name || 'Por confirmar') + '</dd></div><div><dt>Fecha</dt><dd>' + escapeHtml(fmtDate(ticket.starts_at)) + '</dd></div>' + (ticket.doors_open_at ? '<div><dt>Apertura</dt><dd>' + escapeHtml(fmtTime(ticket.doors_open_at)) + '</dd></div>' : '') + '<div><dt>Lugar</dt><dd>' + escapeHtml([ticket.location, ticket.address, ticket.locality].filter(Boolean).join(", ") || "Por confirmar") + '</dd></div><div><dt>Tipo</dt><dd>' + escapeHtml(ticket.ticket_type_name || "Entrada") + '</dd></div><div><dt>Código</dt><dd class="ticket-code">' + escapeHtml(ticket.public_code) + '</dd></div></dl>' +
       '<p class="ticket-access-copy">Presenta este código en el acceso. El QR es válido para un único acceso.</p>' +
       '<button class="ticket-btn" type="button" data-download-ticket="' + (number - 1) + '">Descargar entrada</button></div>' +
       '<div class="ticket-qr">' + qr + '<small>' + escapeHtml(ticket.public_code) + '</small></div></article>';
@@ -2018,11 +2056,11 @@
     if (dressCode) {
       ticketPdfField(pdf, "dress", "CÓDIGO DE VESTIMENTA", dressCode, 25, infoY + 23, 76, 24, champagne, ivory);
       ticketPdfField(pdf, "pin", "LUGAR", place, 109, infoY + 23, 76, 24, champagne, ivory);
-      ticketPdfField(pdf, "person", "TITULAR", order.name || "Por confirmar", 25, infoY + 50, 76, 20, champagne, ivory);
+      ticketPdfField(pdf, "person", "ASISTENTE", ticket.attendee_name || order.name || "Por confirmar", 25, infoY + 50, 76, 20, champagne, ivory);
       ticketPdfField(pdf, "entry", "NÚMERO DE ENTRADA", "Entrada " + String(index).padStart(2, "0") + " de " + String(total).padStart(2, "0"), 109, infoY + 50, 76, 20, champagne, ivory);
     } else {
       ticketPdfField(pdf, "pin", "LUGAR", place, 25, infoY + 23, 160, 22, champagne, ivory);
-      ticketPdfField(pdf, "person", "TITULAR", order.name || "Por confirmar", 25, infoY + 48, 76, 20, champagne, ivory);
+      ticketPdfField(pdf, "person", "ASISTENTE", ticket.attendee_name || order.name || "Por confirmar", 25, infoY + 48, 76, 20, champagne, ivory);
       ticketPdfField(pdf, "entry", "NÚMERO DE ENTRADA", "Entrada " + String(index).padStart(2, "0") + " de " + String(total).padStart(2, "0"), 109, infoY + 48, 76, 20, champagne, ivory);
     }
 

@@ -494,6 +494,25 @@ footer::after{content:'';position:absolute;z-index:-1;inset:0;pointer-events:non
 {"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"Perigallo","url":"https://perigallo.com/","logo":"https://perigallo.com/assets/images/perigallo-logo-original.png"},{"@type":"WebSite","name":"Perigallo","url":"https://perigallo.com/"}]}
 </script>
 <link rel="stylesheet" href="/assets/css/brand-system.css?v=20260930">
+<style id="comedy-home-poster">
+/* The Comedy artwork contains lettering: show the entire composition. */
+.experience-carousel--poster .experience-carousel-track { grid-template-columns: minmax(0,1fr) minmax(0,1fr); align-items: center; gap: clamp(2rem,4vw,4rem); min-height: 0; }
+.experience-carousel--poster .experience-carousel-visual { width: 100%; height: auto; min-height: 0; aspect-ratio: 4/3; align-self: center; overflow: hidden; -webkit-mask-image: none; mask-image: none; background: #0c1b1b; border: 1px solid rgba(205,177,151,.45); box-shadow: 0 18px 45px rgba(4,18,20,.2); }
+.experience-carousel--poster .experience-carousel-image { inset: 0; background-size: contain; background-repeat: no-repeat; background-position: center; filter: none; transform: none; }
+.experience-carousel--poster .experience-carousel-visual::after { display: none; }
+.experience-carousel--poster .experience-carousel-content { margin: 0; padding: 1rem 0; max-width: none; }
+.experience-carousel--poster .experience-carousel-content::before { display: none; }
+.experience-carousel--poster .experience-carousel-badge { top: .9rem; left: .9rem; padding: .5rem .7rem; font-size: .48rem; letter-spacing: .17em; background: #e2cdb5; }
+.experience-carousel--poster .experience-carousel-title { font-size: clamp(2.8rem,4.3vw,4.3rem); }
+.experience-carousel--poster .experience-carousel-microdetail { font-size: .55rem; line-height: 1.7; letter-spacing: .11em; text-transform: none; }
+.experience-carousel--poster.is-changing .experience-carousel-image { transform: none; }
+@media(max-width:900px) {
+ .experience-carousel--poster .experience-carousel-track { grid-template-columns: minmax(0,1fr); gap: 1.5rem; }
+ .experience-carousel--poster .experience-carousel-visual { height: auto; aspect-ratio: 4/3; }
+ .experience-carousel--poster .experience-carousel-content { margin: 0; padding: 0 .25rem 4.5rem; }
+ .experience-carousel--poster .experience-carousel-badge { top: .65rem; left: .65rem; padding: .4rem .6rem; font-size: .44rem; }
+}
+</style>
 </head>
 <body>
 <a class="brand-skip" href="#contenido">Saltar al contenido</a>
@@ -696,8 +715,8 @@ footer::after{content:'';position:absolute;z-index:-1;inset:0;pointer-events:non
 <footer class="brand-footer"><div class="brand-footer-main"><div><a href="/" aria-label="Perigallo · Inicio"><img src="/assets/images/perigallo-logo-original.png" alt="Perigallo" width="861" height="789" loading="lazy"></a><p>Gastronomía, servicio y puesta en escena.<br>Finca La Llaguna · Crevillent, Alicante.</p></div><div><h2>Celebrar con Perigallo</h2><a href="/bodas-alicante/">Bodas</a><a href="/celebraciones-familiares-alicante/">Celebraciones familiares</a><a href="/eventos-empresa-alicante/">Eventos de empresa</a><a href="/experiencias/">Próximas experiencias</a></div><div><h2>Empecemos a hablar</h2><a href="https://suite.perigallo.com/solicitud?origen=web-perigallo">Solicitar una propuesta</a><a href="/contacto/">Contacto</a><a class="footer-phone" href="tel:+34691499985">691 499 985</a><a href="/mis-entradas/">Mis entradas</a><a href="https://www.instagram.com/somosperigallo/" target="_blank" rel="noopener noreferrer" aria-label="Instagram de Somos Perigallo">Instagram ↗</a><p>Respuesta en 24–48 horas laborables.</p></div></div><div class="brand-footer-bottom"><span>© Perigallo</span><a href="/aviso-legal/">Aviso legal</a><a href="/politica-privacidad/">Privacidad</a><a href="/cookies/">Cookies</a><a href="/condiciones/">Condiciones</a><a href="/politica-cancelacion/">Cancelaciones</a><a href="/politica-reembolso/">Reembolsos</a></div></footer>
 
 <script src="/assets/js/analytics.js" defer></script>
-<script src="/assets/js/public-agenda.js?v=20260930" defer></script>
-<script src="assets/js/home-experiences.js?v=20260930-premium-v1" defer></script>
+<script src="/assets/js/public-agenda.js?v=20260930" defer></script><script src="assets/js/home-experiences.js?v=20261027-parity" defer>
+</script>
 <script src="assets/js/home-celebrations.js?v=20260808-celebrations-v1" defer></script>
 <script>
 window.addEventListener('scroll',function(){

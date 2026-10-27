@@ -10,7 +10,7 @@ use RuntimeException;
 final class TicketDocumentService
 {
     public const DOCUMENT_TYPE = 'tickets';
-    public const DOCUMENT_VERSION = 'v1';
+    public const DOCUMENT_VERSION = 'v2-attendee';
 
     /** @return array{id:int,filename:string,content:string,content_type:string,sha256:string} */
     public function ensureOrderDocument(PDO $pdo, int $orderId): array
@@ -23,17 +23,18 @@ final class TicketDocumentService
         $orderStatement = $pdo->prepare('SELECT * FROM ticket_orders WHERE id = ? LIMIT 1');
         $orderStatement->execute([$orderId]);
         $order = $orderStatement->fetch();
-        if (!$order || !in_array((string) ($order['status'] ?? ''), ['paid'], true) && (string) ($order['payment_status'] ?? '') !== 'paid') {
+        if (!$order || ($order['status'] ?? '') !== 'paid' || ($order['payment_status'] ?? '') !== 'paid') {
             throw new RuntimeException('El PDF solo puede generarse para un pedido pagado.');
         }
 
         $tickets = $pdo->prepare(
             'SELECT t.id, t.public_code, t.qr_token_hash, t.qr_token_ciphertext, t.status,
                     e.title AS event_title, e.subtitle AS event_subtitle, e.starts_at, e.location, e.locality,
-                    toi.ticket_type_name
+                    toi.ticket_type_name, ta.attendee_name
              FROM tickets t
              JOIN ticket_order_items toi ON toi.id = t.order_item_id
              JOIN events e ON e.id = t.event_id
+             LEFT JOIN ticket_attendees ta ON ta.ticket_id = t.id
              WHERE toi.order_id = ? AND t.status IN ("issued", "used")
              ORDER BY t.id ASC'
         );
@@ -44,8 +45,9 @@ final class TicketDocumentService
         }
 
         $payloadTickets = [];
-        foreach ($rows as $ticket) {
+        foreach ($rows as $position => $ticket) {
             $payloadTickets[] = [
+                'attendee_name' => trim((string) ($ticket['attendee_name'] ?? '')) ?: ($position === 0 ? (string) $order['name'] : 'Acompañante ' . ($position + 1) . ' de ' . $order['name']),
                 'event_title' => $ticket['event_title'],
                 'event_subtitle' => $ticket['event_subtitle'],
                 'starts_at' => $this->formattedDate((string) ($ticket['starts_at'] ?? '')),
@@ -145,7 +147,7 @@ final class TicketDocumentService
         }
         if ($exit !== 0 || !is_string($content) || !str_starts_with($content, '%PDF-') || strlen($content) > 20 * 1024 * 1024) {
             // No se incluye la salida del renderer: puede contener información de una entrada.
-            throw new RuntimeException('No se pudo generar el PDF de las entradas.');
+            throw new RuntimeException('No se pudo generar el PDF de las entradas; renderer_exit=' . $exit . '; output_bytes=' . strlen((string) $content));
         }
         return $content;
     }
@@ -153,13 +155,11 @@ final class TicketDocumentService
     private function ticketQrToken(PDO $pdo, array $ticket): string
     {
         $token = $this->decryptQrToken((string) ($ticket['qr_token_ciphertext'] ?? ''));
-        if ($token !== '') {
+        if ($token !== '' && hash_equals((string) $ticket['qr_token_hash'], hash('sha256', $token))) {
             return $token;
         }
-        $token = public_token(32);
-        $update = $pdo->prepare('UPDATE tickets SET qr_token_hash = ?, qr_token_ciphertext = ?, updated_at = NOW() WHERE id = ?');
-        $update->execute([hash('sha256', $token), $this->encryptQrToken($token), (int) $ticket['id']]);
-        return $token;
+        // Delivery must never rotate an existing access token, including after a key mismatch.
+        throw new RuntimeException('requires_review:missing_or_unreadable_ticket_qr');
     }
 
     private function qrEncryptionKey(): string
