@@ -56,24 +56,32 @@ final class Mailer
         $existing->execute([$idempotencyKey]);
         $previous = $existing->fetchColumn();
         if ($previous !== false) {
-            return (string) $previous;
+            // Only a definite local MTA rejection is safe to retry. A pending row
+            // may already have reached the MTA before a crash or lost DB connection.
+            if ($previous !== 'failed') return (string) $previous;
+            $claim = $pdo->prepare('UPDATE email_deliveries SET status = "pending", error_message = NULL, updated_at = NOW() WHERE idempotency_key = ? AND status = "failed" AND error_message = "mail_not_accepted"');
+            $claim->execute([$idempotencyKey]);
+            if ($claim->rowCount() !== 1) return 'pending';
         }
-
-        $insert = $pdo->prepare(
-            'INSERT INTO email_deliveries (order_id, idempotency_key, recipient_email, subject, body, status, document_version, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, "pending", ?, NOW(), NOW())'
-        );
-        try {
-            $insert->execute([$orderId, $idempotencyKey, $email, $subject, $body, TicketDocumentService::DOCUMENT_VERSION]);
-        } catch (\Throwable $error) {
-            $existing->execute([$idempotencyKey]);
-            $previous = $existing->fetchColumn();
-            if ($previous !== false) {
-                return (string) $previous;
+        if ($previous === false) {
+            $insert = $pdo->prepare(
+                'INSERT INTO email_deliveries (order_id, idempotency_key, recipient_email, subject, body, status, document_version, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, "pending", ?, NOW(), NOW())'
+            );
+            try {
+                $insert->execute([$orderId, $idempotencyKey, $email, $subject, $body, TicketDocumentService::DOCUMENT_VERSION]);
+            } catch (\Throwable $error) {
+                $existing->execute([$idempotencyKey]);
+                $previous = $existing->fetchColumn();
+                if ($previous !== false) {
+                    return (string) $previous;
+                }
+                throw $error;
             }
-            throw $error;
         }
-        $deliveryId = (int) $pdo->lastInsertId();
+        $lookup = $pdo->prepare('SELECT id FROM email_deliveries WHERE idempotency_key = ?');
+        $lookup->execute([$idempotencyKey]);
+        $deliveryId = (int) $lookup->fetchColumn();
 
         try {
             $mixed = 'perigallo-mixed-' . bin2hex(random_bytes(12));
@@ -82,7 +90,10 @@ final class Mailer
                 'From: ' . (env_value('MAIL_FROM_NAME', 'Perigallo') ?: 'Perigallo') . ' <' . (env_value('MAIL_FROM', 'entradas@perigallo.com') ?: 'entradas@perigallo.com') . '>',
                 'MIME-Version: 1.0',
                 'Content-Type: multipart/mixed; boundary="' . $mixed . '"',
+                // Stable identifier helps trace acceptance; it does not guarantee recipient deduplication.
+                'Message-ID: <perigallo-ticket-' . hash('sha256', $idempotencyKey) . '@perigallo.com>',
             ];
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL) || preg_match('/[\r\n]/', $email . $subject)) throw new \RuntimeException('invalid_ticket_email_headers');
             $filename = $this->headerFilename((string) $document['filename']);
             $message = '--' . $mixed . "\r\n"
                 . 'Content-Type: multipart/alternative; boundary="' . $alternative . "\"\r\n\r\n"
@@ -96,12 +107,21 @@ final class Mailer
                 . 'Content-Disposition: attachment; filename="' . $filename . "\"\r\n\r\n"
                 . chunk_split(base64_encode((string) $document['content']))
                 . '--' . $mixed . '--';
-            $sent = mail($email, $subject, $message, implode("\r\n", $headers));
+            set_error_handler(static function (int $severity, string $warning): bool {
+                TicketDeliveryDiagnostics::log(TicketDeliveryDiagnostics::error(new \RuntimeException($warning), 'mail_warning'));
+                return true;
+            });
+            try {
+                $sent = mail($email, '=?UTF-8?B?' . base64_encode($subject) . '?=', $message, implode("\r\n", $headers));
+            } finally {
+                restore_error_handler();
+            }
             $status = $sent ? 'sent' : 'failed';
-            $error = $sent ? null : 'mail() devolvió false. Configura el SMTP transaccional en Plesk.';
+            $error = $sent ? null : 'mail_not_accepted';
         } catch (Throwable $error) {
-            $status = 'failed';
-            $error = 'Fallo técnico de envío registrado.';
+            TicketDeliveryDiagnostics::log(TicketDeliveryDiagnostics::error($error, 'mail_transport', ['order_id' => $orderId, 'delivery_id' => $deliveryId]));
+            $status = 'pending';
+            $error = 'requires_review:mail_outcome_unknown';
         }
         $update = $pdo->prepare('UPDATE email_deliveries SET status = ?, error_message = ?, sent_at = IF(? = "sent", NOW(), sent_at), updated_at = NOW() WHERE id = ?');
         $update->execute([$status, $error, $status, $deliveryId]);

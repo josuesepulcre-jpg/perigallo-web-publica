@@ -138,7 +138,7 @@ final class Ticketing
             throw new RuntimeException('Confirma que eres mayor de 18 años.');
         }
         if (empty($data['dress_code_accepted'])) {
-            throw new RuntimeException('Debes aceptar el código de vestimenta Total White para continuar.');
+            throw new RuntimeException('Confirma que has leído la información de vestimenta para continuar.');
         }
         if (!is_array($data['items']) || count($data['items']) === 0) {
             throw new RuntimeException('Selecciona al menos una entrada.');
@@ -189,7 +189,7 @@ final class Ticketing
                 !empty($data['marketing_whatsapp_consent']) ? 1 : 0,
                 !empty($data['marketing_email_consent']) ? 'marketing_email_v1' : null,
                 !empty($data['marketing_whatsapp_consent']) ? 'marketing_whatsapp_v1' : null,
-                self::DRESS_CODE_VERSION,
+                (($event['slug'] ?? '') === 'perigalla-comedy' ? 'perigalla-comedy-dress-v1' : self::DRESS_CODE_VERSION),
                 $billing['requested'],
                 $billing['name'],
                 $billing['tax_id'],
@@ -387,17 +387,24 @@ final class Ticketing
         $orderItems = $this->orderItemsWithReference($items->fetchAll());
 
         $tickets = $this->pdo->prepare(
-            'SELECT t.id, t.public_code, t.qr_token_ciphertext, t.status, t.issued_at, t.used_at, e.title AS event_title, e.subtitle AS event_subtitle, e.starts_at, e.ends_at, e.doors_open_at, e.location, e.address, e.locality, e.province, e.dress_code, toi.ticket_type_name
+            'SELECT t.id, t.public_code, t.qr_token_ciphertext, t.status, t.issued_at, t.used_at, e.title AS event_title, e.subtitle AS event_subtitle, e.starts_at, e.ends_at, e.doors_open_at, e.location, e.address, e.locality, e.province, e.dress_code, toi.ticket_type_name, ta.attendee_name
              FROM tickets t
              JOIN events e ON e.id = t.event_id
              JOIN ticket_order_items toi ON toi.id = t.order_item_id
+             LEFT JOIN ticket_attendees ta ON ta.ticket_id = t.id
              WHERE toi.order_id = ?
              ORDER BY t.id ASC'
         );
         $tickets->execute([(int) $order['id']]);
 
         $ticketRows = $tickets->fetchAll();
-        foreach ($ticketRows as &$ticket) {
+        foreach ($ticketRows as $position => &$ticket) {
+            $ticket['attendee_name'] = trim((string) ($ticket['attendee_name'] ?? ''));
+            if ($ticket['attendee_name'] === '') {
+                $ticket['attendee_name'] = $position === 0
+                    ? (string) $order['name']
+                    : 'Acompañante ' . ($position + 1) . ' de ' . $order['name'];
+            }
             try {
                 $ticket['qr_url'] = $this->ticketQrUrl($ticket);
             } catch (RuntimeException $error) {
@@ -670,7 +677,7 @@ final class Ticketing
                  (public_token, redsys_order, first_name, last_name, name, email, phone, age_requirement_accepted, age_requirement_accepted_at, dress_code_accepted, dress_code_accepted_at, dress_code_version, subtotal_cents, total_cents, currency, status, reservation_expires_at, ip_address, user_agent, is_test, environment, order_status, payment_status, delivery_status, test_session_id, created_at, updated_at)
                  VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW(), 1, NOW(), ?, 0, 0, ?, "payment_processing", ?, ?, ?, 1, "sandbox", "pending_payment", "pending", "pending", ?, NOW(), NOW())'
             );
-            $orderStmt->execute([$publicToken, $redsysOrder, $firstName, $lastName, $name, $email, $phone, self::DRESS_CODE_VERSION, env_value('REDSYS_CURRENCY', '978'), $expires, client_ip(), substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255), $testSession]);
+            $orderStmt->execute([$publicToken, $redsysOrder, $firstName, $lastName, $name, $email, $phone, (($event['slug'] ?? '') === 'perigalla-comedy' ? 'perigalla-comedy-dress-v1' : self::DRESS_CODE_VERSION), env_value('REDSYS_CURRENCY', '978'), $expires, client_ip(), substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255), $testSession]);
             $orderId = (int) $this->pdo->lastInsertId();
             $reference = 'TEST-PG' . str_pad((string) $eventId, 2, '0', STR_PAD_LEFT) . '-' . str_pad((string) $orderId, 6, '0', STR_PAD_LEFT);
             $this->pdo->prepare('UPDATE ticket_orders SET test_reference = ? WHERE id = ?')->execute([$reference, $orderId]);
@@ -991,7 +998,9 @@ final class Ticketing
         $this->requireManualReserveInventorySchema();
         $notes = clean_string((string) ($data['cash_payment_notes'] ?? ''), 1000);
         $cashDiscountCents = $this->cashDiscountCents($data['cash_discount_euros'] ?? 0);
-        $reservationExpiresAt = ($cashStatus === 'reserved' || $paymentFlow === 'manual_card') ? $this->cashReservationExpiry((string) ($data['reservation_expires_at'] ?? '')) : null;
+        // La emisión manual confirma las plazas y los QR; el cobro se registra aparte.
+        $issueImmediately = $paymentFlow === 'cash' && $inventoryMode === 'manual_reserve';
+        $reservationExpiresAt = !$issueImmediately && ($cashStatus === 'reserved' || $paymentFlow === 'manual_card') ? $this->cashReservationExpiry((string) ($data['reservation_expires_at'] ?? '')) : null;
 
         $this->pdo->beginTransaction();
         try {
@@ -1009,10 +1018,10 @@ final class Ticketing
             $holdedExclusionReason = $paymentFlow === 'cash' ? 'cash_sale' : null;
             $publicToken = public_token();
             $orderStmt->execute([
-                $publicToken, $this->nextRedsysOrder(), $firstName, $lastName, $name, $email, $phone, self::DRESS_CODE_VERSION,
+                $publicToken, $this->nextRedsysOrder(), $firstName, $lastName, $name, $email, $phone, (($event['slug'] ?? '') === 'perigalla-comedy' ? 'perigalla-comedy-dress-v1' : self::DRESS_CODE_VERSION),
                 env_value('REDSYS_CURRENCY', '978'), $isPaid ? 'paid' : 'pending', $reservationExpiresAt, client_ip(), substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255),
                 !empty($event['is_test']) ? 1 : 0, !empty($event['is_test']) ? 'sandbox' : 'production',
-                $salesChannel, $inventoryMode === 'manual_reserve' ? 'manual_reserve' : 'standard', $cashDatabaseStatus, $notes ?: null, $isPaid ? $operator : null, $isPaid ? now_mysql() : null, $isPaid ? 'confirmed' : 'pending_payment', $isPaid ? 'paid' : 'pending', $isPaid ? now_mysql() : null, $holdedStatus, $holdedExcluded, $holdedExclusionReason,
+                $salesChannel, $inventoryMode === 'manual_reserve' ? 'manual_reserve' : 'standard', $cashDatabaseStatus, $notes ?: null, $isPaid ? $operator : null, $isPaid ? now_mysql() : null, ($isPaid || $issueImmediately) ? 'confirmed' : 'pending_payment', $isPaid ? 'paid' : 'pending', $isPaid ? now_mysql() : null, $holdedStatus, $holdedExcluded, $holdedExclusionReason,
             ]);
             $orderId = (int) $this->pdo->lastInsertId();
             $subtotal = 0;
@@ -1077,7 +1086,7 @@ final class Ticketing
                 $total,
                 $orderId,
             ]);
-            $this->generateTicketsOnce($orderId, $isPaid ? 'issued' : 'blocked');
+            $this->generateTicketsOnce($orderId, ($isPaid || $issueImmediately) ? 'issued' : 'blocked');
             $this->auditAdminOperation($operator, $paymentFlow === 'manual_card' ? 'manual_card_order_created' : ($isPaid ? 'cash_order_created_paid' : 'cash_order_reserved'), $orderId, ['event_id' => $eventId, 'quantity' => $quantityTotal, 'cash_discount_cents' => $cashDiscountCents, 'inventory_mode' => $inventoryMode, 'notes' => $notes]);
             $this->pdo->commit();
             $paymentUrl = $this->manualCardPaymentUrl($publicToken);
@@ -2610,7 +2619,7 @@ final class Ticketing
         $stmt = $this->pdo->prepare(
             'SELECT
               COALESCE(SUM(CASE WHEN tor.status="paid" THEN toi.quantity ELSE 0 END), 0) AS sold,
-              COALESCE(SUM(CASE WHEN tor.status IN ("pending","payment_processing") AND tor.reservation_expires_at > NOW() THEN toi.quantity ELSE 0 END), 0) AS reserved,
+              COALESCE(SUM(CASE WHEN tor.status IN ("pending","payment_processing") AND (tor.reservation_expires_at > NOW() OR (tor.order_status = "confirmed" AND tor.reservation_expires_at IS NULL)) THEN toi.quantity ELSE 0 END), 0) AS reserved,
               COALESCE(SUM(CASE WHEN tor.status="paid" THEN toi.total_cents ELSE 0 END), 0) AS revenue_cents
              FROM ticket_order_items toi JOIN ticket_orders tor ON tor.id=toi.order_id WHERE toi.event_id=? AND tor.is_test = 0'
         );
@@ -2625,9 +2634,9 @@ final class Ticketing
         $stmt = $this->pdo->prepare(
             'SELECT
               COALESCE(SUM(CASE WHEN tor.status="paid" THEN toi.quantity ELSE 0 END), 0) AS sold,
-              COALESCE(SUM(CASE WHEN tor.status IN ("pending","payment_processing") AND tor.reservation_expires_at > NOW() THEN toi.quantity ELSE 0 END), 0) AS reserved,
+              COALESCE(SUM(CASE WHEN tor.status IN ("pending","payment_processing") AND (tor.reservation_expires_at > NOW() OR (tor.order_status = "confirmed" AND tor.reservation_expires_at IS NULL)) THEN toi.quantity ELSE 0 END), 0) AS reserved,
               COALESCE(SUM(CASE WHEN tor.status="paid" AND ' . $manualCondition . ' THEN toi.quantity ELSE 0 END), 0) AS manual_sold,
-              COALESCE(SUM(CASE WHEN tor.status IN ("pending","payment_processing") AND tor.reservation_expires_at > NOW() AND ' . $manualCondition . ' THEN toi.quantity ELSE 0 END), 0) AS manual_reserved
+              COALESCE(SUM(CASE WHEN tor.status IN ("pending","payment_processing") AND (tor.reservation_expires_at > NOW() OR (tor.order_status = "confirmed" AND tor.reservation_expires_at IS NULL)) AND ' . $manualCondition . ' THEN toi.quantity ELSE 0 END), 0) AS manual_reserved
              FROM ticket_order_items toi JOIN ticket_orders tor ON tor.id=toi.order_id WHERE toi.ticket_type_id=? AND tor.is_test = 0'
         );
         $stmt->execute([$ticketTypeId]);
@@ -3121,7 +3130,7 @@ final class Ticketing
              AND tor.is_test = 0
              AND (
                 tor.status = "paid"
-                OR (tor.status IN ("pending","payment_processing") AND tor.reservation_expires_at > NOW())
+                OR (tor.status IN ("pending","payment_processing") AND (tor.reservation_expires_at > NOW() OR (tor.order_status = "confirmed" AND tor.reservation_expires_at IS NULL)))
              )'
         );
         $stmt->execute([$typeId]);

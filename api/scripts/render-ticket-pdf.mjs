@@ -75,10 +75,11 @@ function drawTicket(pdf, order, ticket, index, total) {
   pdf.setFontSize(10);
   pdf.text(safeText(ticket.public_code || "—"), 105, 164, { align: "center" });
 
-  field(pdf, "FECHA Y HORA", schedule, 25, 184, 160, champagne, cream);
-  field(pdf, "LUGAR", venue, 25, 213, 160, champagne, cream);
-  field(pdf, "TIPO DE ENTRADA", safeText(ticket.ticket_type_name || "Entrada"), 25, 242, 76, champagne, cream);
-  field(pdf, "ENTRADA", "" + index + " de " + total, 109, 242, 76, champagne, cream);
+  field(pdf, "FECHA Y HORA", schedule, 25, 173, 160, champagne, cream);
+  field(pdf, "LUGAR", venue, 25, 199, 160, champagne, cream);
+  field(pdf, "ASISTENTE", safeText(ticket.attendee_name || (index === 1 ? order.name : "Acompañante " + index) || "Por confirmar"), 25, 225, 160, champagne, cream);
+  field(pdf, "TIPO DE ENTRADA", safeText(ticket.ticket_type_name || "Entrada"), 25, 251, 76, champagne, cream);
+  field(pdf, "ENTRADA", "" + index + " de " + total, 109, 251, 76, champagne, cream);
   pdf.setDrawColor(...champagne);
   pdf.line(25, 276, 185, 276);
   pdf.setTextColor(...muted);

@@ -266,6 +266,17 @@
     return "https://wa.me/" + encodeURIComponent(phone) + "?text=" + encodeURIComponent(message);
   }
 
+  function manualTicketWhatsAppLink(order) {
+    if (!state.session || state.session.role !== "admin" || !order.public_token || isClosedOrder(order)) return "";
+    if (order.payment_status !== "paid" && order.status !== "paid" && !(order.sales_channel === "cash" && order.order_status === "confirmed")) return "";
+    var phone = String(order.phone || "").replace(/\D/g, "").replace(/^00/, "");
+    if (phone.length === 9 && /^[67]/.test(phone)) phone = "34" + phone;
+    var link = window.location.origin + "/entradas/pedido/?token=" + encodeURIComponent(order.public_token);
+    var message = "Hola " + (order.name || "") + ",\n\nAquí tienes tus entradas para " + (order.event_title || "Perigallo") + ". Puedes verlas y descargarlas en PDF desde este enlace:\n" + link + "\n\nGuárdalas para mostrarlas en el acceso. ¡Nos vemos en Perigallo!";
+    var url = "https://web.whatsapp.com/send?" + (phone ? "phone=" + encodeURIComponent(phone) + "&" : "") + "text=" + encodeURIComponent(message);
+    return '<a class="text-action" href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">Enviar entradas por WhatsApp Web</a>';
+  }
+
   function manualCardPaymentUrl(order) {
     return window.location.origin + "/entradas/pedido/?token=" + encodeURIComponent(order.public_token) + "&pay=1";
   }
@@ -287,9 +298,10 @@
   function orderActions(order) {
     if (!state.session || state.session.role !== "admin") return "";
     var actions = '<div class="admin-order-actions"><a class="text-action" href="/entradas/pedido/?token=' + encodeURIComponent(order.public_token) + '" target="_blank" rel="noopener noreferrer">Ver pedido</a><button type="button" class="text-action" data-order-action="edit" data-order-id="' + Number(order.id) + '">Editar</button>';
+    actions += manualTicketWhatsAppLink(order);
     if (Number(order.allergy_attendee_count || 0)) actions += '<button type="button" class="text-action" data-order-allergies data-order-id="' + Number(order.id) + '">Alergias (' + Number(order.allergy_attendee_count) + ')</button>';
     if (order.sales_channel === "cash" && order.cash_payment_status !== "paid" && !isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="cash-payment" data-order-id="' + Number(order.id) + '">Registrar cobro</button>';
-    if (order.sales_channel === "cash" && !isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="send-cash" data-order-id="' + Number(order.id) + '">' + (order.cash_payment_status === "paid" ? "Abrir WhatsApp" : "Enviar reserva") + '</button>';
+    if (order.sales_channel === "cash" && !isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="send-cash" data-order-id="' + Number(order.id) + '">' + ((order.cash_payment_status === "paid" || order.order_status === "confirmed") ? "Abrir WhatsApp" : "Enviar reserva") + '</button>';
     if (order.sales_channel === "manual_card" && order.payment_status !== "paid" && !isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="copy-payment-link" data-order-id="' + Number(order.id) + '">Copiar enlace de pago</button><button type="button" class="text-action" data-order-action="send-manual-card" data-order-id="' + Number(order.id) + '">Enviar link por WhatsApp</button>';
     if (!isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="cancel" data-order-id="' + Number(order.id) + '">Cancelar</button>';
     if (!isClosedOrder(order) && (order.payment_status === "paid" || order.status === "paid")) actions += '<button type="button" class="text-action" data-order-action="refund" data-order-id="' + Number(order.id) + '">Registrar devolución</button>';
@@ -309,7 +321,7 @@
       var reference = order.redsys_order || order.test_reference || ("Pedido " + order.id);
       var displayStatus = order.display_status || order.payment_status || order.status;
       var paymentMethod = order.payment_method === "cash" ? "Efectivo" : (order.payment_method === "bizum" ? "Bizum" : "Tarjeta");
-      var cashStatus = order.sales_channel === "cash" ? ' · ' + (order.cash_payment_status === "paid" ? "Cobrado" : "Reserva pendiente") : (order.sales_channel === "manual_card" ? ' · ' + (order.payment_status === "paid" ? "Cobrado con tarjeta" : "Pago con tarjeta pendiente") : "");
+      var cashStatus = order.sales_channel === "cash" ? ' · ' + (order.cash_payment_status === "paid" ? "Cobrado" : "Pendiente de cobro") : (order.sales_channel === "manual_card" ? ' · ' + (order.payment_status === "paid" ? "Cobrado con tarjeta" : "Pago con tarjeta pendiente") : "");
       var discount = Number(order.discount_amount_cents || 0);
       var amount = discount
         ? '<strong><s>' + formatMoney(order.subtotal_cents) + '</s> ' + formatMoney(order.total_cents) + '</strong><small class="admin-order-discount">' + (order.discount_code ? 'Cupón ' + escapeHtml(order.discount_code) : 'Descuento manual') + ' · −' + formatMoney(discount) + '</small>'
@@ -323,7 +335,7 @@
       var delivery = isPaidCashOrder
         ? '<small class="admin-order-delivery"><span><strong>Entrega:</strong> ' + deliveryStatusMarkup("WhatsApp", "manual_sent") + '<span class="admin-delivery-meta"> · envío desde WhatsApp Business</span></span></small>'
         : '<small class="admin-order-delivery"><span><strong>Entrega:</strong> ' + deliveryStatusMarkup("Email", emailDeliveryStatus) + (order.email_delivery_error ? '<span class="admin-delivery-error"> · ' + escapeHtml(order.email_delivery_error) + '</span>' : '') + '</span><span>' + deliveryStatusMarkup("WhatsApp", whatsAppDeliveryStatus) + (order.whatsapp_recipient ? '<span class="admin-delivery-meta"> · ' + escapeHtml(order.whatsapp_recipient) + '</span>' : '') + (order.whatsapp_template_name ? '<span class="admin-delivery-meta"> · ' + escapeHtml(order.whatsapp_template_name) + '</span>' : '') + (order.whatsapp_delivery_error ? '<span class="admin-delivery-error"> · ' + escapeHtml(order.whatsapp_delivery_error) + '</span>' : '') + '</span></small>';
-      return '<article class="admin-order-row"><div><strong>' + escapeHtml(order.name || "Comprador sin nombre") + '</strong><small>' + escapeHtml(order.event_title || "Evento por asignar") + ' · ' + escapeHtml(reference) + ' · ' + paymentMethod + cashStatus + allergySummary + (Number(order.is_test) ? ' · Prueba' : '') + '</small>' + paymentNote + holded + delivery + '</div><span>' + Number(order.ticket_quantity || 0) + ' entrada' + (Number(order.ticket_quantity || 0) === 1 ? "" : "s") + '</span><span class="status-pill status-' + escapeHtml(displayStatus) + '">' + escapeHtml(statusLabel(displayStatus)) + '</span><span class="admin-order-amount">' + amount + '</span>' + (compact ? "" : orderActions(order)) + '</article>';
+      return '<article class="admin-order-row"><div><strong>' + escapeHtml(order.name || "Comprador sin nombre") + '</strong><small>' + escapeHtml(order.event_title || "Evento por asignar") + ' · ' + escapeHtml(reference) + ' · ' + paymentMethod + cashStatus + allergySummary + (Number(order.is_test) ? ' · Prueba' : '') + '</small>' + paymentNote + holded + delivery + '</div><span>' + Number(order.ticket_quantity || 0) + ' entrada' + (Number(order.ticket_quantity || 0) === 1 ? "" : "s") + '</span><span class="status-pill status-' + escapeHtml(displayStatus) + '">' + escapeHtml(statusLabel(displayStatus)) + '</span><span class="admin-order-amount">' + amount + '</span>' + (compact ? (manualTicketWhatsAppLink(order) ? '<div class="admin-order-actions">' + manualTicketWhatsAppLink(order) + '</div>' : "") : orderActions(order)) + '</article>';
     }).join("");
   }
 
@@ -438,6 +450,29 @@
       var search = root.querySelector("[data-admin-sales-search]");
       var filters = root.querySelectorAll("[data-admin-order-filter]");
       var activeFilter = "active";
+      var salesEvent = root.querySelector('[data-admin-sales-event]');
+      var selectedSalesEvent = Math.max(0, Number(new URLSearchParams(window.location.search).get('event')) || 0);
+      var salesLoadSequence = 0;
+      function salesOrdersRequest() {
+        return selectedSalesEvent ? request(api + '/admin/orders?event=' + encodeURIComponent(selectedSalesEvent)) : Promise.resolve({ orders: [] });
+      }
+      function bindSalesEvents(events) {
+        if (!salesEvent) return;
+        salesEvent.innerHTML = '<option value="">Selecciona un evento</option>' + events.map(function (event) {
+          return '<option value="' + Number(event.id) + '">' + escapeHtml(event.title) + ' · ' + escapeHtml(formatDate(event.starts_at, true)) + '</option>';
+        }).join('');
+        if (!events.some(function (event) { return Number(event.id) === selectedSalesEvent; })) { selectedSalesEvent = 0; state.orders = []; }
+        salesEvent.value = selectedSalesEvent ? String(selectedSalesEvent) : '';
+        salesEvent.disabled = false;
+        salesEvent.addEventListener('change', function () {
+          selectedSalesEvent = Number(salesEvent.value) || 0;
+          var url = new URL(window.location.href);
+          if (selectedSalesEvent) url.searchParams.set('event', selectedSalesEvent); else url.searchParams.delete('event');
+          window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+          root.querySelectorAll('[data-attendee-export-event], [data-door-list-event], [data-payment-export-event]').forEach(function (select) { select.value = salesEvent.value; });
+          reload();
+        });
+      }
       var status = root.querySelector("[data-admin-orders-status]");
       var modal = root.querySelector("[data-admin-cash-modal]");
       var form = root.querySelector("[data-admin-cash-order-form]");
@@ -461,8 +496,8 @@
         var cashPaid = paid.filter(function (order) { return order.sales_channel === "cash"; });
         var cashReserved = state.orders.filter(function (order) { return Number(order.is_test) !== 1 && !isClosedOrder(order) && order.sales_channel === "cash" && order.cash_payment_status === "reserved"; });
         function tickets(rows) { return rows.reduce(function (total, order) { return total + Number(order.ticket_quantity || 0); }, 0); }
-        summary.innerHTML = '<article><span>Entradas vendidas · global</span><strong>' + tickets(paid) + '</strong><small>Web, tarjeta y efectivo cobrados</small></article>' +
-          '<article><span>Ingresos cobrados · global</span><strong>' + formatMoney(paid.reduce(function (total, order) { return total + Number(order.total_cents || 0); }, 0)) + '</strong><small>Web, tarjeta y efectivo cobrados</small></article>' +
+        summary.innerHTML = '<article><span>Entradas vendidas</span><strong>' + tickets(paid) + '</strong><small>Web, tarjeta y efectivo cobrados</small></article>' +
+          '<article><span>Ingresos cobrados</span><strong>' + formatMoney(paid.reduce(function (total, order) { return total + Number(order.total_cents || 0); }, 0)) + '</strong><small>Web, tarjeta y efectivo cobrados</small></article>' +
           '<article><span>Efectivo cobrado</span><strong>' + tickets(cashPaid) + '</strong><small>' + formatMoney(cashPaid.reduce(function (total, order) { return total + Number(order.total_cents || 0); }, 0)) + '</small></article>' +
           '<article><span>Reservas en efectivo</span><strong>' + tickets(cashReserved) + '</strong><small>Pendientes de cobro</small></article>';
       }
@@ -485,12 +520,22 @@
         var rows = state.orders.filter(function (order) {
           return matchesFilter(order) && (!term || [order.name, order.email, order.phone, order.redsys_order, order.test_reference, order.event_title, order.payment_status, order.display_status].join(" ").toLowerCase().includes(term));
         });
-        root.querySelector("[data-admin-orders-list]").innerHTML = renderOrdersRows(rows, false);
-        if (status) status.textContent = rows.length + (rows.length === 1 ? " pedido mostrado" : " pedidos mostrados");
+        root.querySelector("[data-admin-orders-list]").innerHTML = !selectedSalesEvent
+          ? '<div class="admin-empty"><strong>Selecciona un evento para consultar sus ventas.</strong></div>'
+          : rows.length ? renderOrdersRows(rows, false) : '<div class="admin-empty"><strong>No hay pedidos con estos filtros para el evento seleccionado.</strong></div>';
+        if (status) status.textContent = selectedSalesEvent ? rows.length + (rows.length === 1 ? " pedido mostrado" : " pedidos mostrados") : '';
         renderSalesSummary();
       }
       function reload() {
-        request(api + "/admin/orders").then(function (data) { state.orders = data.orders || []; render(search.value); }).catch(function (error) { renderPageError(error.message); });
+        var sequence = ++salesLoadSequence;
+        state.orders = [];
+        render(search.value);
+        if (status && selectedSalesEvent) status.textContent = 'Cargando ventas del evento…';
+        return salesOrdersRequest().then(function (data) {
+          if (sequence !== salesLoadSequence) return;
+          state.orders = data.orders || [];
+          render(search.value);
+        }).catch(function (error) { if (sequence === salesLoadSequence) renderPageError(error.message); });
       }
       function setCashStatus(message) {
         var target = form && form.querySelector("[data-cash-order-status]");
@@ -994,16 +1039,16 @@
         if (!modal) return;
         var manualReserve = mode === "manual_reserve";
         form.inventory_mode.value = manualReserve ? "manual_reserve" : "cash";
-        form.payment_flow.value = manualReserve ? "manual_card" : "cash";
+        form.payment_flow.value = "cash";
         form.cash_payment_status.value = "reserved";
         var title = modal.querySelector("[data-cash-order-title]");
         var description = modal.querySelector("[data-cash-order-description]");
-        if (title) title.textContent = manualReserve ? "Entrada manual con pago por tarjeta" : "Entrada en efectivo";
+        if (title) title.textContent = manualReserve ? "Entrada manual" : "Entrada en efectivo";
         if (description) description.textContent = manualReserve
-          ? "Emite entradas desde el cupo manual adicional y genera un enlace seguro de pago con tarjeta para compartir por WhatsApp."
+          ? "Genera y envía las entradas desde el cupo manual, estén pagadas o pendientes de cobro. Si pagan después, podrás registrar el cobro desde el pedido."
           : "Marca si ya ha pagado o si queda pendiente. Solo una reserva pendiente tiene fecha de caducidad. Las entradas se abren en WhatsApp para enviarlas manualmente.";
         var submit = form.querySelector('[type="submit"]');
-        if (submit) submit.textContent = manualReserve ? "Generar enlace y abrir WhatsApp" : "Generar y abrir WhatsApp";
+        if (submit) submit.textContent = "Generar y abrir WhatsApp";
         modal.hidden = false;
         renderCashTicketLines();
         updateCashPaymentFields();
@@ -1013,7 +1058,8 @@
       function updateCashPaymentFields() {
         var expiry = form.querySelector("[data-cash-expiry-wrap]");
         var manualCard = form.payment_flow.value === "manual_card";
-        var reserved = manualCard || form.cash_payment_status.value === "reserved";
+        var immediateManual = form.inventory_mode.value === "manual_reserve" && !manualCard;
+        var reserved = manualCard || (!immediateManual && form.cash_payment_status.value === "reserved");
         var paymentWrap = form.querySelector("[data-cash-payment-wrap]");
         var cardNote = form.querySelector("[data-manual-card-payment-note]");
         if (paymentWrap) paymentWrap.hidden = manualCard;
@@ -1027,7 +1073,7 @@
         if (action === "cancel") return "Cancelar las entradas de este pedido impedirá su acceso. No realiza ningún abono. ¿Continuar?";
         if (action === "refund") return "Registra la devolución solo cuando el abono ya se haya realizado en Redsys/TPV. Esta acción revoca las entradas, pero no devuelve dinero automáticamente. ¿Confirmar?";
         if (action === "holded-retry") return "Se volverá a dejar el pedido en cola para Holded. No se emitirá ningún documento desde el navegador. ¿Continuar?";
-        if (action === "cash-payment") return "¿Confirmas que ya se ha recibido el pago en efectivo? Se activarán las entradas y se sumará a las ventas cobradas.";
+        if (action === "cash-payment") return "¿Confirmas que ya se ha recibido el pago en efectivo? El pedido se sumará a las ventas cobradas.";
         if (action === "send-cash") return "Se abrirá WhatsApp con el enlace de las entradas preparado. ¿Continuar?";
         if (action === "send-manual-card") return "Se abrirá WhatsApp con el enlace seguro de pago por tarjeta. ¿Continuar?";
         if (action === "copy-payment-link") return "Se copiará el enlace seguro de pago por tarjeta. ¿Continuar?";
@@ -1036,7 +1082,7 @@
         if (action === "delivery-whatsapp") return "Se programará un nuevo WhatsApp con el mismo PDF de entradas. ¿Continuar?";
         return "Eliminarás definitivamente este pedido de prueba y todas sus entradas. No se puede deshacer. ¿Continuar?";
       }
-      Promise.all([request(api + "/admin/orders"), request(api + "/admin/cash-orders/meta"), request(api + "/admin/whatsapp/template-status")]).then(function (data) {
+      Promise.all([salesOrdersRequest(), request(api + "/admin/cash-orders/meta"), request(api + "/admin/whatsapp/template-status"), request(api + "/admin/events")]).then(function (data) {
         state.orders = data[0].orders || [];
         cashMeta = data[1] || { events: [] };
         var templateStatus = root.querySelector("[data-admin-whatsapp-template-status]");
@@ -1047,6 +1093,7 @@
         }
         populateCashEvents();
         populateAttendeeExportEvents();
+        bindSalesEvents(data[3].events || []);
         render();
         search.addEventListener("input", function () { render(search.value); });
         filters.forEach(function (button) {

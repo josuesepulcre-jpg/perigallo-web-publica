@@ -101,7 +101,7 @@ const required = [
   'filter:brightness(.9) contrast(1.035) saturate(.94)',
   'agendaVisual',
   'agendaContent',
-  'home-experiences.js?v=20260930-premium-v1',
+  'home-experiences.js?v=20261027-parity',
   '<section class="booking-bridge" id="fechas" aria-labelledby="booking-bridge-title">',
   'Reservas Perigallo',
   'La próxima ocasión<em>para vivir Perigallo.</em>',
