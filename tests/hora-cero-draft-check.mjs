@@ -12,3 +12,12 @@ const filterStart=source.indexOf('      var types = (event.ticket_types || []).f
 const filterEnd=source.indexOf('\n      if (!types.length)',filterStart);
 const filterCode=source.slice(filterStart,filterEnd);
 const checkout={event:{slug:'hora-cero-2026',ticket_types:[{active:false,visible:true,status:'draft'},{active:true,visible:true,status:'archived'}]},preview:true};vm.createContext(checkout);vm.runInContext(filterCode,checkout);assert.equal(checkout.types.length,1,'Authenticated preview accepts the draft ticket');checkout.preview=false;vm.runInContext(filterCode,checkout);assert.equal(checkout.types.length,0,'Public checkout still rejects draft tickets');console.log('Draft checkout isolation passed');
+const detailed={...e,description:'Intro\n\n14:00 · Australia\nCóctel\nBienvenida\n> Estación | Pieza pública | Texto <b>seguro</b>\n? Cocina | Propuesta privada | Receta en desarrollo'};
+const draftDetail=c.renderHoraCero(detailed,true), publicDetail=c.renderHoraCero(detailed,false);
+assert.match(draftDetail,/<details class="hc-chapter">/);
+assert.match(draftDetail,/<details class="hc-piece">/);
+assert.match(draftDetail,/Propuesta privada/);
+assert.doesNotMatch(publicDetail,/Propuesta privada|Receta en desarrollo/);
+assert.match(publicDetail,/Pieza pública/);
+assert.match(publicDetail,/Texto &lt;b&gt;seguro&lt;\/b&gt;/);
+console.log('Expandable chapter details, escaped menu copy and private proposal isolation passed');
