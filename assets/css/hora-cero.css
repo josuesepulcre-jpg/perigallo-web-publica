@@ -13,6 +13,7 @@ body.ticketing-page .hc .hc-hero {
 .hc .hc-hour-hand { stroke-width: 7; }
 .hc .hc-clock-label { fill: #f2ede2; stroke: none; font: 24px Montserrat,sans-serif; letter-spacing: 4px; }
 .hc .hc-hero-copy { max-width: 620px; }
+body.ticketing-page .hc .event-public-information-accordions { background: #111812; }
 .hc .hc-hero .hc-lede { color: #f2ede2; }
 .hc .hc-hero .hc-facts { color: #f2ede2; }
 .hc .hc-visual { margin: 0; position: relative; height: clamp(300px, 40vw, 560px); overflow: hidden; border-block: 1px solid #c5ab7740; }
@@ -56,7 +57,7 @@ body.ticketing-page .hc .experience-guide-trigger.is-active { color: #f2ede2; }
 }
 @media (max-width: 600px) {
   body.ticketing-page .hc .hc-hero { padding: 300px 7% 48px; min-height: 0; }
-  .hc .hc-hero-art { height: 440px; object-position: 82% center; }
+  .hc .hc-hero-art { height: 440px; object-position: 82% center; mask-image: linear-gradient(#000 55%, transparent); }
   .hc .hc-hero::after { background: linear-gradient(0deg, #111812 0%, #111812 40%, #11181200 83%); }
   .hc .hc-clock { width: 142px; right: auto; left: 7%; top: 34px; }
   .hc .hc-hero-copy { max-width: none; }
@@ -73,3 +74,4 @@ body.ticketing-page .hc .experience-guide-trigger.is-active { color: #f2ede2; }
 
 body.ticketing-page .hc .ticket-preview-note,
 body.ticketing-page .hc .ticket-access-status { color: #3f4b3e !important; }
+body.ticketing-page .hc .ticket-preview-note { font-size: 13px !important; font-weight: 400; }
