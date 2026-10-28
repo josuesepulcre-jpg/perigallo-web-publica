@@ -22,8 +22,8 @@ body.ticketing-page .hc .hc-hero {
 .hc .hc-visual figcaption small { display: block; margin-bottom: 20px; color: #e0cda4; font: 500 11px/1.5 Montserrat,sans-serif; letter-spacing: .18em; text-transform: uppercase; }
 body.ticketing-page .hc .hc-tickets { max-width: 1180px; }
 body.ticketing-page .hc .event-access { padding: 0; background: transparent; }
-body.ticketing-page .hc .ticket-access-card { --event-ink: #19241b; --event-gold: #65502c; background: #f2ede2 !important; padding: clamp(24px,4vw,52px) !important; color: #19241b; }
-body.ticketing-page .hc .ticket-access-heading { grid-template-columns: minmax(0,1fr) minmax(290px,.85fr); gap: clamp(24px,4vw,54px); padding: 0 0 24px; }
+body.ticketing-page .hc .ticket-access-card { display: block !important; --event-ink: #19241b; --event-gold: #65502c; background: #f2ede2 !important; padding: clamp(24px,4vw,52px) !important; color: #19241b; }
+body.ticketing-page .hc .ticket-access-heading { display: grid !important; grid-template-columns: minmax(0,1fr) minmax(290px,.85fr); gap: clamp(24px,4vw,54px); padding: 0 0 24px; }
 body.ticketing-page .hc .ticket-access-copy h3 { color: #19241b; font-size: clamp(36px,3.3vw,50px); line-height: 1.08; }
 body.ticketing-page .hc .ticket-access-copy p,
 body.ticketing-page .hc .ticket-preview-note,
@@ -44,13 +44,13 @@ body.ticketing-page .hc .event-quantity-controls output { color: #19241b; }
 body.ticketing-page .hc .event-quantity-controls button { min-width: 44px; min-height: 44px; border-color: #857963; }
 body.ticketing-page .hc .ticket-access-action { min-width: 0; }
 body.ticketing-page .hc .ticket-access-action .ticket-btn { width: 100%; white-space: normal; line-height: 1.6; background: #263829; color: #fff8e9; border-color: #263829; }
-body.ticketing-page .hc .ticket-access-secondary { grid-template-columns: 1fr; border-color: #b2a791; }
+body.ticketing-page .hc .ticket-access-secondary { grid-template-columns: 1fr; border-color: #b2a791; background: transparent; }
 body.ticketing-page .hc .ticket-preview-note { font-size: 12px; line-height: 1.6; }
 body.ticketing-page .hc .ticket-access-card :focus-visible { outline-color: #263829; }
 body.ticketing-page .hc .experience-guide-trigger { color: #d4d4c8; }
 body.ticketing-page .hc .experience-guide-trigger.is-active { color: #f2ede2; }
 @media (max-width: 900px) {
-  body.ticketing-page .hc .ticket-access-heading { grid-template-columns: minmax(0,1fr); }
+  body.ticketing-page .hc .ticket-access-heading { display: grid !important; grid-template-columns: minmax(0,1fr); }
   body.ticketing-page .hc .hc-hero { padding-top: 80px; min-height: 760px; }
   .hc .hc-hero::after { background: linear-gradient(90deg, #111812ed, #11181265 80%), linear-gradient(0deg, #111812, transparent 65%); }
 }
@@ -70,3 +70,6 @@ body.ticketing-page .hc .experience-guide-trigger.is-active { color: #f2ede2; }
   body.ticketing-page .hc .ticket-access-decision { padding: 20px; }
   body.ticketing-page .hc .ticket-type-price strong { font-size: 56px; }
 }
+
+body.ticketing-page .hc .ticket-preview-note,
+body.ticketing-page .hc .ticket-access-status { color: #3f4b3e !important; }
