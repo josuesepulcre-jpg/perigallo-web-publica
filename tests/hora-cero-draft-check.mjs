@@ -1,0 +1,10 @@
+import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
+import assert from 'node:assert/strict';
+const source=readFileSync('assets/js/ticketing.js','utf8');
+function extract(name){const start=source.indexOf('  function '+name+'(');return source.slice(start,source.indexOf('\n  function ',start+1));}
+const c={Intl,Date,money:new Intl.NumberFormat("es-ES",{style:"currency",currency:"EUR"}),window:{location:{origin:'https://perigallo.com'}},textParagraphs:s=>'<p>'+c.escapeHtml(s)+'</p>',ticketTypeRow:(t,e,p)=>`<article data-event="${e.id}" data-preview="${p}" data-price="${t.final_price_cents}" data-available="${t.available}"></article>`,experienceInformation:()=>''};
+vm.createContext(c);for(const name of ['escapeHtml','cents','fmtDateOnly','renderHoraCero'])vm.runInContext(extract(name),c);
+const type={id:5,final_price_cents:12000,available:0,max_per_order:10};
+const e={id:4,slug:'hora-cero-2026',starts_at:'2026-12-31 14:00:00',title:'La Perigalla — Hora Cero',short_description:'<script>bad</script>',description:'Intro\n\n14:00 · Australia / Sídney\nBarbie\nBrasas\n\n00:00 · España · 1 de enero de 2027\nNuestra Hora Cero\nBienvenida',ticket_types:[type]};
+const html=c.renderHoraCero(e,true);assert.equal((html.match(/class="hc-stop"/g)||[]).length,2);assert.match(html,/120,00/);assert.match(html,/1 de enero de 2027/);assert.match(html,/data-available="10"/);assert.equal(type.available,0,'Preview must not mutate real stock');assert.doesNotMatch(html,/<script>bad/);assert.match(html,/&lt;script&gt;/);assert.match(c.renderHoraCero(e,false),/data-available="0"/);assert.match(html,/href="#reservar"/);console.log('Hora Cero: editorial chapters, price, escaping, preview-only quantity and immutable stock passed');

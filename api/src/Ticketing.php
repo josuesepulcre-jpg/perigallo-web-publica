@@ -1800,10 +1800,10 @@ final class Ticketing
         }
         $slug = $this->uniqueSlug(clean_string((string) ($merged['slug'] ?? ''), 140), $eventId);
         $startsAt = $this->dateValue((string) ($merged['starts_at'] ?? ''), (string) $existing['starts_at']);
-        $endsAt = $this->dateValue((string) ($merged['ends_at'] ?? ''), $startsAt);
+        $endsAt = $this->nullableDate((string) ($merged['ends_at'] ?? ''));
         $saleStartsAt = $this->dateValue((string) ($merged['sale_starts_at'] ?? ''), (string) $existing['sale_starts_at']);
         $saleEndsAt = $this->dateValue((string) ($merged['sale_ends_at'] ?? ''), (string) $existing['sale_ends_at']);
-        if (strtotime($endsAt) < strtotime($startsAt)) {
+        if ($endsAt !== null && strtotime($endsAt) < strtotime($startsAt)) {
             throw new RuntimeException('La fecha de finalizacion debe ser posterior al inicio.');
         }
         if (strtotime($saleEndsAt) < strtotime($saleStartsAt)) {
