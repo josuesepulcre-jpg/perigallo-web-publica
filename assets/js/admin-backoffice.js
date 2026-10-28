@@ -266,15 +266,61 @@
     return "https://wa.me/" + encodeURIComponent(phone) + "?text=" + encodeURIComponent(message);
   }
 
-  function manualTicketWhatsAppLink(order) {
-    if (!state.session || state.session.role !== "admin" || !order.public_token || isClosedOrder(order)) return "";
-    if (order.payment_status !== "paid" && order.status !== "paid" && !(order.sales_channel === "cash" && order.order_status === "confirmed")) return "";
+  function ticketShareData(order) {
     var phone = String(order.phone || "").replace(/\D/g, "").replace(/^00/, "");
     if (phone.length === 9 && /^[67]/.test(phone)) phone = "34" + phone;
     var link = window.location.origin + "/entradas/pedido/?token=" + encodeURIComponent(order.public_token);
-    var message = "Hola " + (order.name || "") + ",\n\nAquí tienes tus entradas para " + (order.event_title || "Perigallo") + ". Puedes verlas y descargarlas en PDF desde este enlace:\n" + link + "\n\nGuárdalas para mostrarlas en el acceso. ¡Nos vemos en Perigallo!";
-    var url = "https://web.whatsapp.com/send?" + (phone ? "phone=" + encodeURIComponent(phone) + "&" : "") + "text=" + encodeURIComponent(message);
-    return '<a class="text-action" href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer">Enviar entradas por WhatsApp Web</a>';
+    return { phone: phone, link: link, message: "Hola " + (order.name || "") + ",\n\nAquí tienes tus entradas para " + (order.event_title || "Perigallo") + ". Puedes verlas y descargarlas en PDF desde este enlace:\n" + link + "\n\nGuárdalas para mostrarlas en el acceso. ¡Nos vemos en Perigallo!" };
+  }
+
+  function manualTicketWhatsAppLink(order) {
+    if (!state.session || state.session.role !== "admin" || !order.public_token || isClosedOrder(order)) return "";
+    if (order.payment_status !== "paid" && order.status !== "paid" && !(order.sales_channel === "cash" && order.order_status === "confirmed")) return "";
+    return '<button type="button" class="text-action" data-ticket-share="' + Number(order.id) + '">Enviar entradas por WhatsApp Web</button>';
+  }
+
+  function openTicketShare(order, trigger) {
+    var data = ticketShareData(order);
+    var modal = document.createElement("div");
+    modal.className = "ticket-access-modal";
+    modal.innerHTML = '<div class="ticket-access-modal-card" role="dialog" aria-modal="true" aria-labelledby="ticket-share-title"><button type="button" class="ticket-access-modal-close" aria-label="Cerrar">×</button><section class="ticket-access-decision"><span class="ticket-eyebrow">Reenvío manual</span><h2 id="ticket-share-title">Compartir entradas</h2><p>Abre el mensaje en WhatsApp o cópialo para pegarlo en el chat que elijas. El envío lo confirmas tú en WhatsApp.</p><div class="ticket-form"><label for="ticket-share-phone">Teléfono de destino (con prefijo)</label><input id="ticket-share-phone" type="tel" value="' + escapeHtml(data.phone) + '" autocomplete="off"><small>Puedes cambiarlo para esta entrega. No modifica el teléfono del pedido.</small><label for="ticket-share-message">Mensaje y enlace de descarga</label><textarea id="ticket-share-message" rows="8">' + escapeHtml(data.message) + '</textarea></div><div class="ticket-actions"><a class="ticket-btn primary" data-share-web>Abrir WhatsApp Web</a><a class="ticket-btn" data-share-app target="_blank" rel="noopener noreferrer">Abrir WhatsApp móvil</a><button class="ticket-btn" type="button" data-share-copy>Copiar mensaje</button><button class="ticket-btn" type="button" data-share-link>Copiar enlace</button><a class="ticket-btn" href="' + escapeHtml(data.link) + '" target="_blank" rel="noopener noreferrer">Ver entradas</a></div><p role="status" aria-live="polite" data-share-status></p></section></div>';
+    var phone = modal.querySelector('#ticket-share-phone'), message = modal.querySelector('#ticket-share-message'), status = modal.querySelector('[data-share-status]');
+    function update() {
+      var recipient = phone.value.replace(/\D/g, '').replace(/^00/, '');
+      if (recipient.length === 9 && /^[67]/.test(recipient)) recipient = '34' + recipient;
+      modal.querySelector('[data-share-web]').href = 'https://web.whatsapp.com/send?' + (recipient ? 'phone=' + encodeURIComponent(recipient) + '&' : '') + 'text=' + encodeURIComponent(message.value);
+      modal.querySelector('[data-share-app]').href = 'https://wa.me/' + recipient + '?text=' + encodeURIComponent(message.value);
+    }
+    function close() { modal.remove(); if (trigger) trigger.focus(); }
+    function copy(text) {
+      if (!navigator.clipboard || !navigator.clipboard.writeText) { message.focus(); message.select(); status.textContent = 'Selecciona y copia el mensaje para pegarlo en WhatsApp.'; return; }
+      navigator.clipboard.writeText(text).then(function () { status.textContent = 'Copiado. Pégalo en el chat de WhatsApp que quieras.'; }).catch(function () { message.focus(); message.select(); status.textContent = 'No se pudo copiar automáticamente. El mensaje está seleccionado para copiarlo.'; });
+    }
+    modal.addEventListener('input', update);
+    modal.addEventListener('click', function (event) {
+      if (event.target === modal || event.target.closest('.ticket-access-modal-close')) close();
+      if (event.target.closest('[data-share-copy]')) copy(message.value);
+      if (event.target.closest('[data-share-link]')) copy(data.link);
+    });
+    modal.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') { event.preventDefault(); close(); }
+      if (event.key === 'Tab') {
+        var nodes = modal.querySelectorAll('button, input, textarea, a[href]');
+        var first = nodes[0], last = nodes[nodes.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      }
+    });
+    update(); document.body.appendChild(modal); phone.focus();
+  }
+
+  function initTicketShare() {
+    document.addEventListener('click', function (event) {
+      var trigger = event.target.closest('[data-ticket-share]');
+      if (!trigger || !state.session || state.session.role !== 'admin') return;
+      var order = state.orders.find(function (item) { return Number(item.id) === Number(trigger.dataset.ticketShare); });
+      if (order && manualTicketWhatsAppLink(order)) openTicketShare(order, trigger);
+    });
   }
 
   function manualCardPaymentUrl(order) {
@@ -1849,6 +1895,7 @@
     requireSession(function () { /* The scanner shares the authenticated administrative shell. */ });
   }
 
+  initTicketShare();
   initLogin();
   initAdminChrome();
   initDashboard();
