@@ -79,3 +79,64 @@ body.ticketing-page .hc .ticket-preview-note { font-size: 13px !important; font-
 /* Preview navigation is already in the document flow. */
 body.ticketing-page.preview-page .ticketing-main:has(.hc) { padding-top: 0; }
 body.ticketing-page .hc .ticket-access-action .ticket-btn::after { color: #fff8e9; background: #ffffff12; }
+
+/* Editorial rhythm: generous headings, a clear schedule and destination cards. */
+.hc .hc-section { padding-block: clamp(64px,7vw,112px); }
+.hc h2 { max-width: 960px; font-size: clamp(42px,5.4vw,82px); line-height: 1.04; letter-spacing: -.025em; text-wrap: balance; }
+.hc h2 em { color: #d8c29a; font-weight: 300; }
+.hc .hc-section > .ticket-eyebrow,
+.hc .hc-intro > div > .ticket-eyebrow,
+.hc .hc-tickets > .ticket-eyebrow { display: flex; align-items: center; gap: 16px; }
+.hc .hc-section > .ticket-eyebrow::before,
+.hc .hc-intro > div > .ticket-eyebrow::before,
+.hc .hc-tickets > .ticket-eyebrow::before { content: ""; width: 38px; height: 1px; background: #c5ab77; flex-shrink: 0; }
+.hc .hc-welcome { font: italic 300 28px/1.3 "Cormorant Garamond",serif !important; letter-spacing: 0; text-transform: none; color: #e0cda4 !important; max-width: 440px; }
+.hc .hc-availability { display: inline-flex; align-items: center; gap: 10px; border: 1px solid #c5ab7770; border-radius: 30px; padding: 10px 16px; margin: 0 0 22px; color: #f2ede2; background: #1118129c; font: 500 10px/1.5 Montserrat,sans-serif; letter-spacing: .17em; text-transform: uppercase; }
+.hc .hc-availability > span { width: 6px; height: 6px; background: #e0cda4; border-radius: 50%; }
+.hc .hc-strip { text-align: center; padding-block: 30px; color: #e0cda4; word-spacing: .3em; }
+.hc .hc-strip > span { display: block; color: #c6cabe; font-size: 9px; letter-spacing: .22em; margin-bottom: 8px; word-spacing: normal; text-transform: uppercase; }
+.hc .hc-schedule { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); padding: 42px 7%; background: #1c291f; border-bottom: 1px solid #c5ab773d; }
+.hc .hc-schedule > div { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 10px 24px; gap: 10px; }
+.hc .hc-schedule > div + div { border-left: 1px solid #c5ab7740; }
+.hc .hc-schedule span { color: #e0cda4; font: 500 10px/1.5 Montserrat,sans-serif; letter-spacing: .16em; text-transform: uppercase; }
+.hc .hc-schedule strong { color: #f2ede2; font: 300 clamp(44px,4.8vw,68px)/1 "Cormorant Garamond",serif; }
+.hc .hc-schedule small { color: #d4d4c8; font: 400 12px/1.6 Montserrat,sans-serif; }
+.hc .hc-intro { align-items: center; }
+.hc .hc-intro > p { font-size: 18px; max-width: 600px; }
+.hc .hc-timeline { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; align-items: start; margin-top: 38px; }
+.hc .hc-stop { border: 0; min-width: 0; }
+.hc .hc-stop:has(> .hc-chapter[open]) { grid-column: 1/-1; }
+.hc .hc-chapter { position: relative; border: 1px solid #c5ab7750; background: linear-gradient(135deg,#243227,#151e17); overflow: hidden; }
+.hc .hc-chapter-heading { position: relative; grid-template-columns: minmax(0,1fr) 36px; gap: 22px; padding: 32px; min-height: 245px; }
+.hc .hc-chapter-order { position: absolute; right: 28px; top: 14px; color: #c5ab7738; font: 300 88px/1 "Cormorant Garamond",serif; pointer-events: none; }
+.hc .hc-chapter-heading > .hc-time { grid-column: 1/-1; display: flex; gap: 14px; align-items: baseline; font-size: 38px; padding-right: 75px; }
+.hc .hc-time small { margin-top: 0; font-size: 8px; }
+.hc .hc-chapter-title { min-width: 0; }
+.hc .hc-title { font-size: clamp(28px,2.5vw,38px); line-height: 1.08; margin-block: 12px 16px; }
+.hc .hc-chapter-body { padding: 0 32px 36px; }
+.hc .hc-chapter[open] { background: #223126; border-color: #c5ab77; }
+.hc .hc-chapter[open] > summary { min-height: 0; }
+.hc .hc-chapter[open] .hc-chapter-order { color: #c5ab7755; }
+.hc .hc-preview-note { max-width: 860px; border-color: #c5ab7770; background: #303e3030; }
+.hc .hc-end { background: radial-gradient(ellipse at 50% 100%,#3c4d36,#18241b 75%); }
+.hc .hc-end > .ticket-eyebrow { justify-content: center; }
+.hc .hc-end h2 { max-width: 1000px; }
+.hc .hc-end-hours { margin: 16px auto 28px; max-width: 560px; }
+@media (max-width: 700px) {
+  .hc .hc-section { padding-block: 56px; }
+  .hc h2 { font-size: clamp(40px,10vw,60px); }
+  .hc .hc-welcome { font-size: 26px !important; }
+  .hc .hc-schedule { padding: 22px 7%; grid-template-columns: 1fr; }
+  .hc .hc-schedule > div { display: grid; grid-template-columns: 94px minmax(0,1fr); text-align: left; padding: 22px 0; gap: 8px 18px; }
+  .hc .hc-schedule > div + div { border-left: 0; border-top: 1px solid #c5ab7740; }
+  .hc .hc-schedule strong { grid-row: 1/3; grid-column: 1; font-size: 46px; }
+  .hc .hc-schedule span,.hc .hc-schedule small { grid-column: 2; }
+  .hc .hc-timeline { grid-template-columns: minmax(0,1fr); gap: 14px; }
+  .hc .hc-chapter-heading { padding: 26px 22px; min-height: 0; gap: 20px; }
+  .hc .hc-chapter-heading > .hc-time { font-size: 32px; gap: 10px; }
+  .hc .hc-chapter-order { font-size: 74px; right: 22px; }
+  .hc .hc-chapter-body { padding: 0 20px 28px; }
+  .hc .hc-intro > p { font-size: 16px; }
+}
+
+.hc [data-analytics-section="hora-cero-recorrido"] > p { max-width: 860px; }
