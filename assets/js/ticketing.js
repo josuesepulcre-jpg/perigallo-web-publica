@@ -1017,7 +1017,7 @@
       if (eventTitle) eventTitle.textContent = event.title;
       var types = (event.ticket_types || []).filter(function (type) {
         if (!preview) return (type.effective_status || type.status) === "on_sale";
-        return type.active !== false && type.visible !== false && type.status !== "archived";
+        return (type.active !== false || (event.slug === "hora-cero-2026" && type.status === "draft")) && type.visible !== false && type.status !== "archived";
       });
       if (!types.length) {
         setCheckoutStatus(preview ? "Añade al menos un tipo de entrada en el editor para comprobar el recorrido de compra." : "No hay entradas disponibles para comprar en este momento.");
