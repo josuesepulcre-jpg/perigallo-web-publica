@@ -419,13 +419,13 @@
     });
   }
 
-  function renderEvents(events, filter) {
+  function renderEvents(events, filter, view) {
     var target = document.querySelector("[data-admin-events-list]");
     if (!target) return;
     var query = String(filter || "").trim().toLowerCase();
-    var rows = events.filter(function (event) { return !query || [event.title, event.location, event.status, event.effective_status].join(" ").toLowerCase().includes(query); });
+    var rows = window.PerigalloAdminEvents.select(events, view, query);
     if (!rows.length) {
-      target.innerHTML = '<div class="admin-empty"><strong>No se han encontrado eventos.</strong><span>Prueba con otro nombre o crea una nueva experiencia.</span></div>';
+      target.innerHTML = '<div class="admin-empty"><strong>' + (query ? 'No se han encontrado eventos en esta vista.' : view === 'past' ? 'Todavía no hay momentos pasados.' : 'No hay eventos actuales o próximos.') + '</strong><span>' + (query ? 'Prueba con otro nombre o consulta la otra vista.' : view === 'past' ? 'Aquí podrás consultar las experiencias terminadas y los eventos archivados, con sus ventas y datos.' : 'Crea una nueva experiencia o consulta el histórico en Momentos pasados.') + '</span></div>';
       return;
     }
     target.innerHTML = rows.map(function (event) { return eventCard(event, false); }).join("");
@@ -439,6 +439,13 @@
       var createTest = root.querySelector("[data-admin-create-test-event]");
       var search = root.querySelector("[data-admin-event-search]");
       var status = root.querySelector("[data-admin-page-status]");
+      var view = new URLSearchParams(window.location.search).get("vista") === "pasados" ? "past" : "current";
+      root.querySelectorAll("[data-admin-event-view]").forEach(function (link) {
+        if (link.getAttribute("data-admin-event-view") === view) link.setAttribute("aria-current", "page");
+      });
+      root.querySelector("[data-admin-event-view-description]").textContent = view === "past"
+        ? "Experiencias terminadas y eventos archivados. Conserva el acceso a sus ventas y datos."
+        : "Tus eventos actuales y próximos. Consulta los anteriores en Momentos pasados.";
       function showEventsStatus(message, isError) {
         if (!status) return;
         status.textContent = message;
@@ -449,7 +456,7 @@
       function refreshEvents(message) {
         return request(api + "/admin/events").then(function (data) {
           state.events = data.events || [];
-          renderEvents(state.events, search.value);
+          renderEvents(state.events, search.value, view);
           if (message) showEventsStatus(message, false);
         });
       }
@@ -464,7 +471,7 @@
       create.addEventListener("click", function () { createEvent(false, create); });
       createTest.addEventListener("click", function () { createEvent(true, createTest); });
       refreshEvents().then(function () {
-        search.addEventListener("input", function () { renderEvents(state.events, search.value); });
+        search.addEventListener("input", function () { renderEvents(state.events, search.value, view); });
         var newMode = new URLSearchParams(window.location.search).get("new");
         if (newMode === "1") createEvent(false, create);
         if (newMode === "test") createEvent(true, createTest);

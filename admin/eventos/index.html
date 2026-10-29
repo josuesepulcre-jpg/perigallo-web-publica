@@ -11,6 +11,7 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=20260909-v1" sizes="180x180">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/css/ticketing.css?v=20260804-admin-v1">
+<link rel="stylesheet" href="/assets/css/admin-events.css?v=20261029-history-v1">
 </head>
 <body class="ticketing-page admin-backoffice-page">
 <div class="admin-app-shell">
@@ -18,10 +19,14 @@
   <main class="admin-workspace" data-admin-events-page>
     <p class="ticket-status is-error" data-admin-page-status hidden></p>
     <header class="admin-page-heading admin-page-heading-compact"><div><span class="ticket-eyebrow">Gestión</span><h1>Eventos</h1><p>Diseña, publica y opera cada experiencia desde su propio espacio.</p></div><div class="admin-create-actions"><button class="ticket-btn" type="button" data-admin-create-test-event>Crear prueba</button><button class="ticket-btn primary" type="button" data-admin-create-event>Crear evento</button></div></header>
+    <nav class="admin-event-views" aria-label="Ver eventos"><a href="/admin/eventos/" data-admin-event-view="current">Actuales y próximos</a><a href="/admin/eventos/?vista=pasados" data-admin-event-view="past">Momentos pasados</a></nav>
+    <p class="admin-event-view-description" data-admin-event-view-description></p>
     <section class="admin-list-controls"><label class="admin-search"><span>Buscar evento</span><input type="search" data-admin-event-search placeholder="Nombre, ubicación o estado"></label></section>
     <section class="admin-event-list" data-admin-events-list aria-live="polite"></section>
   </main>
 </div>
-<script src="/assets/js/admin-backoffice.js?v=20260819-event-test-mode-v1" defer></script>
+<script src="/assets/js/public-agenda.js?v=20261029-history-v1" defer></script>
+<script src="/assets/js/admin-events.js?v=20261029-history-v1" defer></script>
+<script src="/assets/js/admin-backoffice.js?v=20261029-history-v1" defer></script>
 </body>
 </html>
