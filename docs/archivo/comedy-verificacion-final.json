@@ -1,0 +1,64 @@
+{
+  "photos": 2,
+  "videos": 4,
+  "assets": [
+    {
+      "path": "assets/uploads/events/comedy-20261106/ruben-y-el-publico-poster.jpg",
+      "status": 200,
+      "sha256_verified": true
+    },
+    {
+      "path": "assets/uploads/events/comedy-20261106/monologo-poster.jpg",
+      "status": 200,
+      "sha256_verified": true
+    },
+    {
+      "path": "assets/uploads/events/comedy-20261106/preparativos-poster.jpg",
+      "status": 200,
+      "sha256_verified": true
+    },
+    {
+      "path": "assets/uploads/events/comedy-20261106/la-sala-comedy.jpg",
+      "status": 200,
+      "sha256_verified": true
+    },
+    {
+      "path": "assets/uploads/events/comedy-20261106/ruben-serrano-en-escena.jpg",
+      "status": 200,
+      "sha256_verified": true
+    },
+    {
+      "path": "assets/uploads/events/comedy-20261106/musica-en-directo-poster.jpg",
+      "status": 200,
+      "sha256_verified": true
+    },
+    {
+      "path": "assets/uploads/events/comedy-20261106/videos/musica-en-directo.mp4",
+      "status": 200,
+      "sha256_verified": true
+    },
+    {
+      "path": "assets/uploads/events/comedy-20261106/videos/ruben-y-el-publico.mp4",
+      "status": 200,
+      "sha256_verified": true
+    },
+    {
+      "path": "assets/uploads/events/comedy-20261106/videos/monologo.mp4",
+      "status": 200,
+      "sha256_verified": true
+    },
+    {
+      "path": "assets/uploads/events/comedy-20261106/videos/preparativos.mp4",
+      "status": 200,
+      "sha256_verified": true
+    }
+  ],
+  "published_cards": [
+    "la-perigalla-comedy-ruben-serrano",
+    "la-perigalla-01-noche-ibicenca"
+  ],
+  "source_chat": "Montar v\u00eddeo Instagram",
+  "source_chat_id": "6aef78da-a6bc-83eb-aabb-485e41656603",
+  "production_published": true,
+  "local_archive_tests": 31
+}

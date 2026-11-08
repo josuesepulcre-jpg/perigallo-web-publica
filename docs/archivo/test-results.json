@@ -12,7 +12,7 @@
     "result": "pass"
   },
   {
-    "test": "Comedy is a private draft with no invented photographs",
+    "test": "Comedy retains the confirmed date and artist",
     "result": "pass"
   },
   {
@@ -20,7 +20,7 @@
     "result": "pass"
   },
   {
-    "test": "Comedy public route returns 404",
+    "test": "Comedy public route follows its publication state",
     "result": "pass"
   },
   {
@@ -81,6 +81,14 @@
   },
   {
     "test": "Cover and summary videos render with mobile controls and playback toggle",
+    "result": "pass"
+  },
+  {
+    "test": "Video poster is persisted and rendered by SSR",
+    "result": "pass"
+  },
+  {
+    "test": "Unsafe video poster is rejected",
     "result": "pass"
   },
   {

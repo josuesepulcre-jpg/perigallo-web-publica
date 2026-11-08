@@ -17,6 +17,7 @@ function ae(mixed $text): string { return htmlspecialchars((string)$text,ENT_QUO
 function ap(string $text): string { return implode('',array_map(static fn($p)=>'<p>'.nl2br(ae($p)).'</p>',array_filter(explode("\n\n",$text),static fn($p)=>trim($p)!==''))); }
 function av(array $item, string $poster=''): string {
     $url=$item['url'];
+    $poster=$poster ?: ($item['poster'] ?? '');
     if (str_starts_with($url,'https://')) return '<a class="archive-video-link" href="'.ae($url).'" target="_blank" rel="noopener noreferrer">Ver vídeo en '.(str_contains($url,'youtu')?'YouTube':'Vimeo').' <span aria-hidden="true">↗</span></a>';
     return '<video class="archive-video" controls playsinline preload="none"'.($poster?' poster="'.ae($poster).'"':'').' aria-label="'.ae($item['alt'] ?: 'Vídeo de la experiencia').'"><source src="'.ae($url).'" type="'.(str_ends_with($url,'.webm')?'video/webm':'video/mp4').'"><a href="'.ae($url).'">Abrir vídeo</a></video>';
 }

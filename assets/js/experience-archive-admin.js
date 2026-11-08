@@ -154,7 +154,17 @@
       mi +
       '" value="' +
       esc(item.alt) +
-      '"></label><label>Pie de foto<input data-media="caption" data-bi="' +
+      '"></label>' +
+      (item.kind === "video"
+        ? '<label>Imagen previa del vídeo (opcional)<input data-media="poster" data-bi="' +
+          bi +
+          '" data-mi="' +
+          mi +
+          '" value="' +
+          esc(item.poster || "") +
+          '"></label>'
+        : "") +
+      '<label>Pie de foto<input data-media="caption" data-bi="' +
       bi +
       '" data-mi="' +
       mi +

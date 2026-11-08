@@ -1,0 +1,103 @@
+{
+  "title": "La Perigalla Comedy",
+  "subtitle": "Una noche de bocados y carcajadas.",
+  "edition": "Comedy",
+  "date": "2026-11-06",
+  "description": "Gastronomía, escena y humor con Rubén Serrano. La noche del 6 de noviembre de 2026 en Finca La Llaguna.",
+  "story": "La Perigalla Comedy reunió gastronomía, puesta en escena y humor en Finca La Llaguna. El 6 de noviembre de 2026, la cena cóctel y el monólogo de Rubén Serrano formaron parte de una misma noche.\n\nEl recorrido iba del jardín a la sala: la preparación del espacio, la propuesta gastronómica y, después, el encuentro con el público. Las fotografías y los vídeos de esta página recorren esos momentos tal como quedaron registrados.",
+  "cover_image": "/assets/uploads/events/comedy-20261106/la-sala-comedy.jpg",
+  "cover_alt": "El público reunido en la sala durante La Perigalla Comedy",
+  "cover_video": "",
+  "legacy_url": "",
+  "seo_title": "La Perigalla Comedy — Rubén Serrano | Experiencias Perigallo",
+  "seo_description": "Revive La Perigalla Comedy del 6 de noviembre de 2026: fotografías y vídeos reales, gastronomía y el monólogo de Rubén Serrano en Finca La Llaguna.",
+  "blocks": [
+    {
+      "type": "gallery",
+      "title": "La noche, por dentro.",
+      "text": "La sala, la iluminación y el encuentro con Rubén Serrano. Dos miradas de la misma edición.",
+      "media": [
+        {
+          "kind": "image",
+          "url": "/assets/uploads/events/comedy-20261106/la-sala-comedy.jpg",
+          "alt": "El público y la ambientación de la sala en La Perigalla Comedy",
+          "caption": "La sala durante la experiencia.",
+          "portrait": false,
+          "featured": true
+        },
+        {
+          "kind": "image",
+          "url": "/assets/uploads/events/comedy-20261106/ruben-serrano-en-escena.jpg",
+          "alt": "Rubén Serrano con el micrófono durante La Perigalla Comedy",
+          "caption": "Rubén Serrano, en escena.",
+          "portrait": true,
+          "featured": false
+        }
+      ]
+    },
+    {
+      "type": "gastronomy",
+      "title": "Todo empezaba alrededor de la mesa.",
+      "text": "La propuesta de esta edición combinó cena cóctel, estaciones gastronómicas, show cooking y bocados. La preparación del espacio también formaba parte de la experiencia.",
+      "media": [
+        {
+          "kind": "video",
+          "url": "/assets/uploads/events/comedy-20261106/videos/preparativos.mp4",
+          "poster": "/assets/uploads/events/comedy-20261106/preparativos-poster.jpg",
+          "alt": "Vídeo de los preparativos de La Perigalla Comedy",
+          "caption": "Vídeo de preparación compartido antes del evento.",
+          "portrait": true,
+          "featured": true
+        }
+      ]
+    },
+    {
+      "type": "highlights",
+      "title": "El turno de las carcajadas.",
+      "text": "Rubén Serrano y su monólogo, con el público reunido en la sala. Un fragmento grabado durante la actuación.",
+      "media": [
+        {
+          "kind": "video",
+          "url": "/assets/uploads/events/comedy-20261106/videos/monologo.mp4",
+          "poster": "/assets/uploads/events/comedy-20261106/monologo-poster.jpg",
+          "alt": "Rubén Serrano durante su monólogo en La Perigalla Comedy",
+          "caption": "Fragmento de la actuación. Sonido original.",
+          "portrait": true,
+          "featured": true
+        }
+      ]
+    },
+    {
+      "type": "video",
+      "title": "Desde el escenario.",
+      "text": "La cámara acompaña a Rubén durante uno de los momentos de la noche.",
+      "media": [
+        {
+          "kind": "video",
+          "url": "/assets/uploads/events/comedy-20261106/videos/ruben-y-el-publico.mp4",
+          "poster": "/assets/uploads/events/comedy-20261106/ruben-y-el-publico-poster.jpg",
+          "alt": "Rubén Serrano se graba con el público durante La Perigalla Comedy",
+          "caption": "Vídeo original compartido después del evento.",
+          "portrait": true,
+          "featured": true
+        }
+      ]
+    },
+    {
+      "type": "highlights",
+      "title": "La sala, en directo.",
+      "text": "Un momento de música en directo registrado durante la experiencia.",
+      "media": [
+        {
+          "kind": "video",
+          "url": "/assets/uploads/events/comedy-20261106/videos/musica-en-directo.mp4",
+          "poster": "/assets/uploads/events/comedy-20261106/musica-en-directo-poster.jpg",
+          "alt": "Música en directo ante el público de La Perigalla Comedy",
+          "caption": "Fragmento de 45 segundos. Sonido original.",
+          "portrait": true,
+          "featured": true
+        }
+      ]
+    }
+  ]
+}

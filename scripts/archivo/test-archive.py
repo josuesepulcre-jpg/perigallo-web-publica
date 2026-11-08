@@ -26,9 +26,9 @@ check('CSRF required for archive mutations',not call('/admin/experience-archive'
 seed=call('/admin/experience-archive')['experiences'];one=next(x for x in seed if x['slug']=='la-perigalla-01-noche-ibicenca');comedy=next(x for x in seed if x['slug']=='la-perigalla-comedy-ruben-serrano')
 one=call('/admin/experience-archive/'+str(one['id']))['experience'];comedy=call('/admin/experience-archive/'+str(comedy['id']))['experience']
 check('Original Perigalla keeps immersive story and 10 captions',one['document']['legacy_url']=='/la-perigalla-01/' and len(one['document']['blocks'])==13)
-check('Comedy is a private draft with no invented photographs',comedy['status']=='draft' and not comedy['document']['cover_image'] and not any(b['media'] for b in comedy['document']['blocks']))
-public=call('/experience-archive')['experiences'];check('Only explicit published snapshots are public',any(x['id']==one['id'] for x in public) and not any(x['id']==comedy['id'] for x in public))
-check('Comedy public route returns 404','404' in page('/experiencias/vividas/'+comedy['slug']+'/',404))
+check('Comedy retains the confirmed date and artist',comedy['document']['date']=='2026-11-06' and 'Rubén Serrano' in str(comedy['document']))
+public=call('/experience-archive')['experiences'];check('Only explicit published snapshots are public',any(x['id']==one['id'] for x in public) and (any(x['id']==comedy['id'] for x in public)==(comedy['status']=='published')))
+check('Comedy public route follows its publication state',('404' in page('/experiencias/vividas/'+comedy['slug']+'/',404)) if comedy['status']!='published' else ('Rubén Serrano' in page('/experiencias/vividas/'+comedy['slug']+'/')))
 check('Authenticated Comedy preview works','Rubén Serrano' in page('/experiencias/vividas/'+comedy['slug']+'/?preview=1'))
 slug='archivo-test-'+uuid.uuid4().hex[:12];doc=dict(one['document']);doc['title']='Prueba editorial';doc['blocks']=doc['blocks'][:2]
 e=call('/admin/experience-archive',{'slug':slug,'document':doc},method='POST',status=201)['experience'];ids.append(e['id'])
@@ -70,6 +70,12 @@ video=upload('video-real-fixture.mp4',(ROOT/'media/hero-stream-mobile.mp4').read
 check('Real MP4 upload is accepted without changing its contents',video['media_type']=='video' and (ROOT/video['url'].lstrip('/')).read_bytes()==(ROOT/'media/hero-stream-mobile.mp4').read_bytes())
 video_doc=dict(doc,cover_video=video['url']);e=call('/admin/experience-archive/'+str(e['id']),{'document':video_doc,'revision':e['revision']},method='PUT')['experience']
 check('Cover and summary videos render with mobile controls and playback toggle','data-archive-hero-video' in page('/experiencias/vividas/'+slug+'/?preview=1') and 'playsinline' in page('/experiencias/vividas/'+slug+'/?preview=1'))
+poster_doc=dict(doc);poster_doc['blocks']=[{'type':'video','title':'Poster validation','text':'','media':[{'kind':'video','url':video['url'],'poster':media['url'],'alt':'Local video test','caption':''}]}]
+e=call('/admin/experience-archive/'+str(e['id']),{'document':poster_doc,'revision':e['revision']},method='PUT')['experience']
+check('Video poster is persisted and rendered by SSR',e['document']['blocks'][0]['media'][0]['poster']==media['url'] and ('poster="'+media['url']+'"') in page('/experiencias/vividas/'+slug+'/?preview=1'))
+poster_doc['blocks'][0]['media'][0]['poster']='javascript:alert(1)'
+call('/admin/experience-archive/'+str(e['id']),{'document':poster_doc,'revision':e['revision']},method='PUT',status=422)
+check('Unsafe video poster is rejected',True)
 external=dict(doc,cover_video='https://www.youtube.com/watch?v=example');e=call('/admin/experience-archive/'+str(e['id']),{'document':external,'revision':e['revision']},method='PUT')['experience']
 check('External video opens with safe HTTPS link and no unsolicited iframe','Ver vídeo en YouTube' in page('/experiencias/vividas/'+slug+'/?preview=1') and '<iframe' not in page('/experiencias/vividas/'+slug+'/?preview=1'))
 (ROOT/video['url'].lstrip('/')).unlink()

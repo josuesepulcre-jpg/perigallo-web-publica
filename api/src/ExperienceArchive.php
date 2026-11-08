@@ -60,7 +60,7 @@ final class ExperienceArchive
                 $kind=($item['kind'] ?? 'image')==='video'?'video':'image';
                 $url=self::mediaUrl($item['url'] ?? '',$kind==='video');
                 if ($url==='') continue;
-                $b['media'][]=['kind'=>$kind,'url'=>$url,'alt'=>self::text($item['alt'] ?? '',250),'caption'=>self::text($item['caption'] ?? '',500),'portrait'=>($item['portrait'] ?? false)===true,'featured'=>($item['featured'] ?? false)===true];
+                $b['media'][]=['kind'=>$kind,'url'=>$url,'alt'=>self::text($item['alt'] ?? '',250),'caption'=>self::text($item['caption'] ?? '',500),'poster'=>$kind==='video'?self::mediaUrl($item['poster'] ?? ''):'','portrait'=>($item['portrait'] ?? false)===true,'featured'=>($item['featured'] ?? false)===true];
             }
             $doc['blocks'][]=$b;
         }
@@ -131,6 +131,7 @@ final class ExperienceArchive
                 foreach ($d['blocks'] as $block) foreach ($block['media'] as $item) $resources[]=$item;
                 if ($d['cover_video']) $resources[]=['url'=>$d['cover_video'],'kind'=>'video','alt'=>'Vídeo principal'];
                 foreach ($resources as $item) {
+                    if (!empty($item['poster']) && !is_file(dirname(__DIR__,2).rawurldecode($item['poster']))) throw new InvalidArgumentException('La imagen previa del vídeo no está disponible.');
                     if ($item['kind']==='image' && !$item['alt']) throw new InvalidArgumentException('Añade un texto alternativo a cada fotografía antes de publicar.');
                     if (str_starts_with($item['url'],'/') && !is_file(dirname(__DIR__,2).rawurldecode($item['url']))) throw new InvalidArgumentException('Hay un recurso que todavía no está disponible. Revisa los archivos antes de publicar.');
                 }

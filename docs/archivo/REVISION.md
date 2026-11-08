@@ -2,6 +2,8 @@
 
 Proyecto: rama `codex/archivo-experiencias-20261108`. La revisión local documentada abajo se publicó posteriormente con aprobación expresa; ver PUBLICACION.md. Servidor local: http://127.0.0.1:4195 . Base aislada: `perigallo_archivo_local`, exclusivamente datos de prueba; sin correo saliente.
 
+Actualización posterior: Comedy está publicada en producción con dos fotos y cuatro vídeos reales; ver COMEDY.md. El estado de borrador descrito abajo corresponde a la revisión local inicial.
+
 ## Páginas para revisar
 
 - Colección y próxima experiencia: http://127.0.0.1:4195/experiencias/
