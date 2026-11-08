@@ -156,3 +156,27 @@ dialog{border:0;padding:0;background:var(--paper);color:var(--ink);width:min(126
  .spread .menu-paper{padding:0;background:white}.dish{break-inside:avoid}.dish-section h4{break-after:avoid}
  @page{size:A4;margin:14mm}
 }
+
+/* December enquiries are completed before opening the WhatsApp conversation. */
+.plan-booking button{font:inherit;font-size:12px;padding:10px 12px;border:1px solid #bcc2b2;flex:1;min-width:110px;text-align:center;cursor:pointer}
+.group-inquiry{padding:clamp(24px,4vw,54px);background:#faf8f1;color:#282d25;min-height:100%}
+.group-inquiry h3{font-size:clamp(30px,3vw,43px);line-height:1.1;margin:12px 0 18px;letter-spacing:-.04em}
+.inquiry-intro{font-size:15px;line-height:1.6;color:#5c6657;max-width:40ch}
+.group-inquiry fieldset{padding:26px 0 0;margin:26px 0 0;border:0;border-top:1px solid #d5ccb5;min-width:0}
+.group-inquiry legend{padding:0 12px 0 0;color:#796237;font-size:12px;letter-spacing:.04em}
+.inquiry-fields{display:grid;grid-template-columns:1fr 1fr;gap:20px 18px}
+.inquiry-fields label{display:flex;flex-direction:column;gap:8px;font-size:12px;color:#495642;min-width:0}
+.inquiry-fields input,.inquiry-fields select{display:block;width:100%;min-width:0;min-height:46px;padding:11px 12px;border:1px solid #c7cbbd;border-radius:0;background:#fffef9;color:#222920;font:16px Geist,Arial;box-sizing:border-box}
+.inquiry-fields :is(input,select):focus{outline:2px solid #927948;outline-offset:2px}
+.inquiry-hint{font-size:12px!important;color:#66715d;line-height:1.6;margin:14px 0}
+.inquiry-privacy{display:flex;gap:10px;align-items:start;font-size:12px;line-height:1.6;margin:26px 0 18px;color:#53604a}
+.inquiry-privacy input{flex:0 0 auto;width:17px;height:17px;accent-color:#3c5142;margin:2px 0 0}
+.inquiry-privacy a{color:inherit;text-underline-offset:3px}
+.inquiry-submit{display:block;background:#3c5142;border:1px solid #3c5142;color:#fffdf3;padding:15px 18px;width:100%;font:14px Geist,Arial;text-align:center;text-decoration:none;cursor:pointer;box-sizing:border-box}
+.inquiry-submit:disabled{opacity:.6;cursor:wait}.inquiry-submit:hover{background:#2d4032}
+.inquiry-status{font-size:13px;line-height:1.5;color:#526747}.inquiry-status:empty{display:none}
+.inquiry-message{margin-top:28px;border-top:1px solid #cfc4aa;padding-top:24px}.inquiry-message[hidden]{display:none!important}
+.inquiry-message h4{font-size:20px;font-weight:400;margin:0 0 14px;color:#3c5142}
+.inquiry-message pre{font:13px/1.7 Geist,Arial;white-space:pre-wrap;overflow-wrap:anywhere;background:#efeee5;padding:18px;color:#424a39;margin:0 0 18px}
+.inquiry-message>p{font-size:12px;line-height:1.6;color:#66715d}
+@media(max-width:500px){.inquiry-fields{grid-template-columns:1fr;gap:17px}.group-inquiry{padding:24px 20px}}

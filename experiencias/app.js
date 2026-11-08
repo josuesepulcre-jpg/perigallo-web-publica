@@ -14,8 +14,66 @@ const sceneDescriptions = {
 };
 // Reservations use the production event backend.
 const bookingOrigin = '';
+const groupInquiryTools = import('./group-inquiry.mjs?v=grupos-20261108');
+const groupMenuIds=['navidad-02','navidad-03','navidad-04','navidad-individual'];
+let groupInquiryDraft={};
+function groupInquiryHTML() {
+ const value=key=>esc(groupInquiryDraft[key]||'');
+ return `<article class="group-inquiry leaf">
+  <p class="eyebrow">MENÚS DE GRUPO Y DEGUSTACIÓN · DICIEMBRE</p>
+  <h3>Vuestra próxima mesa.</h3><p class="inquiry-intro">Cuéntanos el plan y prepararemos vuestra consulta para WhatsApp.</p>
+  <form id="group-inquiry-form">
+   <fieldset><legend>¿Quién nos escribe?</legend><div class="inquiry-fields">
+    <label>Nombre<input name="first_name" autocomplete="given-name" required maxlength="120" value="${value('first_name')}"></label>
+    <label>Apellidos<input name="last_name" autocomplete="family-name" required maxlength="160" value="${value('last_name')}"></label>
+    <label>Teléfono<input name="phone" type="tel" autocomplete="tel" required maxlength="30" value="${value('phone')}"></label>
+    <label>Correo electrónico<input name="email" type="email" autocomplete="email" required maxlength="190" value="${value('email')}"></label>
+   </div></fieldset>
+   <fieldset><legend>¿Cómo os gustaría venir?</legend><div class="inquiry-fields">
+    <label>Día de la reserva<input name="date" type="date" min="2026-12-01" max="2026-12-31" required value="${value('date')}"></label>
+    <label>Comida o cena<select name="shift" required><option value="">Elegid el turno</option><option value="lunch" ${groupInquiryDraft.shift==='lunch'?'selected':''}>Comida · mediodía</option><option value="dinner" ${groupInquiryDraft.shift==='dinner'?'selected':''}>Cena · noche</option></select></label>
+    <label>Número de personas<input name="people" type="number" min="1" max="100" step="1" required value="${value('people')}" inputmode="numeric"></label>
+    <label>Menú que os interesa<select name="menu" required><option value="">Elegid un menú</option>${groupMenuIds.map(id=>`<option value="${id}" ${groupInquiryDraft.menu===id?'selected':''}>${esc(MENUS[id].title)} · ${esc(MENUS[id].price)}</option>`).join('')}</select></label>
+   </div><p class="inquiry-hint">Para mesas de menos de seis personas, tenemos el menú degustación.</p></fieldset>
+   <label class="inquiry-privacy"><input name="privacy" type="checkbox" required ${groupInquiryDraft.privacy?'checked':''}><span>He leído la <a href="/politica-privacidad/" target="_blank" rel="noopener">política de privacidad</a> y acepto el contacto para gestionar esta consulta.</span></label>
+   <p class="inquiry-status" role="status" aria-live="polite"></p>
+   <button class="inquiry-submit" type="submit">Preparar mi consulta de WhatsApp <span aria-hidden="true">↗</span></button>
+   <p class="inquiry-hint">La reserva queda pendiente de nuestra confirmación de disponibilidad.</p>
+   <section class="inquiry-message" hidden aria-label="Tu consulta preparada"><h4>Todo listo para escribirnos.</h4><pre></pre><a class="inquiry-submit" target="_blank" rel="noopener">Abrir WhatsApp con mi consulta ↗</a><p>Se abrirá el chat de Perigallo con el mensaje completo. Revísalo y pulsa enviar en WhatsApp.</p></section>
+  </form>
+ </article>`;
+}
+function openGroupInquiry(menuId) {
+ if(groupMenuIds.includes(menuId))groupInquiryDraft.menu=menuId;
+ if(!dialog.open||activePlan?.id!=='diciembre')openPlan('diciembre');
+ selectChoice('consulta');view.focus({preventScroll:true});
+}
+function bindGroupInquiry() {
+ const form=$('#group-inquiry-form');if(!form)return;
+ const snapshot=()=>{const data=Object.fromEntries(new FormData(form));data.privacy=form.elements.privacy.checked;return data;};
+ form.addEventListener('input',event=>{
+  if(event.target.setCustomValidity)event.target.setCustomValidity('');
+  groupInquiryDraft=snapshot();form.querySelector('.inquiry-message').hidden=true;form.querySelector('.inquiry-message a').removeAttribute('href');form.querySelector('.inquiry-status').textContent='';
+ });
+ form.addEventListener('submit',async event=>{
+  event.preventDefault();
+  for(const key of ['first_name','last_name'])form.elements[key].setCustomValidity(form.elements[key].value.trim()?'':'Este dato es obligatorio.');
+  if(!form.reportValidity())return;
+  const button=form.querySelector('button[type="submit"]'),status=form.querySelector('.inquiry-status');button.disabled=true;
+  try {
+   const tools=await groupInquiryTools,menus=Object.fromEntries(groupMenuIds.map(id=>[id,MENUS[id]]));
+   groupInquiryDraft=tools.validateGroupInquiry(snapshot(),menus);
+   const message=tools.buildGroupMessage(groupInquiryDraft,menus),preview=form.querySelector('.inquiry-message');
+   preview.querySelector('pre').textContent=message;preview.querySelector('a').href=tools.groupWhatsAppUrl(message);preview.hidden=false;
+   status.textContent='Consulta preparada. Todavía no se ha enviado.';
+   preview.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'nearest'});
+  } catch(error){status.textContent=error.message;}
+  finally {button.disabled=false;}
+ });
+}
+
 function bookingActions(plan) {
- if (plan === 'diciembre') return `<div class="plan-booking"><a href="tel:+34691499985">Reservar por teléfono ↗</a><a href="https://wa.me/34691499985?text=${encodeURIComponent('Hola, quiero reservar una mesa para los menús de diciembre.')}" target="_blank" rel="noopener">Reservar por WhatsApp ↗</a></div>`;
+ if (plan === 'diciembre') return `<div class="plan-booking"><a href="tel:+34691499985">Reservar por teléfono ↗</a><button type="button" class="reserve-link" data-group-inquiry>Reservar por WhatsApp ↗</button></div>`;
  const checkout = bookingOrigin + '/entradas/reserva/?plan=' + encodeURIComponent(plan);
  return `<div class="plan-booking"><a class="reserve-link" href="${checkout}&mode=reserve">Reservar ↗</a><a href="${checkout}&mode=pay">Comprar y pagar ↗</a></div>`;
 }
@@ -35,6 +93,7 @@ function openPlan(id, choice) {
  opener = document.activeElement;
  $('#dialog-date').textContent = activePlan.date;
  const options = activePlan.menus.map(key => [key, MENUS[key].title + ' · ' + MENUS[key].price]);
+ if(id==='diciembre')options.push(['consulta','Consultar disponibilidad']);
 
  if (id === 'hora') options.push(
    ['route','Recorrido y gastronomía'], ['video','Vídeo de Hora Cero'],
@@ -63,6 +122,7 @@ function menuHTML(menu) {
  </article>`;
 }
 function reservationHTML() {
+ if(activePlan.id==='diciembre')return `<div class="leaf-reserve">${bookingActions('diciembre')}<p>Para más info y reservas · Cuéntanos la fecha, el turno y vuestro menú.</p></div>`;
  const message = 'Hola, me gustaría consultar disponibilidad para ' + activePlan.name + '.';
  return `<div class="leaf-reserve">${bookingActions(activePlan.id)}<p>Para más info y reservas</p><a href="https://wa.me/34691499985?text=${encodeURIComponent(message)}" target="_blank" rel="noopener">Escribir por WhatsApp ↗</a><a href="tel:+34691499985">Llamar al 691 499 985</a></div>`;
 }
@@ -100,6 +160,7 @@ function selectChoice(id) {
  const hadFocus = view.contains(document.activeElement);
  for (const video of view.querySelectorAll('video')) video.pause();
  select.value = id;
+ if(id==='consulta'&&!groupInquiryDraft.menu&&groupMenuIds.includes(activeChoice))groupInquiryDraft.menu=activeChoice;
  activeChoice = id;
  const index = select.selectedIndex;
  const count = select.options.length;
@@ -124,6 +185,7 @@ function selectChoice(id) {
  }
  else if (id === 'reservas') view.innerHTML = routeBookingHTML();
 
+ else if (id === 'consulta') {view.innerHTML=groupInquiryHTML();bindGroupInquiry();}
  else if (id === 'route') view.innerHTML = routeHTML();
  else if (id === 'video') view.innerHTML = `<article class="route-intro"><p class="eyebrow">31 DE DICIEMBRE / LA PERIGALLA</p><h3>Esto es Hora Cero.</h3><video controls playsinline preload="none" poster="assets/hora-cero-01.jpg" src="assets/hora-cero.mp4" aria-label="Presentación de Hora Cero"></video></article>${reservationHTML()}`;
  else view.innerHTML = menuHTML(MENUS[id]);
@@ -160,6 +222,8 @@ view.addEventListener('pointerup', e => {
  if (Math.abs(dx) > 65 && Math.abs(dy) < 45) turnPage(dx < 0 ? 1 : -1);
 });
 document.addEventListener('click', e => {
+ const inquiry=e.target.closest('[data-group-inquiry]');
+ if(inquiry){openGroupInquiry(dialog.open&&activePlan?.id==='diciembre'?activeChoice:null);return;}
  const open = e.target.closest('[data-open]');
  if (open) openPlan(open.dataset.open);
  const stop = e.target.closest('[data-stop]');
