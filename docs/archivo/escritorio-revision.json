@@ -1,0 +1,20 @@
+{
+  "desktop": {
+    "blocks": 13,
+    "css": "/assets/css/experience-archive.css?v=archivo-418c51ed26",
+    "overflow": false,
+    "singleBlocks": 10,
+    "width": 1920
+  },
+  "mobile": {
+    "overflow": false,
+    "blocks": 13,
+    "maxHeightDifference": 0
+  },
+  "viewerOpenedAndClosed": true,
+  "stagingVideoPlayback": {
+    "seconds": 4.928371,
+    "error": false
+  },
+  "consoleErrors": []
+}

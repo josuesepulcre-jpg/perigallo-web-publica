@@ -4,6 +4,8 @@ Publicado con aprobación expresa el 8 de noviembre de 2026 en https://perigallo
 
 La Perigalla 01 está pública en https://perigallo.com/experiencias/vividas/la-perigalla-01-noche-ibicenca/ . Comedy también está publicada, con dos fotografías y cuatro vídeos recuperados de los chats del usuario: https://perigallo.com/experiencias/vividas/la-perigalla-comedy-ruben-serrano/ . Ver COMEDY.md para su publicación posterior y comprobaciones.
 
+Actualización de diseño: composición de texto e imagen mejorada en ordenador; ver ESCRITORIO.md. Vista móvil conservada.
+
 ## Cambios aplicados
 
 - 25 archivos de ejecución publicados y cotejados por SHA-256: cero diferencias frente al paquete aprobado.

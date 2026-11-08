@@ -217,7 +217,7 @@
   gap: 6vw;
   margin-bottom: 2.5rem;
 }
-.archive-section > .archive-prose {
+.archive-section-copy > .archive-prose {
   margin-left: calc((100% - 6vw) / 3 + 6vw);
   margin-bottom: 3rem;
 }
@@ -424,7 +424,7 @@
     grid-template-columns: 1fr;
     gap: 1.5rem;
   }
-  .archive-section > .archive-prose {
+  .archive-section-copy > .archive-prose {
     margin-left: 0;
   }
   .archive-hero {
@@ -561,5 +561,124 @@
   }
   .archive-card:only-child .archive-card-copy {
     padding-top: 1.8rem;
+  }
+}
+
+/* Keep the mobile reading order; compose text and media together on desktop. */
+.archive-section-copy {
+  display: contents;
+}
+@media (min-width: 901px) {
+  .archive-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(2rem, 4vw, 5rem);
+  }
+  .archive-card:nth-child(even) {
+    padding-top: 0;
+  }
+  .archive-card:nth-child(even) .archive-card-visual {
+    aspect-ratio: 4/3;
+  }
+  .archive-detail .archive-section.has-media {
+    display: grid;
+    grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+    gap: clamp(3rem, 6vw, 7rem);
+    align-items: start;
+    padding-block: clamp(4rem, 6vw, 7rem);
+    padding-inline: max(var(--gutter), calc((100vw - 1600px) / 2));
+  }
+  .archive-section.has-media .archive-section-copy {
+    display: block;
+    position: sticky;
+    top: 3rem;
+    min-width: 0;
+  }
+  .archive-section.has-media .archive-section-heading {
+    display: block;
+    margin-bottom: 1.5rem;
+  }
+  .archive-section.has-media .archive-section-heading .eyebrow {
+    margin-bottom: 1.75rem;
+    color: #536052;
+  }
+  .archive-section.has-media h2 {
+    font-size: clamp(2.25rem, 3.5vw, 4.25rem);
+    margin-bottom: 0;
+    text-wrap: balance;
+  }
+  .archive-section.has-media .archive-prose {
+    margin: 0;
+    max-width: 38ch;
+    font-size: clamp(1rem, 1.15vw, 1.125rem);
+    line-height: 1.8;
+    color: #52584f;
+  }
+  .archive-section.has-media .archive-prose p:last-child {
+    margin-bottom: 0;
+  }
+  .archive-section.has-media .archive-mosaic {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2rem 1.5rem;
+    align-items: start;
+    min-width: 0;
+  }
+  .archive-section.has-media .archive-frame,
+  .archive-section.has-media .archive-frame.is-portrait,
+  .archive-section.has-media .archive-frame:nth-child(3n) {
+    grid-column: span 1;
+    margin: 0;
+  }
+  .archive-section.has-media .archive-frame.is-featured {
+    grid-column: span 1;
+  }
+  .archive-section.has-media .archive-frame:first-child:nth-last-child(odd) {
+    grid-column: 1 / -1;
+  }
+  .archive-section.has-media .archive-frame img {
+    aspect-ratio: 4/3;
+  }
+  .archive-section.has-media .archive-frame:first-child:nth-last-child(odd) img {
+    aspect-ratio: 16/10;
+  }
+  .archive-section.has-media .archive-frame:only-child {
+    grid-column: 1 / -1;
+  }
+  .archive-section.has-media .archive-frame figcaption {
+    font-size: 0.8125rem;
+    margin-top: 0.875rem;
+  }
+  .archive-detail .archive-section.has-single-media {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    align-items: center;
+  }
+  .archive-section.has-single-media .archive-section-copy {
+    grid-column: 2;
+    grid-row: 1;
+    position: static;
+  }
+  .archive-section.has-single-media .archive-mosaic {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .archive-section.has-single-media.is-media-reversed {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  }
+  .archive-section.has-single-media.is-media-reversed .archive-section-copy {
+    grid-column: 1;
+  }
+  .archive-section.has-single-media.is-media-reversed .archive-mosaic {
+    grid-column: 2;
+  }
+  .archive-section.has-single-media .archive-frame.is-portrait {
+    width: min(100%, 380px);
+    justify-self: center;
+  }
+  .archive-detail .archive-section.has-single-media .archive-frame:only-child img {
+    aspect-ratio: auto 2/1;
+    height: auto;
+  }
+  .archive-section.has-single-media .archive-video {
+    max-height: min(70svh, 640px);
+    margin-inline: auto;
   }
 }
