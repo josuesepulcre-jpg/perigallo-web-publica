@@ -2096,10 +2096,10 @@
   }
 
   function drawTicketPdf(pdf, order, ticket, qr, index, total, logo) {
-    var deepTeal = [27, 50, 55];
-    var ivory = [246, 242, 230];
-    var champagne = [210, 181, 150];
-    var muted = [222, 212, 194];
+    var deepTeal = [20, 20, 20];
+    var ivory = [243, 243, 238];
+    var champagne = [181, 160, 106];
+    var muted = [185, 185, 178];
     var title = ticket.event_title || "Perigallo";
     var subtitle = ticket.event_subtitle || "Una experiencia gastronómica de Perigallo.";
     var place = [ticket.location, ticket.locality].filter(Boolean).join("\n") || "Por confirmar";
@@ -2109,9 +2109,9 @@
     pdf.setDrawColor.apply(pdf, champagne); pdf.setLineWidth(0.25); pdf.rect(8, 7, 194, 283);
 
     if (logo) {
-      pdf.addImage(logo, "PNG", 94, 15, 22, 20);
+      pdf.addImage(logo, "PNG", 65, 19, 80, 80 * 150 / 1240);
     } else {
-      pdf.setTextColor.apply(pdf, ivory); pdf.setFont("times", "normal"); pdf.setFontSize(19); pdf.text("Perigallo", 105, 29, { align: "center" });
+      pdf.setTextColor.apply(pdf, ivory); pdf.setFont("helvetica", "normal"); pdf.setFontSize(19); pdf.text("Perigallo", 105, 29, { align: "center" });
     }
 
     pdf.setDrawColor.apply(pdf, champagne); pdf.setLineWidth(0.3); pdf.line(98, 41, 112, 41);
@@ -2119,7 +2119,7 @@
     pdf.text("ENTRADA OFICIAL", 105, 49, { align: "center" });
     pdf.setFontSize(7.1); pdf.text("EXPERIENCIA PERIGALLO", 105, 55, { align: "center" });
 
-    pdf.setTextColor.apply(pdf, ivory); pdf.setFont("times", "normal"); pdf.setFontSize(30);
+    pdf.setTextColor.apply(pdf, ivory); pdf.setFont("helvetica", "normal"); pdf.setFontSize(30);
     var titleLines = pdf.splitTextToSize(title, 158).slice(0, 2);
     pdf.text(titleLines, 105, 72, { align: "center", lineHeightFactor: 1.02 });
     var titleBottom = 72 + ((titleLines.length - 1) * 10.5);

@@ -72,3 +72,15 @@ body.ticketing-page :is(.admin-brand span,.admin-page-heading h1 em,.admin-login
 body.admin-backoffice-page .admin-featured-copy h2{font-size:clamp(28px,3.2vw,48px)}
 
 body.ticketing-page em{font-style:normal}
+/* Event editing uses the same neutral surfaces and working typography. */
+body.editor-page .editor-header{background:var(--pg-bg3);border-bottom:1px solid var(--pg-border)}
+body.editor-page .editor-sidebar{background:var(--pg-bg3);border-right:1px solid var(--pg-border)}
+body.editor-page h1{font-size:clamp(32px,4vw,56px);max-width:none;line-height:1.1}
+body.admin-backoffice-page .admin-page-heading{flex-wrap:wrap;gap:20px}
+body.admin-backoffice-page .admin-page-heading>div{min-width:0}
+@media(max-width:1200px){
+ body.admin-backoffice-page .admin-attendee-export{grid-template-columns:minmax(0,1fr)}
+ body.admin-backoffice-page .admin-attendee-export-controls{grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));min-width:0}
+ body.admin-backoffice-page .admin-attendee-export-controls>*{min-width:0;max-width:100%}
+ body.admin-backoffice-page .admin-attendee-export-controls>.ticket-btn{width:100%;justify-content:center;white-space:normal}
+}

@@ -11,7 +11,7 @@ class Links(HTMLParser):
    if key in ('src','href','poster') and value and value.startswith('/') and not value.startswith('//'):self.urls.append(value)
 errors=[];n=0
 for p in root.rglob('*.html'):
- if any(x in p.parts for x in ['la-perigalla-01','.git']):continue
+ if any(x in p.parts for x in ['la-perigalla-01','.git','public-build']):continue
  parser=Links();parser.feed(p.read_text());n+=1
  for url in parser.urls:
   path=unquote(urlsplit(url).path)
@@ -21,5 +21,5 @@ for p in root.rglob('*.html'):
   errors.append({'page':str(p.relative_to(root)),'missing':path})
 baseline=json.loads((root/'docs/unificacion/backend-baseline.json').read_text())
 changed=[p for p,h in baseline.items() if not (root/p).exists() or hashlib.sha256((root/p).read_bytes()).hexdigest()!=h]
-report={'html_pages_checked':n,'missing_links_or_resources':errors,'backend_changes_from_live_baseline':changed}
-(root/'docs/unificacion/page-results.json').write_text(json.dumps(report,indent=2));print(json.dumps(report,indent=2));assert not errors and not changed
+report={'html_pages_checked':n,'missing_links_or_resources':errors,'backend_presentation_changes':[p for p in changed if p in ['api/src/TicketDeliveryQueue.php','api/scripts/render-ticket-pdf.mjs']], 'unexpected_backend_changes':[p for p in changed if p not in ['api/src/TicketDeliveryQueue.php','api/scripts/render-ticket-pdf.mjs']]}
+(root/'docs/unificacion/page-results.json').write_text(json.dumps(report,indent=2));print(json.dumps(report,indent=2));assert not errors and not report['unexpected_backend_changes']

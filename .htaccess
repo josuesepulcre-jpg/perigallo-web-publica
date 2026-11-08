@@ -11,12 +11,15 @@ ErrorDocument 404 /404.html
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
+  # Internal code and maintenance entrypoints are never public routes.
+  RewriteRule ^(?:docs|scripts|tests|database)(?:/|$) - [F,L]
+  RewriteRule ^api/(?:src|scripts|cron)(?:/|$) - [F,L]
   RewriteRule ^bodas/?$ /bodas-alicante/ [R=301,L]
   RewriteRule ^celebraciones/?$ /celebraciones-familiares-alicante/ [R=301,L]
   RewriteRule ^pop-up/?$ /experiencias/ [R=301,L]
   RewriteRule ^reservar/?$ /experiencias/ [R=301,L]
-  RewriteRule ^formulario/?$ https://suite.perigallo.com/solicitud?origen=web-perigallo [R=302,L,NE]
-  RewriteRule ^solicitud-evento/?$ https://suite.perigallo.com/solicitud?origen=web-perigallo [R=302,L,NE]
+  RewriteRule ^formulario(?:/index\.html)?/?$ https://suite.perigallo.com/solicitud?origen=web-perigallo [R=302,L,NE]
+  RewriteRule ^solicitud-evento(?:/index\.html)?/?$ https://suite.perigallo.com/solicitud?origen=web-perigallo [R=302,L,NE]
   RewriteRule ^la-finca/?$ /finca-la-llaguna/ [R=301,L]
   RewriteRule ^eventos/?$ /experiencias/ [R=301,L]
   RewriteCond %{REQUEST_FILENAME} !-f

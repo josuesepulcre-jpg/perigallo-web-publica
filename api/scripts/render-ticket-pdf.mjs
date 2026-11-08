@@ -7,6 +7,8 @@
  */
 import { createRequire } from "node:module";
 import process from "node:process";
+import { readFileSync } from "node:fs";
+const logo = readFileSync(new URL("../../brand/perigallo-lockup-white.png", import.meta.url)).toString("base64");
 
 const require = createRequire(import.meta.url);
 const { jsPDF } = require("../../assets/vendor/jspdf.umd.min.js");
@@ -34,10 +36,10 @@ process.stdin.on("end", () => {
 });
 
 function drawTicket(pdf, order, ticket, index, total) {
-  const deepTeal = [23, 50, 54];
-  const cream = [246, 242, 230];
-  const champagne = [210, 181, 150];
-  const muted = [210, 213, 205];
+  const deepTeal = [20, 20, 20];
+  const cream = [243, 243, 238];
+  const champagne = [181, 160, 106];
+  const muted = [185, 185, 178];
   const title = safeText(ticket.event_title || "Perigallo");
   const subtitle = safeText(ticket.event_subtitle || "Experiencia Perigallo");
   const venue = safeText([ticket.location, ticket.locality].filter(Boolean).join(" · ") || "Ubicación por confirmar");
@@ -52,10 +54,11 @@ function drawTicket(pdf, order, ticket, index, total) {
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(8);
   pdf.setCharSpace(1.5);
-  pdf.text("ENTRADA OFICIAL · PERIGALLO", 105, 24, { align: "center" });
+  pdf.addImage("data:image/png;base64," + logo, "PNG", 65, 13, 80, 80 * 150 / 1240);
+  pdf.text("ENTRADA OFICIAL · PERIGALLO", 105, 31, { align: "center" });
   pdf.setCharSpace(0);
   pdf.setTextColor(...cream);
-  pdf.setFont("times", "normal");
+  pdf.setFont("helvetica", "normal");
   pdf.setFontSize(29);
   const titleLines = pdf.splitTextToSize(title, 160).slice(0, 2);
   pdf.text(titleLines, 105, 45, { align: "center", lineHeightFactor: 1.02 });
@@ -111,7 +114,7 @@ function drawQr(pdf, value, x, y, size, background, foreground) {
 }
 
 function field(pdf, label, value, x, y, width, border, text) {
-  pdf.setFillColor(31, 61, 65);
+  pdf.setFillColor(32, 33, 31);
   pdf.setDrawColor(...border);
   pdf.setLineWidth(0.25);
   pdf.roundedRect(x, y, width, 22, 1.5, 1.5, "FD");

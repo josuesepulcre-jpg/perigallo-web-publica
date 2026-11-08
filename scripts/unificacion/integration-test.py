@@ -1,7 +1,8 @@
 """Isolated staging tests. Never use against a production URL."""
-import subprocess,json,urllib.request,urllib.error,http.cookiejar,pathlib,sys,datetime
+import os,subprocess,json,urllib.request,urllib.error,http.cookiejar,pathlib,sys,datetime
 ROOT=pathlib.Path(__file__).resolve().parents[2]
-BASE='http://127.0.0.1:4191'
+BASE=os.environ.get('PERIGALLO_STAGING_URL','http://127.0.0.1:4191')
+assert BASE in ('http://127.0.0.1:4191','http://127.0.0.1:4192')
 assert 'APP_ENV=staging' in (ROOT/'.env').read_text()
 creds=json.loads((ROOT.parent/'staging-login.json').read_text())
 jar=http.cookiejar.CookieJar(); client=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
@@ -24,7 +25,7 @@ if not csrf: csrf=call('/admin/session')['csrf']
 check('Owner login',bool(csrf))
 check('CSRF enforced',not call('/admin/events',{},expected=419,token=False)['ok'])
 slug='revision-unificacion-'+datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-event=call('/admin/events',{'title':'Revisión de integración · prueba','slug':slug,'description':'Evento sintético de validación, sin venta real.','location':'Finca La Llaguna','starts_at':'2027-04-20 20:00:00','ends_at':'2027-04-21 01:00:00','sale_starts_at':'2026-01-01 00:00:00','capacity':25,'image_url':'/media/archivo/celebracion.webp'},expected=201)['event']; eid=event['id']
+event=call('/admin/events',{'title':'Revisión de integración · prueba','slug':slug,'description':'Evento sintético de validación, sin venta real.','location':'Finca La Llaguna','starts_at':'2027-04-20 20:00:00','ends_at':'2027-04-21 01:00:00','sale_starts_at':'2026-01-01 00:00:00','capacity':25,'is_test':True,'image_url':'/media/archivo/celebracion.webp'},expected=201)['event']; eid=event['id']
 check('Event starts as draft',event['status']=='draft')
 ticket=call(f'/admin/events/{eid}/ticket-types',{'name':'Entrada de prueba','price_cents':2500,'capacity':25,'status':'on_sale','visible':True,'sale_starts_at':'2026-01-01 00:00:00','sale_ends_at':'2027-04-20 19:00:00'},expected=201)['ticket_type']
 call(f'/admin/events/{eid}/publish',{})
@@ -71,5 +72,5 @@ check('Refunded ticket cannot enter',call('/admin/tickets/scan',{'event_id':eid,
 call('/admin/logout',{})
 a=call('/admin/login',{'username':'puerta','password':creds['password']}); csrf=a.get('csrf') or call('/admin/session')['csrf']
 check('Door role cannot manage events',not call('/admin/events',{},expected=401)['ok'])
-(ROOT/'docs/unificacion/integration-results.json').write_text(json.dumps(results,indent=2))
+(ROOT/('docs/unificacion/server-integration-results.json' if BASE.endswith(':4192') else 'docs/unificacion/integration-results.json')).write_text(json.dumps(results,indent=2))
 print(json.dumps(results,indent=2))

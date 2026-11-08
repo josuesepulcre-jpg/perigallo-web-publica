@@ -1,16 +1,25 @@
-# Preparación de despliegue y restauración
+# Despliegue y rollback — Perigallo
 
-Este procedimiento es una preparación; no se ha ejecutado sobre producción.
+La candidata está en https://revision-web.perigallo.com/ y en la rama codex/unificacion-web-20261108. No se ha publicado sobre perigallo.com. El manifiesto candidata-manifiesto.json identifica el commit, las rutas y hashes exactos del paquete.
 
-1. Resolver falta de espacio sin retirar originales hasta contar con copia verificada y aprobación concreta.
-2. Desplegar candidata en carpeta privada aislada, con entorno staging, base sintética, proveedor sandbox, envíos dirigidos a pruebas y noindex. Revisar primero en PHP 8.5 y luego Apache/Plesk. No reutilizar claves o base productivas.
-3. Ejecutar las pruebas pendientes de REVISION.md. Obtener aceptación visual y funcional.
-4. Generar un paquete de rutas nuevas/modificadas desde la rama candidata. Excluir .env, uploads, storage, SQL, pruebas, scripts internos, documentación, historiales, copias y archivos de trabajo. Conservar archivos de usuarios y configuración actuales. El paquete temporal candidate-staging.tgz no es un paquete de lanzamiento.
-5. Antes de publicar: registrar hashes de los archivos afectados, guardar sus versiones anteriores y la base en almacenamiento privado con espacio suficiente. Comprobar integridad y restaurar el backup en base aislada. No se requieren migraciones del esquema para esta candidata.
-6. Solicitar aprobación expresa del usuario para la candidata concreta, la ventana y el dominio perigallo.com. Comprobar que producción no ha cambiado desde la auditoría y preservar nuevas correcciones operativas.
-7. Publicar únicamente las rutas aprobadas mediante proceso compatible con Plesk, validar permisos y cachés. No usar despliegue automático desde main hasta reconciliar Git con la fuente real de servidor.
-8. Verificar home, agenda API, ficha, checkout, sesión de administración y solicitudes; observar logs sin exponer datos personales ni secretos.
+## Estado completado
 
-Rollback: restaurar exclusivamente los archivos sustituidos desde la copia anterior verificada y purgar caché/opcache según el proceso real de Plesk. Como no hay cambio de esquema, conservar la base actual, los pedidos y entradas generados durante la ventana. Nunca restaurar toda la base sobre ventas nuevas como reacción a un problema visual. Mantener pagos y webhooks de la versión operativa durante la vuelta atrás.
+- Baseline real OVH conservado en b183590; no se presupone que main sea idéntico al servidor.
+- Staging Plesk/Apache/PHP 8.5, HTTPS, base sintética independiente y Redsys test operativos.
+- Pruebas documentadas en estado-unificacion.md; copia de la base productiva restaurada en base local aislada de 38 tablas.
+- Paquete visual sin .env, SQL, uploads, almacenamiento, documentación, pruebas ni datos productivos. Incluye dos cambios exclusivamente de presentación en correo/PDF, además de archivos públicos y .htaccess.
 
-La restauración de datos se reserva a un incidente que la requiera, con procedimiento separado, aprobación y conciliación de transacciones. No se ha probado una restauración productiva en esta tarea.
+## Ventana de publicación pendiente de autorización expresa
+
+1. Obtener aceptación de esta candidata y aprobación para publicar en perigallo.com. No cambiar dominio/base/modo de pasarela como parte del despliegue visual.
+2. Justo antes de ejecutar, revisar espacio, procesos y cambios producidos desde el baseline. Comparar hashes de todas las rutas afectadas; integrar cualquier corrección operativa nueva y repetir los controles que afecte.
+3. Guardar copia privada verificable de cada archivo productivo que se sustituirá y listado de rutas nuevas. Renovar copia de base si ha pasado tiempo desde la verificada. Mantener secretos exclusivamente en el servidor.
+4. Publicar solo las rutas del manifiesto aprobado, mediante preparación y sustitución controlada compatibles con Plesk. No extraer un árbol entero sobre datos ni activar despliegue automático desde main.
+5. Conservar .env productivo, base, uploads, almacenamiento, cron, claves Redsys, configuración de Suite y servicios externos. No hay migración de esquema. El marcador y robots del staging no forman parte de la candidata de producción.
+6. Validar permisos, caché y opcache; comprobar portada, agenda API, ficha, checkout, sesión administrativa y enlaces de solicitudes, observando registros sin divulgar datos privados. Cualquier cobro real de prueba requiere autorización específica.
+
+## Rollback
+
+Restaurar exclusivamente las versiones anteriores verificadas de las rutas sustituidas; retirar solo rutas nuevas inventariadas si corresponde, y renovar caché/opcache según Plesk. Conservar la base actual, los pedidos y las entradas generados durante la ventana. No restaurar una base antigua sobre ventas nuevas para resolver un problema visual.
+
+Un incidente de datos exige procedimiento separado y conciliación de transacciones con autorización. La restauración probada fue en una base local aislada; no se ha ejecutado una restauración productiva.
