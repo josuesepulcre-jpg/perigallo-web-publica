@@ -135,6 +135,7 @@
             '<a href="/admin/formulario/" data-admin-nav-item="lead_form">Formulario</a>' +
             '<a href="/admin/descuentos/" data-admin-nav-item="discounts">Códigos de descuento</a>' +
             '<a href="/admin/analitica/" data-admin-nav-item="analytics">Analítica</a>' +
+            '<span class="admin-nav-label">Instagram</span>' +
             '<a href="/admin/instagram/" data-admin-nav-item="instagram">Estudio de Instagram</a>' +
             '<span class="admin-nav-label">Operativa</span>' +
             '<a href="/admin/acceso/" data-admin-nav-item="access">Control de acceso</a>' +
