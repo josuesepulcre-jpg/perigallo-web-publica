@@ -49,7 +49,7 @@
   }
   function loginUrl() { return "/admin/login/?next=" + encodeURIComponent(window.location.pathname + window.location.search); }
   function statusLabel(status) {
-    return ({ draft: "Borrador", scheduled: "Programado", published: "Publicado", sold_out: "Agotado", finished: "Finalizado", cancelled: "Cancelado", archived: "Archivado", paid: "Pagado", pending: "Pendiente", failed: "Fallido", rejected: "Rechazado", refunded: "Reembolsado", blocked: "Pendiente de cobro" })[status] || status || "Sin estado";
+    return ({ draft: "Borrador", scheduled: "Programado", published: "Publicado", sold_out: "Agotado", finished: "Finalizado", cancelled: "Cancelado", archived: "Archivado", paid: "Pagado", door_pending: "Vendida · pago en puerta pendiente", pending: "Pendiente", failed: "Fallido", rejected: "Rechazado", refunded: "Reembolsado", blocked: "Pendiente de cobro" })[status] || status || "Sin estado";
   }
 
   function currentNav() {
@@ -253,7 +253,15 @@
       '<section class="admin-dashboard-section"><div class="admin-section-label"><div><span class="ticket-eyebrow">Actividad reciente</span><h2>Últimos pedidos</h2></div><a class="text-action" href="/admin/ventas/">Ver ventas</a></div><div class="admin-recent-orders">' + renderOrdersRows(orders.slice(0, 6), true) + '</div></section>';
   }
 
-  function isClosedOrder(order) { return order.display_status === "cancelled" || order.display_status === "refunded"; }
+  function isClosedOrder(order) { return [order.display_status, order.status, order.order_status, order.payment_status].some(function (status) { return status === "cancelled" || status === "refunded"; }); }
+
+  function isDoorPaymentPending(order) {
+    return !isClosedOrder(order) && order.sales_channel === "cash" && order.order_status === "confirmed" && !order.reservation_expires_at && order.status === "pending" && order.payment_status !== "paid" && order.cash_payment_status !== "paid";
+  }
+
+  function isSoldOrder(order) {
+    return !isClosedOrder(order) && (order.payment_status === "paid" || order.status === "paid" || isDoorPaymentPending(order));
+  }
 
   function cashWhatsAppUrl(order) {
     var phone = String(order.phone || "").replace(/\D/g, "");
@@ -346,6 +354,7 @@
     var actions = '<div class="admin-order-actions"><a class="text-action" href="/entradas/pedido/?token=' + encodeURIComponent(order.public_token) + '" target="_blank" rel="noopener noreferrer">Ver pedido</a><button type="button" class="text-action" data-order-action="edit" data-order-id="' + Number(order.id) + '">Editar</button>';
     actions += manualTicketWhatsAppLink(order);
     if (Number(order.allergy_attendee_count || 0)) actions += '<button type="button" class="text-action" data-order-allergies data-order-id="' + Number(order.id) + '">Alergias (' + Number(order.allergy_attendee_count) + ')</button>';
+    if (order.sales_channel === "cash" && order.status === "pending" && order.order_status !== "confirmed" && order.cash_payment_status !== "paid" && !isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="confirm-door" data-order-id="' + Number(order.id) + '">Confirmar venta · pago en puerta</button>';
     if (order.sales_channel === "cash" && order.cash_payment_status !== "paid" && !isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="cash-payment" data-order-id="' + Number(order.id) + '">Registrar cobro</button>';
     if (order.sales_channel === "cash" && !isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="send-cash" data-order-id="' + Number(order.id) + '">' + ((order.cash_payment_status === "paid" || order.order_status === "confirmed") ? "Abrir WhatsApp" : "Enviar reserva") + '</button>';
     if (order.sales_channel === "manual_card" && order.payment_status !== "paid" && !isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="copy-payment-link" data-order-id="' + Number(order.id) + '">Copiar enlace de pago</button><button type="button" class="text-action" data-order-action="send-manual-card" data-order-id="' + Number(order.id) + '">Enviar link por WhatsApp</button>';
@@ -365,7 +374,7 @@
     if (!orders.length) return '<div class="admin-empty"><strong>No se han registrado pedidos.</strong><span>Los pedidos aparecerán aquí cuando se complete una compra.</span></div>';
     return orders.map(function (order) {
       var reference = order.redsys_order || order.test_reference || ("Pedido " + order.id);
-      var displayStatus = order.display_status || order.payment_status || order.status;
+      var displayStatus = isDoorPaymentPending(order) ? "door_pending" : (order.display_status || order.payment_status || order.status);
       var paymentMethod = order.payment_method === "cash" ? "Efectivo" : (order.payment_method === "bizum" ? "Bizum" : "Tarjeta");
       var cashStatus = order.sales_channel === "cash" ? ' · ' + (order.cash_payment_status === "paid" ? "Cobrado" : "Pendiente de cobro") : (order.sales_channel === "manual_card" ? ' · ' + (order.payment_status === "paid" ? "Cobrado con tarjeta" : "Pago con tarjeta pendiente") : "");
       var discount = Number(order.discount_amount_cents || 0);
@@ -546,17 +555,21 @@
         var summary = root.querySelector("[data-admin-sales-summary]");
         if (!summary) return;
         var paid = state.orders.filter(function (order) { return Number(order.is_test) !== 1 && !isClosedOrder(order) && (order.payment_status === "paid" || order.status === "paid"); });
+        var sold = state.orders.filter(function (order) { return Number(order.is_test) !== 1 && isSoldOrder(order); });
+        var doorPending = sold.filter(isDoorPaymentPending);
         var cashPaid = paid.filter(function (order) { return order.sales_channel === "cash"; });
-        var cashReserved = state.orders.filter(function (order) { return Number(order.is_test) !== 1 && !isClosedOrder(order) && order.sales_channel === "cash" && order.cash_payment_status === "reserved"; });
+        var cashReserved = state.orders.filter(function (order) { return Number(order.is_test) !== 1 && !isClosedOrder(order) && order.sales_channel === "cash" && order.cash_payment_status === "reserved" && !isDoorPaymentPending(order); });
         function tickets(rows) { return rows.reduce(function (total, order) { return total + Number(order.ticket_quantity || 0); }, 0); }
-        summary.innerHTML = '<article><span>Entradas vendidas</span><strong>' + tickets(paid) + '</strong><small>Web, tarjeta y efectivo cobrados</small></article>' +
+        summary.innerHTML = '<article><span>Entradas vendidas</span><strong>' + tickets(sold) + '</strong><small>Incluye ventas pendientes de pago en puerta</small></article>' +
           '<article><span>Ingresos cobrados</span><strong>' + formatMoney(paid.reduce(function (total, order) { return total + Number(order.total_cents || 0); }, 0)) + '</strong><small>Web, tarjeta y efectivo cobrados</small></article>' +
           '<article><span>Efectivo cobrado</span><strong>' + tickets(cashPaid) + '</strong><small>' + formatMoney(cashPaid.reduce(function (total, order) { return total + Number(order.total_cents || 0); }, 0)) + '</small></article>' +
+          '<article><span>Pago en puerta pendiente</span><strong>' + tickets(doorPending) + '</strong><small>' + formatMoney(doorPending.reduce(function (total, order) { return total + Number(order.total_cents || 0); }, 0)) + ' por cobrar</small></article>' +
           '<article><span>Reservas en efectivo</span><strong>' + tickets(cashReserved) + '</strong><small>Pendientes de cobro</small></article>';
       }
       function matchesFilter(order) {
-        var displayStatus = order.display_status || order.payment_status || order.status;
-        if (activeFilter === "active") return Number(order.is_test) !== 1 && !isClosedOrder(order) && (displayStatus === "paid" || order.status === "paid" || order.payment_status === "paid");
+        var displayStatus = isDoorPaymentPending(order) ? "door_pending" : (order.display_status || order.payment_status || order.status);
+        if (activeFilter === "active") return Number(order.is_test) !== 1 && isSoldOrder(order);
+        if (activeFilter === "door-pending") return Number(order.is_test) !== 1 && isDoorPaymentPending(order);
         if (activeFilter === "pending") return !isClosedOrder(order) && !(displayStatus === "paid" || order.status === "paid" || order.payment_status === "paid");
         if (activeFilter === "cancelled") return displayStatus === "cancelled";
         if (activeFilter === "refunded") return displayStatus === "refunded";
@@ -571,7 +584,7 @@
       function render(filter) {
         var term = String(filter || "").trim().toLowerCase();
         var rows = state.orders.filter(function (order) {
-          return matchesFilter(order) && (!term || [order.name, order.email, order.phone, order.redsys_order, order.test_reference, order.event_title, order.payment_status, order.display_status].join(" ").toLowerCase().includes(term));
+          return matchesFilter(order) && (!term || [order.name, order.email, order.phone, order.redsys_order, order.test_reference, order.event_title, order.payment_status, order.display_status, isDoorPaymentPending(order) ? "vendida pago en puerta pendiente" : ""].join(" ").toLowerCase().includes(term));
         });
         root.querySelector("[data-admin-orders-list]").innerHTML = !selectedSalesEvent
           ? '<div class="admin-empty"><strong>Selecciona un evento para consultar sus ventas.</strong></div>'
@@ -850,88 +863,94 @@
       function createDoorListPdf(attendees, event) {
         if (!window.jspdf || !window.jspdf.jsPDF) throw new Error("No se ha podido cargar el generador de PDF. Recarga la página e inténtalo de nuevo.");
         var pdf = new window.jspdf.jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-        var pageWidth = 297;
-        var pageHeight = 210;
-        var margin = 12;
+        var margin = 10, bottom = 199, width = 277;
         var columns = [
-          { label: "#", width: 9, key: "number" },
-          { label: "LLEGADA", width: 19, key: "check" },
-          { label: "INVITADO", width: 90, key: "name" },
-          { label: "TIPO DE ENTRADA", width: 65, key: "ticketType" },
-          { label: "PEDIDO", width: 43, key: "reference" },
-          { label: "ESTADO", width: 47, key: "status" }
+          { label: "COMPRADOR", width: 52 },
+          { label: "INVITADOS / ACOMPAÑANTES", width: 91 },
+          { label: "PEDIDO", width: 29 },
+          { label: "Nº", width: 10 },
+          { label: "PAGO", width: 34 },
+          { label: "LLEGADAS", width: 61 }
         ];
-        function addHeading() {
-          pdf.setDrawColor(0);
-          pdf.setTextColor(0);
-          pdf.setFont("helvetica", "bold");
-          pdf.setFontSize(15);
-          pdf.text("LISTADO DE INVITADOS · PUERTA", margin, 13);
-          pdf.setFont("helvetica", "normal");
-          pdf.setFontSize(9);
-          pdf.text(attendeePdfText((event && event.title) || "Evento"), margin, 19);
-          pdf.text(attendees.length + (attendees.length === 1 ? " entrada activa" : " entradas activas"), pageWidth - margin, 19, { align: "right" });
-          pdf.setFontSize(7);
-          pdf.text("Ordenado por compra · Incluye tarjeta y entradas creadas manualmente · Marca la casilla al comprobar la llegada", margin, 24);
-          var headerY = 29;
-          var x = margin;
-          pdf.setFont("helvetica", "bold");
-          pdf.setFontSize(7);
-          columns.forEach(function (column) {
-            pdf.setFillColor(235);
-            pdf.rect(x, headerY, column.width, 8, "FD");
-            pdf.setTextColor(0);
-            pdf.text(column.label, x + 2, headerY + 5);
-            x += column.width;
-          });
-          return headerY + 8;
-        }
-        function addFooter() {
-          var pages = pdf.getNumberOfPages();
-          for (var page = 1; page <= pages; page++) {
-            pdf.setPage(page);
-            pdf.setTextColor(0);
-            pdf.setFont("helvetica", "normal");
-            pdf.setFontSize(7);
-            pdf.text("Perigallo · listado interno para control de acceso", margin, pageHeight - 8);
-            pdf.text("Página " + page + " de " + pages, pageWidth - margin, pageHeight - 8, { align: "right" });
-          }
-        }
-        var y = addHeading();
-        pdf.setFont("helvetica", "normal");
-        pdf.setFontSize(8);
+        var byOrder = new Map();
         attendees.forEach(function (attendee, index) {
-          var values = {
-            number: String(index + 1),
-            name: attendeePdfText(attendee.name || "Sin nombre"),
-            ticketType: attendeePdfText(attendee.ticket_type_name || "Entrada"),
-            reference: attendeePdfText(attendee.order_reference || "—"),
-            status: attendee.access_status === "inside" ? "Ya dentro" : "Pendiente"
-          };
-          var cells = columns.map(function (column) { return column.key === "check" ? [""] : pdf.splitTextToSize(values[column.key], Math.max(4, column.width - 4)); });
-          var lines = cells.reduce(function (largest, cell) { return Math.max(largest, cell.length); }, 1);
-          var rowHeight = Math.max(8, lines * 3.6 + 3);
-          if (y + rowHeight > pageHeight - 15) {
-            pdf.addPage();
-            y = addHeading();
-            pdf.setFont("helvetica", "normal");
-            pdf.setFontSize(8);
-          }
+          var key = attendee.order_id ? "id:" + attendee.order_id : attendee.order_reference ? "ref:" + attendee.order_reference : "ticket:" + index;
+          if (!byOrder.has(key)) byOrder.set(key, { buyer: attendee.buyer_name || attendee.name || "Sin nombre", reference: attendee.order_reference || String(attendee.order_id || "-"), payment: attendee.payment_status || attendee.order_status || "", totalCents: attendee.order_total_cents, tickets: [] });
+          byOrder.get(key).tickets.push(attendee);
+        });
+        var groups = Array.from(byOrder.values()).sort(function (a, b) {
+          return a.buyer.localeCompare(b.buyer, "es", { sensitivity: "base" }) || String(a.reference).localeCompare(String(b.reference), "es", { numeric: true });
+        });
+        function heading() {
+          pdf.setDrawColor(140); pdf.setTextColor(0);
+          pdf.setFont("helvetica", "bold"); pdf.setFontSize(13);
+          pdf.text("LISTA DE PUERTA · POR COMPRA", margin, 11);
+          pdf.setFont("helvetica", "normal"); pdf.setFontSize(9);
+          pdf.text(attendeePdfText((event && event.title) || "Evento"), margin, 17);
+          pdf.text(groups.length + " compras · " + attendees.length + " entradas", 287, 17, { align: "right" });
+          pdf.setFontSize(7);
+          pdf.text("Orden alfabético por comprador · Una casilla por entrada · X = ya dentro al descargar · Importe pendiente por compra", margin, 22);
+          var x = margin;
+          pdf.setFont("helvetica", "bold"); pdf.setFontSize(7);
+          columns.forEach(function (column) {
+            pdf.setFillColor(225); pdf.rect(x, 25, column.width, 6, "FD");
+            pdf.text(column.label, x + 1.5, 29); x += column.width;
+          });
+          return 31;
+        }
+        var y = heading();
+        groups.forEach(function (group, groupIndex) {
+          group.tickets.sort(function (a, b) { return Number(a.id || 0) - Number(b.id || 0); });
+          // Los acompañantes sin nombre se resumen; los nombres reales se conservan.
+          var unnamed = 0;
+          var names = group.tickets.map(function (ticket) {
+            var name = String(ticket.name || "").trim();
+            if (!name || /^acompa[ñn]ante\s+\d+(\s+de\b.*)?$/i.test(name)) { unnamed++; return ""; }
+            return name;
+          }).filter(Boolean);
+          if (unnamed) names.push("+ " + unnamed + (unnamed === 1 ? " acompañante" : " acompañantes"));
+          pdf.setFont("helvetica", "normal"); pdf.setFontSize(8);
+          var guestLines = pdf.splitTextToSize(attendeePdfText(names.join(" · ") || "-"), 88);
+          var referenceLines = pdf.splitTextToSize(attendeePdfText(group.reference), 26);
+          pdf.setFont("helvetica", "bold");
+          var buyerLines = pdf.splitTextToSize(attendeePdfText(group.buyer), 49);
+          var paymentText = group.payment === "paid" ? "PAGADO" : group.payment === "refunded" ? "REEMBOLSADO" : "PENDIENTE";
+          if (paymentText === "PENDIENTE" && group.totalCents != null) paymentText += " · " + (Number(group.totalCents) / 100).toFixed(2).replace(".", ",") + " €";
+          var paymentLines = pdf.splitTextToSize(attendeePdfText(paymentText), 31);
+          var lines = Math.max(guestLines.length, referenceLines.length, buyerLines.length, paymentLines.length);
+          var boxRows = Math.ceil(group.tickets.length / 10);
+          var rowHeight = Math.max(5, lines * 3.1 + 1.4, boxRows * 5);
+          if (y + rowHeight > bottom) { pdf.addPage(); y = heading(); }
           var x = margin;
           columns.forEach(function (column, columnIndex) {
+            if (groupIndex % 2 === 1) { pdf.setFillColor(246); pdf.rect(x, y, column.width, rowHeight, "F"); }
             pdf.rect(x, y, column.width, rowHeight);
-            if (column.key === "check") {
-              var size = Math.min(5, rowHeight - 3);
-              pdf.rect(x + (column.width - size) / 2, y + (rowHeight - size) / 2, size, size);
-            } else {
-              pdf.text(cells[columnIndex], x + 2, y + 4);
+            pdf.setFontSize(8); pdf.setFont("helvetica", columnIndex === 0 || columnIndex === 3 || columnIndex === 4 ? "bold" : "normal");
+            if (columnIndex === 0) pdf.text(buyerLines, x + 1.5, y + 3.4);
+            if (columnIndex === 1) pdf.text(guestLines, x + 1.5, y + 3.4);
+            if (columnIndex === 2) pdf.text(referenceLines, x + 1.5, y + 3.4);
+            if (columnIndex === 3) pdf.text(String(group.tickets.length), x + column.width / 2, y + 3.4, { align: "center" });
+            if (columnIndex === 4) pdf.text(paymentLines, x + 1.5, y + 3.4);
+            if (columnIndex === 5) {
+              group.tickets.forEach(function (ticket, index) {
+                var bx = x + 1.5 + (index % 10) * 6, by = y + 0.8 + Math.floor(index / 10) * 5;
+                pdf.rect(bx, by, 3.3, 3.3);
+                if (ticket.access_status === "inside") { pdf.line(bx, by, bx + 3.3, by + 3.3); pdf.line(bx + 3.3, by, bx, by + 3.3); }
+                pdf.setFontSize(5); pdf.text(String(index + 1), bx + 3.7, by + 2.7);
+              });
             }
             x += column.width;
           });
           y += rowHeight;
         });
-        addFooter();
-        pdf.save("listado-puerta-" + attendeeFileName(event) + ".pdf");
+        if (!groups.length) { pdf.setFontSize(10); pdf.text("No hay entradas activas para este evento.", margin, y + 6); }
+        var pages = pdf.getNumberOfPages();
+        for (var page = 1; page <= pages; page++) {
+          pdf.setPage(page); pdf.setFont("helvetica", "normal"); pdf.setFontSize(7);
+          pdf.text("Perigallo · Uso interno · Impresión A4 horizontal", margin, 206);
+          pdf.text("Página " + page + " de " + pages, 287, 206, { align: "right" });
+        }
+        pdf.save("listado-puerta-compacto-" + attendeeFileName(event) + ".pdf");
       }
       function downloadAttendeeList() {
         var eventId = Number(attendeeExportEvent && attendeeExportEvent.value);
@@ -1126,6 +1145,7 @@
         if (action === "cancel") return "Cancelar las entradas de este pedido impedirá su acceso. No realiza ningún abono. ¿Continuar?";
         if (action === "refund") return "Registra la devolución solo cuando el abono ya se haya realizado en Redsys/TPV. Esta acción revoca las entradas, pero no devuelve dinero automáticamente. ¿Confirmar?";
         if (action === "holded-retry") return "Se volverá a dejar el pedido en cola para Holded. No se emitirá ningún documento desde el navegador. ¿Continuar?";
+        if (action === "confirm-door") return "Se confirmarán las entradas como vendidas, sin caducidad y pendientes de pago en puerta. No se registrará ningún cobro. ¿Continuar?";
         if (action === "cash-payment") return "¿Confirmas que ya se ha recibido el pago en efectivo? El pedido se sumará a las ventas cobradas.";
         if (action === "send-cash") return "Se abrirá WhatsApp con el enlace de las entradas preparado. ¿Continuar?";
         if (action === "send-manual-card") return "Se abrirá WhatsApp con el enlace seguro de pago por tarjeta. ¿Continuar?";
@@ -1264,7 +1284,7 @@
             }
           }
           button.disabled = true;
-          var url = api + "/admin/orders/" + id + (action === "cancel" ? "/cancel" : action === "refund" ? "/record-refund" : action === "holded-retry" ? "/holded/retry" : action === "cash-payment" ? "/cash-payment" : action === "send-cash" ? "/send-cash" : action === "delivery-email" ? "/delivery/email/retry" : action === "delivery-email-confirm" ? "/delivery/email/confirm" : action === "delivery-whatsapp" ? "/delivery/whatsapp/retry" : "/test");
+          var url = api + "/admin/orders/" + id + (action === "cancel" ? "/cancel" : action === "refund" ? "/record-refund" : action === "holded-retry" ? "/holded/retry" : action === "confirm-door" ? "/confirm-door" : action === "cash-payment" ? "/cash-payment" : action === "send-cash" ? "/send-cash" : action === "delivery-email" ? "/delivery/email/retry" : action === "delivery-email-confirm" ? "/delivery/email/confirm" : action === "delivery-whatsapp" ? "/delivery/whatsapp/retry" : "/test");
           var method = action === "purge-test" ? "DELETE" : "POST";
           var note = action === "cash-payment" ? window.prompt("Apunte del cobro en efectivo (opcional):", "") : null;
           if (action === "cash-payment" && note === null) { button.disabled = false; return; }

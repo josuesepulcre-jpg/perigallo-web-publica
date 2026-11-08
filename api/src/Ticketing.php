@@ -1180,6 +1180,38 @@ final class Ticketing
         }
     }
 
+    public function adminConfirmDoorPayment(int $orderId, string $operator): array
+    {
+        $this->requireCashOrderSchema();
+        $this->pdo->beginTransaction();
+        try {
+            $order = $this->lockedOrder($orderId);
+            if (($order['sales_channel'] ?? 'web') !== 'cash') throw new RuntimeException('Este pedido no pertenece a la operativa de efectivo.');
+            if (in_array((string) $order['status'], ['cancelled', 'refunded'], true)) throw new RuntimeException('No se puede confirmar una venta cancelada o devuelta.');
+            if (($order['cash_payment_status'] ?? '') === 'paid') throw new RuntimeException('Este pedido ya figura como cobrado en efectivo.');
+            if (!empty($order['reservation_expires_at']) && strtotime((string) $order['reservation_expires_at']) <= time()) {
+                $items = $this->pdo->prepare('SELECT ticket_type_id, event_id, quantity FROM ticket_order_items WHERE order_id = ?');
+                $items->execute([$orderId]);
+                foreach ($items->fetchAll() as $item) {
+                    $type = $this->lockCashTicketType((int) $item['ticket_type_id'], (int) $item['event_id']);
+                    $available = $type && (($order['inventory_mode'] ?? 'standard') === 'manual_reserve')
+                        ? $this->manualReserveAvailableForType($type)
+                        : ($type ? $this->standardAvailableForType($type) : 0);
+                    if (!$type || (int) $item['quantity'] > $available) throw new RuntimeException('La reserva ha caducado y ya no hay aforo suficiente para confirmarla.');
+                }
+            }
+            if ($order['status'] !== 'pending') throw new RuntimeException('Solo se pueden confirmar reservas pendientes.');
+            $this->pdo->prepare('UPDATE ticket_orders SET order_status = "confirmed", reservation_expires_at = NULL, delivery_status = "generated", updated_at = NOW() WHERE id = ?')->execute([$orderId]);
+            $this->pdo->prepare('UPDATE tickets t JOIN ticket_order_items oi ON oi.id = t.order_item_id SET t.status = "issued", t.updated_at = NOW() WHERE oi.order_id = ? AND t.status = "blocked"')->execute([$orderId]);
+            $this->auditAdminOperation($operator, 'cash_sale_confirmed_door_payment', $orderId, []);
+            $this->pdo->commit();
+            return $this->adminOrderById($orderId);
+        } catch (\Throwable $error) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            throw $error;
+        }
+    }
+
     /** Corrige los datos de contacto sin alterar el importe, las entradas ni la facturación del pedido. */
     public function adminUpdateOrderContact(int $orderId, array $data, string $operator): array
     {
@@ -2260,7 +2292,7 @@ final class Ticketing
             : 'NULL AS order_notes';
         $rows = $this->pdo->prepare(
             'SELECT t.id, t.public_code, t.status, t.access_status, t.first_entry_at, t.last_entry_at, t.last_exit_at, t.entry_count, t.exit_count, t.last_access_action, t.last_access_by, toi.ticket_type_name,
-                    COALESCE(ta.attendee_name, o.name) AS name, o.email, o.phone, COALESCE(o.test_reference, o.redsys_order) AS order_reference,
+                    COALESCE(ta.attendee_name, o.name) AS name, o.id AS order_id, o.name AS buyer_name, o.payment_status, o.status AS order_status, o.total_cents AS order_total_cents, o.email, o.phone, COALESCE(o.test_reference, o.redsys_order) AS order_reference,
                     ta.has_allergies, ta.severe_allergy, ta.allergy_notes, ' . $dietaryFields . ', ' . $orderNotes . ',
                     COALESCE((SELECT GROUP_CONCAT(taa.allergen_label ORDER BY taa.allergen_label SEPARATOR " · ") FROM ticket_attendee_allergens taa WHERE taa.attendee_id = ta.id), "") AS allergens
              FROM tickets t
@@ -2618,8 +2650,8 @@ final class Ticketing
     {
         $stmt = $this->pdo->prepare(
             'SELECT
-              COALESCE(SUM(CASE WHEN tor.status="paid" THEN toi.quantity ELSE 0 END), 0) AS sold,
-              COALESCE(SUM(CASE WHEN tor.status IN ("pending","payment_processing") AND (tor.reservation_expires_at > NOW() OR (tor.order_status = "confirmed" AND tor.reservation_expires_at IS NULL)) THEN toi.quantity ELSE 0 END), 0) AS reserved,
+              COALESCE(SUM(CASE WHEN (tor.status="paid" OR (tor.status="pending" AND tor.order_status="confirmed" AND tor.reservation_expires_at IS NULL)) THEN toi.quantity ELSE 0 END), 0) AS sold,
+              COALESCE(SUM(CASE WHEN tor.status IN ("pending","payment_processing") AND (tor.reservation_expires_at > NOW() OR (tor.status="payment_processing" AND tor.order_status="confirmed" AND tor.reservation_expires_at IS NULL)) THEN toi.quantity ELSE 0 END), 0) AS reserved,
               COALESCE(SUM(CASE WHEN tor.status="paid" THEN toi.total_cents ELSE 0 END), 0) AS revenue_cents
              FROM ticket_order_items toi JOIN ticket_orders tor ON tor.id=toi.order_id WHERE toi.event_id=? AND tor.is_test = 0'
         );
@@ -2633,10 +2665,10 @@ final class Ticketing
         $manualCondition = $this->manualReserveInventorySchemaAvailable() ? 'tor.inventory_mode="manual_reserve"' : '0';
         $stmt = $this->pdo->prepare(
             'SELECT
-              COALESCE(SUM(CASE WHEN tor.status="paid" THEN toi.quantity ELSE 0 END), 0) AS sold,
-              COALESCE(SUM(CASE WHEN tor.status IN ("pending","payment_processing") AND (tor.reservation_expires_at > NOW() OR (tor.order_status = "confirmed" AND tor.reservation_expires_at IS NULL)) THEN toi.quantity ELSE 0 END), 0) AS reserved,
-              COALESCE(SUM(CASE WHEN tor.status="paid" AND ' . $manualCondition . ' THEN toi.quantity ELSE 0 END), 0) AS manual_sold,
-              COALESCE(SUM(CASE WHEN tor.status IN ("pending","payment_processing") AND (tor.reservation_expires_at > NOW() OR (tor.order_status = "confirmed" AND tor.reservation_expires_at IS NULL)) AND ' . $manualCondition . ' THEN toi.quantity ELSE 0 END), 0) AS manual_reserved
+              COALESCE(SUM(CASE WHEN (tor.status="paid" OR (tor.status="pending" AND tor.order_status="confirmed" AND tor.reservation_expires_at IS NULL)) THEN toi.quantity ELSE 0 END), 0) AS sold,
+              COALESCE(SUM(CASE WHEN tor.status IN ("pending","payment_processing") AND (tor.reservation_expires_at > NOW() OR (tor.status="payment_processing" AND tor.order_status="confirmed" AND tor.reservation_expires_at IS NULL)) THEN toi.quantity ELSE 0 END), 0) AS reserved,
+              COALESCE(SUM(CASE WHEN (tor.status="paid" OR (tor.status="pending" AND tor.order_status="confirmed" AND tor.reservation_expires_at IS NULL)) AND ' . $manualCondition . ' THEN toi.quantity ELSE 0 END), 0) AS manual_sold,
+              COALESCE(SUM(CASE WHEN tor.status IN ("pending","payment_processing") AND (tor.reservation_expires_at > NOW() OR (tor.status="payment_processing" AND tor.order_status="confirmed" AND tor.reservation_expires_at IS NULL)) AND ' . $manualCondition . ' THEN toi.quantity ELSE 0 END), 0) AS manual_reserved
              FROM ticket_order_items toi JOIN ticket_orders tor ON tor.id=toi.order_id WHERE toi.ticket_type_id=? AND tor.is_test = 0'
         );
         $stmt->execute([$ticketTypeId]);

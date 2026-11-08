@@ -525,6 +525,12 @@ try {
         return;
     }
 
+    if ($method === 'POST' && preg_match('#^/admin/orders/([0-9]+)/confirm-door$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        json_response(['ok' => true, 'order' => $ticketing()->adminConfirmDoorPayment((int) $m[1], AdminAuth::operatorName())]);
+        return;
+    }
+
     if ($method === 'POST' && preg_match('#^/admin/orders/([0-9]+)/cash-payment$#', $path, $m)) {
         AdminAuth::requireCsrf();
         json_response(['ok' => true, 'order' => $ticketing()->adminRecordCashPayment((int) $m[1], read_json_body(), AdminAuth::operatorName())]);
