@@ -1,0 +1,217 @@
+{
+  "production_pages": {
+    "/experiencias/": {
+      "status": 200,
+      "final_url": "https://perigallo.com/experiencias/"
+    },
+    "/experiencias/vividas/la-perigalla-01-noche-ibicenca/": {
+      "status": 200,
+      "final_url": "https://perigallo.com/experiencias/vividas/la-perigalla-01-noche-ibicenca/"
+    },
+    "/admin/experiencias/": {
+      "status": 200,
+      "final_url": "https://perigallo.com/admin/experiencias/"
+    },
+    "/entradas/checkout/?event=hora-cero-2026": {
+      "status": 200,
+      "final_url": "https://perigallo.com/entradas/checkout/?event=hora-cero-2026"
+    }
+  },
+  "static_resources_checked": 44,
+  "static_resources": [
+    {
+      "path": "/apple-touch-icon.png?v=20260909-v1",
+      "status": 200
+    },
+    {
+      "path": "/assets/css/admin-events.css?v=20261029-history-v1",
+      "status": 200
+    },
+    {
+      "path": "/assets/css/checkout-wizard.css?v=unif-6f44868cae",
+      "status": 200
+    },
+    {
+      "path": "/assets/css/checkout.css?v=unif-fdeec62935",
+      "status": 200
+    },
+    {
+      "path": "/assets/css/experience-archive-admin.css?v=archivo-ebdaf682c6",
+      "status": 200
+    },
+    {
+      "path": "/assets/css/experience-archive.css?v=archivo-5ebbf7ffde",
+      "status": 200
+    },
+    {
+      "path": "/assets/css/ticketing.css?v=unif-0c01463180",
+      "status": 200
+    },
+    {
+      "path": "/assets/css/unified-brand.css?v=unif-c57012efd3",
+      "status": 200
+    },
+    {
+      "path": "/assets/icons/favicon-32.png?v=20260909-v1",
+      "status": 200
+    },
+    {
+      "path": "/assets/images/perigalla-01/scene-01-desktop.jpg",
+      "status": 200
+    },
+    {
+      "path": "/assets/images/perigalla-01/scene-03-desktop.jpg",
+      "status": 200
+    },
+    {
+      "path": "/assets/images/perigalla-01/scene-05-desktop.jpg",
+      "status": 200
+    },
+    {
+      "path": "/assets/images/perigalla-01/scene-07-desktop.jpg",
+      "status": 200
+    },
+    {
+      "path": "/assets/images/perigalla-01/scene-09-desktop.jpg",
+      "status": 200
+    },
+    {
+      "path": "/assets/images/perigalla-01/scene-11-desktop.jpg",
+      "status": 200
+    },
+    {
+      "path": "/assets/images/perigalla-01/scene-14-desktop.jpg",
+      "status": 200
+    },
+    {
+      "path": "/assets/images/perigalla-01/scene-16-desktop.jpg",
+      "status": 200
+    },
+    {
+      "path": "/assets/images/perigalla-01/scene-19-desktop.jpg",
+      "status": 200
+    },
+    {
+      "path": "/assets/images/perigalla-01/scene-21-desktop.jpg",
+      "status": 200
+    },
+    {
+      "path": "/assets/js/admin-backoffice.js?v=archivo-47f5d569f6",
+      "status": 200
+    },
+    {
+      "path": "/assets/js/analytics.js?v=unif-b92d211f1b",
+      "status": 200
+    },
+    {
+      "path": "/assets/js/experience-archive-admin.js?v=archivo-ec92efe527",
+      "status": 200
+    },
+    {
+      "path": "/assets/js/experience-archive.js?v=archivo-5940d99cb6",
+      "status": 200
+    },
+    {
+      "path": "/assets/js/live-agenda.js?v=unif-4b28a88bb9",
+      "status": 200
+    },
+    {
+      "path": "/assets/js/public-agenda.js",
+      "status": 200
+    },
+    {
+      "path": "/assets/js/ticketing.js?v=unif-3b7df9ef34",
+      "status": 200
+    },
+    {
+      "path": "/brand/fonts.css",
+      "status": 200
+    },
+    {
+      "path": "/brand/web-tokens.css",
+      "status": 200
+    },
+    {
+      "path": "/editorial.css",
+      "status": 200
+    },
+    {
+      "path": "/favicon.ico?v=20260909-v1",
+      "status": 200
+    },
+    {
+      "path": "/favicon.svg?v=20260909-v1",
+      "status": 200
+    },
+    {
+      "path": "/identity-lockup.css",
+      "status": 200
+    },
+    {
+      "path": "/journey.css",
+      "status": 200
+    },
+    {
+      "path": "/journey.js",
+      "status": 200
+    },
+    {
+      "path": "/media/archivo/celebracion.webp",
+      "status": 200
+    },
+    {
+      "path": "/media/archivo/ceremonia.webp",
+      "status": 200
+    },
+    {
+      "path": "/media/archivo/cocina.webp",
+      "status": 200
+    },
+    {
+      "path": "/media/archivo/escena.webp",
+      "status": 200
+    },
+    {
+      "path": "/media/archivo/invitados.webp",
+      "status": 200
+    },
+    {
+      "path": "/media/archivo/mesa.webp",
+      "status": 200
+    },
+    {
+      "path": "/media/archivo/novios.webp",
+      "status": 200
+    },
+    {
+      "path": "/media/archivo/plato.webp",
+      "status": 200
+    },
+    {
+      "path": "/media/identidad/perigallo-tres-patas.svg",
+      "status": 200
+    },
+    {
+      "path": "/media/identidad/perigallo-wordmark-white.svg",
+      "status": 200
+    }
+  ],
+  "source_integrity": {
+    "files_checked": 25,
+    "mismatches": []
+  },
+  "production_browser": {
+    "photos": 18,
+    "lightbox_next": true,
+    "escape_close_and_focus_return": true,
+    "console_errors": 0,
+    "production_editor_login_required": true
+  },
+  "upload_settings_existing_user_ini": {
+    "upload_max_filesize": "64M",
+    "post_max_size": "64M",
+    "memory_limit": "256M",
+    "changed": false
+  },
+  "no_live_payment_test_performed": true
+}

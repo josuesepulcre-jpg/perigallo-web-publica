@@ -1,0 +1,50 @@
+[
+  {
+    "test": "Owner session and archive list",
+    "result": "pass"
+  },
+  {
+    "test": "Comedy preview authenticated and noindex",
+    "result": "pass"
+  },
+  {
+    "test": "CSRF blocks unverified mutation",
+    "result": "pass"
+  },
+  {
+    "test": "Create new draft on actual OVH PHP/MySQL",
+    "result": "pass"
+  },
+  {
+    "test": "Explicit publish renders actual SSR detail",
+    "result": "pass"
+  },
+  {
+    "test": "Saving draft does not change public snapshot",
+    "result": "pass"
+  },
+  {
+    "test": "Authenticated preview shows saved draft",
+    "result": "pass"
+  },
+  {
+    "test": "Concurrent edit guard works on OVH",
+    "result": "pass"
+  },
+  {
+    "test": "Archive removes public page while preserving content",
+    "result": "pass"
+  },
+  {
+    "test": "FPM GD upload produces optimized 2000px WebP",
+    "result": "pass"
+  },
+  {
+    "test": "Optimized file is accessible",
+    "result": "pass"
+  },
+  {
+    "test": "Door role cannot access editorial archive",
+    "result": "pass"
+  }
+]

@@ -1,6 +1,6 @@
-# Archivo editorial de experiencias — revisión local
+# Archivo editorial de experiencias — revisión local y publicación
 
-Proyecto: rama `codex/archivo-experiencias-20261108`, creada desde la versión publicada. Producción y staging OVH no se han modificado en este desarrollo. Servidor local: http://127.0.0.1:4195 . Base aislada: `perigallo_archivo_local`, exclusivamente datos de prueba; sin correo saliente.
+Proyecto: rama `codex/archivo-experiencias-20261108`. La revisión local documentada abajo se publicó posteriormente con aprobación expresa; ver PUBLICACION.md. Servidor local: http://127.0.0.1:4195 . Base aislada: `perigallo_archivo_local`, exclusivamente datos de prueba; sin correo saliente.
 
 ## Páginas para revisar
 
@@ -43,3 +43,7 @@ Rollback: restaurar los archivos anteriores y dejar los datos editoriales conser
 Para reiniciar la revisión local, con MariaDB local disponible y el .env local existente: ejecutar `scripts/archivo/start-local.sh` desde el proyecto. Las credenciales locales no se incluyen en Git ni en este informe.
 
 Pendiente de contenido: fotografías y vídeos definitivos de Comedy, selección final de material de cada edición y aprobación editorial. Pendiente de entorno: validación representativa en Plesk antes de cualquier publicación. No se ha realizado ni solicitado todavía el despliegue de este desarrollo.
+
+## Publicación posterior aprobada
+
+Publicado el 8 de noviembre de 2026 en https://perigallo.com/experiencias/ . La Perigalla 01 está visible, Comedy permanece en borrador. El cron horario está instalado y comprobado. Ver PUBLICACION.md para verificaciones y rollback.

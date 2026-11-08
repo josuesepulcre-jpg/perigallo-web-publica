@@ -1,0 +1,32 @@
+{
+    "table_count": 39,
+    "archive_entries": [
+        {
+            "slug": "la-perigalla-comedy-ruben-serrano",
+            "event_id": 3,
+            "status": "draft"
+        },
+        {
+            "slug": "la-perigalla-01-noche-ibicenca",
+            "event_id": 1,
+            "status": "published"
+        }
+    ],
+    "original_event_states": [
+        {
+            "id": 1,
+            "slug": "la-perigalla-01-ibicenca",
+            "status": "published"
+        },
+        {
+            "id": 3,
+            "slug": "perigalla-comedy",
+            "status": "published"
+        },
+        {
+            "id": 4,
+            "slug": "hora-cero-2026",
+            "status": "published"
+        }
+    ]
+}

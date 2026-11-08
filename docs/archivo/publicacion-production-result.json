@@ -1,0 +1,63 @@
+{
+  "mode": "production",
+  "commit": "681d23e868813c809bb8085a9704df59735f3cf4",
+  "started_utc": "2026-11-08T13:05:52.097514+00:00",
+  "existing": {
+    ".htaccess": "0b7c52d35d094f7d6812a6281f3bf987dfee540b5903389c1b63b2a23382981d",
+    "admin/analitica/index.html": "08fd270b4e0b7f3e32f8233d7a107b8af474d118ef02be82664a364ac4f48dab",
+    "admin/contactos/index.html": "170d24070e298f7c599b50efdb35a41947f6608c7263143b77de8ccbef5106e1",
+    "admin/descuentos/index.html": "cdb9a3dd1f59b67082019e368cdd2402e9ecb97f4f73f9fd60d29fda7c050133",
+    "admin/entradas/acceso/index.html": "b1103e7691afa167d72f7437e8588e8e244c697c922f4a17425d09b9f4037a7f",
+    "admin/eventos/index.html": "4332481441eac5115e11a4c04023932e4b1c1ee1ca26ef54f6d76a4af47ce486",
+    "admin/facturacion/index.html": "152425cc0648d70449fbcb114504403fb699ca869c7c9644bb07e79b251dec2a",
+    "admin/formulario/index.html": "940c92a5f24936a2cacb8a1656339226ccc5d47f64f597cf8d1774741c39ef47",
+    "admin/index.html": "4204c2035f4005a6272c5885ae40d6309d5dd0dca4486550ce50a56b97365b2f",
+    "admin/login/index.html": "96b95f82eb11dbd003d39011ed4b7827caaed98f08b5bb39ed43266bf2e7b79f",
+    "admin/usuarios/index.html": "60773d670c3174b41de6dc547c30ef26b54d41252baf100b9378f3c6a62ca692",
+    "admin/ventas/index.html": "db92b42cc8f4bcad27e4622fd17a61c7ea8b9c0b34ac51f71a2c5011f9fbf9be",
+    "api/index.php": "fa9da122bbb074ca0451a4bd9ceccaded668d6aba6abf9ec460d2fbe6ba51beb",
+    "assets/js/admin-backoffice.js": "47216de362588e6d80b40812795a5f9ffed8dd1c7ed7523dd25caf5798c4aea6",
+    "experiencias/index.html": "9f1a06708f0a30cd8b09e8d85923dae8538654b4e38e3cc54de2e5594bd53942"
+  },
+  "new": [
+    "admin/experiencias/index.html",
+    "api/cron/experience-archive.php",
+    "api/src/ArchiveMedia.php",
+    "api/src/ExperienceArchive.php",
+    "assets/css/experience-archive-admin.css",
+    "assets/css/experience-archive.css",
+    "assets/js/experience-archive-admin.js",
+    "assets/js/experience-archive.js",
+    "experiencias/archive-shell.php",
+    "experiencias/vivida.php"
+  ],
+  "backup_sha256": "9d0db4d3d37e2c02f07b1789a30272687a5b48ffa2b568cf11cc1bc76014e013",
+  "seed": [
+    {
+      "slug": "la-perigalla-comedy-ruben-serrano",
+      "id": 1,
+      "event_id": 3,
+      "status": "draft"
+    },
+    {
+      "slug": "la-perigalla-01-noche-ibicenca",
+      "id": 2,
+      "event_id": 1,
+      "status": "published"
+    }
+  ],
+  "status": "published",
+  "http_checks": {
+    "/experiencias/": 200,
+    "/experiencias/vividas/la-perigalla-01-noche-ibicenca/": 200,
+    "/experiencias/vividas/la-perigalla-comedy-ruben-serrano/": 404,
+    "/experiencias/vividas/la-perigalla-comedy-ruben-serrano/?preview=1": 401,
+    "/api/experience-archive": 200,
+    "/api/events": 200,
+    "/api/admin/experience-archive": 401,
+    "/api/src/ExperienceArchive.php": 403,
+    "/api/cron/experience-archive.php": 403
+  },
+  "protected_files_unchanged": true,
+  "finished_utc": "2026-11-08T13:05:52.632382+00:00"
+}
