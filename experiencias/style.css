@@ -180,3 +180,5 @@ dialog{border:0;padding:0;background:var(--paper);color:var(--ink);width:min(126
 .inquiry-message pre{font:13px/1.7 Geist,Arial;white-space:pre-wrap;overflow-wrap:anywhere;background:#efeee5;padding:18px;color:#424a39;margin:0 0 18px}
 .inquiry-message>p{font-size:12px;line-height:1.6;color:#66715d}
 @media(max-width:500px){.inquiry-fields{grid-template-columns:1fr;gap:17px}.group-inquiry{padding:24px 20px}}
+
+.inquiry-fields [hidden]{display:none!important}

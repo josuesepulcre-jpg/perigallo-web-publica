@@ -16,9 +16,9 @@ const sceneDescriptions = {
 };
 // Reservations use the production event backend.
 const bookingOrigin = '';
-const groupInquiryTools = import('./group-inquiry.mjs?v=degustacion-mediodia-20261108');
+const groupInquiryTools = import('./group-inquiry.mjs?v=grupos-otro-dia-20261108');
 const groupMenuIds=['navidad-02','navidad-03','navidad-04'];
-const tastingDates=[4,5,6,11,12,13,18,19,20,26,27].map(day=>'2026-12-'+String(day).padStart(2,'0'));
+const decemberServiceDates=[4,5,6,11,12,13,18,19,20,26,27].map(day=>'2026-12-'+String(day).padStart(2,'0'));
 const inquiryPlanIds=['diciembre','degustacion'];
 const inquiryDrafts={};
 const inquiryMenuIds=()=>activePlan.id==='degustacion'?['navidad-individual']:groupMenuIds;
@@ -37,11 +37,12 @@ function groupInquiryHTML() {
     <label>Correo electrónico<input name="email" type="email" autocomplete="email" required maxlength="190" value="${value('email')}"></label>
    </div></fieldset>
    <fieldset><legend>¿Cómo os gustaría venir?</legend><div class="inquiry-fields">
-    <label>Día de la reserva${activePlan.id==='degustacion'?`<select name="date" required><option value="">Elegid un día disponible</option>${tastingDates.map(date=>`<option value="${date}" ${groupInquiryDraft.date===date?'selected':''}>${esc(new Intl.DateTimeFormat('es-ES',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z')))}</option>`).join('')}</select>`:`<input name="date" type="date" min="2026-12-01" max="2026-12-31" required value="${value('date')}">`}</label>
-    ${activePlan.id==='degustacion'?`<label>Turno<select name="shift" required><option value="lunch" selected>Comida · mediodía</option></select></label>`:`<label>Comida o cena<select name="shift" required><option value="">Elegid el turno</option><option value="lunch" ${groupInquiryDraft.shift==='lunch'?'selected':''}>Comida · mediodía</option><option value="dinner" ${groupInquiryDraft.shift==='dinner'?'selected':''}>Cena · noche</option></select></label>`}
+    <label>Día de la reserva<select name="date" required><option value="">Elegid un día disponible</option>${decemberServiceDates.map(date=>`<option value="${date}" ${groupInquiryDraft.date===date&&groupInquiryDraft.date_request!=='other'?'selected':''}>${esc(new Intl.DateTimeFormat('es-ES',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z')))}</option>`).join('')}${activePlan.id==='diciembre'?`<option value="other" ${groupInquiryDraft.date_request==='other'?'selected':''}>Nos gustaría otro día · a valorar</option>`:''}</select></label>
+    ${activePlan.id==='diciembre'?`<label data-requested-date ${groupInquiryDraft.date_request==='other'?'':'hidden'}>¿Qué día os gustaría venir?<input name="requested_date" type="date" min="2026-12-01" max="2026-12-31" ${groupInquiryDraft.date_request==='other'?'required':'disabled'} value="${groupInquiryDraft.date_request==='other'?value('date'):''}"><span class="inquiry-hint">Estudiaremos vuestra propuesta. La fecha y el turno están pendientes de valoración y confirmación.</span></label>`:''}
+    ${activePlan.id==='degustacion'?`<label>Turno<select name="shift" required><option value="lunch" selected>Comida · mediodía</option></select></label>`:`<label>Turno<select name="shift" required><option value="">Elegid el turno</option><option value="lunch" ${groupInquiryDraft.shift==='lunch'?'selected':''}>Comida · mediodía</option><option value="dinner" ${groupInquiryDraft.shift==='dinner'?'selected':''}>Cena · noche</option></select></label>`}
     <label>Número de personas<input name="people" type="number" min="1" max="${inquiryOptions().maxPeople}" step="1" required value="${value('people')}" inputmode="numeric"></label>
     <label>Menú que os interesa<select name="menu" required><option value="">Elegid un menú</option>${inquiryMenuIds().map(id=>`<option value="${id}" ${groupInquiryDraft.menu===id?'selected':''}>${esc(MENUS[id].title)} · ${esc(MENUS[id].price)}</option>`).join('')}</select></label>
-   </div><p class="inquiry-hint">${activePlan.id==='degustacion'?'Hasta seis personas. Viernes, sábados y domingos de diciembre, solo al mediodía. El 25 está reservado al menú de Navidad.':'Para mesas de hasta seis personas, también podéis consultar el menú degustación en su propuesta propia.'}</p></fieldset>
+   </div><p class="inquiry-hint">${activePlan.id==='degustacion'?'Hasta seis personas. Viernes, sábados y domingos de diciembre, solo al mediodía. El 25 está reservado al menú de Navidad.':'Comida o cena los viernes, sábados y domingos de diciembre, excepto el 25. Si preferís otra fecha, elegid «Nos gustaría otro día» y valoraremos vuestra propuesta.'}</p></fieldset>
    <label class="inquiry-privacy"><input name="privacy" type="checkbox" required ${groupInquiryDraft.privacy?'checked':''}><span>He leído la <a href="/politica-privacidad/" target="_blank" rel="noopener">política de privacidad</a> y acepto el contacto para gestionar esta consulta.</span></label>
    <p class="inquiry-status" role="status" aria-live="polite"></p>
    <button class="inquiry-submit" type="submit">Preparar mi consulta de WhatsApp <span aria-hidden="true">↗</span></button>
@@ -60,10 +61,14 @@ function openGroupInquiry(menuId,planId='diciembre') {
 function bindGroupInquiry() {
  const form=$('#group-inquiry-form');if(!form)return;
  const contextPlan=activePlan.id,menuIds=[...inquiryMenuIds()],options=inquiryOptions();
- const snapshot=()=>{const data=Object.fromEntries(new FormData(form));data.privacy=form.elements.privacy.checked;return data;};
+ const snapshot=()=>{const data=Object.fromEntries(new FormData(form));data.privacy=form.elements.privacy.checked;
+  if(contextPlan==='diciembre'){data.date_request=data.date==='other'?'other':'standard';if(data.date_request==='other')data.date=data.requested_date;delete data.requested_date;}
+  return data;};
+ const syncRequestedDate=()=>{const field=form.querySelector('[data-requested-date]');if(!field)return;const other=form.elements.date.value==='other';field.hidden=!other;form.elements.requested_date.disabled=!other;form.elements.requested_date.required=other;};
+ form.elements.date.addEventListener('change',syncRequestedDate);syncRequestedDate();
  form.addEventListener('input',event=>{
   if(event.target.setCustomValidity)event.target.setCustomValidity('');
-  groupInquiryDraft=snapshot();form.querySelector('.inquiry-message').hidden=true;form.querySelector('.inquiry-message a').removeAttribute('href');form.querySelector('.inquiry-status').textContent='';
+  syncRequestedDate();groupInquiryDraft=snapshot();form.querySelector('.inquiry-message').hidden=true;form.querySelector('.inquiry-message a').removeAttribute('href');form.querySelector('.inquiry-status').textContent='';
  });
  form.addEventListener('submit',async event=>{
   event.preventDefault();

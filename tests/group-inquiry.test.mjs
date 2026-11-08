@@ -44,3 +44,19 @@ test('tasting accepts only the eleven December weekend dates, excluding Christma
  assert.ok(message.includes('Turno: Comida (mediodía)'));
  assert.equal(validateGroupInquiry({...complete,date:'2026-12-25',shift:'dinner'},menus).shift,'dinner');
 });
+
+test('groups support Friday dinner and clearly marked other-date requests',()=>{
+ const options={kind:'group',maxPeople:100};
+ const friday={...complete,date:'2026-12-04',date_request:'standard'};
+ assert.ok(buildGroupMessage(friday,menus,options).includes('Cena (noche)'));
+ assert.ok(!buildGroupMessage(friday,menus,options).includes('Solicitud especial'));
+ const other={...complete,date_request:'other'};
+ const message=buildGroupMessage(other,menus,options);
+ for(const text of ['miércoles, 16 de diciembre de 2026','Cena (noche)','Solicitud especial: nos gustaría otro día','pendiente de valoración','confirmación de la fecha y el turno'])assert.ok(message.includes(text),text);
+ assert.throws(()=>buildGroupMessage({...other,date_request:'standard'},menus,options),/otro día/);
+ assert.throws(()=>buildGroupMessage({...other,date:''},menus,options),/diciembre/);
+ assert.throws(()=>buildGroupMessage({...other,shift:''},menus,options),/comida o cena/);
+ assert.throws(()=>buildGroupMessage({...other,date_request:'unknown'},menus,options));
+ const tasting={...other,menu:'navidad-individual',people:'6',shift:'lunch'};
+ assert.throws(()=>buildGroupMessage(tasting,menus,{kind:'tasting',maxPeople:6}),/excepto el 25/);
+});
