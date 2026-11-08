@@ -1,0 +1,24 @@
+name: Brand and ticket regression
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  brand-and-ticket-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify approved identity, public navigation and ticket PDF
+        run: node --test tests/brand-identity.test.mjs tests/public-navigation.test.mjs tests/public-agenda.test.mjs tests/analytics-batching.test.mjs tests/api-database-pressure.test.mjs
+      - name: Verify ticket delivery and historical document selection
+        run: |
+          node tests/static-ticketing-check.mjs
+          node tests/whatsapp-ticket-delivery-check.mjs
+          php tests/ticket-design-version-test.php
+          php tests/ticket-mail-idempotency-test.php
+          php tests/database-pressure-test.php
+          php tests/redsys-secret-key-test.php

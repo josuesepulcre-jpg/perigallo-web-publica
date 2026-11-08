@@ -915,6 +915,7 @@
       var torchOn = false;
       var wakeLock = null;
       var printableAttendees = [];
+      var attendeeView = { eventId: 0, filter: "all", search: "" };
       var recentQrScans = {};
       document.body.classList.add("has-ticket-access-control");
       if (wrap) wrap.hidden = false;
@@ -937,7 +938,7 @@
       window.addEventListener("offline", updateConnection);
 
       function accessStatus(value) {
-        return ({ not_entered: "Sin acceder", inside: "Dentro", outside: "Fuera" })[value] || "Sin estado";
+        return ({ not_entered: "Falta por llegar", inside: "Dentro", outside: "Fuera" })[value] || "Sin estado";
       }
       function administrativeStatus(value) {
         return ({ issued: "Activa", cancelled: "Cancelada", refunded: "Reembolsada", blocked: "Bloqueada" })[value] || value;
@@ -1029,27 +1030,54 @@
       function loadAttendees() {
         var eventId = Number(form.event_id.value || 0);
         if (!eventId || !attendeesRoot) { if (attendeesRoot) attendeesRoot.hidden = true; return; }
+        if (attendeeView.eventId !== eventId) attendeeView = { eventId: eventId, filter: "all", search: "" };
         request(api + "/admin/events/" + eventId + "/attendees").then(function (data) {
+          if (Number(form.event_id.value) !== eventId) return;
+          var searchHadFocus = document.activeElement === attendeesRoot.querySelector("[data-attendee-search]");
           var metrics = data.metrics || {};
           attendeesRoot.hidden = false;
           var attendees = data.attendees || [];
           var history = data.history || [];
           printableAttendees = attendees;
-          attendeesRoot.innerHTML = '<div class="ticket-attendee-head"><div><span class="ticket-eyebrow">Estado en directo</span><h2>Control de acceso</h2></div><div class="ticket-attendee-tools"><button class="ticket-btn ticket-print-guests" type="button" data-print-guests>Imprimir lista de invitados</button><div class="ticket-attendee-metrics"><span>' + Number(metrics.not_entered || 0) + ' sin acceder</span><span class="is-inside">' + Number(metrics.inside || 0) + ' dentro</span><span>' + Number(metrics.outside || 0) + ' fuera</span><span>' + Number(metrics.entries || 0) + ' entradas</span><span>' + Number(metrics.exits || 0) + ' salidas</span></div></div></div><div class="ticket-attendee-filters"><label>Buscar<input type="search" data-attendee-search placeholder="Nombre, teléfono, pedido o código"></label><label>Presencia<select data-attendee-filter><option value="all">Todas</option><option value="not_entered">Sin acceder</option><option value="inside">Dentro</option><option value="outside">Fuera</option><option value="incidents">Incidencias</option></select></label></div><div class="ticket-attendee-table" data-attendee-table></div><details class="ticket-access-history"><summary>Historial de movimientos</summary><div data-access-history></div></details>';
+          attendeesRoot.innerHTML = '<div class="ticket-attendee-head"><div><span class="ticket-eyebrow">Estado en directo</span><h2>Control de acceso</h2></div><div class="ticket-attendee-tools"><button class="ticket-btn ticket-print-guests" type="button" data-print-guests>Imprimir lista de invitados</button><div class="ticket-attendee-metrics" aria-label="Filtrar invitados por llegada"><button type="button" data-attendee-presence="not_entered" aria-controls="access-guest-list"><strong>' + Number(metrics.not_entered || 0) + '</strong> Faltan por llegar</button><button type="button" data-attendee-presence="inside" class="is-inside" aria-controls="access-guest-list"><strong>' + Number(metrics.inside || 0) + '</strong> Dentro</button><button type="button" data-attendee-presence="outside" aria-controls="access-guest-list"><strong>' + Number(metrics.outside || 0) + '</strong> Han salido</button><button type="button" data-attendee-presence="all" aria-controls="access-guest-list">Ver todos</button></div></div></div><div class="ticket-attendee-filters"><label>Buscar<input type="search" data-attendee-search placeholder="Nombre, teléfono, pedido o código"></label><label>Presencia<select data-attendee-filter><option value="all">Todas</option><option value="not_entered">Faltan por llegar</option><option value="inside">Dentro</option><option value="outside">Fuera</option><option value="incidents">Incidencias</option></select></label></div><div class="ticket-arrival-list" id="access-guest-list" tabindex="-1"><h3 data-attendee-list-title></h3><p data-attendee-list-count aria-live="polite"></p><div class="ticket-attendee-table" data-attendee-table></div></div><details class="ticket-access-history"><summary>Historial de movimientos</summary><div data-access-history></div></details>';
           function drawAttendees() {
             var search = (attendeesRoot.querySelector("[data-attendee-search]").value || "").toLowerCase().trim();
             var filter = attendeesRoot.querySelector("[data-attendee-filter]").value;
+            attendeeView.filter = filter;
+            attendeeView.search = attendeesRoot.querySelector("[data-attendee-search]").value;
+            attendeesRoot.querySelectorAll("[data-attendee-presence]").forEach(function (button) {
+              button.setAttribute("aria-pressed", String(button.getAttribute("data-attendee-presence") === filter));
+            });
             var rows = attendees.filter(function (attendee) {
               var searchable = [attendee.name, attendee.email, attendee.phone, attendee.public_code, attendee.order_reference, attendee.ticket_type_name].join(" ").toLowerCase();
               var isIncident = attendee.status !== "issued";
-              return (!search || searchable.includes(search)) && (filter === "all" || (filter === "incidents" ? isIncident : attendee.access_status === filter));
+              return (!search || searchable.includes(search)) && (filter === "all" || (filter === "incidents" ? isIncident : attendee.status === "issued" && (attendee.access_status || "not_entered") === filter));
             });
-            attendeesRoot.querySelector("[data-attendee-table]").innerHTML = '<div class="ticket-attendee-row ticket-attendee-labels"><span>Asistente</span><span>Entrada</span><span>Presencia</span><span>Acción</span></div>' + rows.map(function (attendee) { return '<div class="ticket-attendee-row"><span><strong>' + escapeHtml(attendee.name) + '</strong><small>' + escapeHtml(attendee.email) + ' · ' + escapeHtml(attendee.phone || "sin teléfono") + '</small>' + foodAlertMarkup(attendee) + '</span><span><strong>' + escapeHtml(attendee.ticket_type_name) + '</strong><small>' + escapeHtml(attendee.public_code) + ' · ' + escapeHtml(attendee.order_reference || "") + '</small></span><span class="attendee-status attendee-' + escapeHtml(attendee.access_status || attendee.status) + '"><strong>' + escapeHtml(attendee.status === "issued" ? accessStatus(attendee.access_status) : administrativeStatus(attendee.status)) + '</strong><small>' + (attendee.last_entry_at ? 'Último movimiento: ' + escapeHtml(dateText(attendee.last_entry_at)) : 'Sin movimientos') + '</small></span><span>' + attendeeAction(attendee) + (state.role === "admin" && attendee.last_access_action && attendee.last_access_action !== "reversal" ? '<button class="text-action danger" type="button" data-revert-ticket="' + escapeHtml(attendee.public_code) + '">Revertir último</button>' : '') + '</span></div>'; }).join("") + (rows.length ? "" : '<p class="ticket-status">No hay asistentes que coincidan con ese filtro.</p>');
+            rows.sort(function (left, right) { return String(left.name || "").localeCompare(String(right.name || ""), "es", { sensitivity: "base" }); });
+            attendeesRoot.querySelector("[data-attendee-list-title]").textContent = ({ not_entered: "Faltan por llegar", inside: "Invitados dentro", outside: "Invitados que han salido", incidents: "Incidencias", all: "Todos los invitados" })[filter] || "Invitados";
+            attendeesRoot.querySelector("[data-attendee-list-count]").textContent = rows.length + (rows.length === 1 ? " invitado" : " invitados") + (search ? " coinciden con la búsqueda" : " en la lista");
+            attendeesRoot.querySelector("[data-attendee-table]").innerHTML = '<div class="ticket-attendee-row ticket-attendee-labels"><span>Asistente</span><span>Entrada</span><span>Presencia</span><span>Acción</span></div>' + rows.map(function (attendee) { return '<div class="ticket-attendee-row"><span><strong>' + escapeHtml(attendee.name) + '</strong><small>' + escapeHtml(attendee.email) + ' · ' + escapeHtml(attendee.phone || "sin teléfono") + '</small>' + foodAlertMarkup(attendee) + '</span><span><strong>' + escapeHtml(attendee.ticket_type_name) + '</strong><small>' + escapeHtml(attendee.public_code) + ' · ' + escapeHtml(attendee.order_reference || "") + '</small></span><span class="attendee-status attendee-' + escapeHtml(attendee.access_status || attendee.status) + '"><strong>' + escapeHtml(attendee.status === "issued" ? accessStatus(attendee.access_status) : administrativeStatus(attendee.status)) + '</strong><small>' + (attendee.last_entry_at ? 'Último movimiento: ' + escapeHtml(dateText(attendee.last_entry_at)) : 'Sin movimientos') + '</small></span><span>' + attendeeAction(attendee) + (state.role === "admin" && attendee.last_access_action && attendee.last_access_action !== "reversal" ? '<button class="text-action danger" type="button" data-revert-ticket="' + escapeHtml(attendee.public_code) + '">Revertir último</button>' : '') + '</span></div>'; }).join("") + (rows.length ? "" : '<p class="ticket-arrival-empty">' + (search ? 'No hay invitados que coincidan con la búsqueda.' : filter === "not_entered" ? 'Todos los invitados con entrada activa han llegado.' : 'No hay invitados en este estado.') + '</p>');
           }
           attendeesRoot.querySelector("[data-access-history]").innerHTML = history.length ? history.map(function (movement) { return '<div class="ticket-access-history-row"><strong>' + escapeHtml(({ entry: "Entrada", exit: "Salida", reentry: "Reentrada", reversal: "Corrección" })[movement.action] || movement.action) + '</strong><span>' + escapeHtml(movement.name || "Entrada") + ' · ' + escapeHtml(dateText(movement.created_at)) + '</span><small>' + escapeHtml(movement.performed_by || "Equipo Perigallo") + (movement.notes ? ' · ' + escapeHtml(movement.notes) : "") + '</small></div>'; }).join("") : '<p class="ticket-status">Todavía no hay movimientos registrados.</p>';
+          attendeesRoot.querySelector("[data-attendee-search]").value = attendeeView.search;
+          attendeesRoot.querySelector("[data-attendee-filter]").value = attendeeView.filter;
+          attendeesRoot.querySelectorAll("[data-attendee-presence]").forEach(function (button) {
+            button.addEventListener("click", function () {
+              attendeesRoot.querySelector("[data-attendee-filter]").value = button.getAttribute("data-attendee-presence");
+              attendeesRoot.querySelector("[data-attendee-search]").value = "";
+              drawAttendees();
+              var list = attendeesRoot.querySelector(".ticket-arrival-list");
+              list.focus({ preventScroll: true });
+              list.scrollIntoView({ block: "start", behavior: "auto" });
+            });
+          });
           attendeesRoot.querySelector("[data-attendee-search]").addEventListener("input", drawAttendees);
           attendeesRoot.querySelector("[data-attendee-filter]").addEventListener("change", drawAttendees);
           drawAttendees();
+          if (searchHadFocus) {
+            var searchInput = attendeesRoot.querySelector("[data-attendee-search]");
+            searchInput.focus({ preventScroll: true });
+          }
         }).catch(function (error) { attendeesRoot.hidden = false; attendeesRoot.textContent = error.message; });
       }
       function renderProposal(data, value) {

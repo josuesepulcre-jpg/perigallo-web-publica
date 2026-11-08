@@ -1,0 +1,317 @@
+.archive-admin {
+  min-width: 0;
+}
+.archive-admin-layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 2rem;
+  align-items: start;
+}
+.archive-admin label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #deded4;
+  min-width: 0;
+}
+.archive-admin input,
+.archive-admin textarea,
+.archive-admin select {
+  width: 100%;
+  max-width: 100%;
+  background: #191b19;
+  color: #f3f3ee;
+  border: 1px solid #4a5048;
+  border-radius: 0;
+  font: inherit;
+  font-size: 16px;
+  padding: 12px;
+  box-sizing: border-box;
+}
+.archive-admin textarea {
+  resize: vertical;
+  min-height: 110px;
+}
+.archive-admin input:focus-visible,
+.archive-admin textarea:focus-visible,
+.archive-admin select:focus-visible,
+.archive-admin button:focus-visible,
+.archive-admin a:focus-visible {
+  outline: 2px solid #b5a06a;
+  outline-offset: 3px;
+}
+.archive-admin-library {
+  position: sticky;
+  top: 24px;
+}
+.archive-admin-library > button {
+  margin-top: 1rem;
+  width: 100%;
+  white-space: normal;
+}
+.archive-admin-help {
+  font-size: 0.75rem;
+  line-height: 1.7;
+  color: #b9bdb4;
+  margin: 1rem 0;
+}
+.archive-admin-chapter {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+  border: 1px solid #41473e;
+  border-left: 2px solid transparent;
+  color: #f3f3ee;
+  background: #1b1e1a;
+  padding: 1.2rem;
+  margin-bottom: 0.7rem;
+  cursor: pointer;
+  font: inherit;
+}
+.archive-admin-chapter.is-selected {
+  border-left-color: #b5a06a;
+  background: #293026;
+}
+.archive-admin-chapter span {
+  font-size: 0.65rem;
+  color: #b5a06a;
+}
+.archive-admin-chapter strong {
+  font-size: 1rem;
+  font-weight: 500;
+}
+.archive-admin-chapter small {
+  font-size: 0.8rem;
+}
+.archive-admin-editor {
+  min-width: 0;
+  border: 1px solid #41473e;
+  padding: 2rem;
+  background: #181b17;
+}
+.archive-admin-editor-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+.archive-admin-editor h2 {
+  font-weight: 400;
+  letter-spacing: -0.04em;
+  font-size: 2rem;
+  margin: 0.8rem 0;
+}
+.archive-admin-editor h3 {
+  font-size: 1.2rem;
+  font-weight: 400;
+  margin: 0 0 1.5rem;
+}
+.archive-admin-editor-heading p {
+  font-size: 0.75rem;
+  color: #b5a06a;
+}
+.archive-admin-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+}
+.archive-wide {
+  grid-column: 1/-1;
+}
+.archive-admin-cover,
+.archive-admin-block,
+.archive-admin-seo {
+  padding: 2rem 0;
+  border-top: 1px solid #41473e;
+  margin-top: 2rem;
+}
+.archive-admin-cover > img {
+  width: 100%;
+  max-height: 300px;
+  object-fit: cover;
+  margin-bottom: 1.5rem;
+}
+.archive-admin-block > label {
+  margin-bottom: 1rem;
+}
+.archive-admin-block > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.archive-admin-small-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+.archive-admin-small-actions button,
+.archive-upload {
+  border: 1px solid #666e5e;
+  background: transparent;
+  color: #f3f3ee;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 0.7rem;
+  min-height: 44px;
+  cursor: pointer;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+}
+.archive-admin button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.archive-upload input[type="file"] {
+  font-size: 0.65rem;
+  width: 170px;
+  padding: 5px;
+  border: 0;
+}
+.archive-admin-media {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1.5rem 0;
+  border-top: 1px solid #353b30;
+}
+.archive-admin-media > img {
+  width: 140px;
+  max-height: 180px;
+  object-fit: cover;
+}
+.archive-admin-media label {
+  margin-bottom: 0.6rem;
+}
+.archive-admin-checks {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.archive-admin-checks label {
+  flex-direction: row;
+  align-items: center;
+  font-size: 0.7rem;
+}
+.archive-admin-checks input {
+  width: 18px;
+  height: 18px;
+}
+.archive-admin-editor-actions {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  margin-top: 2rem;
+}
+.archive-admin-editor-actions .ticket-btn {
+  white-space: normal;
+  font-size: 0.75rem;
+}
+.archive-admin [aria-disabled="true"] {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
+.archive-admin-add-block {
+  display: flex;
+  gap: 1rem;
+  align-items: end;
+  padding: 1.5rem 0;
+}
+.archive-admin-seo summary {
+  cursor: pointer;
+  padding: 1rem 0;
+}
+.archive-admin-seo label {
+  margin-top: 1rem;
+}
+.archive-admin [data-archive-status] {
+  min-height: 1.5rem;
+  line-height: 1.7;
+  color: #cfcdac;
+}
+.archive-admin [data-archive-status].is-error {
+  color: #ffbdaf;
+}
+.archive-admin-video-label {
+  font-size: 1.5rem;
+  color: #b5a06a;
+}
+.archive-admin h1 {
+  font-size: clamp(2rem, 4vw, 3.4rem);
+}
+@media (max-width: 1200px) {
+  .archive-admin-layout {
+    grid-template-columns: 1fr;
+  }
+  .archive-admin-library {
+    position: static;
+  }
+  .archive-admin [data-chapter-list] {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+  .archive-admin-chapter {
+    margin: 0;
+  }
+  .archive-admin-library > label,
+  .archive-admin-library > button {
+    max-width: 400px;
+  }
+}
+@media (max-width: 650px) {
+  .archive-admin-editor {
+    padding: 1rem;
+  }
+  .archive-admin-fields {
+    grid-template-columns: 1fr;
+  }
+  .archive-admin-editor-heading {
+    display: block;
+  }
+  .archive-admin-editor-heading > button {
+    margin-top: 1rem;
+  }
+  .archive-admin-media {
+    grid-template-columns: 1fr;
+  }
+  .archive-admin-media > img {
+    width: 100%;
+    max-height: 220px;
+  }
+  .archive-admin-block > header {
+    display: block;
+  }
+  .archive-admin-add-block {
+    flex-wrap: wrap;
+  }
+  .archive-admin-editor-actions .ticket-btn {
+    width: 100%;
+  }
+}
+.archive-admin-top-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+.archive-admin-top-actions a {
+  font-size: 0.75rem;
+  white-space: normal;
+}
+.archive-admin-top-actions span {
+  font-size: 0.7rem;
+  color: #b9bdb4;
+  line-height: 1.6;
+}

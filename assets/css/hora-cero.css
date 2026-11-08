@@ -19,7 +19,7 @@ body.ticketing-page .hc .event-public-information-accordions { background: #1118
 .hc .hc-visual { margin: 0; position: relative; height: clamp(300px, 40vw, 560px); overflow: hidden; border-block: 1px solid #c5ab7740; }
 .hc .hc-visual img { width: 100%; height: 100%; object-fit: cover; object-position: right 72%; }
 .hc .hc-visual::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, #111812de, #11181215 80%); }
-.hc .hc-visual figcaption { position: absolute; z-index: 1; inset: auto 7% 15%; max-width: 500px; color: #f2ede2; font: 300 clamp(38px,5vw,70px)/1.05 "Cormorant Garamond",serif; }
+.hc .hc-visual figcaption { position: absolute; z-index: 1; inset: auto 7% 15%; max-width: 500px; color: #f2ede2; font: 300 clamp(38px,5vw,70px)/1.05 var(--body-font,Geist,Arial,sans-serif); }
 .hc .hc-visual figcaption small { display: block; margin-bottom: 20px; color: #e0cda4; font: 500 11px/1.5 Montserrat,sans-serif; letter-spacing: .18em; text-transform: uppercase; }
 body.ticketing-page .hc .hc-tickets { max-width: 1180px; }
 body.ticketing-page .hc .event-access { padding: 0; background: transparent; }
@@ -90,7 +90,7 @@ body.ticketing-page .hc .ticket-access-action .ticket-btn::after { color: #fff8e
 .hc .hc-section > .ticket-eyebrow::before,
 .hc .hc-intro > div > .ticket-eyebrow::before,
 .hc .hc-tickets > .ticket-eyebrow::before { content: ""; width: 38px; height: 1px; background: #c5ab77; flex-shrink: 0; }
-.hc .hc-welcome { font: italic 300 28px/1.3 "Cormorant Garamond",serif !important; letter-spacing: 0; text-transform: none; color: #e0cda4 !important; max-width: 440px; }
+.hc .hc-welcome { font: italic 300 28px/1.3 var(--body-font,Geist,Arial,sans-serif) !important; letter-spacing: 0; text-transform: none; color: #e0cda4 !important; max-width: 440px; }
 .hc .hc-availability { display: inline-flex; align-items: center; gap: 10px; border: 1px solid #c5ab7770; border-radius: 30px; padding: 10px 16px; margin: 0 0 22px; color: #f2ede2; background: #1118129c; font: 500 10px/1.5 Montserrat,sans-serif; letter-spacing: .17em; text-transform: uppercase; }
 .hc .hc-availability > span { width: 6px; height: 6px; background: #e0cda4; border-radius: 50%; }
 .hc .hc-strip { text-align: center; padding-block: 30px; color: #e0cda4; word-spacing: .3em; }
@@ -99,7 +99,7 @@ body.ticketing-page .hc .ticket-access-action .ticket-btn::after { color: #fff8e
 .hc .hc-schedule > div { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 10px 24px; gap: 10px; }
 .hc .hc-schedule > div + div { border-left: 1px solid #c5ab7740; }
 .hc .hc-schedule span { color: #e0cda4; font: 500 10px/1.5 Montserrat,sans-serif; letter-spacing: .16em; text-transform: uppercase; }
-.hc .hc-schedule strong { color: #f2ede2; font: 300 clamp(44px,4.8vw,68px)/1 "Cormorant Garamond",serif; }
+.hc .hc-schedule strong { color: #f2ede2; font: 300 clamp(44px,4.8vw,68px)/1 var(--body-font,Geist,Arial,sans-serif); }
 .hc .hc-schedule small { color: #d4d4c8; font: 400 12px/1.6 Montserrat,sans-serif; }
 .hc .hc-intro { align-items: center; }
 .hc .hc-intro > p { font-size: 18px; max-width: 600px; }
@@ -108,7 +108,7 @@ body.ticketing-page .hc .ticket-access-action .ticket-btn::after { color: #fff8e
 .hc .hc-stop:has(> .hc-chapter[open]) { grid-column: 1/-1; }
 .hc .hc-chapter { position: relative; border: 1px solid #c5ab7750; background: linear-gradient(135deg,#243227,#151e17); overflow: hidden; }
 .hc .hc-chapter-heading { position: relative; grid-template-columns: minmax(0,1fr) 36px; gap: 22px; padding: 32px; min-height: 245px; }
-.hc .hc-chapter-order { position: absolute; right: 28px; top: 14px; color: #c5ab7738; font: 300 88px/1 "Cormorant Garamond",serif; pointer-events: none; }
+.hc .hc-chapter-order { position: absolute; right: 28px; top: 14px; color: #c5ab7738; font: 300 88px/1 var(--body-font,Geist,Arial,sans-serif); pointer-events: none; }
 .hc .hc-chapter-heading > .hc-time { grid-column: 1/-1; display: flex; gap: 14px; align-items: baseline; font-size: 38px; padding-right: 75px; }
 .hc .hc-time small { margin-top: 0; font-size: 8px; }
 .hc .hc-chapter-title { min-width: 0; }
@@ -140,3 +140,108 @@ body.ticketing-page .hc .ticket-access-action .ticket-btn::after { color: #fff8e
 }
 
 .hc [data-analytics-section="hora-cero-recorrido"] > p { max-width: 860px; }
+
+/* Six destinations: the Hora Cero flight itinerary. */
+.hc .hc-flight{padding:60px 7% 40px;background:radial-gradient(ellipse at 50% 40%,#273b2d 0%,#152219 65%);border-bottom:1px solid #c5ab773d}
+.hc .hc-flight-heading{display:flex;justify-content:space-between;align-items:start;gap:24px}.hc .hc-flight h2{font-size:clamp(38px,4.5vw,64px);margin:14px 0}.hc .hc-flight h2 em{color:#dac79e}.hc .hc-flight-heading p{margin:0;max-width:620px}.hc-flight-control{display:flex;align-items:center;gap:9px;white-space:nowrap;font:400 11px/1.5 Montserrat,sans-serif;color:#dac79e;padding:10px 0;cursor:pointer}.hc-flight-control input{accent-color:#c5ab77;width:16px;height:16px}.hc-flight-board{position:relative;margin-top:12px}.hc-flight-desktop{display:block;width:100%;height:auto;overflow:visible}.hc-flight-mobile{display:none}.hc-flight-line{fill:none;stroke:#c5ab7799;stroke-width:1.5;stroke-dasharray:4 7}.hc-flight-dots circle{fill:#dac79e;stroke:#152219;stroke-width:5}.hc-flight-plane{fill:#f3e6c8;filter:drop-shadow(0 0 8px #c5ab7755);offset-rotate:auto;animation:hc-flight-travel 24s linear infinite}.hc-flight:has(.hc-flight-control input:checked) .hc-flight-plane{animation-play-state:paused}.hc-flight-stops{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));list-style:none;padding:0;margin:-50px 0 0;position:relative;gap:10px}.hc-flight-stops a{display:flex;flex-direction:column;align-items:center;gap:8px;color:#f2ede2;text-decoration:none;padding:14px 4px;border-radius:3px;transition:background .2s}.hc-flight-stops a:hover{background:#c5ab7710}.hc-flight-number{font:400 10px/1 Montserrat,sans-serif;letter-spacing:.15em;color:#c5ab77}.hc-flight-stops strong{font:400 clamp(22px,2.4vw,34px)/1.2 var(--body-font,Geist,Arial,sans-serif)}.hc-flight-caption{font:400 10px/1.6 Montserrat,sans-serif;color:#c9cfc3;text-align:center}.hc-flight-stops time{font:500 12px/1.5 Montserrat,sans-serif;letter-spacing:.08em;color:#dac79e}.hc .hc-flight-note{font-size:11px;color:#bdc6b7;text-align:center;margin:24px 0 0}.hc-chapter{scroll-margin-top:90px}@keyframes hc-flight-travel{0%,4%{offset-distance:0%}96%,100%{offset-distance:100%}}
+@media(max-width:700px){.hc .hc-flight{padding:40px 7% 28px}.hc .hc-flight-heading{display:block}.hc-flight-control{margin-top:12px}.hc-flight-desktop{display:none}.hc-flight-mobile{display:block;position:absolute;left:0;top:0;width:80px;height:640px}.hc-flight-board{margin-top:20px;min-height:660px}.hc-flight-stops{grid-template-columns:1fr;margin:0 0 0 94px;gap:0}.hc-flight-stops li{height:110px}.hc-flight-stops a{align-items:flex-start;padding:8px 0;gap:4px}.hc-flight-stops strong{font-size:30px}.hc-flight-caption{text-align:left}.hc-flight-number{font-size:9px}.hc .hc-flight-note{text-align:left;margin-top:8px}}
+@media(prefers-reduced-motion:reduce){.hc-flight-plane{animation:none;offset-distance:0%}.hc-flight-control{display:none}.hc-flight-stops a{transition:none}}
+
+/* One cover: photographic atmosphere, title and a flight through six countries. */
+body.ticketing-page .hc .hc-hero{padding:64px 7% 28px;min-height:0;display:flex;flex-direction:column;gap:34px}
+.hc .hc-hero-art{height:100%;object-position:center 55%;mask-image:none}
+.hc .hc-hero::after{background:linear-gradient(90deg,#111812ed 0%,#111812bc 30%,#11181218 70%),linear-gradient(0deg,#111812f5 0%,#111812d9 22%,transparent 52%)}
+.hc .hc-hero-copy{max-width:570px}
+.hc .hc-hero h1{font-size:clamp(78px,7.5vw,120px);line-height:.9;margin:24px 0}
+.hc .hc-hero .hc-welcome{font-size:25px!important;margin:0 0 20px;max-width:420px}
+.hc .hc-hero .hc-lede{font-size:13px;max-width:430px;margin:0}
+.hc .hc-hero .hc-facts{margin:20px 0;font-size:11px;gap:18px}
+.hc .hc-hero .hc-availability{margin-bottom:18px;padding:7px 12px;font-size:9px}
+.hc .hc-hero .hc-flight{position:relative;z-index:1;padding:18px 0 0;background:none;border:0;border-top:1px solid #c5ab7740}
+.hc .hc-hero .hc-flight-heading{align-items:center;gap:12px}
+.hc .hc-hero .hc-flight-heading h2{font:500 10px/1.6 Montserrat,sans-serif;text-transform:uppercase;letter-spacing:.18em;color:#e0cda4;margin:0}
+.hc .hc-hero .hc-flight-control{padding:0;font-size:10px}
+.hc .hc-hero .hc-flight-board{margin:0;min-height:0}
+.hc .hc-hero .hc-flight-stops{margin:-2px 0 0;gap:8px}
+.hc .hc-hero .hc-flight-stops a{padding:0 4px;gap:5px}
+.hc .hc-hero .hc-flight-stops strong{font-size:clamp(20px,2vw,29px)}
+.hc .hc-hero .hc-flight-caption{display:none}
+.hc .hc-hero .hc-flight-number{font-size:8px}
+.hc .hc-hero .hc-flight-stops time{font-size:10px}
+.hc .hc-hero .hc-flight-note{font-size:9px;margin:16px 0 0;color:#d0d3c7}
+@media(max-width:700px){body.ticketing-page .hc .hc-hero{padding:210px 6% 28px;gap:28px}.hc .hc-hero-art{height:490px;object-position:80% center;mask-image:linear-gradient(#000 55%,transparent)}.hc .hc-hero::after{background:linear-gradient(0deg,#111812 0%,#111812 52%,#11181215 90%)}.hc .hc-hero-copy{max-width:none}.hc .hc-hero h1{font-size:clamp(72px,20vw,110px);line-height:.9;margin:18px 0}.hc .hc-hero h1 span{display:inline;margin-left:.15em}.hc .hc-hero .hc-welcome{font-size:23px!important}.hc .hc-hero .hc-facts{gap:12px}.hc .hc-hero .hc-flight-heading{display:flex}.hc .hc-hero .hc-flight-heading h2{font-size:9px;letter-spacing:.1em}.hc .hc-hero .hc-flight-control{margin:0;font-size:9px}.hc .hc-hero .hc-flight-desktop{display:block;margin:8px 0}.hc .hc-hero .hc-flight-mobile{display:none}.hc .hc-hero .hc-flight-stops{grid-template-columns:repeat(3,minmax(0,1fr));margin:0;row-gap:18px}.hc .hc-hero .hc-flight-stops li{height:auto}.hc .hc-hero .hc-flight-stops a{align-items:center}.hc .hc-hero .hc-flight-stops strong{font-size:25px}.hc .hc-hero .hc-flight-note{text-align:center}.hc .hc-hero .hc-flight-plane{transform:scale(1.5)}}
+
+@media(min-width:701px){body.ticketing-page .hc .hc-hero{padding-top:44px;gap:24px}.hc .hc-hero h1{font-size:clamp(78px,7vw,104px)}.hc .hc-hero .hc-welcome{font-size:23px!important}}
+@media(max-width:700px){.hc .hc-hero h1 span{display:block;margin-left:0}.hc .hc-hero h1{white-space:normal;font-size:82px}.hc .hc-hero-copy{text-shadow:0 2px 20px #111812}}
+
+/* Hora Cero: distinguish food, setting, included drinks and participatory experiences. */
+.hc .hc-chapter-context{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin:18px 0 20px;font:500 11px/1.6 Montserrat,sans-serif;letter-spacing:.03em}
+.hc .hc-kind{display:inline-flex;padding:5px 12px;border:1px solid #dac79e80;background:#dac79e14;color:#f0dcad;text-transform:uppercase;letter-spacing:.1em}
+.hc [data-kind="experience"] .hc-kind{border-color:#a3c8c280;background:#a3c8c214;color:#c7e6dc}
+.hc [data-kind="party"] .hc-kind{border-color:#d5b6cc80;background:#d5b6cc14;color:#efcce0}
+.hc .hc-location{color:#e0e0d5}
+.hc .hc-service-facts{display:flex;flex-wrap:wrap;gap:12px 28px;padding:18px 22px;margin:0 0 24px;background:#c5ab7710;border-left:2px solid #c5ab77;font:500 12px/1.6 Montserrat,sans-serif;color:#f0dcad}
+.hc .hc-menu-group{padding-top:26px;border-top:1px solid #c5ab7740}
+.hc .hc-menu-group h4{font-size:14px;letter-spacing:.07em;margin-bottom:12px}
+.hc .hc-piece .hc-allergens{margin-top:15px;padding-top:12px;border-top:1px solid #c5ab7726;font:400 11px/1.65 Montserrat,sans-serif;color:#d8c9a9;max-width:55ch}
+.hc .hc-allergens strong{display:block;font-size:9px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;margin-bottom:5px;color:#e8d6af}
+.hc .hc-allergens span{display:block}
+.hc .hc-allergens-pending{color:#c8c9bd!important}
+.hc .hc-menu-nine .hc-pieces{counter-reset:hc-bites}
+.hc .hc-menu-nine .hc-piece h5::before{counter-increment:hc-bites;content:counter(hc-bites,decimal-leading-zero);display:inline-block;margin-right:14px;font:500 10px/1 Montserrat,sans-serif;color:#c5ab77;vertical-align:middle}
+@media(max-width:700px){.hc .hc-chapter-context{gap:8px 12px;margin:16px 0}.hc .hc-location{font-size:10px}.hc .hc-service-facts{display:grid;gap:8px;padding:14px 16px;font-size:11px}.hc .hc-menu-group h4{font-size:12px}.hc .hc-menu-group{padding-top:22px;margin-top:28px}}
+
+/* Hora Cero: all-inclusive access and full-width details. */
+.hc .hc-schedule { grid-template-columns: repeat(4,minmax(0,1fr)); }
+body.ticketing-page .hc .ticket-access-heading { align-items: start; }
+body.ticketing-page .hc .hc-all-included { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin: 24px 0; padding: 14px 18px; background: #23392b; color: #fff7e5; border-left: 3px solid #b79a5e; }
+.hc .hc-all-included strong { font: 600 12px/1.6 Montserrat,sans-serif; text-transform: uppercase; letter-spacing: .08em; }
+.hc .hc-all-included span { font: 400 12px/1.6 Montserrat,sans-serif; color: #f0ddb3; }
+.hc .hc-access-times { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 0 0 24px; }
+.hc .hc-access-times div { border-left: 1px solid #9e8a64; padding-left: 14px; }
+.hc .hc-access-times dt { color: #56604d; font: 500 10px/1.6 Montserrat,sans-serif; text-transform: uppercase; letter-spacing: .07em; }
+.hc .hc-access-times dd { margin: 6px 0 0; color: #19241b; font: 400 30px/1.1 var(--body-font,Geist,Arial,sans-serif); }
+body.ticketing-page .hc .ticket-access-includes { display: flex; justify-content: space-between; align-items: center; gap: 16px; width: 100%; min-height: 54px; padding: 14px 18px; border: 1px solid #8b784f; background: #e9e0cf; color: #263829; text-align: left; font: 600 11px/1.6 Montserrat,sans-serif; letter-spacing: .1em; }
+body.ticketing-page .hc .ticket-access-includes:hover,
+body.ticketing-page .hc .ticket-access-includes.is-open { background: #23392b; color: #fff7e5; border-color: #23392b; }
+body.ticketing-page .hc .ticket-access-includes b { font-size: 22px; font-weight: 400; color: currentColor; }
+body.ticketing-page .hc .hc-included-panel { scroll-margin-top: 92px; width: 100%; max-width: none; margin: 8px 0 32px; padding: clamp(22px,3.2vw,42px); background: #182d23; border: 1px solid #82714f; color: #f8f1e4; }
+body.ticketing-page .hc .hc-included-panel[hidden] { display: none; }
+.hc .hc-included-header > span { color: #e5c891; font: 500 10px/1.6 Montserrat,sans-serif; text-transform: uppercase; letter-spacing: .18em; }
+.hc .hc-included-header h4 { margin: 16px 0; color: #fff7e5; font: 400 clamp(34px,4vw,52px)/1.03 var(--body-font,Geist,Arial,sans-serif); letter-spacing: -.015em; }
+.hc .hc-included-header h4 em { color: #e5c891; font-weight: 300; }
+body.ticketing-page .hc .hc-included-panel p { color: #ebe9dc; font-size: 13px; line-height: 1.85; margin: 0; }
+.hc .hc-included-header p { max-width: 74ch; }
+.hc .hc-included-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; margin: 28px 0; }
+.hc .hc-included-item { display: grid; grid-template-columns: 26px minmax(0,1fr); gap: 14px; padding: 22px; background: #263e30; border: 1px solid #a58b563f; }
+.hc .hc-included-number { color: #e5c891; font: 500 11px/1.8 Montserrat,sans-serif; }
+.hc .hc-included-item h5 { margin: 0 0 10px; color: #f5dba5; font: 600 11px/1.6 Montserrat,sans-serif; letter-spacing: .07em; }
+.hc .hc-included-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-top: 22px; border-top: 1px solid #a58b5666; }
+.hc .hc-included-footer strong { color: #fff7e5; font: 400 25px/1.2 var(--body-font,Geist,Arial,sans-serif); }
+.hc .hc-included-footer span { color: #e5c891; font: 500 11px/1.7 Montserrat,sans-serif; }
+@media(max-width:700px) {
+  .hc .hc-schedule { grid-template-columns: 1fr; }
+  .hc .hc-included-grid { grid-template-columns: 1fr; }
+  .hc .hc-included-item { padding: 18px 14px; gap: 10px; grid-template-columns: 22px minmax(0,1fr); }
+  .hc .hc-access-times dd { font-size: 27px; }
+}
+
+/* The finale is visible without opening a destination. */
+.hc .hc-finale { display:grid;grid-template-columns:minmax(180px,.7fr) minmax(0,1.5fr);gap:clamp(28px,5vw,80px);align-items:center;margin-top:52px;padding:clamp(28px,5vw,64px);background:linear-gradient(120deg,#e9d9b8,#d8bc86);border:1px solid #f3e5c8;color:#172a21;scroll-margin-top:100px; }
+.hc .hc-finale-time { display:grid;gap:14px;align-content:center;padding-right:36px;border-right:1px solid #172a2140; }
+.hc .hc-finale-time span { color:#233b2b;font:600 12px/1.5 var(--body-font,Arial,sans-serif);letter-spacing:.06em; }
+.hc .hc-finale-time span:first-child { text-transform:uppercase; }
+.hc .hc-finale-time strong { color:#172a21;font:400 clamp(60px,7vw,108px)/1 var(--body-font,Arial,sans-serif);letter-spacing:-.06em; }
+.hc .hc-finale-eyebrow { display:block;margin-bottom:14px;color:#314632;font:600 11px/1.5 var(--body-font,Arial,sans-serif);letter-spacing:.08em;text-transform:uppercase; }
+.hc .hc-finale h2 { margin:0 0 22px;color:#172a21;font:500 clamp(32px,3.8vw,58px)/1.08 var(--body-font,Arial,sans-serif);letter-spacing:-.035em; }
+.hc .hc-finale p { max-width:52ch;margin:0 0 22px;color:#233b2b;font:400 16px/1.7 var(--body-font,Arial,sans-serif); }
+.hc .hc-finale-end { display:block;border-top:1px solid #172a2140;padding-top:18px;color:#172a21;font:600 19px/1.4 var(--body-font,Arial,sans-serif); }
+.hc .hc-finale-included { display:block;margin-top:8px;color:#314632;font:500 12px/1.5 var(--body-font,Arial,sans-serif); }
+@media(max-width:700px) {
+ .hc .hc-finale { grid-template-columns:1fr;gap:26px;margin-top:30px;padding:28px 22px; }
+ .hc .hc-finale-time { padding:0 0 24px;border-right:0;border-bottom:1px solid #172a2140;gap:10px; }
+ .hc .hc-finale-time strong { font-size:76px; }
+ .hc .hc-finale h2 { font-size:34px; }
+ .hc .hc-finale p { font-size:15px; }
+ .hc .hc-finale-end { font-size:18px; }
+}

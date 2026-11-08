@@ -86,6 +86,28 @@ try {
         return;
     }
 
+    // Editorial archive: publication snapshots never affect ticketing state.
+    if ($method === 'GET' && $path === '/experience-archive') {
+        header('Cache-Control: no-store');
+        json_response(['ok'=>true,'experiences'=>(new \Perigallo\Ticketing\ExperienceArchive(Database::pdo()))->list()]); return;
+    }
+    if (str_starts_with($path, '/admin/experience-archive')) {
+        AdminAuth::require();
+        header('Cache-Control: private, no-store');
+        $archive = new \Perigallo\Ticketing\ExperienceArchive(Database::pdo());
+        if ($method === 'GET' && $path === '/admin/experience-archive') { json_response(['ok'=>true,'experiences'=>$archive->list(true)]); return; }
+        if ($method !== 'GET') AdminAuth::requireCsrf();
+        if ($path !== '/admin/experience-archive/media' && (int)($_SERVER['CONTENT_LENGTH'] ?? 0)>400000) { json_response(['ok'=>false,'error'=>'La historia es demasiado extensa.'],413); return; }
+        if ($method === 'POST' && $path === '/admin/experience-archive/media') { json_response(['ok'=>true,'media'=>\Perigallo\Ticketing\ArchiveMedia::upload($ticketing(),$_FILES['file'] ?? [],(string)($_POST['kind'] ?? 'image'))],201); return; }
+        if ($method === 'POST' && $path === '/admin/experience-archive/sync') { json_response(['ok'=>true,'created'=>$archive->syncCompleted()]); return; }
+        if ($method === 'POST' && $path === '/admin/experience-archive') { json_response(['ok'=>true,'experience'=>$archive->save(read_json_body())],201); return; }
+        if (preg_match('#^/admin/experience-archive/([0-9]+)$#',$path,$a)) {
+            if ($method === 'GET') { $entry=$archive->get((int)$a[1],true); json_response($entry?['ok'=>true,'experience'=>$entry]:['ok'=>false,'error'=>'Historia no encontrada.'],$entry?200:404); return; }
+            if ($method === 'PUT') { json_response(['ok'=>true,'experience'=>$archive->save(read_json_body(),(int)$a[1])]); return; }
+        }
+        if ($method === 'POST' && preg_match('#^/admin/experience-archive/([0-9]+)/(publish|unpublish|archive|restore)$#',$path,$a)) { $body=read_json_body(); json_response(['ok'=>true,'experience'=>$archive->transition((int)$a[1],$a[2],(int)($body['revision'] ?? 0))]); return; }
+    }
+
     if ($method === 'GET' && $path === '/events') {
         $cache = PublicEventCache::forApplication();
         $events = $cache->remember(static fn () => $ticketing()->listEvents());
@@ -522,6 +544,12 @@ try {
             throw new InvalidArgumentException('Confirma que el abono se ha realizado fuera de esta aplicación.');
         }
         json_response(['ok' => true, 'order' => $ticketing()->adminRecordRefund((int) $m[1], AdminAuth::operatorName(), (string) ($data['reason'] ?? ''))]);
+        return;
+    }
+
+    if ($method === 'POST' && preg_match('#^/admin/orders/([0-9]+)/confirm-door$#', $path, $m)) {
+        AdminAuth::requireCsrf();
+        json_response(['ok' => true, 'order' => $ticketing()->adminConfirmDoorPayment((int) $m[1], AdminAuth::operatorName())]);
         return;
     }
 

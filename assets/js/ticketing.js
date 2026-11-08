@@ -353,6 +353,23 @@
     return '<section class="event-cocktail-menu" aria-labelledby="cocktail-menu-title" id="menu-coctel"><header><span class="ticket-eyebrow">La propuesta gastronómica</span><h3 id="cocktail-menu-title">Menú cóctel</h3><p>Bebidas incluidas durante el cóctel. Las copas se pagan aparte.</p></header><div class="event-menu-groups">' + groups + '</div></section>';
   }
 
+  function horaCeroFlightRoute() {
+    var stops = [
+      ['Australia', 'Sídney · El comienzo', '14:00'],
+      ['Japón', 'Tres pases en la mesa', '16:00'],
+      ['China', 'Té y dulces', '17:00'],
+      ['Vietnam', 'El Río de los Deseos', '18:00'],
+      ['India', 'Fiesta Bollywood', '19:30'],
+      ['Rusia', 'Caviar, brindis y uvas', '22:00']
+    ];
+    var path = 'M100 65 Q200 0 300 40 Q400 110 500 65 Q600 0 700 40 Q800 110 900 65 Q1000 0 1100 40';
+    var mobilePath = 'M40 40 Q90 95 40 150 Q-10 205 40 260 Q90 315 40 370 Q-10 425 40 480 Q90 535 40 590';
+    var plane = '<path d="M20 0L3-4L-6-18L-11-18L-5-3L-14-3L-19-9L-23-9L-19 0L-23 9L-19 9L-14 3L-5 3L-11 18L-6 18L3 4Z"/>';
+    var dots = stops.map(function (_, i) { return '<circle cx="' + (100 + i * 200) + '" cy="' + (i % 2 ? 40 : 65) + '" r="6"/>'; }).join('');
+    var mobileDots = stops.map(function (_, i) { return '<circle cx="40" cy="' + (40 + i * 110) + '" r="5"/>'; }).join('');
+    return '<section class="hc-flight" aria-labelledby="hc-flight-title"><header class="hc-flight-heading"><div><h2 id="hc-flight-title">Un viaje · Seis destinos</h2></div><label class="hc-flight-control"><input type="checkbox" aria-label="Pausar el avión del recorrido"><span>Pausar avión</span></label></header><div class="hc-flight-board"><svg class="hc-flight-desktop" viewBox="0 0 1200 120" aria-hidden="true"><path class="hc-flight-line" d="' + path + '"/><g class="hc-flight-dots">' + dots + '</g><g class="hc-flight-plane" style="offset-path:path(\'' + path + '\')">' + plane + '</g></svg><svg class="hc-flight-mobile" viewBox="0 0 80 640" aria-hidden="true"><path class="hc-flight-line" d="' + mobilePath + '"/><g class="hc-flight-dots">' + mobileDots + '</g><g class="hc-flight-plane" style="offset-path:path(\'' + mobilePath + '\')">' + plane + '</g></svg><ol class="hc-flight-stops">' + stops.map(function (stop, i) { return '<li><a href="#hc-destination-' + (i + 1) + '"><span class="hc-flight-number">0' + (i + 1) + '</span><strong>' + stop[0] + '</strong><span class="hc-flight-caption">' + stop[1] + '</span><time>' + stop[2] + '</time></a></li>'; }).join('') + '</ol></div><p class="hc-flight-note">31 de diciembre · Horarios de España peninsular</p></section>';
+  }
+
   function renderHoraCero(event, preview) {
     var types = (event.ticket_types || []).map(function (type) { return preview ? Object.assign({}, type, { available: Number(type.max_per_order || 10), effective_status: "upcoming" }) : type; });
     var blocks = String(event.description || '').trim().split(/\n\s*\n/);
@@ -362,35 +379,45 @@
       var parts = heading.split(' · '), time = parts.shift(), place = parts.join(' · ');
       // Detail rows stay editable in the event description: > group | title | copy.
       // ? rows are working menu proposals, visible only in authenticated preview.
-      var groups = [], prose = [];
+      var groups = [], prose = [], context = [];
       lines.forEach(function (line) {
         var marker = line.charAt(0);
+        if (marker === '@') { context = line.slice(1).split('|').map(function (part) { return part.trim(); }); return; }
         if (marker !== '>' && marker !== '?') { prose.push(line); return; }
         if (marker === '?' && !preview) return;
         var fields = line.slice(1).split('|').map(function (part) { return part.trim(); });
         if (fields.length < 3) return;
         var group = groups.find(function (item) { return item.name === fields[0]; });
         if (!group) { group = { name: fields[0], items: [] }; groups.push(group); }
-        group.items.push('<details class="hc-piece"><summary><span>' + escapeHtml(fields[1]) + '</span><span class="hc-plus" aria-hidden="true">+</span></summary><p>' + escapeHtml(fields.slice(2).join(' | ')) + '</p></details>');
+        var copy = [], allergens = '';
+        fields.slice(2).forEach(function (field) {
+          if (/^Alérgenos:/i.test(field)) allergens = field.replace(/^Alérgenos:\s*/i, '');
+          else copy.push(field);
+        });
+        var allergenMarkup = allergens ? '<p class="hc-allergens' + (/pendiente|incompleta/i.test(allergens) ? ' hc-allergens-pending' : '') + '"><strong>Alérgenos</strong><span>' + escapeHtml(allergens) + '</span></p>' : '';
+        group.items.push('<article class="hc-piece"><h5>' + escapeHtml(fields[1]) + '</h5><p>' + escapeHtml(copy.join(' | ')) + '</p>' + allergenMarkup + '</article>');
       });
       var detail = groups.map(function (group) {
-        return '<section class="hc-menu-group"><h4>' + escapeHtml(group.name) + '</h4><div class="hc-pieces">' + group.items.join('') + '</div></section>';
+        return '<section class="hc-menu-group' + (/Nueve bocados/.test(group.name) ? ' hc-menu-nine' : '') + '"><h4>' + escapeHtml(group.name) + '</h4><div class="hc-pieces">' + group.items.join('') + '</div></section>';
       }).join('');
-      return '<li class="hc-stop"><details class="hc-chapter"><summary class="hc-chapter-heading"><span class="hc-chapter-order" aria-hidden="true">' + String(index + 1).padStart(2, '0') + '</span><span class="hc-time">' + escapeHtml(time) + '<small>HORA PENINSULAR</small></span><span class="hc-chapter-title"><span class="ticket-eyebrow">' + String(index + 1).padStart(2, '0') + ' / ' + escapeHtml(place) + '</span><span class="hc-title">' + escapeHtml(title) + '</span><span class="hc-discover"><span class="hc-open-label">Explorar este destino</span><span class="hc-close-label">Cerrar este destino</span></span></span><span class="hc-plus" aria-hidden="true">+</span></summary><div class="hc-chapter-body"><p>' + escapeHtml(prose.join(' ')) + '</p>' + detail + '</div></details></li>';
+      var kind = context[0] === 'Comida' ? 'food' : context[0] === 'Fiesta' ? 'party' : 'experience';
+      var contextHeading = context.length ? '<span class="hc-chapter-context" data-kind="' + kind + '"><span class="hc-kind">' + escapeHtml(context[0]) + '</span><span class="hc-location">' + escapeHtml(context[1] || '') + '</span></span>' : '';
+      var contextBody = context.length > 2 ? '<div class="hc-service-facts">' + context.slice(2).map(function (fact) { return '<span>' + escapeHtml(fact) + '</span>'; }).join('') + '</div>' : '';
+      return '<li class="hc-stop"><details id="hc-destination-' + (index + 1) + '" class="hc-chapter"><summary class="hc-chapter-heading"><span class="hc-chapter-order" aria-hidden="true">' + String(index + 1).padStart(2, '0') + '</span><span class="hc-time">' + escapeHtml(time) + '<small>HORA PENINSULAR</small></span><span class="hc-chapter-title"><span class="ticket-eyebrow">' + String(index + 1).padStart(2, '0') + ' / ' + escapeHtml(place) + '</span><span class="hc-title">' + escapeHtml(title) + '</span>' + contextHeading + '<span class="hc-discover"><span class="hc-open-label">Explorar este destino</span><span class="hc-close-label">Cerrar este destino</span></span></span><span class="hc-plus" aria-hidden="true">+</span></summary><div class="hc-chapter-body">' + contextBody + '<p>' + escapeHtml(prose.join(' ')) + '</p>' + detail + '</div></details></li>';
     }).join('');
     var price = types.length ? cents(types[0].final_price_cents) : '';
     var tickets = types.map(function (type) { return ticketTypeRow(type, event, preview); }).join('');
     var clock = '<svg class="hc-clock" viewBox="0 0 400 400" aria-hidden="true"><circle cx="200" cy="200" r="180"/><circle cx="200" cy="200" r="151"/><path d="M200 20v20M380 200h-20M200 380v-20M20 200h20M290 44l-10 17M356 110l-17 10M356 290l-17-10M290 356l-10-17M110 356l10-17M44 290l17-10M44 110l17 10M110 44l10 17"/><path class="hc-hands" d="M200 200V62"/><path class="hc-hands hc-hour-hand" d="M200 200V112"/><circle cx="200" cy="200" r="5"/><text class="hc-clock-label" x="200" y="280" text-anchor="middle">00:00</text></svg>';
     return '<style>' +
       '.hc{--hc-gold:#c5ab77;--hc-ivory:#f2ede2;background:#111812;color:var(--hc-ivory);overflow:hidden}.hc *{box-sizing:border-box}.hc h1,.hc h2,.hc h3{font-family:"Cormorant Garamond",serif;font-weight:300;line-height:1.03;color:var(--hc-ivory)}.hc p{line-height:1.85;font-size:15px;color:#d4d4c8}.hc .ticket-eyebrow{color:var(--hc-gold);font-size:11px;letter-spacing:.19em}.hc-hero{position:relative;padding:100px 7% 64px;min-height:650px;background:radial-gradient(ellipse at 80% 38%,#303e30 0,transparent 62%);border-bottom:1px solid #c5ab773d}.hc-hero-copy{position:relative;z-index:1;max-width:640px}.hc h1{font-size:clamp(76px,10vw,154px);letter-spacing:-.045em;margin:22px 0}.hc h1 span{display:block}.hc-welcome{text-transform:uppercase;letter-spacing:.16em;font-size:12px!important;color:var(--hc-gold)!important}.hc-lede{max-width:440px}.hc-clock{position:absolute;width:48%;right:-5%;top:70px;fill:none;stroke:#c5ab7759;stroke-width:1}.hc-hands{stroke:var(--hc-gold);stroke-width:2}.hc-facts{display:flex;gap:20px;flex-wrap:wrap;margin:32px 0;font-size:12px;line-height:1.8}.hc-facts span{border-left:1px solid var(--hc-gold);padding-left:16px}.hc-facts strong{display:block;font-weight:500;color:var(--hc-gold)}.hc-actions{display:flex;gap:20px;align-items:center;flex-wrap:wrap}.hc .ticket-btn{font-size:11px}.hc-link{color:var(--hc-ivory);font-size:12px;border-bottom:1px solid #c5ab7780;padding-bottom:5px}.hc-strip{padding:22px 7%;border-bottom:1px solid #c5ab773d;color:var(--hc-gold);font-size:10px;letter-spacing:.14em;line-height:2.2}.hc-section{padding:80px 7%;border-bottom:1px solid #c5ab773d}.hc h2{font-size:clamp(38px,5vw,66px);margin:16px 0 25px;max-width:700px}.hc-intro{display:grid;grid-template-columns:1fr 1fr;gap:60px}.hc-intro p{margin-top:25px}.hc-timeline{list-style:none;margin:45px 0 0;padding:0}.hc-stop{display:grid;grid-template-columns:140px 1fr 80px;gap:32px;padding:36px 0;border-top:1px solid #c5ab773d;align-items:start}.hc-time{font-family:"Cormorant Garamond",serif;font-size:40px;color:var(--hc-gold)}.hc-time small{display:block;font-family:Montserrat,sans-serif;font-size:8px;letter-spacing:.12em;margin-top:12px}.hc h3{font-size:34px;margin:12px 0}.hc-stop p{margin:0;max-width:660px}.hc-orbit{border:1px solid #c5ab7766;border-radius:50%;width:70px;height:70px;display:grid;place-items:center;color:var(--hc-gold);font-family:"Cormorant Garamond",serif;font-size:28px}.hc-tickets{max-width:1000px;margin:auto}.hc .ticket-access-card{background:#1b251d}.hc .event-access{margin:0}.hc .experience-information-item{border-color:#c5ab773d}.hc .experience-information-trigger{color:var(--hc-ivory)}.hc-end{text-align:center;background:#303e30}.hc-end h2{margin:20px auto}.hc-end .hc-actions{justify-content:center}.hc a:focus-visible,.hc button:focus-visible{outline:2px solid var(--hc-gold);outline-offset:6px}@media(max-width:700px){.hc-hero{padding:60px 7% 45px;min-height:0}.hc-clock{width:75%;right:-28%;top:30px;opacity:.5}.hc-hero-copy{max-width:100%}.hc h1{font-size:90px}.hc-section{padding:48px 7%}.hc-intro{grid-template-columns:1fr;gap:0}.hc-stop{grid-template-columns:76px 1fr;gap:16px;padding:30px 0}.hc-orbit{display:none}.hc-time{font-size:32px}.hc-time small{font-size:7px}.hc h3{font-size:29px}.hc p{font-size:14px}.hc-facts{gap:16px}.hc .ticket-access-card{padding:22px}.hc-actions{gap:18px}}' +
-      '.hc-stop{display:block;padding:0}.hc-chapter-heading{display:grid;grid-template-columns:120px minmax(0,1fr) 40px;gap:28px;align-items:center;list-style:none;padding:32px 16px;cursor:pointer;border-radius:4px}.hc summary::-webkit-details-marker{display:none}.hc summary::marker{content:""}.hc summary:hover{background:#303e304d}.hc summary:focus-visible{outline:2px solid var(--hc-gold);outline-offset:4px}.hc-title{display:block;font:300 34px/1.15 "Cormorant Garamond",serif;margin:10px 0 12px;color:var(--hc-ivory)}.hc-discover{font:500 11px/1.5 Montserrat,sans-serif;color:#d8c69f;letter-spacing:.04em}.hc-close-label{display:none}.hc-chapter[open]>.hc-chapter-heading .hc-open-label{display:none}.hc-chapter[open]>.hc-chapter-heading .hc-close-label{display:inline}.hc-plus{display:grid;place-items:center;border:1px solid #c5ab7770;border-radius:50%;width:32px;height:32px;font:300 24px/1 Montserrat,sans-serif;color:var(--hc-gold);flex-shrink:0}.hc details[open]>summary>.hc-plus{transform:rotate(45deg)}.hc-chapter[open]{background:#19241b}.hc-chapter-body{padding:0 28px 36px 164px}.hc-chapter-body>p{max-width:760px;margin:0 0 28px}.hc-menu-group{margin-top:28px}.hc-menu-group h4{font:500 12px/1.6 Montserrat,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#e0cda4;margin:0 0 14px}.hc-pieces{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}.hc-piece{border:1px solid #c5ab7745;background:#111812;border-radius:3px;min-width:0}.hc-piece summary{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px;cursor:pointer;list-style:none;font:500 14px/1.6 Montserrat,sans-serif;color:var(--hc-ivory)}.hc-piece p{padding:0 18px 22px;margin:0;line-height:1.8}.hc-piece .hc-plus{width:24px;height:24px;font-size:18px}.hc-preview-note{padding:16px 20px;border-left:2px solid var(--hc-gold);background:#303e3055;font-size:13px!important}.hc .experience-guide-trigger{color:#d4d4c8}.hc .experience-guide-trigger.is-active{color:var(--hc-ivory)}@media(max-width:700px){.hc-chapter-heading{grid-template-columns:1fr 32px;gap:12px;padding:24px 12px}.hc-time{grid-column:1/-1;display:flex;align-items:baseline;gap:14px;font-size:28px}.hc-time small{font-size:9px;margin:0}.hc-title{font-size:30px}.hc-chapter-body{padding:0 16px 28px}.hc-pieces{grid-template-columns:1fr}.hc-piece summary{min-height:62px}.hc h1{font-size:clamp(64px,23vw,90px)}.hc .ticket-eyebrow{line-height:1.7;letter-spacing:.12em}.hc-preview-note{padding:14px}}' +
-      '</style><link rel="stylesheet" href="/assets/css/hora-cero.css?v=20261028-evening-v1"><div class="hc"><section class="hc-hero" data-analytics-section="hora-cero-portada"><img class="hc-hero-art" src="/assets/images/hora-cero/medianoche.webp" width="1536" height="1024" alt="" fetchpriority="high">' + clock + '<div class="hc-hero-copy"><span class="ticket-eyebrow">La Perigalla · Una experiencia Perigallo</span><h1>HORA<span>CERO.</span></h1><p class="hc-welcome">' + escapeHtml(event.subtitle || 'Bienvenidos a la Hora Cero') + '</p><p class="hc-lede">' + escapeHtml(event.short_description) + '</p><div class="hc-facts"><span><strong>' + escapeHtml(fmtDateOnly(event.starts_at)) + '</strong>' + escapeHtml(event.location) + '</span><span><strong>' + escapeHtml(price) + ' por persona</strong>' + escapeHtml([event.locality, event.province].filter(Boolean).join(' · ')) + '</span></div><div class="hc-availability"><span aria-hidden="true"></span>Plazas limitadas</div><div class="hc-actions"><a class="ticket-btn primary" href="#reservar">' + (preview ? 'Ver entrada' : 'Comprar entradas') + '</a><a class="hc-link" href="#experiencia">Descubrir la experiencia ↓</a></div></div></section>' +
-      '<div class="hc-strip"><span>Un viaje por seis destinos</span>AUSTRALIA · JAPÓN · CHINA · VIETNAM · INDIA · RUSIA</div><section class="hc-schedule" aria-label="Horario de la experiencia"><div><span>Comienza el viaje</span><strong>14:00</strong><small>31 de diciembre</small></div><div><span>Último brindis y fin</span><strong>22:00</strong><small>Fin de la experiencia</small></div><div><span>Cierre de la finca</span><strong>22:30</strong><small>Salida de todos los asistentes</small></div></section><section class="hc-section hc-intro" id="experiencia" data-analytics-section="hora-cero-concepto"><div><span class="ticket-eyebrow">01 · El concepto</span><h2>El mundo cambia de año.<br><em>Nosotros lo celebramos.</em></h2></div><p>' + escapeHtml(intro) + '</p></section>' +
-      '<section class="hc-section" data-analytics-section="hora-cero-recorrido"><span class="ticket-eyebrow">02 · El recorrido</span><h2>Seis destinos.<br><em>Un solo viaje.</em></h2><p>' + escapeHtml(event.schedule_note) + '</p><p>Toca cada destino para descubrir su experiencia y cada pieza para ver su detalle.</p>' + (preview ? '<p class="hc-preview-note">Vista de trabajo: el desarrollo gastronómico se muestra aquí para su revisión. Las propuestas de menú todavía no son definitivas.</p>' : '') + '<ol class="hc-timeline">' + chapters + '</ol></section>' +
+      '.hc-stop{display:block;padding:0}.hc-chapter-heading{display:grid;grid-template-columns:120px minmax(0,1fr) 40px;gap:28px;align-items:center;list-style:none;padding:32px 16px;cursor:pointer;border-radius:4px}.hc summary::-webkit-details-marker{display:none}.hc summary::marker{content:""}.hc summary:hover{background:#303e304d}.hc summary:focus-visible{outline:2px solid var(--hc-gold);outline-offset:4px}.hc-title{display:block;font:300 34px/1.15 "Cormorant Garamond",serif;margin:10px 0 12px;color:var(--hc-ivory)}.hc-discover{font:500 11px/1.5 Montserrat,sans-serif;color:#d8c69f;letter-spacing:.04em}.hc-close-label{display:none}.hc-chapter[open]>.hc-chapter-heading .hc-open-label{display:none}.hc-chapter[open]>.hc-chapter-heading .hc-close-label{display:inline}.hc-plus{display:grid;place-items:center;border:1px solid #c5ab7770;border-radius:50%;width:32px;height:32px;font:300 24px/1 Montserrat,sans-serif;color:var(--hc-gold);flex-shrink:0}.hc details[open]>summary>.hc-plus{transform:rotate(45deg)}.hc-chapter[open]{background:#19241b}.hc-chapter-body{padding:0 28px 36px 164px}.hc-chapter-body>p{max-width:760px;margin:0 0 28px}.hc-menu-group{margin-top:40px}.hc-menu-group h4{font:500 12px/1.6 Montserrat,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#e0cda4;margin:0 0 4px}.hc-pieces{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:64px;row-gap:0;align-items:stretch}.hc-piece{border:0;border-bottom:1px solid #c5ab772e;background:transparent;border-radius:0;min-width:0;padding:24px 0 26px}.hc-piece h5{margin:0 0 8px;font:400 26px/1.2 "Cormorant Garamond",Georgia,serif;color:var(--hc-ivory);overflow-wrap:anywhere}.hc-piece p{padding:0;margin:0;max-width:48ch;font-size:14px;line-height:1.8;color:#d4d4c8;overflow-wrap:anywhere}.hc-preview-note{padding:16px 20px;border-left:2px solid var(--hc-gold);background:#303e3055;font-size:13px!important}.hc .experience-guide-trigger{color:#d4d4c8}.hc .experience-guide-trigger.is-active{color:var(--hc-ivory)}@media(max-width:700px){.hc-chapter-heading{grid-template-columns:1fr 32px;gap:12px;padding:24px 12px}.hc-time{grid-column:1/-1;display:flex;align-items:baseline;gap:14px;font-size:28px}.hc-time small{font-size:9px;margin:0}.hc-title{font-size:30px}.hc-chapter-body{padding:0 16px 28px}.hc-pieces{grid-template-columns:1fr}.hc-piece{padding:20px 0}.hc-piece h5{font-size:24px}.hc h1{font-size:clamp(64px,23vw,90px)}.hc .ticket-eyebrow{line-height:1.7;letter-spacing:.12em}.hc-preview-note{padding:14px}}' +
+      '</style><link rel="stylesheet" href="/assets/css/hora-cero.css?v=20261108-finale-v1"><div class="hc"><section class="hc-hero" data-analytics-section="hora-cero-portada"><img class="hc-hero-art" src="/assets/images/hora-cero/medianoche.webp" width="1536" height="1024" alt="" fetchpriority="high"><div class="hc-hero-copy"><span class="ticket-eyebrow">La Perigalla · Una experiencia Perigallo</span><h1>HORA<span>CERO.</span></h1><p class="hc-welcome">' + escapeHtml(event.subtitle || 'Bienvenidos a la Hora Cero') + '</p><p class="hc-lede">' + escapeHtml(event.short_description) + '</p><div class="hc-facts"><span><strong>' + escapeHtml(fmtDateOnly(event.starts_at)) + '</strong>' + escapeHtml(event.location) + '</span><span><strong>' + escapeHtml(price) + ' por persona</strong>' + escapeHtml([event.locality, event.province].filter(Boolean).join(' · ')) + '</span></div><div class="hc-availability"><span aria-hidden="true"></span>Plazas limitadas</div><div class="hc-actions"><a class="ticket-btn primary" href="#reservar">' + (preview ? 'Ver entrada' : 'Comprar entradas') + '</a><a class="hc-link" href="#experiencia">Descubrir la experiencia ↓</a></div></div>' + horaCeroFlightRoute() + '</section>' +
+      '<section class="hc-schedule" aria-label="Horario de la experiencia"><div><span>Apertura de la finca</span><strong>13:30</strong><small>Bienvenidos a Hora Cero</small></div><div><span>Comienza el viaje</span><strong>14:00</strong><small>31 de diciembre</small></div><div><span>Nuestras campanadas y uvas</span><strong>22:00</strong><small>Cierre de Hora Cero</small></div><div><span>Cierre de la finca</span><strong>22:30</strong><small>Salida de todos los asistentes</small></div></section><section class="hc-section hc-intro" id="experiencia" data-analytics-section="hora-cero-concepto"><div><span class="ticket-eyebrow">01 · El concepto</span><h2>El mundo cambia de año.<br><em>Nosotros lo celebramos.</em></h2></div><p>' + escapeHtml(intro) + '</p></section>' +
+      '<section class="hc-section" data-analytics-section="hora-cero-recorrido"><span class="ticket-eyebrow">02 · El recorrido</span><h2>Seis destinos.<br><em>Un solo viaje.</em></h2><p>' + escapeHtml(event.schedule_note) + '</p><p>Abre cada destino para descubrir su experiencia y todos los detalles de su propuesta.</p>' + '<ol class="hc-timeline">' + chapters + '</ol><section class="hc-finale" id="cierre-hora-cero" aria-labelledby="hc-finale-title" data-analytics-section="hora-cero-cierre"><div class="hc-finale-time"><span>El cierre del evento</span><strong>22:00</strong><span>A las diez de la noche</span></div><div class="hc-finale-copy"><span class="hc-finale-eyebrow">El último momento, todos juntos</span><h2 id="hc-finale-title">Nuestras campanadas.<br>Nuestras uvas.</h2><p>A las diez celebramos nuestras propias campanadas: caviar, último brindis y uvas de la suerte para despedirnos juntos.</p><strong class="hc-finale-end">Con las uvas termina Hora Cero.</strong><span class="hc-finale-included">Incluido en tu entrada</span></div></section></section>' +
       '<figure class="hc-visual"><img src="/assets/images/hora-cero/medianoche.webp" width="1536" height="1024" alt="Composición visual de Hora Cero: luz, olivo y una copa junto al agua" loading="lazy"><figcaption><small>Hora Cero · La Perigalla</small>Un instante.<br>Todo por comenzar.</figcaption></figure><section class="hc-section hc-intro" data-analytics-section="hora-cero-gastronomia"><div><span class="ticket-eyebrow">03 · Gastronomía y celebración</span><h2>El mundo,<br><em>servido en la mesa.</em></h2></div><div>' + textParagraphs(event.included_text) + '</div></section>' +
       '<section class="hc-section" id="reservar" data-analytics-section="entradas"><div class="hc-tickets"><span class="ticket-eyebrow">04 · Tu entrada</span><h2>Tu lugar<br><em>en este viaje.</em></h2><div class="event-access"><div class="ticket-types">' + tickets + '</div></div></div></section>' +
       '<section class="hc-section event-public-information-accordions" id="detalles" data-analytics-section="detalles"><span class="ticket-eyebrow">05 · Antes de venir</span><h2>Cada detalle,<br><em>antes de venir.</em></h2>' + experienceInformation(event) + '</section>' +
-      '<section class="hc-section hc-end"><span class="ticket-eyebrow">Una experiencia Perigallo</span><h2>Despide el año<br><em>de otra manera.</em></h2><p>' + escapeHtml(fmtDateOnly(event.starts_at)) + ' · ' + escapeHtml(event.location) + ' · ' + escapeHtml(price) + ' por persona</p><p class="hc-end-hours">14:00–22:00 · Cierre de la finca y salida de todos los asistentes a las 22:30.</p><div class="hc-availability"><span aria-hidden="true"></span>Plazas limitadas</div><div class="hc-actions"><a class="ticket-btn primary" href="#reservar">' + (preview ? 'Ver entrada' : 'Comprar entradas') + '</a></div></section></div>';
+      '<section class="hc-section hc-end"><span class="ticket-eyebrow">Una experiencia Perigallo</span><h2>Despide el año<br><em>de otra manera.</em></h2><p>' + escapeHtml(fmtDateOnly(event.starts_at)) + ' · ' + escapeHtml(event.location) + ' · ' + escapeHtml(price) + ' por persona</p><p class="hc-end-hours">Apertura de la finca a las 13:30 · Experiencia de 14:00 a 22:00 · Cierre de la finca y salida de todos los asistentes a las 22:30.</p><div class="hc-availability"><span aria-hidden="true"></span>Plazas limitadas</div><div class="hc-actions"><a class="ticket-btn primary" href="#reservar">' + (preview ? 'Ver entrada' : 'Comprar entradas') + '</a></div></section></div>';
   }
 
   function renderEventDetail(event, preview) {
@@ -620,6 +647,9 @@
       link.setAttribute("aria-expanded", String(!expanded));
       link.classList.toggle("is-open", !expanded);
       panel.hidden = expanded;
+      if (!expanded && panel.classList.contains('hc-included-panel')) {
+        panel.scrollIntoView({ block: 'start', behavior: 'auto' });
+      }
     });
   }
 
@@ -727,11 +757,25 @@
     ].join('');
   }
 
+  function horaCeroIncludedContent(text) {
+    var paragraphs = String(text || '').trim().split(/\n\s*\n/);
+    var intro = paragraphs.shift() || '';
+    return '<header class="hc-included-header"><span>Tu entrada, al completo</span><h4>Todo incluido.<br><em>De principio a fin.</em></h4><p>' + escapeHtml(intro) + '</p></header>' +
+      '<div class="hc-included-grid">' + paragraphs.map(function (paragraph, index) {
+        var separator = paragraph.indexOf(' · ');
+        var title = separator > -1 ? paragraph.slice(0, separator) : 'También incluido';
+        var copy = separator > -1 ? paragraph.slice(separator + 3) : paragraph;
+        return '<section class="hc-included-item"><span class="hc-included-number" aria-hidden="true">' + String(index + 1).padStart(2, '0') + '</span><div><h5>' + escapeHtml(title) + '</h5><p>' + escapeHtml(copy) + '</p></div></section>';
+      }).join('') + '</div><footer class="hc-included-footer"><strong>Una entrada. Toda la experiencia.</strong><span>Sin suplementos ni pagos adicionales.</span></footer>';
+  }
+
   function ticketTypeRow(type, event, preview) {
     var availability = availabilityText(type);
     var includes = ticketIncludedHighlights(event);
+    var isHoraCero = event.slug === 'hora-cero-2026';
+    var includedPanel = event.included_text ? '<div class="ticket-access-included-panel' + (isHoraCero ? ' hc-included-panel' : '') + '" id="ticket-included-' + escapeAttr(type.id) + '" hidden>' + (isHoraCero ? horaCeroIncludedContent(event.included_text) : textParagraphs(event.included_text)) + '</div>' : '';
     var includesLink = event.included_text
-      ? '<button class="ticket-access-includes" type="button" data-open-included-information aria-expanded="false" aria-controls="ticket-included-' + escapeAttr(type.id) + '"><span>Ver todo lo que incluye</span><b aria-hidden="true">+</b></button><div class="ticket-access-included-panel" id="ticket-included-' + escapeAttr(type.id) + '" hidden>' + textParagraphs(event.included_text) + '</div>'
+      ? '<button class="ticket-access-includes" type="button" data-open-included-information aria-expanded="false" aria-controls="ticket-included-' + escapeAttr(type.id) + '"><span>Ver todo lo que incluye</span><b aria-hidden="true">+</b></button>' + (isHoraCero ? '' : includedPanel)
       : "";
     var dress = event.slug === "perigalla-comedy" ? String(event.dress_code || "") : shortDetail(event.dress_code);
     var salePrice = Number(type.final_price_cents != null ? type.final_price_cents : type.price_cents || 0);
@@ -742,11 +786,13 @@
       '<span class="ticket-access-eyebrow">Tu acceso a la experiencia</span>',
       '<h3>' + escapeHtml(type.name) + '</h3>',
       type.description ? '<p>' + escapeHtml(type.description) + '</p>' : '',
+      isHoraCero ? '<div class="hc-all-included"><strong>Todo incluido</strong><span>Sin pagos adicionales</span></div><dl class="hc-access-times"><div><dt>Apertura de la finca</dt><dd>13:30</dd></div><div><dt>La experiencia</dt><dd>14:00–22:00</dd></div></dl>' : '',
       includes,
       includesLink,
       '</div>',
       '<div class="ticket-access-decision"><span class="ticket-access-decision-kicker">Tu acceso</span>' + commercialPriceMarkup(type, salePrice, 'ticket-type-price').replace('Precio por persona por persona', 'Precio por persona') + eventQuantityPicker(type, salePrice) + ticketPurchaseAction(type, event, preview) + '</div>',
       '</div>',
+      isHoraCero ? includedPanel : '',
       '<div class="ticket-access-secondary">',
       dress ? dressCodeNotice(event, dress) : '',
       eventIsAdultsOnly(event) ? '<p class="ticket-access-minor"><span>+18</span><small>Acceso exclusivo para mayores de edad</small></p>' : '',
@@ -2018,19 +2064,41 @@
     });
   }
 
+  var ticketPdfFontData;
+  var ticketPdfFontFamily = "helvetica";
+  function ticketFont() {
+    if (!ticketPdfFontData) ticketPdfFontData = fetch("/brand/Geist-Regular.ttf").then(function (response) {
+      if (!response.ok) throw new Error("No se pudo cargar la tipografía.");
+      return response.arrayBuffer();
+    }).then(function (buffer) {
+      var bytes = new Uint8Array(buffer), binary = "";
+      for (var i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]);
+      return btoa(binary);
+    }).catch(function () { return null; });
+    return ticketPdfFontData;
+  }
+  function registerTicketFont(pdf, font) {
+    ticketPdfFontFamily = font ? "Geist" : "helvetica";
+    if (font) {
+      pdf.addFileToVFS("Geist-Regular.ttf", font);
+      pdf.addFont("Geist-Regular.ttf", "Geist", "normal");
+    }
+  }
+
   function ticketLogo() {
-    return imageDataUrl("/assets/images/perigallo-logo-original.png").catch(function () { return null; });
+    return imageDataUrl("/brand/perigallo-lockup-white.svg").catch(function () { return null; });
   }
 
   function downloadTicketPdf(order, index, button) {
     var ticket = (order.tickets || [])[index];
     if (!ticket || !ticket.qr_url || !window.jspdf) return;
     if (button) { button.disabled = true; button.textContent = "Generando PDF..."; }
-    Promise.all([qrPng(ticket.qr_url), ticketLogo()]).then(function (assets) {
+    Promise.all([qrPng(ticket.qr_url), ticketLogo(), ticketFont(), import("/assets/js/ticket-pdf-layout.mjs?v=editorial-20261108")]).then(function (assets) {
       var qr = assets[0];
       var logo = assets[1];
-      var pdf = new window.jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      drawTicketPdf(pdf, order, ticket, qr, 1, 1, logo);
+      var pdf = new window.jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: assets[3].TICKET_PAGE });
+      registerTicketFont(pdf, assets[2]);
+      renderTicketLayout(assets[3], pdf, order, ticket, qr, 1, 1, logo);
       savePdf(pdf, pdfName(ticket));
     }).catch(function (error) { window.alert(error.message); }).finally(function () { if (button) { button.disabled = false; button.textContent = "Descargar entrada"; } });
   }
@@ -2040,109 +2108,22 @@
     if (!tickets.length || !window.jspdf) return;
     button.disabled = true;
     button.textContent = "Generando PDF...";
-    Promise.all([Promise.all(tickets.map(function (ticket) { return qrPng(ticket.qr_url); })), ticketLogo()]).then(function (assets) {
+    Promise.all([Promise.all(tickets.map(function (ticket) { return qrPng(ticket.qr_url); })), ticketLogo(), ticketFont(), import("/assets/js/ticket-pdf-layout.mjs?v=editorial-20261108")]).then(function (assets) {
       var qrs = assets[0];
       var logo = assets[1];
-      var pdf = new window.jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      tickets.forEach(function (ticket, index) { if (index) pdf.addPage(); drawTicketPdf(pdf, order, ticket, qrs[index], index + 1, tickets.length, logo); });
+      var pdf = new window.jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: assets[3].TICKET_PAGE });
+      registerTicketFont(pdf, assets[2]);
+      tickets.forEach(function (ticket, index) { if (index) pdf.addPage(); renderTicketLayout(assets[3], pdf, order, ticket, qrs[index], index + 1, tickets.length, logo); });
       savePdf(pdf, "perigallo-pedido-" + safeName(order.reference || "entradas") + ".pdf");
     }).catch(function (error) { window.alert(error.message); }).finally(function () { button.disabled = false; button.textContent = "Descargar todas las entradas"; });
   }
 
-  function drawTicketPdf(pdf, order, ticket, qr, index, total, logo) {
-    var deepTeal = [27, 50, 55];
-    var ivory = [246, 242, 230];
-    var champagne = [210, 181, 150];
-    var muted = [222, 212, 194];
-    var title = ticket.event_title || "Perigallo";
-    var subtitle = ticket.event_subtitle || "Una experiencia gastronómica de Perigallo.";
-    var place = [ticket.location, ticket.locality].filter(Boolean).join("\n") || "Por confirmar";
-    var dressCode = ticketDressCode(ticket.dress_code);
-
-    pdf.setFillColor.apply(pdf, deepTeal); pdf.rect(0, 0, 210, 297, "F");
-    pdf.setDrawColor.apply(pdf, champagne); pdf.setLineWidth(0.25); pdf.rect(8, 7, 194, 283);
-
-    if (logo) {
-      pdf.addImage(logo, "PNG", 94, 15, 22, 20);
-    } else {
-      pdf.setTextColor.apply(pdf, ivory); pdf.setFont("times", "normal"); pdf.setFontSize(19); pdf.text("Perigallo", 105, 29, { align: "center" });
-    }
-
-    pdf.setDrawColor.apply(pdf, champagne); pdf.setLineWidth(0.3); pdf.line(98, 41, 112, 41);
-    pdf.setTextColor.apply(pdf, champagne); pdf.setFont("helvetica", "normal"); pdf.setFontSize(8.2); pdf.setCharSpace(0);
-    pdf.text("ENTRADA OFICIAL", 105, 49, { align: "center" });
-    pdf.setFontSize(7.1); pdf.text("EXPERIENCIA PERIGALLO", 105, 55, { align: "center" });
-
-    pdf.setTextColor.apply(pdf, ivory); pdf.setFont("times", "normal"); pdf.setFontSize(30);
-    var titleLines = pdf.splitTextToSize(title, 158).slice(0, 2);
-    pdf.text(titleLines, 105, 72, { align: "center", lineHeightFactor: 1.02 });
-    var titleBottom = 72 + ((titleLines.length - 1) * 10.5);
-
-    pdf.setFont("helvetica", "normal"); pdf.setFontSize(11.5); pdf.setTextColor.apply(pdf, muted);
-    var subtitleLines = pdf.splitTextToSize(subtitle, 148).slice(0, 2);
-    pdf.text(subtitleLines, 105, titleBottom + 12, { align: "center", lineHeightFactor: 1.2 });
-    var qrY = Math.max(96, titleBottom + 12 + ((subtitleLines.length - 1) * 5) + 12);
-    pdf.setFillColor.apply(pdf, ivory); pdf.roundedRect(68, qrY, 74, 74, 3, 3, "F");
-    pdf.setDrawColor.apply(pdf, champagne); pdf.setLineWidth(0.15); pdf.roundedRect(68, qrY, 74, 74, 3, 3, "S");
-    pdf.addImage(qr, "PNG", 74, qrY + 6, 62, 62);
-    pdf.setTextColor.apply(pdf, champagne); pdf.setFont("helvetica", "normal"); pdf.setFontSize(8.5); pdf.setCharSpace(0);
-    pdf.text("PRESENTA ESTE CÓDIGO", 105, qrY + 80, { align: "center" });
-    pdf.text("EN EL ACCESO", 105, qrY + 86, { align: "center" }); pdf.setCharSpace(0);
-    pdf.setTextColor.apply(pdf, muted); pdf.setFontSize(9.2); pdf.text("Código válido para un único acceso", 105, qrY + 93, { align: "center" });
-    pdf.setFont("courier", "normal"); pdf.setFontSize(9.5); pdf.setTextColor.apply(pdf, ivory); pdf.text(ticket.public_code || "—", 105, qrY + 101, { align: "center" });
-
-    var infoY = qrY + 104;
-    var schedule = ticket.starts_at ? fmtTicketDate(ticket.starts_at) + "\n" + fmtTime(ticket.starts_at) + " h" + (ticket.ends_at ? " — " + fmtTime(ticket.ends_at) + " h" : "") : "Por confirmar";
-    ticketPdfField(pdf, "calendar", "FECHA · HORARIO", schedule, 25, infoY, 76, 20, champagne, ivory);
-    ticketPdfField(pdf, "ticket", "TIPO DE ENTRADA", ticket.ticket_type_name || "Entrada", 109, infoY, 76, 20, champagne, ivory);
-    if (dressCode) {
-      ticketPdfField(pdf, "dress", "CÓDIGO DE VESTIMENTA", dressCode, 25, infoY + 23, 76, 24, champagne, ivory);
-      ticketPdfField(pdf, "pin", "LUGAR", place, 109, infoY + 23, 76, 24, champagne, ivory);
-      ticketPdfField(pdf, "person", "ASISTENTE", ticket.attendee_name || order.name || "Por confirmar", 25, infoY + 50, 76, 20, champagne, ivory);
-      ticketPdfField(pdf, "entry", "NÚMERO DE ENTRADA", "Entrada " + String(index).padStart(2, "0") + " de " + String(total).padStart(2, "0"), 109, infoY + 50, 76, 20, champagne, ivory);
-    } else {
-      ticketPdfField(pdf, "pin", "LUGAR", place, 25, infoY + 23, 160, 22, champagne, ivory);
-      ticketPdfField(pdf, "person", "ASISTENTE", ticket.attendee_name || order.name || "Por confirmar", 25, infoY + 48, 76, 20, champagne, ivory);
-      ticketPdfField(pdf, "entry", "NÚMERO DE ENTRADA", "Entrada " + String(index).padStart(2, "0") + " de " + String(total).padStart(2, "0"), 109, infoY + 48, 76, 20, champagne, ivory);
-    }
-
-    pdf.setDrawColor.apply(pdf, champagne); pdf.line(25, 274, 185, 274);
-    pdf.setTextColor.apply(pdf, muted); pdf.setFont("helvetica", "normal"); pdf.setFontSize(8);
-    pdf.text("PEDIDO " + (order.reference || "—"), 105, 278, { align: "center" });
-    pdf.setFontSize(7.5); pdf.text("Perigallo · +34 691 499 985 · perigallo.com", 105, 283, { align: "center" });
-    if (order.is_test) {
-      pdf.setTextColor.apply(pdf, champagne); pdf.setFontSize(7); pdf.text("ENTORNO DE PRUEBAS · SIN CARGO REAL", 105, 287, { align: "center" });
-    }
-  }
-
-  function ticketPdfField(pdf, icon, label, value, x, y, width, height, labelColor, valueColor) {
-    pdf.setFillColor(31, 57, 62); pdf.setDrawColor.apply(pdf, labelColor); pdf.setLineWidth(0.35); pdf.roundedRect(x, y, width, height, 1.8, 1.8, "FD");
-    pdf.setDrawColor.apply(pdf, labelColor); pdf.setLineWidth(0.22); pdf.line(x + 16, y + 4, x + 16, y + height - 4);
-    ticketPdfIcon(pdf, icon, x + 4, y + (height / 2) - 4.5, labelColor);
-    pdf.setTextColor.apply(pdf, labelColor); pdf.setFont("helvetica", "normal"); pdf.setFontSize(7.1); pdf.setCharSpace(0.32);
-    pdf.text(label, x + 20, y + 7); pdf.setCharSpace(0);
-    pdf.setTextColor.apply(pdf, valueColor); pdf.setFont("helvetica", "normal"); pdf.setFontSize(10.5);
-    var lines = String(value || "—").split("\n").reduce(function (all, line) {
-      return all.concat(pdf.splitTextToSize(line, width - 25));
-    }, []).slice(0, 2);
-    pdf.text(lines, x + 20, y + 14, { lineHeightFactor: 1.1 });
-  }
-
-  function ticketPdfIcon(pdf, icon, x, y, color) {
-    pdf.setDrawColor.apply(pdf, color); pdf.setLineWidth(0.55);
-    if (icon === "calendar") {
-      pdf.roundedRect(x, y, 9, 9, 0.9, 0.9, "S"); pdf.line(x, y + 3, x + 9, y + 3); pdf.line(x + 2.3, y - 1.3, x + 2.3, y + 1.4); pdf.line(x + 6.7, y - 1.3, x + 6.7, y + 1.4);
-    } else if (icon === "ticket") {
-      pdf.roundedRect(x, y + 1, 10, 7, 0.9, 0.9, "S"); pdf.line(x + 3, y + 1, x + 3, y + 8); pdf.line(x + 5.2, y + 3.5, x + 8, y + 3.5); pdf.line(x + 5.2, y + 5.7, x + 8, y + 5.7);
-    } else if (icon === "pin") {
-      pdf.circle(x + 4.5, y + 3.3, 3.2, "S"); pdf.circle(x + 4.5, y + 3.3, 0.8, "S"); pdf.line(x + 2.2, y + 5.4, x + 4.5, y + 9); pdf.line(x + 6.8, y + 5.4, x + 4.5, y + 9);
-    } else if (icon === "person") {
-      pdf.circle(x + 4.5, y + 2.5, 2.2, "S"); pdf.line(x, y + 9, x + 9, y + 9); pdf.line(x, y + 9, x + 2.1, y + 5.8); pdf.line(x + 9, y + 9, x + 6.9, y + 5.8);
-    } else if (icon === "entry") {
-      pdf.roundedRect(x, y + 1, 10, 7, 0.9, 0.9, "S"); pdf.line(x + 3, y + 1, x + 3, y + 8); pdf.line(x + 5.2, y + 3.5, x + 8, y + 3.5); pdf.line(x + 5.2, y + 5.7, x + 8, y + 5.7);
-    } else if (icon === "dress") {
-      pdf.line(x + 2.2, y + 1.5, x + 4.5, y); pdf.line(x + 4.5, y, x + 6.8, y + 1.5); pdf.line(x + 2.2, y + 1.5, x, y + 4); pdf.line(x + 6.8, y + 1.5, x + 9, y + 4); pdf.line(x, y + 4, x + 1.5, y + 9); pdf.line(x + 9, y + 4, x + 7.5, y + 9); pdf.line(x + 1.5, y + 9, x + 7.5, y + 9);
-    }
+  function renderTicketLayout(layout, pdf, order, ticket, qr, index, total, logo) {
+    layout.drawTicketPdf(pdf, order, ticket, index, total, {
+      logo: logo,
+      fontFamily: ticketPdfFontFamily,
+      drawQr: function (pdf,x,y,size) { pdf.addImage(qr,"PNG",x,y,size,size); }
+    });
   }
 
   function ticketDressCode(value) {

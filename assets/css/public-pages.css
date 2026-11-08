@@ -18,9 +18,7 @@ body {
   background: var(--pg-bg);
   color: var(--pg-cream);
   font:
-    300 16px/1.7 Montserrat,
-    Arial,
-    sans-serif;
+    300 16px/1.7 var(--body-font,Geist,Arial,sans-serif);
 }
 a {
   color: inherit;
@@ -82,9 +80,7 @@ a {
   color: var(--pg-cream);
   padding: 11px 13px;
   font:
-    500 11px Montserrat,
-    Arial,
-    sans-serif;
+    500 11px var(--body-font,Geist,Arial,sans-serif);
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
@@ -99,9 +95,7 @@ a {
   border: 1px solid var(--pg-gold);
   border-radius: 999px;
   font:
-    600 10px Montserrat,
-    Arial,
-    sans-serif;
+    600 10px var(--body-font,Geist,Arial,sans-serif);
   letter-spacing: 0.17em;
   text-decoration: none;
   text-transform: uppercase;
@@ -198,9 +192,7 @@ a {
 .pg-title {
   margin: 0;
   font:
-    300 clamp(3rem, 7vw, 6.2rem) / 0.95 "Cormorant Garamond",
-    Georgia,
-    serif;
+    300 clamp(3rem, 7vw, 6.2rem) / 0.95 var(--body-font,Geist,Arial,sans-serif);
 }
 .pg-hero h1 em,
 .pg-title em {
@@ -251,9 +243,7 @@ a {
 .pg-faq h2 {
   margin: 0 0 18px;
   font:
-    300 clamp(2.3rem, 4.2vw, 4.1rem) / 1 "Cormorant Garamond",
-    Georgia,
-    serif;
+    300 clamp(2.3rem, 4.2vw, 4.1rem) / 1 var(--body-font,Geist,Arial,sans-serif);
 }
 .pg-copy p,
 .pg-card p {
@@ -282,9 +272,7 @@ a {
 .pg-card h3 {
   margin: 0 0 12px;
   font:
-    400 2rem/1.05 "Cormorant Garamond",
-    Georgia,
-    serif;
+    400 2rem/1.05 var(--body-font,Geist,Arial,sans-serif);
 }
 .pg-card .pg-cta-alt {
   margin-top: auto;
@@ -322,9 +310,7 @@ a {
 .pg-process h3 {
   margin: 0 0 8px;
   font:
-    400 1.6rem "Cormorant Garamond",
-    Georgia,
-    serif;
+    400 1.6rem var(--body-font,Geist,Arial,sans-serif);
 }
 .pg-process p {
   margin: 0;
@@ -339,9 +325,7 @@ a {
   cursor: pointer;
   color: var(--pg-cream);
   font:
-    400 1.3rem "Cormorant Garamond",
-    Georgia,
-    serif;
+    400 1.3rem var(--body-font,Geist,Arial,sans-serif);
 }
 .pg-faq p {
   max-width: 760px;
@@ -357,9 +341,7 @@ a {
 .pg-callout h2 {
   margin: 0;
   font:
-    300 clamp(2.4rem, 5vw, 4.6rem) / 1 "Cormorant Garamond",
-    Georgia,
-    serif;
+    300 clamp(2.4rem, 5vw, 4.6rem) / 1 var(--body-font,Geist,Arial,sans-serif);
 }
 .pg-callout p {
   max-width: 650px;

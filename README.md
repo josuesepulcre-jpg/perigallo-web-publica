@@ -186,3 +186,7 @@ find api/src -name '*.php' -print -exec php -l {} \;
 - `docs/ANALYTICS_DEPLOYMENT.md`
 - `docs/FORMULARIO_PUBLICO.md`
 - `docs/estructura-deploy-web-publica.md`
+
+## Identidad vigente y entradas
+
+La identidad aprobada y las comprobaciones que deben conservarse están documentadas en [docs/brand/approved-identity.md](docs/brand/approved-identity.md). La composición A5 es compartida por correo y descarga web; el workflow de marca verifica que los recursos antiguos no reaparezcan.

@@ -325,7 +325,7 @@ const leadMigration = readFileSync(join(root, "database/migrations/019_public_le
 for (const marker of ["lead_form_settings", "lead_requests", "follow_up", "proposal_sent", "email_status", "ip_hash"]) {
   if (!leadMigration.includes(marker)) throw new Error(`Lead form migration is missing ${marker}.`);
 }
-for (const marker of ["^solicitud-evento/?$ https://suite.perigallo.com/solicitud?origen=web-perigallo [R=302,L,NE]", "^admin/formulario/?$ admin/formulario/index.html"]) {
+for (const marker of ["^solicitud-evento(?:/index\\.html)?/?$ https://suite.perigallo.com/solicitud?origen=web-perigallo [R=302,L,NE]", "^admin/formulario/?$ admin/formulario/index.html"]) {
   if (!rootHtaccess.includes(marker)) throw new Error(`Missing lead form route contract: ${marker}`);
 }
 const publicRequestPages = [
@@ -554,7 +554,7 @@ for (const marker of ["createTestOrder", "assertConfigured", "assertSandboxConfi
 }
 const mailer = readFileSync(join(root, "api/src/Mailer.php"), "utf8");
 const ticketDelivery = readFileSync(join(root, "api/src/TicketDeliveryService.php"), "utf8");
-for (const marker of ["multipart/alternative", "Content-Type: text/html", "basicOrderHtml", "recoveryOrderHtml", "perigallo-logo-original.png"]) {
+for (const marker of ["multipart/alternative", "Content-Type: text/html", "basicOrderHtml", "recoveryOrderHtml", "perigallo-lockup-white.png"]) {
   if (!mailer.includes(marker)) throw new Error(`Missing HTML email delivery support: ${marker}.`);
 }
 for (const marker of ["deliverDueInvoiceEmails", "queueInvoiceEmail", "holded_invoice_delivery_status"]) {
@@ -563,7 +563,7 @@ for (const marker of ["deliverDueInvoiceEmails", "queueInvoiceEmail", "holded_in
 for (const marker of ["Accede de nuevo a tus entradas", "Abrir mis entradas", "Tus entradas siguen aquí"]) {
   if (!mailer.includes(marker)) throw new Error(`Missing premium recovery email marker: ${marker}.`);
 }
-for (const marker of ["Descargar mis entradas", "Tu experiencia está confirmada", "orderEmailHtml", "El enlace abre tu pedido", "perigallo-logo-original.png"]) {
+for (const marker of ["Descargar mis entradas", "EL GUSTO DE CELEBRAR", "orderEmailHtml", "El enlace abre tu pedido", "perigallo-lockup-white.png"]) {
   if (!ticketDelivery.includes(marker)) throw new Error(`Missing premium ticket email marker: ${marker}.`);
 }
 const envExample = readFileSync(join(root, ".env.example"), "utf8");

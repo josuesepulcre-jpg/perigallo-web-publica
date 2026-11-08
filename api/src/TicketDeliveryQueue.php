@@ -309,8 +309,6 @@ final class TicketDeliveryQueue
 
     private function emailHtml(array $order, array $event, int $quantity): string
     {
-        $name = htmlspecialchars((string) $order['name'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        $title = htmlspecialchars((string) $event['title'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        return '<!doctype html><html lang="es"><body style="margin:0;padding:32px;background:#eef0ed;font-family:Arial,sans-serif;color:#173236"><main style="max-width:600px;margin:auto;padding:36px;background:#173236;color:#f5f0e5"><p style="letter-spacing:2px;color:#d2b596;font-size:11px">PERIGALLO · ENTRADAS DIGITALES</p><h1 style="font-family:Georgia,serif;font-weight:normal">Tu compra está confirmada</h1><p>Hola ' . $name . ',</p><p>Adjuntamos el PDF con tus ' . $quantity . ' entrada(s) para <strong>' . $title . '</strong>. Cada entrada incluye su código QR de acceso.</p><p>Guarda este documento y preséntalo al llegar.</p></main></body></html>';
+        return $this->mailer->ticketConfirmationHtml((string) $order['name'], (string) $event['title'], $quantity);
     }
 }

@@ -6,11 +6,13 @@ namespace Perigallo\Ticketing;
 use PDO;
 use RuntimeException;
 
-/** Generates and stores one protected, immutable PDF for each paid order. */
+/** Stores an immutable PDF per paid order and approved design revision. */
 final class TicketDocumentService
 {
     public const DOCUMENT_TYPE = 'tickets';
+    // Delivery version stays stable: approving a design must not resend orders.
     public const DOCUMENT_VERSION = 'v2-attendee';
+    private const DOCUMENT_STORAGE_VERSION = 'v3-a5-20261108';
 
     /** @return array{id:int,filename:string,content:string,content_type:string,sha256:string} */
     public function ensureOrderDocument(PDO $pdo, int $orderId): array
@@ -29,7 +31,7 @@ final class TicketDocumentService
 
         $tickets = $pdo->prepare(
             'SELECT t.id, t.public_code, t.qr_token_hash, t.qr_token_ciphertext, t.status,
-                    e.title AS event_title, e.subtitle AS event_subtitle, e.starts_at, e.location, e.locality,
+                    e.title AS event_title, e.subtitle AS event_subtitle, e.starts_at, e.ends_at, e.dress_code, e.location, e.locality,
                     toi.ticket_type_name, ta.attendee_name
              FROM tickets t
              JOIN ticket_order_items toi ON toi.id = t.order_item_id
@@ -51,6 +53,8 @@ final class TicketDocumentService
                 'event_title' => $ticket['event_title'],
                 'event_subtitle' => $ticket['event_subtitle'],
                 'starts_at' => $this->formattedDate((string) ($ticket['starts_at'] ?? '')),
+                'ends_at' => empty($ticket['ends_at']) ? '' : $this->formattedDate((string) $ticket['ends_at']),
+                'dress_code' => (string) ($ticket['dress_code'] ?? ''),
                 'location' => $ticket['location'],
                 'locality' => $ticket['locality'],
                 'ticket_type_name' => $ticket['ticket_type_name'],
@@ -74,7 +78,7 @@ final class TicketDocumentService
              VALUES (?, ?, ?, ?, "application/pdf", ?, ?, NOW(), NOW())'
         );
         try {
-            $save->execute([$orderId, self::DOCUMENT_TYPE, self::DOCUMENT_VERSION, $filename, $content, $hash]);
+            $save->execute([$orderId, self::DOCUMENT_TYPE, self::DOCUMENT_STORAGE_VERSION, $filename, $content, $hash]);
         } catch (\Throwable $error) {
             // Dos trabajos pueden llegar a la vez tras un reinicio. El índice único
             // conserva el primer documento y evita regenerar QR distintos.
@@ -96,7 +100,7 @@ final class TicketDocumentService
              WHERE order_id = ? AND document_type = ? AND document_version = ?
              LIMIT 1'
         );
-        $statement->execute([$orderId, self::DOCUMENT_TYPE, self::DOCUMENT_VERSION]);
+        $statement->execute([$orderId, self::DOCUMENT_TYPE, self::DOCUMENT_STORAGE_VERSION]);
         $document = $statement->fetch();
         if (!$document) {
             return null;

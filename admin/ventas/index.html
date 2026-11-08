@@ -5,16 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex,nofollow">
 <title>Pedidos y ventas | Administración Perigallo</title>
-<link rel="icon" href="/favicon.ico?v=20260909-v1" sizes="16x16 32x32 48x48">
-<link rel="icon" href="/assets/icons/favicon-32.png?v=20260909-v1" type="image/png" sizes="32x32">
-<link rel="icon" href="/favicon.svg?v=20260909-v1" type="image/svg+xml" sizes="any">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=20260909-v1" sizes="180x180">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/css/ticketing.css?v=20260820-delivery-status-v1">
-<link rel="stylesheet" href="/assets/css/admin-orders.css?v=20260831-payment-report-v1">
-<link rel="stylesheet" href="/assets/css/admin-cash-orders.css?v=20260817-cash-total-v1">
+<link rel="icon" href="/favicon.ico?v=20261108-brand" sizes="16x16 32x32 48x48">
+<link rel="icon" href="/assets/icons/favicon-32.png?v=20261108-brand" type="image/png" sizes="32x32">
+<link rel="icon" href="/favicon.svg?v=20261108-brand" type="image/svg+xml" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=20261108-brand" sizes="180x180">
+
+<link rel="stylesheet" href="/assets/css/ticketing.css?v=unif-0c01463180">
+<link rel="stylesheet" href="/assets/css/admin-orders.css?v=unif-c92a796c31">
+<link rel="stylesheet" href="/assets/css/admin-cash-orders.css?v=unif-360a3ed417">
 <link rel="stylesheet" href="/assets/css/admin-delivery-status.css?v=20260820-v2">
-</head>
+<link rel="stylesheet" href="/brand/fonts.css"><link rel="stylesheet" href="/brand/web-tokens.css"><link rel="stylesheet" href="/assets/css/unified-brand.css?v=unif-c57012efd3"></head>
 <body class="ticketing-page admin-backoffice-page">
 <div class="admin-app-shell">
   <aside class="admin-sidebar" data-admin-nav></aside>
@@ -43,7 +43,7 @@
       <div>
         <span class="ticket-eyebrow">Operativa de puerta</span>
         <h2 id="card-order-export-title">Listado de invitados</h2>
-        <p>Genera un PDF con todas las entradas activas del evento: compras con tarjeta y entradas creadas manualmente, agrupadas y ordenadas por compra. Incluye una casilla para comprobar cada llegada.</p>
+        <p>Lista compacta para imprimir: una fila por compra, ordenada por comprador, con sus invitados, número de entradas, estado del pago e importe pendiente. Una casilla por entrada. Formato A4 horizontal.</p>
       </div>
       <div class="admin-card-order-export-controls">
         <label>Evento<select data-door-list-event aria-label="Evento del listado de invitados"><option value="">Selecciona un evento</option></select></label>
@@ -66,6 +66,7 @@
     <section class="admin-order-toolbar" aria-label="Filtros de pedidos">
       <div class="admin-filter-group" role="group" aria-label="Estado del pedido">
         <button type="button" class="is-active" data-admin-order-filter="active">Entradas activas</button>
+        <button type="button" data-admin-order-filter="door-pending">Pago en puerta pendiente</button>
         <button type="button" data-admin-order-filter="pending">Pendientes</button>
         <button type="button" data-admin-order-filter="cancelled">Cancelaciones</button>
         <button type="button" data-admin-order-filter="refunded">Devoluciones</button>
@@ -128,6 +129,6 @@
   </main>
 </div>
 <script src="/assets/vendor/jspdf.umd.min.js?v=20260825-pdf-list-v1" defer></script>
-<script src="/assets/js/admin-backoffice.js?v=20261028-delivery-recovery" defer></script>
+<script src="/assets/js/admin-backoffice.js?v=archivo-47f5d569f6" defer></script>
 </body>
 </html>

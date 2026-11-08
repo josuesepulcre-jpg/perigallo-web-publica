@@ -6,9 +6,13 @@ const routes = ['','bodas-alicante','celebraciones-familiares-alicante','experie
 test('public pages have one accessible navigation and working local destinations/assets',()=>{
  for (const route of routes) {
   const page = resolve(route,'index.html'); const html=readFileSync(page,'utf8');
-  assert.equal((html.match(/data-brand-header/g)||[]).length,1,page);
-  assert.ok(html.includes('aria-controls="brand-navigation"'),page);
-  assert.ok(html.includes('brand-navigation.js'),page);
+  const header = html.match(/<header\b[^>]*>[\s\S]*?<\/header>/g) || [];
+  assert.equal(header.length,1,page);
+  assert.equal((header[0].match(/<nav\b/g)||[]).length,1,page);
+  assert.match(header[0], /<nav\b[^>]*aria-label="Principal"/,page);
+  const controlled = header[0].match(/aria-controls="([^"]+)"/);
+  assert.ok(controlled && header[0].includes(`id="${controlled[1]}"`),page);
+  assert.match(html,/\/(?:journey|assets\/js\/brand-navigation)\.js/,page);
   assert.ok(html.includes('/politica-privacidad/'),page);
   for(const match of html.matchAll(/(?:href|src)="([^"?#]+)(?:[^\"]*)"/g)){
    const value=match[1]; if(!value.startsWith('/')||value.startsWith('//'))continue;
@@ -19,7 +23,7 @@ test('public pages have one accessible navigation and working local destinations
 });
 test('every agenda consumer loads the date policy before the consuming script',()=>{
  for(const path of ['index.html','experiencias/index.html','eventos/index.html','eventos/evento.html']){
-  const html=readFileSync(path,'utf8');const helper=html.indexOf('public-agenda.js');const consumer=html.indexOf(path==='index.html'?'home-experiences.js':'ticketing.js');
+  const html=readFileSync(path,'utf8');const helper=html.indexOf('public-agenda.js');const consumer=html.indexOf(html.includes('live-agenda.js')?'live-agenda.js':'ticketing.js');
   assert.ok(helper>=0&&helper<consumer,path);
  }
 });

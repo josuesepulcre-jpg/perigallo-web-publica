@@ -10,7 +10,7 @@
 .experiences-agenda::before{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 48% 62% at 88% 23%,rgba(223,198,168,.1),transparent 72%),repeating-linear-gradient(90deg,transparent 0 calc(12.5% - 1px),rgba(226,205,181,.035) calc(12.5% - 1px) 12.5%)}
 .experiences-agenda__inner{position:relative;width:min(100%,1240px);margin:auto}
 .experiences-agenda__head{display:grid;grid-template-columns:minmax(330px,.9fr) minmax(300px,.65fr);gap:clamp(48px,11vw,165px);align-items:end;margin-bottom:clamp(45px,6vw,78px)}
-.experiences-agenda__head h2,.experiences-story h2,.experiences-closing h2{margin:18px 0 0;color:var(--experience-cream);font:300 clamp(3.55rem,5.7vw,6.25rem)/.89 'Cormorant Garamond',Georgia,serif;letter-spacing:-.05em}
+.experiences-agenda__head h2,.experiences-story h2,.experiences-closing h2{margin:18px 0 0;color:var(--experience-cream);font:300 clamp(3.55rem,5.7vw,6.25rem)/.89 var(--body-font,Geist,Arial,sans-serif);letter-spacing:-.05em}
 .experiences-agenda__head h2 em,.experiences-story h2 em,.experiences-closing h2 em{color:var(--experience-gold);font-style:italic}
 .experiences-agenda__head>p{max-width:410px;margin:0 0 9px;color:rgba(245,241,229,.7);font-size:.88rem;line-height:1.9}
 .experiences-page .experience-agenda,.experiences-page .ticket-section{padding:0;background:transparent}
@@ -29,7 +29,7 @@
 .experiences-story__carousel{min-height:clamp(460px,47vw,630px)}
 .experiences-story__copy p:not(.wedding-eyebrow){max-width:430px;margin:0;color:rgba(245,241,229,.72);font-size:.86rem;line-height:1.9}
 .experiences-story__copy h2{margin-bottom:26px}
-.experiences-story__quote{grid-column:1/-1;max-width:800px;margin:clamp(6px,2vw,30px) auto 0;padding-top:clamp(34px,4vw,55px);border-top:1px solid var(--experience-line);color:var(--experience-cream);font:300 clamp(2rem,3.4vw,3.55rem)/1.06 'Cormorant Garamond',Georgia,serif;letter-spacing:-.025em;text-align:center}
+.experiences-story__quote{grid-column:1/-1;max-width:800px;margin:clamp(6px,2vw,30px) auto 0;padding-top:clamp(34px,4vw,55px);border-top:1px solid var(--experience-line);color:var(--experience-cream);font:300 clamp(2rem,3.4vw,3.55rem)/1.06 var(--body-font,Geist,Arial,sans-serif);letter-spacing:-.025em;text-align:center}
 .experiences-story__quote em{color:var(--experience-gold);font-style:italic}
 .experiences-layers{padding:clamp(102px,12vw,170px) clamp(24px,7vw,120px);background:linear-gradient(180deg,#10292e,#1b3a41)}
 .experiences-layers .wedding-section-head{width:min(100%,1240px)}

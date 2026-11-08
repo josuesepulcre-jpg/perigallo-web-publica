@@ -1,0 +1,24 @@
+/* Original symbol and wordmark; no redrawing or distortion. */
+a.identity-lockup{display:flex;align-items:center;gap:15px;width:228px;height:auto;flex-shrink:0}
+a.identity-lockup img.identity-symbol{display:block;width:30px!important;height:32px!important;max-width:none;flex:0 0 30px;object-fit:contain;filter:brightness(0) invert(1)}
+a.identity-lockup img:not(.identity-symbol){display:block;width:180px!important;height:auto!important;max-width:100%;object-fit:contain}
+.brand-header a.identity-lockup{width:210px;gap:14px}.brand-header a.identity-lockup img:not(.identity-symbol){width:166px!important}
+.ticketing-nav a.identity-lockup{width:210px;opacity:1}
+@media(max-width:600px){a.identity-lockup,.brand-header a.identity-lockup{width:193px;gap:12px}a.identity-lockup img.identity-symbol{width:25px!important;height:28px!important;flex-basis:25px}a.identity-lockup img:not(.identity-symbol),.brand-header a.identity-lockup img:not(.identity-symbol){width:156px!important}.ticketing-nav a.identity-lockup{width:160px;gap:10px}.ticketing-nav a.identity-lockup img:not(.identity-symbol){width:125px!important}}
+/* Home: film fills the first viewport, with the V1's central brand treatment. */
+.video-home .site-header{position:fixed;inset:0 0 auto;background:linear-gradient(#141414b3,transparent);border-bottom-color:transparent;transition:background .2s,border-color .2s}
+.video-home .site-header.is-scrolled,.video-home .site-header:has(nav.open){background:#141414;border-bottom-color:#ffffff30}
+.hero.hero-cinema{display:block;position:relative;isolation:isolate;min-height:620px;height:100svh}
+.hero-cinema .hero-film{position:absolute;inset:0;min-height:0;height:100%;z-index:-2}
+.hero-cinema .hero-film video{object-position:center}
+.hero-cinema .film-shade{background:linear-gradient(180deg,#0003,transparent 25%,#0002 60%,#0008)}
+.cinema-brand{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:110px 24px 130px;pointer-events:none;filter:drop-shadow(0 2px 12px #0004)}
+.cinema-symbol{width:clamp(68px,7vw,105px);height:auto;filter:brightness(0) invert(1);margin-bottom:32px}
+.hero-cinema h1{width:min(48vw,700px);margin:0;line-height:1}.hero-cinema h1 img{width:100%;height:auto}
+.cinema-brand p{margin-top:24px;color:#F7F7F3;font-size:11px;letter-spacing:.16em;text-align:center;line-height:1.6}
+.cinema-bottom{position:absolute;bottom:35px;left:var(--gutter);right:var(--gutter);display:flex;align-items:center;justify-content:space-between;gap:24px}
+.cinema-discover{display:inline-flex;align-items:center;gap:30px;min-height:44px;font-size:14px}.cinema-discover span{font-size:25px}
+.hero-cinema #motion{background:#14141485;border-color:#ffffff60}
+@media(max-width:760px){.hero.hero-cinema{min-height:540px;height:100svh}.hero-cinema h1{width:min(88vw,540px)}.cinema-symbol{width:68px;margin-bottom:28px}.cinema-brand{padding:100px 20px 120px}.cinema-brand p{font-size:9px;letter-spacing:.12em;margin-top:22px}.cinema-bottom{bottom:24px}.hero-cinema .hero-film video{object-position:50% center}}
+@media(prefers-reduced-motion:reduce){.video-home .site-header{transition:none}}
+@media(max-width:600px){.site-header,.brand-header{gap:12px}.site-header a.identity-lockup,.brand-header a.identity-lockup{width:180px}.site-header a.identity-lockup img:not(.identity-symbol),.brand-header a.identity-lockup img:not(.identity-symbol){width:143px!important}}
