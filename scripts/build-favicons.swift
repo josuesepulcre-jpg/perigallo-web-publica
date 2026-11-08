@@ -4,8 +4,6 @@ import AppKit
 import Foundation
 
 let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-let source = root.appendingPathComponent("assets/images/perigallo-logo-original.png")
-guard let logo = NSImage(contentsOf: source) else { fatalError("Cannot load brand logo") }
 let icons = root.appendingPathComponent("assets/icons")
 try FileManager.default.createDirectory(at: icons, withIntermediateDirectories: true)
 
@@ -19,13 +17,16 @@ func png(size: Int, rounded: Bool = true) -> Data {
     context.imageInterpolation = .high
     let edge = CGFloat(size)
     let bounds = NSRect(x: 0, y: 0, width: edge, height: edge)
-    NSColor(srgbRed: 39 / 255, green: 66 / 255, blue: 73 / 255, alpha: 1).setFill()
-    NSBezierPath(roundedRect: bounds, xRadius: rounded ? edge * 0.18 : 0,
-        yRadius: rounded ? edge * 0.18 : 0).fill()
-    let width = edge * 0.88
-    let height = width * logo.size.height / logo.size.width
-    logo.draw(in: NSRect(x: (edge - width) / 2, y: (edge - height) / 2,
-        width: width, height: height), from: .zero, operation: .sourceOver, fraction: 1)
+    NSColor(srgbRed: 243 / 255, green: 243 / 255, blue: 238 / 255, alpha: 1).setFill()
+    NSBezierPath(rect: bounds).fill()
+    NSColor(srgbRed: 20 / 255, green: 20 / 255, blue: 20 / 255, alpha: 1).setFill()
+    // Same three-bar geometry and margins as the approved vector favicon.
+    let scale = edge / 512 * 0.61
+    for x in [0, 180, 360] {
+        NSBezierPath(rect: NSRect(x: edge * 99 / 512 + CGFloat(x) * scale,
+            y: edge - edge * 96 / 512 - 520 * scale,
+            width: 156 * scale, height: 520 * scale)).fill()
+    }
     NSGraphicsContext.restoreGraphicsState()
     return bitmap.representation(using: .png, properties: [:])!
 }
@@ -54,11 +55,8 @@ for (size, frame) in zip(sizes, frames) {
 frames.forEach { ico.append($0) }
 try ico.write(to: root.appendingPathComponent("favicon.ico"))
 
-let embedded = png(size: 512).base64EncodedString()
 let svg = """
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <image width="512" height="512" href="data:image/png;base64,\(embedded)"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><title>Perigallo</title><path fill="#F3F3EE" d="M0 0h512v512H0z"/><g transform="translate(99 96) scale(.61)" fill="#141414"><path d="M0 0h156v520H0zM180 0h156v520H180zM360 0h156v520H360z"/></g></svg>
 
 """
 try svg.write(to: root.appendingPathComponent("favicon.svg"), atomically: true, encoding: .utf8)
