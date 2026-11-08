@@ -17,10 +17,10 @@
 .ticket-attendee-tools { display: grid; justify-items: end; gap: 12px; }
 .ticket-print-guests { min-height: 42px; padding-inline: 16px; font-size: .62rem; }
 .ticket-food-alert { display: grid; gap: 4px; margin-top: 10px; padding: 9px 10px; border: 1px solid #d99a83; border-left: 4px solid #d06d4c; background: rgba(208, 109, 76, .14); color: #ffe1d3; font-size: .68rem; line-height: 1.4; }
-.ticket-food-alert > strong { color: #ffd1bf; font: 600 .57rem Montserrat, Arial, sans-serif; letter-spacing: .12em; }
+.ticket-food-alert > strong { color: #ffd1bf; font: 600 .57rem var(--body-font,Geist,Arial,sans-serif); letter-spacing: .12em; }
 .ticket-food-alert span { display: block; }
 .ticket-food-alert span strong { color: #fff1e9; font-size: .61rem; }
-.ticket-food-status { margin-top: 10px; color: #b7dcc1; font: 600 .57rem Montserrat, Arial, sans-serif; letter-spacing: .07em; }
+.ticket-food-status { margin-top: 10px; color: #b7dcc1; font: 600 .57rem var(--body-font,Geist,Arial,sans-serif); letter-spacing: .07em; }
 
 @media (max-width: 760px) {
   .admin-access-workspace { padding: 0 !important; }
@@ -36,12 +36,12 @@
 }
 
 /* Arrival filters remain visible and usable on phones. */
-.ticket-attendee-metrics button { display:grid;gap:4px;min-height:56px;padding:10px 14px;border:1px solid #a9b8b5;background:#243c40;color:#fff8eb;font:600 12px/1.4 Montserrat,Arial,sans-serif;text-align:center;cursor:pointer; }
+.ticket-attendee-metrics button { display:grid;gap:4px;min-height:56px;padding:10px 14px;border:1px solid #a9b8b5;background:#243c40;color:#fff8eb;font:600 12px/1.4 var(--body-font,Geist,Arial,sans-serif);text-align:center;cursor:pointer; }
 .ticket-attendee-metrics button strong { font-size:22px;line-height:1; }
 .ticket-attendee-metrics button[aria-pressed="true"] { background:#ebd7b5;color:#12292d;border-color:#ebd7b5;box-shadow:0 0 0 2px #ebd7b5; }
 .ticket-attendee-metrics button:focus-visible { outline:3px solid #fff8eb;outline-offset:3px; }
 .ticket-arrival-list { scroll-margin-top:110px;outline:none; }
-.ticket-arrival-list h3 { margin:18px 0 6px;color:#fff8eb;font:600 24px/1.2 Montserrat,Arial,sans-serif; }
+.ticket-arrival-list h3 { margin:18px 0 6px;color:#fff8eb;font:600 24px/1.2 var(--body-font,Geist,Arial,sans-serif); }
 .ticket-arrival-list [data-attendee-list-count] { margin:0 0 16px;color:#e4cda9;font-size:14px; }
 .ticket-arrival-list .ticket-attendee-row { background:#233b3f;padding:14px 12px;border-color:#78928e; }
 .ticket-arrival-list .ticket-attendee-row>span:first-child>strong { color:#fff;font-size:17px;line-height:1.4; }

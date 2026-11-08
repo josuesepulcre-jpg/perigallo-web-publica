@@ -1,0 +1,66 @@
+[
+  {
+    "test": "Unauthenticated admin denied",
+    "result": "pass"
+  },
+  {
+    "test": "Owner login",
+    "result": "pass"
+  },
+  {
+    "test": "CSRF enforced",
+    "result": "pass"
+  },
+  {
+    "test": "Event starts as draft",
+    "result": "pass"
+  },
+  {
+    "test": "Published event in public API",
+    "result": "pass"
+  },
+  {
+    "test": "Server calculates price and 20 percent discount despite altered client total",
+    "result": "pass"
+  },
+  {
+    "test": "Redsys sandbox form prepared",
+    "result": "pass"
+  },
+  {
+    "test": "Invalid payment signature rejected",
+    "result": "pass"
+  },
+  {
+    "test": "Signed wrong amount rejected",
+    "result": "pass"
+  },
+  {
+    "test": "Signed simulated payment accepted",
+    "result": "pass"
+  },
+  {
+    "test": "Paid order emits two tickets",
+    "result": "pass"
+  },
+  {
+    "test": "Repeated callback does not duplicate tickets",
+    "result": "pass"
+  },
+  {
+    "test": "QR preview works",
+    "result": "pass"
+  },
+  {
+    "test": "Entry movement works",
+    "result": "pass"
+  },
+  {
+    "test": "Duplicate entry prevented",
+    "result": "pass"
+  },
+  {
+    "test": "Door role cannot manage events",
+    "result": "pass"
+  }
+]

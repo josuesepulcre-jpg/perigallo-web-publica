@@ -138,7 +138,7 @@
             (sessionData.is_owner ? '<span class="admin-nav-label">Configuración</span><a href="/admin/usuarios/" data-admin-nav-item="users">Equipo y permisos</a>' : '') +
           '</nav>';
       node.innerHTML =
-        '<div class="admin-drawer-header"><a class="admin-brand" href="/admin/" aria-label="Administración Perigallo"><img src="/assets/images/perigallo-logo-original.png" alt="Perigallo"><span>Administración</span></a><button class="admin-drawer-close" type="button" data-admin-drawer-close aria-label="Cerrar menú">×</button></div>' +
+        '<div class="admin-drawer-header"><a class="admin-brand" href="/admin/" aria-label="Administración Perigallo"><img src="/brand/perigallo-lockup-white.svg" alt="Perigallo"><span>Administración</span></a><button class="admin-drawer-close" type="button" data-admin-drawer-close aria-label="Cerrar menú">×</button></div>' +
         navigation +
         '<div class="admin-account"><span data-admin-user-name></span><small data-admin-user-role></small><button type="button" data-admin-logout>Cerrar sesión</button></div>';
       var activeNode = node.querySelector('[data-admin-nav-item="' + active + '"]');

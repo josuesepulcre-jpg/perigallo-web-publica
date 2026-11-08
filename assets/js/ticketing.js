@@ -2065,7 +2065,7 @@
   }
 
   function ticketLogo() {
-    return imageDataUrl("/assets/images/perigallo-logo-original.png").catch(function () { return null; });
+    return imageDataUrl("/brand/perigallo-lockup-white.svg").catch(function () { return null; });
   }
 
   function downloadTicketPdf(order, index, button) {
