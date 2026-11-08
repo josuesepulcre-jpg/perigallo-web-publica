@@ -47,7 +47,7 @@ Con autorización expresa y tras verificar copia local se retiraron únicamente 
 | Gravedad | Situación | Consecuencia |
 |---|---|---|
 | Alta | Aprobación expresa de publicación pendiente | Bloquea el cambio definitivo a perigallo.com |
-| Alta | Antes de la ventana: verificar deriva de archivos productivos y guardar copia de las rutas afectadas | Bloquea ejecutar el despliegue hasta completar ese control |
+| Alta | Repetir control de deriva justo antes de la ventana | Copia de 64 archivos afectados verificada; 30 rutas nuevas inventariadas; sin deriva de backend respecto al baseline en esta revisión |
 | Media | Disco con margen reducido (aprox. 5,3 GB/99 %) | Permite staging; requiere vigilancia de crecimiento y plan de capacidad |
 | Media | WhatsApp sin token configurado en la inspección productiva; no probado extremo a extremo | No se certifica entrega WhatsApp; se conserva implementación existente |
 | Media | Holded y devoluciones financieras sin operaciones externas reales | Configuración y contrato revisados; no se certifica emisión/abono externo nuevo |
@@ -55,3 +55,5 @@ Con autorización expresa y tras verificar copia local se retiraron únicamente 
 | Baja | Avisos preexistentes si clientes omiten mode en escaneo o method en movimientos | Los clientes actuales incluyen ambos campos; lógica no alterada |
 
 La candidata está disponible para revisión. El proyecto no se declara publicado ni finalizado en producción.
+
+Copia adicional de rollback: fuentes-produccion-antes-candidata.tgz, 64 archivos cotejados por SHA-256 y 30 rutas nuevas inventariadas. Integridad del staging: 53 recursos no HTML coinciden con la candidata; los HTML llevan marcadores exclusivos de staging.

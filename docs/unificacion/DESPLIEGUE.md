@@ -7,6 +7,7 @@ La candidata está en https://revision-web.perigallo.com/ y en la rama codex/uni
 - Baseline real OVH conservado en b183590; no se presupone que main sea idéntico al servidor.
 - Staging Plesk/Apache/PHP 8.5, HTTPS, base sintética independiente y Redsys test operativos.
 - Pruebas documentadas en estado-unificacion.md; copia de la base productiva restaurada en base local aislada de 38 tablas.
+- Copia de rollback de 64 archivos afectados comprobada en local por SHA-256; 30 rutas nuevas inventariadas. Sin deriva detectada en backend frente al baseline. Repetir comprobación al abrir la ventana.
 - Paquete visual sin .env, SQL, uploads, almacenamiento, documentación, pruebas ni datos productivos. Incluye dos cambios exclusivamente de presentación en correo/PDF, además de archivos públicos y .htaccess.
 
 ## Ventana de publicación pendiente de autorización expresa
