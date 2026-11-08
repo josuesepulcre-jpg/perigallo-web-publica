@@ -1,0 +1,296 @@
+[
+  {
+    "slug": "la-perigalla-01-noche-ibicenca",
+    "document": {
+      "title": "La Perigalla 01",
+      "subtitle": "Noche ibicenca.",
+      "edition": "01",
+      "date": "2026-08-29",
+      "description": "Una boda ficticia. Una noche de verano. Gastronomía, escena y celebración en Finca La Llaguna.",
+      "story": "La primera edición tomó la forma de una boda ficticia: la historia de Sofía y Carlos como hilo de una experiencia gastronómica y escénica.\n\nLa finca, la mesa y la celebración formaban parte del mismo recorrido. La inspiración ibicenca aparecía en las atmósferas y en la propuesta gastronómica.\n\nEsta página reúne el material ya publicado de la edición. El relato inmersivo original, con todas sus escenas, sigue disponible íntegro.",
+      "cover_image": "/media/archivo/celebracion.webp",
+      "cover_alt": "La celebración de La Perigalla 01 en Finca La Llaguna",
+      "cover_video": "",
+      "legacy_url": "/la-perigalla-01/",
+      "seo_title": "La Perigalla 01 — Noche ibicenca | Archivo Perigallo",
+      "seo_description": "Revive la primera edición de La Perigalla: una boda ficticia de inspiración ibicenca, gastronomía y escena en Finca La Llaguna.",
+      "blocks": [
+        {
+          "type": "gallery",
+          "title": "La finca, una noche de verano.",
+          "text": "Imágenes del archivo publicado de La Perigalla 01.",
+          "media": [
+            {
+              "kind": "image",
+              "url": "/media/archivo/ceremonia.webp",
+              "alt": "La ceremonia de La Perigalla 01",
+              "caption": "La ceremonia",
+              "portrait": false,
+              "featured": true
+            },
+            {
+              "kind": "image",
+              "url": "/media/archivo/novios.webp",
+              "alt": "Los protagonistas de la boda ficticia",
+              "caption": "Sofía y Carlos",
+              "portrait": true,
+              "featured": false
+            },
+            {
+              "kind": "image",
+              "url": "/media/archivo/invitados.webp",
+              "alt": "Los invitados en La Perigalla 01",
+              "caption": "La celebración compartida",
+              "portrait": false,
+              "featured": false
+            }
+          ]
+        },
+        {
+          "type": "gastronomy",
+          "title": "La isla en la mesa.",
+          "text": "Brasa, mar, fruta y pan: el recorrido gastronómico acompaña la historia de Sofía y Carlos. La propuesta original se conserva íntegra en el relato inmersivo.",
+          "media": [
+            {
+              "kind": "image",
+              "url": "/media/archivo/plato.webp",
+              "alt": "Presentación gastronómica de La Perigalla 01",
+              "caption": "El detalle del plato",
+              "portrait": true,
+              "featured": false
+            },
+            {
+              "kind": "image",
+              "url": "/media/archivo/cocina.webp",
+              "alt": "El equipo preparando la propuesta de La Perigalla 01",
+              "caption": "El oficio detrás",
+              "portrait": false,
+              "featured": true
+            },
+            {
+              "kind": "image",
+              "url": "/media/archivo/mesa.webp",
+              "alt": "La mesa preparada para la experiencia",
+              "caption": "Una mesa, una historia",
+              "portrait": false,
+              "featured": false
+            }
+          ]
+        },
+        {
+          "type": "highlights",
+          "title": "Cuando cae la noche.",
+          "text": "La puesta en escena, la música y la celebración cambian el ritmo de la finca.",
+          "media": [
+            {
+              "kind": "image",
+              "url": "/media/archivo/escena.webp",
+              "alt": "Espectáculo de fuego de La Perigalla 01",
+              "caption": "La escena",
+              "portrait": false,
+              "featured": true
+            },
+            {
+              "kind": "image",
+              "url": "/media/archivo/celebracion.webp",
+              "alt": "La celebración de La Perigalla 01",
+              "caption": "La noche continúa",
+              "portrait": false,
+              "featured": false
+            }
+          ]
+        },
+        {
+          "type": "story",
+          "title": "Una invitación inesperada",
+          "text": "Una noche de verano abre la puerta a la historia de Sofía y Carlos, donde cada detalle anuncia que algo especial está a punto de comenzar.",
+          "media": [
+            {
+              "kind": "image",
+              "url": "/assets/images/perigalla-01/scene-01-desktop.jpg",
+              "alt": "La llegada · Una invitación inesperada",
+              "caption": "Relato escénico original · La llegada",
+              "portrait": false,
+              "featured": false
+            }
+          ]
+        },
+        {
+          "type": "story",
+          "title": "La ceremonia",
+          "text": "La finca se transforma en escenario y los invitados entran en un relato que se vive con todos los sentidos.",
+          "media": [
+            {
+              "kind": "image",
+              "url": "/assets/images/perigalla-01/scene-03-desktop.jpg",
+              "alt": "El primer acto · La ceremonia",
+              "caption": "Relato escénico original · El primer acto",
+              "portrait": false,
+              "featured": false
+            }
+          ]
+        },
+        {
+          "type": "story",
+          "title": "La isla en la mesa",
+          "text": "Las piezas gastronómicas avanzan como una historia: brasa, mar, fruta, pan y memoria mediterránea.",
+          "media": [
+            {
+              "kind": "image",
+              "url": "/assets/images/perigalla-01/scene-05-desktop.jpg",
+              "alt": "El recorrido · La isla en la mesa",
+              "caption": "Relato escénico original · El recorrido",
+              "portrait": false,
+              "featured": false
+            }
+          ]
+        },
+        {
+          "type": "story",
+          "title": "Todo empieza con un mensaje",
+          "text": "Un gesto pequeño conecta los dos viajes de Sofía y Carlos y cambia el ritmo de la noche.",
+          "media": [
+            {
+              "kind": "image",
+              "url": "/assets/images/perigalla-01/scene-07-desktop.jpg",
+              "alt": "Un recuerdo · Todo empieza con un mensaje",
+              "caption": "Relato escénico original · Un recuerdo",
+              "portrait": false,
+              "featured": false
+            }
+          ]
+        },
+        {
+          "type": "story",
+          "title": "Bajo las estrellas",
+          "text": "La música, la luz y el servicio acompañan una celebración que no responde a una fórmula única.",
+          "media": [
+            {
+              "kind": "image",
+              "url": "/assets/images/perigalla-01/scene-09-desktop.jpg",
+              "alt": "La noche · Bajo las estrellas",
+              "caption": "Relato escénico original · La noche",
+              "portrait": false,
+              "featured": false
+            }
+          ]
+        },
+        {
+          "type": "story",
+          "title": "Mercat de la Vila",
+          "text": "La cocina recoge referencias de la isla y las convierte en una secuencia de bocados para compartir.",
+          "media": [
+            {
+              "kind": "image",
+              "url": "/assets/images/perigalla-01/scene-11-desktop.jpg",
+              "alt": "El sabor · Mercat de la Vila",
+              "caption": "Relato escénico original · El sabor",
+              "portrait": false,
+              "featured": false
+            }
+          ]
+        },
+        {
+          "type": "story",
+          "title": "Paseo por la playa",
+          "text": "El recorrido se abre a nuevas atmósferas, al salitre y a una sobremesa que se alarga sin prisa.",
+          "media": [
+            {
+              "kind": "image",
+              "url": "/assets/images/perigalla-01/scene-14-desktop.jpg",
+              "alt": "La escena · Paseo por la playa",
+              "caption": "Relato escénico original · La escena",
+              "portrait": false,
+              "featured": false
+            }
+          ]
+        },
+        {
+          "type": "story",
+          "title": "La noche continúa",
+          "text": "Cuando cae la noche, la experiencia cambia de ritmo: sorpresas, música y baile bajo las luces de la finca.",
+          "media": [
+            {
+              "kind": "image",
+              "url": "/assets/images/perigalla-01/scene-16-desktop.jpg",
+              "alt": "La celebración · La noche continúa",
+              "caption": "Relato escénico original · La celebración",
+              "portrait": false,
+              "featured": false
+            }
+          ]
+        },
+        {
+          "type": "story",
+          "title": "El último brindis",
+          "text": "Una última mesa, una copa fría y el recuerdo de una noche creada para no repetirse igual.",
+          "media": [
+            {
+              "kind": "image",
+              "url": "/assets/images/perigalla-01/scene-19-desktop.jpg",
+              "alt": "El final · El último brindis",
+              "caption": "Relato escénico original · El final",
+              "portrait": false,
+              "featured": false
+            }
+          ]
+        },
+        {
+          "type": "story",
+          "title": "Una historia para celebrar",
+          "text": "La experiencia termina, pero la historia se queda en quienes la han vivido juntos.",
+          "media": [
+            {
+              "kind": "image",
+              "url": "/assets/images/perigalla-01/scene-21-desktop.jpg",
+              "alt": "La Perigalla 01 · Una historia para celebrar",
+              "caption": "Relato escénico original · La Perigalla 01",
+              "portrait": false,
+              "featured": false
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "slug": "la-perigalla-comedy-ruben-serrano",
+    "document": {
+      "title": "La Perigalla Comedy",
+      "subtitle": "Rubén Serrano.",
+      "edition": "Comedy",
+      "date": "2026-11-06",
+      "description": "Gastronomía, puesta en escena y humor. Una experiencia con el monólogo de Rubén Serrano.",
+      "story": "El 6 de noviembre de 2026, La Perigalla Comedy reunió gastronomía, puesta en escena y humor, con el monólogo de Rubén Serrano.",
+      "cover_image": "",
+      "cover_alt": "",
+      "cover_video": "",
+      "blocks": [
+        {
+          "type": "gallery",
+          "title": "Los momentos de la noche.",
+          "text": "",
+          "media": []
+        },
+        {
+          "type": "gastronomy",
+          "title": "Gastronomía y espectáculo.",
+          "text": "",
+          "media": []
+        },
+        {
+          "type": "highlights",
+          "title": "El monólogo de Rubén Serrano.",
+          "text": "",
+          "media": []
+        },
+        {
+          "type": "video",
+          "title": "Una noche para volver a mirar.",
+          "text": "",
+          "media": []
+        }
+      ]
+    }
+  }
+]

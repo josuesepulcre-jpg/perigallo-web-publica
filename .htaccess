@@ -28,6 +28,7 @@ ErrorDocument 404 /404.html
   RewriteRule ^admin/descuentos/?$ admin/descuentos/index.html [QSA,L]
   RewriteRule ^admin/formulario/?$ admin/formulario/index.html [QSA,L]
   RewriteRule ^admin/eventos/([0-9]+)/editar/?$ admin/entradas/evento/index.html?id=$1 [QSA,L]
+  RewriteRule ^experiencias/vividas/([a-z0-9-]+)/?$ experiencias/vivida.php?slug=$1 [QSA,L]
   RewriteRule ^experiencias/([a-z0-9-]+)/?$ eventos/evento.html?slug=$1 [QSA,L]
   RewriteRule ^eventos/([a-z0-9-]+)/?$ eventos/evento.html?slug=$1 [QSA,L]
 </IfModule>

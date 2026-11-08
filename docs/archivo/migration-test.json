@@ -1,0 +1,6 @@
+{
+  "idempotent_schema": true,
+  "backup_sha256": "3db6a5fc6cf323eda9bc2fa9cfdbecc8260e6bb57add8cacb7a4f19eefdb3004",
+  "rollback_and_restore": true,
+  "production_touched": false
+}

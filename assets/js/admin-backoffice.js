@@ -54,6 +54,7 @@
 
   function currentNav() {
     var path = window.location.pathname;
+    if (path.indexOf("/admin/experiencias") === 0) return "archive";
     if (path.indexOf("/admin/eventos") === 0) return "events";
     if (path.indexOf("/admin/ventas") === 0) return "sales";
     if (path.indexOf("/admin/contactos") === 0) return "contacts";
@@ -127,6 +128,7 @@
             '<a href="/admin/" data-admin-nav-item="dashboard">Panel principal</a>' +
             '<span class="admin-nav-label">Gestión</span>' +
             '<a href="/admin/eventos/" data-admin-nav-item="events">Eventos</a>' +
+            '<a href="/admin/experiencias/" data-admin-nav-item="archive">Experiencias vividas</a>' +
             '<a href="/admin/ventas/" data-admin-nav-item="sales">Pedidos y ventas</a>' +
             (sessionData.is_owner ? '<a href="/admin/facturacion/" data-admin-nav-item="billing">Facturación</a>' : '') +
             '<a href="/admin/contactos/" data-admin-nav-item="contacts">Base de datos</a>' +

@@ -1,0 +1,182 @@
+{
+  "legacy_files_unchanged": 333,
+  "legacy_differences": [],
+  "business_modules_unchanged": [
+    "api/src/Ticketing.php",
+    "api/src/AdminAuth.php",
+    "api/src/Database.php",
+    "api/src/Redsys.php",
+    "api/src/Mailer.php",
+    "assets/js/ticketing.js",
+    "assets/js/public-agenda.js",
+    "assets/js/live-agenda.js"
+  ],
+  "resources_checked": 41,
+  "resources": [
+    {
+      "url": "/apple-touch-icon.png?v=20260909-v1",
+      "status": 200
+    },
+    {
+      "url": "/assets/css/admin-events.css?v=20261029-history-v1",
+      "status": 200
+    },
+    {
+      "url": "/assets/css/experience-archive-admin.css?v=archivo-1f3bb98bb3",
+      "status": 200
+    },
+    {
+      "url": "/assets/css/experience-archive.css?v=archivo-f12f3d574f",
+      "status": 200
+    },
+    {
+      "url": "/assets/css/ticketing.css?v=unif-0c01463180",
+      "status": 200
+    },
+    {
+      "url": "/assets/css/unified-brand.css?v=unif-c57012efd3",
+      "status": 200
+    },
+    {
+      "url": "/assets/icons/favicon-32.png?v=20260909-v1",
+      "status": 200
+    },
+    {
+      "url": "/assets/images/perigalla-01/scene-01-desktop.jpg",
+      "status": 200
+    },
+    {
+      "url": "/assets/images/perigalla-01/scene-03-desktop.jpg",
+      "status": 200
+    },
+    {
+      "url": "/assets/images/perigalla-01/scene-05-desktop.jpg",
+      "status": 200
+    },
+    {
+      "url": "/assets/images/perigalla-01/scene-07-desktop.jpg",
+      "status": 200
+    },
+    {
+      "url": "/assets/images/perigalla-01/scene-09-desktop.jpg",
+      "status": 200
+    },
+    {
+      "url": "/assets/images/perigalla-01/scene-11-desktop.jpg",
+      "status": 200
+    },
+    {
+      "url": "/assets/images/perigalla-01/scene-14-desktop.jpg",
+      "status": 200
+    },
+    {
+      "url": "/assets/images/perigalla-01/scene-16-desktop.jpg",
+      "status": 200
+    },
+    {
+      "url": "/assets/images/perigalla-01/scene-19-desktop.jpg",
+      "status": 200
+    },
+    {
+      "url": "/assets/images/perigalla-01/scene-21-desktop.jpg",
+      "status": 200
+    },
+    {
+      "url": "/assets/js/admin-backoffice.js?v=archivo-47f5d569f6",
+      "status": 200
+    },
+    {
+      "url": "/assets/js/analytics.js?v=unif-b92d211f1b",
+      "status": 200
+    },
+    {
+      "url": "/assets/js/experience-archive-admin.js?v=archivo-9ed8a2e799",
+      "status": 200
+    },
+    {
+      "url": "/assets/js/experience-archive.js?v=archivo-119f3e3e08",
+      "status": 200
+    },
+    {
+      "url": "/assets/js/live-agenda.js?v=unif-4b28a88bb9",
+      "status": 200
+    },
+    {
+      "url": "/assets/js/public-agenda.js",
+      "status": 200
+    },
+    {
+      "url": "/brand/fonts.css",
+      "status": 200
+    },
+    {
+      "url": "/brand/web-tokens.css",
+      "status": 200
+    },
+    {
+      "url": "/editorial.css",
+      "status": 200
+    },
+    {
+      "url": "/favicon.ico?v=20260909-v1",
+      "status": 200
+    },
+    {
+      "url": "/favicon.svg?v=20260909-v1",
+      "status": 200
+    },
+    {
+      "url": "/identity-lockup.css",
+      "status": 200
+    },
+    {
+      "url": "/journey.css",
+      "status": 200
+    },
+    {
+      "url": "/journey.js",
+      "status": 200
+    },
+    {
+      "url": "/media/archivo/celebracion.webp",
+      "status": 200
+    },
+    {
+      "url": "/media/archivo/ceremonia.webp",
+      "status": 200
+    },
+    {
+      "url": "/media/archivo/cocina.webp",
+      "status": 200
+    },
+    {
+      "url": "/media/archivo/escena.webp",
+      "status": 200
+    },
+    {
+      "url": "/media/archivo/invitados.webp",
+      "status": 200
+    },
+    {
+      "url": "/media/archivo/mesa.webp",
+      "status": 200
+    },
+    {
+      "url": "/media/archivo/novios.webp",
+      "status": 200
+    },
+    {
+      "url": "/media/archivo/plato.webp",
+      "status": 200
+    },
+    {
+      "url": "/media/identidad/perigallo-tres-patas.svg",
+      "status": 200
+    },
+    {
+      "url": "/media/identidad/perigallo-wordmark-white.svg",
+      "status": 200
+    }
+  ],
+  "production_modified": false
+}

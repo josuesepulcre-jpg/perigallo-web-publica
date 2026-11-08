@@ -1,0 +1,118 @@
+[
+  {
+    "test": "Anonymous cannot read editorial drafts",
+    "result": "pass"
+  },
+  {
+    "test": "CSRF required for archive mutations",
+    "result": "pass"
+  },
+  {
+    "test": "Original Perigalla keeps immersive story and 10 captions",
+    "result": "pass"
+  },
+  {
+    "test": "Comedy is a private draft with no invented photographs",
+    "result": "pass"
+  },
+  {
+    "test": "Only explicit published snapshots are public",
+    "result": "pass"
+  },
+  {
+    "test": "Comedy public route returns 404",
+    "result": "pass"
+  },
+  {
+    "test": "Authenticated Comedy preview works",
+    "result": "pass"
+  },
+  {
+    "test": "New chapter starts as unpublished draft",
+    "result": "pass"
+  },
+  {
+    "test": "Duplicate stable URL is rejected",
+    "result": "pass"
+  },
+  {
+    "test": "Unsafe media URLs rejected",
+    "result": "pass"
+  },
+  {
+    "test": "Future editions cannot publish as lived experiences",
+    "result": "pass"
+  },
+  {
+    "test": "Invalid calendar dates rejected",
+    "result": "pass"
+  },
+  {
+    "test": "Concurrent edits protected with revision",
+    "result": "pass"
+  },
+  {
+    "test": "Explicit publication creates readable SSR page with metadata",
+    "result": "pass"
+  },
+  {
+    "test": "Saving a draft leaves the public snapshot unchanged",
+    "result": "pass"
+  },
+  {
+    "test": "SSR escapes stored text; preview is noindex",
+    "result": "pass"
+  },
+  {
+    "test": "Withdraw, archive and restore preserve content but remove public access",
+    "result": "pass"
+  },
+  {
+    "test": "Uploaded image optimized to 2000px WebP; original preserved",
+    "result": "pass"
+  },
+  {
+    "test": "Optimized image is served successfully",
+    "result": "pass"
+  },
+  {
+    "test": "Real MP4 upload is accepted without changing its contents",
+    "result": "pass"
+  },
+  {
+    "test": "Cover and summary videos render with mobile controls and playback toggle",
+    "result": "pass"
+  },
+  {
+    "test": "External video opens with safe HTTPS link and no unsolicited iframe",
+    "result": "pass"
+  },
+  {
+    "test": "SVG/script upload rejected",
+    "result": "pass"
+  },
+  {
+    "test": "Linked editorial history prevents automatic duplicate",
+    "result": "pass"
+  },
+  {
+    "test": "An event cannot be linked to two histories",
+    "result": "pass"
+  },
+  {
+    "test": "Nonexistent event association is rejected",
+    "result": "pass"
+  },
+  {
+    "test": "Completed events generate draft once, without public content",
+    "result": "pass"
+  },
+  {
+    "test": "Automation preserves original event status",
+    "result": "pass"
+  },
+  {
+    "test": "Door role cannot read or mutate editorial drafts",
+    "result": "pass"
+  }
+]
