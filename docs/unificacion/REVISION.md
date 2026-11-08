@@ -36,7 +36,7 @@ Los scripts de simulación del prototipo (enquiry y local-order-state) no se inc
 
 Docroot real: /var/www/vhosts/perigallo.com/perigallo.com. No es un checkout Git. PHP 8.5.12. Acceso Plesk y SSH comprobado. No se descargó .env de producción. El staging local ejecuta PHP con envío de correo desactivado, sin claves de servicios externos y sin datos reales.
 
-El intento de montar staging privado en OVH falló por falta de espacio. Se retiró exclusivamente la carpeta incompleta creada por esta tarea. Tras retirarla: volumen 457 GB, 434 GB usados, aproximadamente 54 MB disponibles, 100 %. Se está preparando inventario y copia local verificable de una auditoría histórica con autorización del usuario. No se ha retirado ninguna copia histórica.
+El intento de montar staging privado en OVH falló por falta de espacio. Se retiró exclusivamente la carpeta incompleta creada por esta tarea. Tras retirarla: volumen 457 GB, 434 GB usados, aproximadamente 54 MB disponibles, 100 %. Inventario preparado y copia local de la auditoría histórica terminada: 528.733 archivos comprobados por SHA-256, cero diferencias. Tres copias inactivas propuestas para liberar unos 5,7 GB, pendientes de aprobación concreta. No se ha retirado ninguna copia histórica.
 
 ## Incidencias y pruebas pendientes
 
