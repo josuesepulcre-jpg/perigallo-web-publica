@@ -31,13 +31,14 @@ call(f'/admin/events/{eid}/publish',{})
 check('Published event in public API',any(e['slug']==slug for e in call('/events')['events']))
 discount_code='REV'+datetime.datetime.now().strftime('%H%M%S')
 call('/admin/discount-codes',{'code':discount_code,'discount_type':'percent','percent_basis_points':2000,'is_active':True},expected=201)
-order=call('/orders',{'event_slug':slug,'first_name':'Persona','last_name':'Prueba','email':'revision@example.invalid','phone':'+34600000000','privacy_accepted':True,'terms_accepted':True,'age_requirement_accepted':True,'dress_code_accepted':True,'items':[{'ticket_type_id':ticket['id'],'quantity':2}],'discount_code':discount_code,'total_cents':1,'attendees':[{'name':'Persona Prueba','has_allergies':False},{'name':'Segunda Prueba','has_allergies':False}]},expected=201)
+purchase={'event_slug':slug,'first_name':'Persona','last_name':'Prueba','email':'revision@example.invalid','phone':'+34600000000','privacy_accepted':True,'terms_accepted':True,'age_requirement_accepted':True,'dress_code_accepted':True,'items':[{'ticket_type_id':ticket['id'],'quantity':2}],'discount_code':discount_code,'total_cents':1,'attendees':[{'name':'Persona Prueba','has_allergies':False},{'name':'Segunda Prueba','has_allergies':False}]}
+order=call('/orders',purchase,expected=201)
 check('Server calculates price and 20 percent discount despite altered client total',order['order']['total_cents']==4000)
 (ROOT.parent/'staging-fixture.json').write_text(json.dumps({'event_id':eid,'slug':slug,'ticket_type_id':ticket['id'],'order':order}))
 check('Redsys sandbox form prepared',bool(order['payment']))
 # Signed callback simulator, never contacts the payment provider.
-def callback(amount,bad_signature=False):
- payload=json.loads(subprocess.check_output(['php','scripts/unificacion/sign-callback.php'],input=json.dumps({'reference':order['order']['reference'],'amount':amount}).encode()))
+def callback(amount,bad_signature=False,response="0000",reference=None):
+ payload=json.loads(subprocess.check_output(['php','scripts/unificacion/sign-callback.php'],input=json.dumps({'reference':reference or order['order']['reference'],'amount':amount,'response':response}).encode()))
  if bad_signature: payload['Ds_Signature']='invalid'
  req=urllib.request.Request(BASE+'/api/redsys/notification',data=urllib.parse.urlencode(payload).encode(),headers={'Content-Type':'application/x-www-form-urlencoded'})
  try:
@@ -55,6 +56,18 @@ code=paid['tickets'][0]['public_code']
 check('QR preview works',call('/admin/tickets/scan',{'event_id':eid,'code':code,'mode':'entry'})['ok'])
 check('Entry movement works',call('/admin/tickets/access-movement',{'event_id':eid,'code':code,'action':'entry','method':'qr'})['result']=='success')
 check('Duplicate entry prevented',not call('/admin/tickets/access-movement',{'event_id':eid,'code':code,'action':'entry','method':'qr'},expected=409)['ok'])
+failed=call('/orders',purchase,expected=201)
+check('Rejected signed payment callback processed',callback(4000,response='0180',reference=failed['order']['reference'])[0]==200)
+failed_state=call('/orders/'+failed['order']['token'])['order']
+check('Rejected payment emits no tickets',failed_state['status']!='paid' and not failed_state['tickets'])
+pending=call('/orders',purchase,expected=201)
+records=call('/admin/orders')['orders']
+pending_id=next(x['id'] for x in records if x['public_token']==pending['order']['token'])
+call(f'/admin/orders/{pending_id}/cancel',{'reason':'Cancelación de prueba sintética'})
+check('Cancelled pending order has no tickets',call('/orders/'+pending['order']['token'])['order']['status']=='cancelled')
+paid_id=next(x['id'] for x in records if x['public_token']==order['order']['token'])
+call(f'/admin/orders/{paid_id}/record-refund',{'confirmed':True,'reason':'Registro sintético, sin abono ni cargo real'})
+check('Refunded ticket cannot enter',call('/admin/tickets/scan',{'event_id':eid,'code':code,'mode':'entry'})['result']=='refunded')
 call('/admin/logout',{})
 a=call('/admin/login',{'username':'puerta','password':creds['password']}); csrf=a.get('csrf') or call('/admin/session')['csrf']
 check('Door role cannot manage events',not call('/admin/events',{},expected=401)['ok'])

@@ -60,6 +60,22 @@
     "result": "pass"
   },
   {
+    "test": "Rejected signed payment callback processed",
+    "result": "pass"
+  },
+  {
+    "test": "Rejected payment emits no tickets",
+    "result": "pass"
+  },
+  {
+    "test": "Cancelled pending order has no tickets",
+    "result": "pass"
+  },
+  {
+    "test": "Refunded ticket cannot enter",
+    "result": "pass"
+  },
+  {
     "test": "Door role cannot manage events",
     "result": "pass"
   }
