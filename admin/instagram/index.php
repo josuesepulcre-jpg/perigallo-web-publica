@@ -62,7 +62,12 @@ if ($ext === 'html') {
 <link rel="icon" href="/favicon.svg?v=20261109-blanco-barras" type="image/svg+xml" sizes="any">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=20261109-blanco-barras" sizes="180x180">
 HTML;
-    $html = preg_replace('~</head>~i', $icons . "\n</head>", $html, 1);
+    if (stripos($html, '</head>') !== false) {
+        $html = preg_replace('~</head>~i', $icons . "\n</head>", $html, 1);
+    } else {
+        // The private studio omits optional head tags; insert before its body.
+        $html = preg_replace('~<body\b~i', $icons . "\n<body", $html, 1);
+    }
     header('Content-Length: '.strlen($html));
     if ($_SERVER['REQUEST_METHOD'] !== 'HEAD') echo $html;
     exit;
