@@ -2,7 +2,7 @@
 const $=s=>document.querySelector(s), esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const PLANS=[
  {id:'diciembre',date:'TODO EL MES DE DICIEMBRE',title:'Una comida<br>para juntarnos.',name:'Menús de grupo',description:'Con buen pie, Un paso más y Por todo lo alto. Tres menús para compartir y celebrar en grupo.',price:'Desde 44,95 €',note:'Por persona · IVA y bebidas incluidos',cover:'navidad-01',action:'Ver los tres menús',menus:['navidad-02','navidad-03','navidad-04'],default:'navidad-02'},
- {id:'degustacion',period:'diciembre',date:'TODO EL MES DE DICIEMBRE',title:'Una experiencia<br>gastronómica.',name:'Menú degustación',description:'Disfruta de una experiencia gastronómica durante todo diciembre, con un menú degustación para mesas de hasta seis personas.',price:'38 €',note:'Por persona · IVA incluido · Bebidas aparte',image:'assets/temporada-degustacion.webp',cover:'navidad-01',action:'Descubrir el menú degustación',menus:['navidad-individual'],default:'navidad-individual'},
+ {id:'degustacion',period:'diciembre',date:'DICIEMBRE · VIERNES, SÁBADOS Y DOMINGOS',title:'Una experiencia<br>gastronómica.',name:'Menú degustación',description:'Una experiencia gastronómica para mesas de hasta seis personas. Viernes, sábados y domingos de diciembre, solo al mediodía, excepto el 25.',price:'38 €',note:'Por persona · IVA incluido · Bebidas aparte',image:'assets/temporada-degustacion.webp',cover:'navidad-01',action:'Descubrir el menú degustación',menus:['navidad-individual'],default:'navidad-individual'},
  {id:'navidad',date:'25 DE DICIEMBRE · NAVIDAD',title:'A la mesa.<br>Y un rato más.',name:'El día de Navidad',description:'Una comida de Navidad alrededor de la mesa, con nuestro puchero y menú infantil para los peques.',price:'65 €',note:'Por persona · IVA y bebidas incluidos',cover:'navidad-25-portada',action:'Ver los menús',menus:['navidad-25-menu','navidad-25-infantil'],default:'navidad-25-menu'},
  {id:'hora',date:'31 DE DICIEMBRE · HORA CERO',title:'Seis destinos.<br>Un Año Nuevo.',name:'Tardevieja · Hora Cero',description:'Australia, Japón, China, Vietnam, India y Rusia. Gastronomía, lago, barra libre, Bollywood y DJ durante el recorrido.',price:'120 €',note:'Por persona · IVA incluido · Plazas limitadas',cover:'hora-cero-01',action:'Descubrir el recorrido',menus:[],default:'route'},
  {id:'nuevo',date:'1 DE ENERO · AÑO NUEVO',title:'La primera<br>mesa del año.',name:'El día de Año Nuevo',description:'Marisco, entrantes, principal a elegir y flan de turrón. Empezamos 2027 alrededor de la mesa, también con los peques.',price:'50 €',note:'Por persona · IVA incluido · Bebidas aparte',cover:'ano-nuevo-portada',action:'Ver los menús',menus:['ano-nuevo-menu','ano-nuevo-infantil'],default:'ano-nuevo-menu'}
@@ -16,8 +16,9 @@ const sceneDescriptions = {
 };
 // Reservations use the production event backend.
 const bookingOrigin = '';
-const groupInquiryTools = import('./group-inquiry.mjs?v=separar-degustacion-20261108');
+const groupInquiryTools = import('./group-inquiry.mjs?v=degustacion-mediodia-20261108');
 const groupMenuIds=['navidad-02','navidad-03','navidad-04'];
+const tastingDates=[4,5,6,11,12,13,18,19,20,26,27].map(day=>'2026-12-'+String(day).padStart(2,'0'));
 const inquiryPlanIds=['diciembre','degustacion'];
 const inquiryDrafts={};
 const inquiryMenuIds=()=>activePlan.id==='degustacion'?['navidad-individual']:groupMenuIds;
@@ -26,7 +27,7 @@ let groupInquiryDraft={};
 function groupInquiryHTML() {
  const value=key=>esc(groupInquiryDraft[key]||'');
  return `<article class="group-inquiry leaf">
-  <p class="eyebrow">${activePlan.id==='degustacion'?'MENÚ DEGUSTACIÓN · TODO DICIEMBRE':'MENÚS DE GRUPO · DICIEMBRE'}</p>
+  <p class="eyebrow">${activePlan.id==='degustacion'?'MENÚ DEGUSTACIÓN · DICIEMBRE · MEDIODÍA':'MENÚS DE GRUPO · DICIEMBRE'}</p>
   <h3>${activePlan.id==='degustacion'?'Vuestra experiencia gastronómica.':'Vuestra próxima mesa.'}</h3><p class="inquiry-intro">Cuéntanos el plan y prepararemos vuestra consulta para WhatsApp.</p>
   <form id="group-inquiry-form">
    <fieldset><legend>¿Quién nos escribe?</legend><div class="inquiry-fields">
@@ -36,11 +37,11 @@ function groupInquiryHTML() {
     <label>Correo electrónico<input name="email" type="email" autocomplete="email" required maxlength="190" value="${value('email')}"></label>
    </div></fieldset>
    <fieldset><legend>¿Cómo os gustaría venir?</legend><div class="inquiry-fields">
-    <label>Día de la reserva<input name="date" type="date" min="2026-12-01" max="2026-12-31" required value="${value('date')}"></label>
-    <label>Comida o cena<select name="shift" required><option value="">Elegid el turno</option><option value="lunch" ${groupInquiryDraft.shift==='lunch'?'selected':''}>Comida · mediodía</option><option value="dinner" ${groupInquiryDraft.shift==='dinner'?'selected':''}>Cena · noche</option></select></label>
+    <label>Día de la reserva${activePlan.id==='degustacion'?`<select name="date" required><option value="">Elegid un día disponible</option>${tastingDates.map(date=>`<option value="${date}" ${groupInquiryDraft.date===date?'selected':''}>${esc(new Intl.DateTimeFormat('es-ES',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z')))}</option>`).join('')}</select>`:`<input name="date" type="date" min="2026-12-01" max="2026-12-31" required value="${value('date')}">`}</label>
+    ${activePlan.id==='degustacion'?`<label>Turno<select name="shift" required><option value="lunch" selected>Comida · mediodía</option></select></label>`:`<label>Comida o cena<select name="shift" required><option value="">Elegid el turno</option><option value="lunch" ${groupInquiryDraft.shift==='lunch'?'selected':''}>Comida · mediodía</option><option value="dinner" ${groupInquiryDraft.shift==='dinner'?'selected':''}>Cena · noche</option></select></label>`}
     <label>Número de personas<input name="people" type="number" min="1" max="${inquiryOptions().maxPeople}" step="1" required value="${value('people')}" inputmode="numeric"></label>
     <label>Menú que os interesa<select name="menu" required><option value="">Elegid un menú</option>${inquiryMenuIds().map(id=>`<option value="${id}" ${groupInquiryDraft.menu===id?'selected':''}>${esc(MENUS[id].title)} · ${esc(MENUS[id].price)}</option>`).join('')}</select></label>
-   </div><p class="inquiry-hint">${activePlan.id==='degustacion'?'Experiencia para mesas de hasta seis personas.':'Para mesas de hasta seis personas, también podéis consultar el menú degustación en su propuesta propia.'}</p></fieldset>
+   </div><p class="inquiry-hint">${activePlan.id==='degustacion'?'Hasta seis personas. Viernes, sábados y domingos de diciembre, solo al mediodía. El 25 está reservado al menú de Navidad.':'Para mesas de hasta seis personas, también podéis consultar el menú degustación en su propuesta propia.'}</p></fieldset>
    <label class="inquiry-privacy"><input name="privacy" type="checkbox" required ${groupInquiryDraft.privacy?'checked':''}><span>He leído la <a href="/politica-privacidad/" target="_blank" rel="noopener">política de privacidad</a> y acepto el contacto para gestionar esta consulta.</span></label>
    <p class="inquiry-status" role="status" aria-live="polite"></p>
    <button class="inquiry-submit" type="submit">Preparar mi consulta de WhatsApp <span aria-hidden="true">↗</span></button>
@@ -103,7 +104,7 @@ function openPlan(id, choice) {
  if(activePlan&&inquiryPlanIds.includes(activePlan.id))inquiryDrafts[activePlan.id]=groupInquiryDraft;
  activePlan = PLANS.find(plan => plan.id === id);
  if(inquiryPlanIds.includes(id))groupInquiryDraft=inquiryDrafts[id]||{};
- if(id==='degustacion')groupInquiryDraft.menu='navidad-individual';
+ if(id==='degustacion'){groupInquiryDraft.menu='navidad-individual';groupInquiryDraft.shift='lunch';}
  opener = document.activeElement;
  $('#dialog-date').textContent = activePlan.date;
  const options = activePlan.menus.map(key => [key, MENUS[key].title + ' · ' + MENUS[key].price]);
@@ -129,10 +130,11 @@ function menuHTML(menu) {
  <p class="eyebrow">${esc(menu.date)}</p>
  <h3>${esc(menu.title)}</h3><div class="leaf-price"><strong>${esc(menu.price)}</strong><span>por persona · IVA incluido</span></div>
  <p class="leaf-drinks">${esc(menu.drinks)}</p>
+ ${activePlan.id==='degustacion'?'<p class="inquiry-hint">Viernes, sábados y domingos de diciembre, solo al mediodía. Excepto el 25, reservado al menú de Navidad.</p>':''}
  ${sections}
  <p class="allergy-note">Si tenéis alguna alergia, consultadnos al reservar.</p>
  ${reservationHTML()}
- <div class="reader-tools"><a href="menus/${menu.id}.png${menu.id==='navidad-individual'?'?v=maximo-seis-20261108':''}" download>Descargar carta ↓</a><button data-print>Imprimir / guardar PDF ↗</button></div>
+ <div class="reader-tools"><a href="menus/${menu.id}.png${menu.id==='navidad-individual'?'?v=mediodia-20261108':''}" download>Descargar carta ↓</a><button data-print>Imprimir / guardar PDF ↗</button></div>
  </article>`;
 }
 function reservationHTML() {

@@ -21,8 +21,26 @@ test('WhatsApp always targets Perigallo and preserves accented names and the com
 });
 test('the independent tasting experience admits six people and rejects seven',()=>{
  const tasting={'navidad-individual':menus['navidad-individual']},options={kind:'tasting',maxPeople:6};
- for(const people of ['1','6'])assert.equal(validateGroupInquiry({...complete,people,menu:'navidad-individual'},tasting,options).people,Number(people));
- assert.throws(()=>buildGroupMessage({...complete,people:'7',menu:'navidad-individual'},tasting,options));
- assert.throws(()=>buildGroupMessage({...complete,people:'6',menu:'navidad-03'},tasting,options));
- assert.ok(buildGroupMessage({...complete,people:'6',menu:'navidad-individual'},tasting,options).includes('disponibilidad para el menú degustación en diciembre'));
+ const inquiry={...complete,date:'2026-12-04',shift:'lunch'};
+ for(const people of ['1','6'])assert.equal(validateGroupInquiry({...inquiry,people,menu:'navidad-individual'},tasting,options).people,Number(people));
+ assert.throws(()=>buildGroupMessage({...inquiry,people:'7',menu:'navidad-individual'},tasting,options));
+ assert.throws(()=>buildGroupMessage({...inquiry,people:'6',menu:'navidad-03'},tasting,options));
+ assert.ok(buildGroupMessage({...inquiry,people:'6',menu:'navidad-individual'},tasting,options).includes('disponibilidad para el menú degustación en diciembre'));
+});
+
+test('tasting accepts only the eleven December weekend dates, excluding Christmas, at midday',()=>{
+ const tasting={'navidad-individual':menus['navidad-individual']},options={kind:'tasting',maxPeople:6};
+ const inquiry={...complete,shift:'lunch',people:'6',menu:'navidad-individual'};
+ const available=[4,5,6,11,12,13,18,19,20,26,27];
+ for(let day=1;day<=31;day++) {
+   const date='2026-12-'+String(day).padStart(2,'0');
+   if(available.includes(day)) {
+     assert.equal(validateGroupInquiry({...inquiry,date},tasting,options).date,date);
+     assert.throws(()=>buildGroupMessage({...inquiry,date,shift:'dinner'},tasting,options),/mediodía/);
+   } else assert.throws(()=>buildGroupMessage({...inquiry,date},tasting,options),/excepto el 25/);
+ }
+ const message=buildGroupMessage({...inquiry,date:'2026-12-04'},tasting,options);
+ assert.ok(message.includes('viernes, 4 de diciembre de 2026'));
+ assert.ok(message.includes('Turno: Comida (mediodía)'));
+ assert.equal(validateGroupInquiry({...complete,date:'2026-12-25',shift:'dinner'},menus).shift,'dinner');
 });
