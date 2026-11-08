@@ -17,7 +17,7 @@ func png(size: Int, rounded: Bool = true) -> Data {
     context.imageInterpolation = .high
     let edge = CGFloat(size)
     let bounds = NSRect(x: 0, y: 0, width: edge, height: edge)
-    NSColor(srgbRed: 243 / 255, green: 243 / 255, blue: 238 / 255, alpha: 1).setFill()
+    NSColor.white.setFill()
     NSBezierPath(rect: bounds).fill()
     NSColor(srgbRed: 20 / 255, green: 20 / 255, blue: 20 / 255, alpha: 1).setFill()
     // Same three-bar geometry and margins as the approved vector favicon.
@@ -56,7 +56,7 @@ frames.forEach { ico.append($0) }
 try ico.write(to: root.appendingPathComponent("favicon.ico"))
 
 let svg = """
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><title>Perigallo</title><path fill="#F3F3EE" d="M0 0h512v512H0z"/><g transform="translate(99 96) scale(.61)" fill="#141414"><path d="M0 0h156v520H0zM180 0h156v520H180zM360 0h156v520H360z"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><title>Perigallo</title><path fill="#FFFFFF" d="M0 0h512v512H0z"/><g transform="translate(99 96) scale(.61)" fill="#141414"><path d="M0 0h156v520H0zM180 0h156v520H180zM360 0h156v520H360z"/></g></svg>
 
 """
 try svg.write(to: root.appendingPathComponent("favicon.svg"), atomically: true, encoding: .utf8)

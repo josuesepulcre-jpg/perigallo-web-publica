@@ -57,10 +57,10 @@ if ($ext === 'html') {
     $html = file_get_contents($file);
     $html = preg_replace('~<link\b[^>]*\brel=["\'][^"\']*icon[^>]*>\s*~i', '', $html);
     $icons = <<<'HTML'
-<link rel="icon" href="/favicon.ico?v=20261109-tres-barras" sizes="16x16 32x32 48x48">
-<link rel="icon" href="/assets/icons/favicon-32.png?v=20261109-tres-barras" type="image/png" sizes="32x32">
-<link rel="icon" href="/favicon.svg?v=20261109-tres-barras" type="image/svg+xml" sizes="any">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=20261109-tres-barras" sizes="180x180">
+<link rel="icon" href="/favicon.ico?v=20261109-blanco-barras" sizes="16x16 32x32 48x48">
+<link rel="icon" href="/assets/icons/favicon-32.png?v=20261109-blanco-barras" type="image/png" sizes="32x32">
+<link rel="icon" href="/favicon.svg?v=20261109-blanco-barras" type="image/svg+xml" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=20261109-blanco-barras" sizes="180x180">
 HTML;
     $html = preg_replace('~</head>~i', $icons . "\n</head>", $html, 1);
     header('Content-Length: '.strlen($html));
