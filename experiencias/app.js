@@ -1,12 +1,14 @@
 'use strict';
 const $=s=>document.querySelector(s), esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const PLANS=[
- {id:'diciembre',date:'TODO EL MES DE DICIEMBRE',title:'Una comida<br>para juntarnos.',name:'Menús de grupo',description:'Tres menús de grupo y un menú degustación para mesas de menos de seis personas. Elegid el que más os apetezca.',price:'Desde 38 €',note:'Por persona · IVA incluido · Bebidas según menú',cover:'navidad-01',action:'Ver los cuatro menús',menus:['navidad-02','navidad-03','navidad-04','navidad-individual'],default:'navidad-02'},
+ {id:'diciembre',date:'TODO EL MES DE DICIEMBRE',title:'Una comida<br>para juntarnos.',name:'Menús de grupo',description:'Con buen pie, Un paso más y Por todo lo alto. Tres menús para compartir y celebrar en grupo.',price:'Desde 44,95 €',note:'Por persona · IVA y bebidas incluidos',cover:'navidad-01',action:'Ver los tres menús',menus:['navidad-02','navidad-03','navidad-04'],default:'navidad-02'},
+ {id:'degustacion',period:'diciembre',date:'TODO EL MES DE DICIEMBRE',title:'Una experiencia<br>gastronómica.',name:'Menú degustación',description:'Disfruta de una experiencia gastronómica durante todo diciembre, con un menú degustación para mesas de hasta seis personas.',price:'38 €',note:'Por persona · IVA incluido · Bebidas aparte',image:'assets/temporada-diciembre.webp',cover:'navidad-01',action:'Descubrir el menú degustación',menus:['navidad-individual'],default:'navidad-individual'},
  {id:'navidad',date:'25 DE DICIEMBRE · NAVIDAD',title:'A la mesa.<br>Y un rato más.',name:'El día de Navidad',description:'Una comida de Navidad alrededor de la mesa, con nuestro puchero y menú infantil para los peques.',price:'65 €',note:'Por persona · IVA y bebidas incluidos',cover:'navidad-25-portada',action:'Ver los menús',menus:['navidad-25-menu','navidad-25-infantil'],default:'navidad-25-menu'},
  {id:'hora',date:'31 DE DICIEMBRE · HORA CERO',title:'Seis destinos.<br>Un Año Nuevo.',name:'Tardevieja · Hora Cero',description:'Australia, Japón, China, Vietnam, India y Rusia. Gastronomía, lago, barra libre, Bollywood y DJ durante el recorrido.',price:'120 €',note:'Por persona · IVA incluido · Plazas limitadas',cover:'hora-cero-01',action:'Descubrir el recorrido',menus:[],default:'route'},
  {id:'nuevo',date:'1 DE ENERO · AÑO NUEVO',title:'La primera<br>mesa del año.',name:'El día de Año Nuevo',description:'Marisco, entrantes, principal a elegir y flan de turrón. Empezamos 2027 alrededor de la mesa, también con los peques.',price:'50 €',note:'Por persona · IVA incluido · Bebidas aparte',cover:'ano-nuevo-portada',action:'Ver los menús',menus:['ano-nuevo-menu','ano-nuevo-infantil'],default:'ano-nuevo-menu'}
 ];
 const sceneDescriptions = {
+ degustacion: 'Detalle de una mesa preparada para disfrutar de una experiencia gastronómica en diciembre',
  diciembre: 'Mesa para compartir con lino verde, mandarinas y velas encendidas',
  navidad: 'Sopera de consomé sobre lino granate en la mesa de Navidad',
  hora: 'Imagen de Hora Cero con una flor luminosa y una copa junto al lago',
@@ -14,14 +16,18 @@ const sceneDescriptions = {
 };
 // Reservations use the production event backend.
 const bookingOrigin = '';
-const groupInquiryTools = import('./group-inquiry.mjs?v=grupos-20261108');
-const groupMenuIds=['navidad-02','navidad-03','navidad-04','navidad-individual'];
+const groupInquiryTools = import('./group-inquiry.mjs?v=separar-degustacion-20261108');
+const groupMenuIds=['navidad-02','navidad-03','navidad-04'];
+const inquiryPlanIds=['diciembre','degustacion'];
+const inquiryDrafts={};
+const inquiryMenuIds=()=>activePlan.id==='degustacion'?['navidad-individual']:groupMenuIds;
+const inquiryOptions=()=>({kind:activePlan.id==='degustacion'?'tasting':'group',maxPeople:activePlan.id==='degustacion'?6:100});
 let groupInquiryDraft={};
 function groupInquiryHTML() {
  const value=key=>esc(groupInquiryDraft[key]||'');
  return `<article class="group-inquiry leaf">
-  <p class="eyebrow">MENÚS DE GRUPO Y DEGUSTACIÓN · DICIEMBRE</p>
-  <h3>Vuestra próxima mesa.</h3><p class="inquiry-intro">Cuéntanos el plan y prepararemos vuestra consulta para WhatsApp.</p>
+  <p class="eyebrow">${activePlan.id==='degustacion'?'MENÚ DEGUSTACIÓN · TODO DICIEMBRE':'MENÚS DE GRUPO · DICIEMBRE'}</p>
+  <h3>${activePlan.id==='degustacion'?'Vuestra experiencia gastronómica.':'Vuestra próxima mesa.'}</h3><p class="inquiry-intro">Cuéntanos el plan y prepararemos vuestra consulta para WhatsApp.</p>
   <form id="group-inquiry-form">
    <fieldset><legend>¿Quién nos escribe?</legend><div class="inquiry-fields">
     <label>Nombre<input name="first_name" autocomplete="given-name" required maxlength="120" value="${value('first_name')}"></label>
@@ -32,9 +38,9 @@ function groupInquiryHTML() {
    <fieldset><legend>¿Cómo os gustaría venir?</legend><div class="inquiry-fields">
     <label>Día de la reserva<input name="date" type="date" min="2026-12-01" max="2026-12-31" required value="${value('date')}"></label>
     <label>Comida o cena<select name="shift" required><option value="">Elegid el turno</option><option value="lunch" ${groupInquiryDraft.shift==='lunch'?'selected':''}>Comida · mediodía</option><option value="dinner" ${groupInquiryDraft.shift==='dinner'?'selected':''}>Cena · noche</option></select></label>
-    <label>Número de personas<input name="people" type="number" min="1" max="100" step="1" required value="${value('people')}" inputmode="numeric"></label>
-    <label>Menú que os interesa<select name="menu" required><option value="">Elegid un menú</option>${groupMenuIds.map(id=>`<option value="${id}" ${groupInquiryDraft.menu===id?'selected':''}>${esc(MENUS[id].title)} · ${esc(MENUS[id].price)}</option>`).join('')}</select></label>
-   </div><p class="inquiry-hint">Para mesas de menos de seis personas, tenemos el menú degustación.</p></fieldset>
+    <label>Número de personas<input name="people" type="number" min="1" max="${inquiryOptions().maxPeople}" step="1" required value="${value('people')}" inputmode="numeric"></label>
+    <label>Menú que os interesa<select name="menu" required><option value="">Elegid un menú</option>${inquiryMenuIds().map(id=>`<option value="${id}" ${groupInquiryDraft.menu===id?'selected':''}>${esc(MENUS[id].title)} · ${esc(MENUS[id].price)}</option>`).join('')}</select></label>
+   </div><p class="inquiry-hint">${activePlan.id==='degustacion'?'Experiencia para mesas de hasta seis personas.':'Para mesas de hasta seis personas, también podéis consultar el menú degustación en su propuesta propia.'}</p></fieldset>
    <label class="inquiry-privacy"><input name="privacy" type="checkbox" required ${groupInquiryDraft.privacy?'checked':''}><span>He leído la <a href="/politica-privacidad/" target="_blank" rel="noopener">política de privacidad</a> y acepto el contacto para gestionar esta consulta.</span></label>
    <p class="inquiry-status" role="status" aria-live="polite"></p>
    <button class="inquiry-submit" type="submit">Preparar mi consulta de WhatsApp <span aria-hidden="true">↗</span></button>
@@ -43,13 +49,16 @@ function groupInquiryHTML() {
   </form>
  </article>`;
 }
-function openGroupInquiry(menuId) {
- if(groupMenuIds.includes(menuId))groupInquiryDraft.menu=menuId;
- if(!dialog.open||activePlan?.id!=='diciembre')openPlan('diciembre');
+function openGroupInquiry(menuId,planId='diciembre') {
+ if(!inquiryPlanIds.includes(planId))return;
+ if(!dialog.open||activePlan?.id!==planId)openPlan(planId);
+ if(inquiryMenuIds().includes(menuId))groupInquiryDraft.menu=menuId;
+ if(planId==='degustacion')groupInquiryDraft.menu='navidad-individual';
  selectChoice('consulta');view.focus({preventScroll:true});
 }
 function bindGroupInquiry() {
  const form=$('#group-inquiry-form');if(!form)return;
+ const contextPlan=activePlan.id,menuIds=[...inquiryMenuIds()],options=inquiryOptions();
  const snapshot=()=>{const data=Object.fromEntries(new FormData(form));data.privacy=form.elements.privacy.checked;return data;};
  form.addEventListener('input',event=>{
   if(event.target.setCustomValidity)event.target.setCustomValidity('');
@@ -61,9 +70,10 @@ function bindGroupInquiry() {
   if(!form.reportValidity())return;
   const button=form.querySelector('button[type="submit"]'),status=form.querySelector('.inquiry-status');button.disabled=true;
   try {
-   const tools=await groupInquiryTools,menus=Object.fromEntries(groupMenuIds.map(id=>[id,MENUS[id]]));
-   groupInquiryDraft=tools.validateGroupInquiry(snapshot(),menus);
-   const message=tools.buildGroupMessage(groupInquiryDraft,menus),preview=form.querySelector('.inquiry-message');
+   const tools=await groupInquiryTools,menus=Object.fromEntries(menuIds.map(id=>[id,MENUS[id]]));
+   if(!form.isConnected||activePlan.id!==contextPlan)return;
+   groupInquiryDraft=tools.validateGroupInquiry(snapshot(),menus,options);
+   const message=tools.buildGroupMessage(groupInquiryDraft,menus,options),preview=form.querySelector('.inquiry-message');
    preview.querySelector('pre').textContent=message;preview.querySelector('a').href=tools.groupWhatsAppUrl(message);preview.hidden=false;
    status.textContent='Consulta preparada. Todavía no se ha enviado.';
    preview.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'nearest'});
@@ -73,15 +83,15 @@ function bindGroupInquiry() {
 }
 
 function bookingActions(plan) {
- if (plan === 'diciembre') return `<div class="plan-booking"><a href="tel:+34691499985">Reservar por teléfono ↗</a><button type="button" class="reserve-link" data-group-inquiry>Reservar por WhatsApp ↗</button></div>`;
+ if (inquiryPlanIds.includes(plan)) return `<div class="plan-booking"><a href="tel:+34691499985">Reservar por teléfono ↗</a><button type="button" class="reserve-link" data-group-inquiry="${plan}">Reservar por WhatsApp ↗</button></div>`;
  const checkout = bookingOrigin + '/entradas/reserva/?plan=' + encodeURIComponent(plan);
  return `<div class="plan-booking"><a class="reserve-link" href="${checkout}&mode=reserve">Reservar ↗</a><a href="${checkout}&mode=pay">Comprar y pagar ↗</a></div>`;
 }
-$('#plan-grid').innerHTML=PLANS.map(p=>`<article class="plan-card" data-plan="${p.id}"><button class="plan-art" data-open="${p.id}" aria-label="Abrir ${esc(p.name)}"><img src="assets/temporada-${p.id}.webp" alt="${esc(sceneDescriptions[p.id])}" loading="lazy"></button><div class="card-copy"><span class="card-date">${p.date}</span><h3>${esc(p.name)}</h3><p>${esc(p.description)}</p><div class="card-price">${p.price} <small>/ persona</small></div><div class="price-note">${p.note}</div><button class="card-open" data-open="${p.id}">${p.action}<span aria-hidden="true">↗</span></button>${bookingActions(p.id)}</div></article>`).join('');
+$('#plan-grid').innerHTML=PLANS.map(p=>`<article class="plan-card" data-plan="${p.id}" data-period="${p.period||p.id}"><button class="plan-art" data-open="${p.id}" aria-label="Abrir ${esc(p.name)}"><img src="${p.image||`assets/temporada-${p.id}.webp`}" alt="${esc(sceneDescriptions[p.id])}" loading="lazy"></button><div class="card-copy"><span class="card-date">${p.date}</span><h3>${esc(p.name)}</h3><p>${esc(p.description)}</p><div class="card-price">${p.price} <small>/ persona</small></div><div class="price-note">${p.note}</div><button class="card-open" data-open="${p.id}">${p.action}<span aria-hidden="true">↗</span></button>${bookingActions(p.id)}</div></article>`).join('');
 for(const b of document.querySelectorAll('[data-filter]'))b.addEventListener('click',()=>{
  const f=b.dataset.filter;
  for(const button of document.querySelectorAll('[data-filter]')){const selected=button===b;button.classList.toggle('selected',selected);button.setAttribute('aria-pressed',String(selected));}
- let count=0;for(const card of document.querySelectorAll('[data-plan]')){card.hidden=f!=='all'&&card.dataset.plan!==f;if(!card.hidden)count++;}
+ let count=0;for(const card of document.querySelectorAll('[data-plan]')){card.hidden=f!=='all'&&card.dataset.plan!==f&&card.dataset.period!==f;if(!card.hidden)count++;}
  $('#filter-status').textContent=count===1?'1 plan disponible para consultar':`${count} planes disponibles para consultar`;
 });
 let activePlan, activeChoice, opener;
@@ -89,11 +99,15 @@ const dialog = $('#menu-dialog');
 const select = $('#menu-options');
 const view = $('#menu-view');
 function openPlan(id, choice) {
+ if(id==='diciembre'&&choice==='navidad-individual')id='degustacion';
+ if(activePlan&&inquiryPlanIds.includes(activePlan.id))inquiryDrafts[activePlan.id]=groupInquiryDraft;
  activePlan = PLANS.find(plan => plan.id === id);
+ if(inquiryPlanIds.includes(id))groupInquiryDraft=inquiryDrafts[id]||{};
+ if(id==='degustacion')groupInquiryDraft.menu='navidad-individual';
  opener = document.activeElement;
  $('#dialog-date').textContent = activePlan.date;
  const options = activePlan.menus.map(key => [key, MENUS[key].title + ' · ' + MENUS[key].price]);
- if(id==='diciembre')options.push(['consulta','Consultar disponibilidad']);
+ if(inquiryPlanIds.includes(id))options.push(['consulta','Consultar disponibilidad']);
 
  if (id === 'hora') options.push(
    ['route','Recorrido y gastronomía'], ['video','Vídeo de Hora Cero'],
@@ -118,11 +132,11 @@ function menuHTML(menu) {
  ${sections}
  <p class="allergy-note">Si tenéis alguna alergia, consultadnos al reservar.</p>
  ${reservationHTML()}
- <div class="reader-tools"><a href="menus/${menu.id}.png" download>Descargar carta ↓</a><button data-print>Imprimir / guardar PDF ↗</button></div>
+ <div class="reader-tools"><a href="menus/${menu.id}.png${menu.id==='navidad-individual'?'?v=maximo-seis-20261108':''}" download>Descargar carta ↓</a><button data-print>Imprimir / guardar PDF ↗</button></div>
  </article>`;
 }
 function reservationHTML() {
- if(activePlan.id==='diciembre')return `<div class="leaf-reserve">${bookingActions('diciembre')}<p>Para más info y reservas · Cuéntanos la fecha, el turno y vuestro menú.</p></div>`;
+ if(inquiryPlanIds.includes(activePlan.id))return `<div class="leaf-reserve">${bookingActions(activePlan.id)}<p>Para más info y reservas · Cuéntanos la fecha, el turno y vuestro menú.</p></div>`;
  const message = 'Hola, me gustaría consultar disponibilidad para ' + activePlan.name + '.';
  return `<div class="leaf-reserve">${bookingActions(activePlan.id)}<p>Para más info y reservas</p><a href="https://wa.me/34691499985?text=${encodeURIComponent(message)}" target="_blank" rel="noopener">Escribir por WhatsApp ↗</a><a href="tel:+34691499985">Llamar al 691 499 985</a></div>`;
 }
@@ -160,7 +174,7 @@ function selectChoice(id) {
  const hadFocus = view.contains(document.activeElement);
  for (const video of view.querySelectorAll('video')) video.pause();
  select.value = id;
- if(id==='consulta'&&!groupInquiryDraft.menu&&groupMenuIds.includes(activeChoice))groupInquiryDraft.menu=activeChoice;
+ if(id==='consulta'&&!groupInquiryDraft.menu&&inquiryMenuIds().includes(activeChoice))groupInquiryDraft.menu=activeChoice;
  activeChoice = id;
  const index = select.selectedIndex;
  const count = select.options.length;
@@ -172,7 +186,7 @@ function selectChoice(id) {
  const photo = $('#reader-photo');
  photo.parentElement.classList.toggle('single-cover', isPerformance);
  photo.dataset.scene = isPerformance ? 'show' : activePlan.id;
- photo.src = `assets/temporada-${activePlan.id}.webp`;
+ photo.src = (activePlan.image||`assets/temporada-${activePlan.id}.webp`);
  photo.alt = sceneDescriptions[activePlan.id];
  const stop = activePlan.id === 'hora' && ROUTE.find(item => item.id === id);
  photo.parentElement.classList.toggle('country-cover', Boolean(stop));
@@ -223,7 +237,7 @@ view.addEventListener('pointerup', e => {
 });
 document.addEventListener('click', e => {
  const inquiry=e.target.closest('[data-group-inquiry]');
- if(inquiry){openGroupInquiry(dialog.open&&activePlan?.id==='diciembre'?activeChoice:null);return;}
+ if(inquiry){const plan=inquiry.dataset.groupInquiry;openGroupInquiry(dialog.open&&activePlan?.id===plan?activeChoice:null,plan);return;}
  const open = e.target.closest('[data-open]');
  if (open) openPlan(open.dataset.open);
  const stop = e.target.closest('[data-stop]');

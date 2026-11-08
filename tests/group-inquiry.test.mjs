@@ -19,3 +19,10 @@ test('WhatsApp always targets Perigallo and preserves accented names and the com
  const message=buildGroupMessage({...complete,last_name:'García & Soler'},menus),url=new URL(groupWhatsAppUrl(message));
  assert.equal(url.origin,'https://wa.me');assert.equal(url.pathname,'/34691499985');assert.equal(url.searchParams.get('text'),message);
 });
+test('the independent tasting experience admits six people and rejects seven',()=>{
+ const tasting={'navidad-individual':menus['navidad-individual']},options={kind:'tasting',maxPeople:6};
+ for(const people of ['1','6'])assert.equal(validateGroupInquiry({...complete,people,menu:'navidad-individual'},tasting,options).people,Number(people));
+ assert.throws(()=>buildGroupMessage({...complete,people:'7',menu:'navidad-individual'},tasting,options));
+ assert.throws(()=>buildGroupMessage({...complete,people:'6',menu:'navidad-03'},tasting,options));
+ assert.ok(buildGroupMessage({...complete,people:'6',menu:'navidad-individual'},tasting,options).includes('disponibilidad para el menú degustación en diciembre'));
+});
