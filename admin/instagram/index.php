@@ -20,6 +20,7 @@ $action = $_GET['action'] ?? '';
 if ($action !== '') {
     header('Content-Type: application/json; charset=utf-8');
     if ($action === 'session') { json_response(['csrf' => $_SESSION['csrf']]); exit; }
+    if (in_array($action, ['drafts','draft-upload','draft-image'], true)) { require $private.'/drafts.php'; exit; }
     $stateFile = $private . '/notes.json';
     if ($action === 'notes') {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
