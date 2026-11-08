@@ -1,0 +1,7 @@
+.hero-cinema .hero-reservations{display:flex;flex-direction:column;align-items:center;gap:11px;margin-top:30px}
+.hero-cinema .hero-reserve{pointer-events:auto;display:inline-flex;align-items:center;justify-content:center;gap:32px;min-height:52px;padding:13px 27px;background:#f3f3ee;color:#283a2d;border:1px solid #f3f3ee;font:500 15px/1.4 Geist,Arial,sans-serif;text-decoration:none;letter-spacing:.01em;box-shadow:0 3px 18px #0002;transition:background .18s,color .18s,border-color .18s}
+.hero-cinema .hero-reserve span{font-size:19px;font-weight:400}
+.hero-cinema .hero-reserve:hover{background:#3c5142;color:#fffef9;border-color:#e5ddc8}
+.hero-cinema .hero-reserve:focus-visible{outline:2px solid #d2bf94;outline-offset:5px}
+.hero-cinema .hero-reserve-caption{font:400 11px/1.5 Geist,Arial,sans-serif;letter-spacing:.04em;color:#fff;text-align:center;text-shadow:0 1px 8px #0008}
+@media(max-width:760px){.hero-cinema .hero-reservations{margin-top:26px;gap:10px}.hero-cinema .hero-reserve{min-height:50px;padding:12px 24px;font-size:14px}.hero-cinema .hero-reserve-caption{font-size:10px}}
