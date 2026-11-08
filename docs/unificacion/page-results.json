@@ -5,5 +5,8 @@
     "api/scripts/render-ticket-pdf.mjs",
     "api/src/TicketDeliveryQueue.php"
   ],
+  "backend_configuration_changes": [
+    "api/.htaccess"
+  ],
   "unexpected_backend_changes": []
 }

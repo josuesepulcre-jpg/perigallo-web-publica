@@ -8,7 +8,7 @@ files=subprocess.check_output(['git','diff','--name-only','--diff-filter=ACMR',b
 allow=[]
 for name in files:
  p=Path(name)
- if name in ('.htaccess','api/src/TicketDeliveryQueue.php','api/scripts/render-ticket-pdf.mjs'):
+ if name in ('.htaccess','api/.htaccess','api/src/TicketDeliveryQueue.php','api/scripts/render-ticket-pdf.mjs'):
   allow.append(name);continue
  if p.parts[0] in ('docs','scripts','tests','api','database') or any(x.startswith('.') for x in p.parts) or name.startswith('assets/uploads/'):continue
  if p.suffix not in ('.html','.css','.js','.svg','.webp','.jpg','.png','.mp4','.woff2','.ttf'):raise ValueError('Review file type: '+name)

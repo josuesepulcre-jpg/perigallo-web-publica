@@ -1,4 +1,6 @@
 RewriteEngine On
+# Deny internal implementation and maintenance routes in this rewrite context.
+RewriteRule ^(?:src|scripts|cron)(?:/|$) - [F,END]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.php [QSA,L]

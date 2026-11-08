@@ -57,3 +57,7 @@ Con autorización expresa y tras verificar copia local se retiraron únicamente 
 La candidata está disponible para revisión. El proyecto no se declara publicado ni finalizado en producción.
 
 Copia adicional de rollback: fuentes-produccion-antes-candidata.tgz, 64 archivos cotejados por SHA-256 y 30 rutas nuevas inventariadas. Integridad del staging: 53 recursos no HTML coinciden con la candidata; los HTML llevan marcadores exclusivos de staging.
+
+## Control de publicación tras autorización
+
+El primer intento se revirtió automáticamente al detectar que el .htaccess propio de api/ en producción anulaba la regla de bloqueo situada en el directorio padre. Staging no contenía ese archivo y por eso no mostraba la diferencia. Se añadió el bloqueo equivalente dentro de api/.htaccess, conservando su enrutado. Se verificaron en staging las respuestas 403 de src/scripts/cron, 200 de eventos y 404 de API inexistente. Esta corrección de configuración no cambia reglas de negocio.
