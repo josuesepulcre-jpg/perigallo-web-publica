@@ -2093,7 +2093,7 @@
     var ticket = (order.tickets || [])[index];
     if (!ticket || !ticket.qr_url || !window.jspdf) return;
     if (button) { button.disabled = true; button.textContent = "Generando PDF..."; }
-    Promise.all([qrPng(ticket.qr_url), ticketLogo(), ticketFont(), import("/assets/js/ticket-pdf-layout.mjs?v=editorial-20261108")]).then(function (assets) {
+    Promise.all([qrPng(ticket.qr_url), ticketLogo(), ticketFont(), import("/assets/js/ticket-pdf-layout.mjs?v=invitacion-20261108")]).then(function (assets) {
       var qr = assets[0];
       var logo = assets[1];
       var pdf = new window.jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: assets[3].TICKET_PAGE });
@@ -2108,7 +2108,7 @@
     if (!tickets.length || !window.jspdf) return;
     button.disabled = true;
     button.textContent = "Generando PDF...";
-    Promise.all([Promise.all(tickets.map(function (ticket) { return qrPng(ticket.qr_url); })), ticketLogo(), ticketFont(), import("/assets/js/ticket-pdf-layout.mjs?v=editorial-20261108")]).then(function (assets) {
+    Promise.all([Promise.all(tickets.map(function (ticket) { return qrPng(ticket.qr_url); })), ticketLogo(), ticketFont(), import("/assets/js/ticket-pdf-layout.mjs?v=invitacion-20261108")]).then(function (assets) {
       var qrs = assets[0];
       var logo = assets[1];
       var pdf = new window.jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: assets[3].TICKET_PAGE });

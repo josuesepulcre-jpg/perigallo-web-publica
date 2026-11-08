@@ -153,6 +153,7 @@ final class Ticketing
         try {
             $checkoutStage = 'comprobar el evento y la forma de pago';
             $event = $this->findEventForSale((string) $data['event_slug']);
+            $this->lockEventPlaces((int)$event['id'], $data['items']);
             $paymentMethod = $this->redsys->paymentMethod((string) ($data['payment_method'] ?? 'card'));
             $reservationMinutes = max(5, (int) (env_value('TICKET_RESERVATION_MINUTES', '30') ?? '30'));
             $expires = (new DateTimeImmutable('now'))->add(new DateInterval('PT' . $reservationMinutes . 'M'))->format('Y-m-d H:i:s');
@@ -1005,6 +1006,7 @@ final class Ticketing
         $this->pdo->beginTransaction();
         try {
             $event = $this->requireAdminEvent($eventId);
+            $this->lockEventPlaces($eventId, $data['items']);
             $orderStmt = $this->pdo->prepare(
                 'INSERT INTO ticket_orders
                  (public_token, redsys_order, first_name, last_name, name, email, phone, age_requirement_accepted, age_requirement_accepted_at, dress_code_accepted, dress_code_accepted_at, dress_code_version, subtotal_cents, total_cents, currency, status, reservation_expires_at, ip_address, user_agent, is_test, environment, sales_channel, inventory_mode, cash_payment_status, cash_payment_notes, cash_payment_recorded_by, cash_payment_recorded_at, order_status, payment_status, delivery_status, paid_at, holded_status, holded_excluded, holded_exclusion_reason, created_at, updated_at)
@@ -2674,6 +2676,20 @@ final class Ticketing
         $stmt->execute([$ticketTypeId]);
         $row = $stmt->fetch() ?: [];
         return ['sold' => (int) ($row['sold'] ?? 0), 'reserved' => (int) ($row['reserved'] ?? 0), 'manual_sold' => (int) ($row['manual_sold'] ?? 0), 'manual_reserved' => (int) ($row['manual_reserved'] ?? 0)];
+    }
+
+    /** Lock the shared adult/child pool before checking any individual ticket type. */
+    private function lockEventPlaces(int $eventId, array $items): void
+    {
+        $q=$this->pdo->prepare('SELECT capacity FROM events WHERE id=? FOR UPDATE');$q->execute([$eventId]);
+        $capacity=$q->fetchColumn();$requested=0;
+        foreach($items as $item)$requested+=max(0,(int)($item['quantity']??0));
+        // Locking reads see the latest committed seats even under REPEATABLE READ.
+        $seats=$this->pdo->prepare('SELECT i.quantity FROM ticket_order_items i JOIN ticket_orders o ON o.id=i.order_id WHERE i.event_id=? AND o.is_test=0 AND (o.status="paid" OR (o.status="pending" AND o.order_status="confirmed" AND o.reservation_expires_at IS NULL) OR (o.status IN ("pending","payment_processing") AND (o.reservation_expires_at>NOW() OR (o.status="payment_processing" AND o.order_status="confirmed" AND o.reservation_expires_at IS NULL)))) FOR UPDATE');
+        $seats->execute([$eventId]);$committed=array_sum(array_map('intval',$seats->fetchAll(\PDO::FETCH_COLUMN)));
+        if($capacity===false||$committed+$requested>(int)$capacity) {
+            throw new \RuntimeException('No quedan suficientes plazas para este grupo. Contacta con Perigallo para consultar disponibilidad.');
+        }
     }
 
     private function eventCommittedQuantity(int $eventId): int

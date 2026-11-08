@@ -1,0 +1,35 @@
+
+.season-home{display:grid;grid-template-columns:1.25fr 1fr;overflow:hidden;background:#eeeee6;color:#242922;text-decoration:none}
+.season-home>img{width:100%;height:420px;object-fit:cover}
+.season-home>div{padding:clamp(25px,4vw,60px);align-self:center}
+.season-home h3{font-size:clamp(35px,3.6vw,60px);line-height:1.05;margin:18px 0}
+.season-home p:not(.eyebrow){line-height:1.6;margin-bottom:28px;max-width:34ch}
+.season-home span{display:block;border-top:1px solid #a8ad9e;padding-top:18px;font-size:14px}
+body:has(.season-hero) .site-header{height:96px;padding:0 6%;display:flex;gap:28px;position:sticky;top:0;z-index:6;background:#141414;color:#f3f3ee}
+body:has(.season-hero) .site-header .identity-lockup{display:flex;align-items:center;gap:15px;width:228px;flex:none}
+body:has(.season-hero) .identity-symbol{width:30px;height:32px;object-fit:contain;filter:brightness(0) invert(1)}
+body:has(.season-hero) .identity-lockup img:not(.identity-symbol){width:180px;height:auto}
+body:has(.season-hero) .site-header nav{display:flex;gap:28px;font-size:14px}
+body:has(.season-hero) .nav-cta{border:1px solid #ffffff55;padding:12px 18px}
+body:has(.season-hero) .site-header .menu{display:none;color:inherit;background:none;border:1px solid #ffffff55;padding:10px 15px;font:inherit}
+body:has(.season-hero) .site-header a[href="/experiencias/"]{text-decoration:underline;text-underline-offset:8px}
+body:has(.season-hero) .site-footer{display:block;background:#141414;padding:65px 6%;color:#f3f3ee}
+body:has(.season-hero) .footer-grid{display:grid;grid-template-columns:1.3fr repeat(3,1fr);gap:40px}
+body:has(.season-hero) .footer-grid>div{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+body:has(.season-hero) .footer-grid a{font-size:13px;text-decoration:none}
+body:has(.season-hero) .footer-grid .eyebrow{color:#d2bf94;margin-bottom:14px}
+body:has(.season-hero) .footer-grid .identity-lockup{display:flex;align-items:center;gap:15px}
+body:has(.season-hero) .footer-bottom{display:flex;justify-content:space-between;gap:24px;margin-top:50px;padding-top:20px;border-top:1px solid #ffffff33}
+body:has(.season-hero) .footer-bottom div{display:flex;gap:18px;flex-wrap:wrap}
+@media(max-width:1100px){
+ body:has(.season-hero) .site-header{height:80px}
+ body:has(.season-hero) .site-header .menu{display:block;margin-left:auto}
+ body:has(.season-hero) .site-header nav{display:none;position:absolute;top:80px;left:0;right:0;padding:25px 6%;background:#141414}
+ body:has(.season-hero) .site-header nav.open{display:flex;flex-direction:column;align-items:start;gap:20px}
+ body:has(.season-hero) .site-header nav>a:nth-child(2){display:block}
+}
+@media(max-width:740px){
+ .season-home{grid-template-columns:1fr}.season-home>img{height:240px}
+ body:has(.season-hero) .footer-grid{grid-template-columns:1fr 1fr}
+ body:has(.season-hero) .footer-bottom{flex-direction:column}
+}

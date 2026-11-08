@@ -12,7 +12,7 @@ final class TicketDocumentService
     public const DOCUMENT_TYPE = 'tickets';
     // Delivery version stays stable: approving a design must not resend orders.
     public const DOCUMENT_VERSION = 'v2-attendee';
-    private const DOCUMENT_STORAGE_VERSION = 'v3-a5-20261108';
+    private const DOCUMENT_STORAGE_VERSION = 'v4b-invitacion-20261108';
 
     /** @return array{id:int,filename:string,content:string,content_type:string,sha256:string} */
     public function ensureOrderDocument(PDO $pdo, int $orderId): array

@@ -136,7 +136,7 @@
             '<a href="/admin/descuentos/" data-admin-nav-item="discounts">Códigos de descuento</a>' +
             '<a href="/admin/analitica/" data-admin-nav-item="analytics">Analítica</a>' +
             '<span class="admin-nav-label">Instagram</span>' +
-            '<a href="/admin/instagram/" data-admin-nav-item="instagram">Estudio de Instagram</a>' +
+            '<a href="https://perigallo.com/admin/instagram/" data-admin-nav-item="instagram">Estudio de Instagram</a>' +
             '<span class="admin-nav-label">Operativa</span>' +
             '<a href="/admin/acceso/" data-admin-nav-item="access">Control de acceso</a>' +
             (sessionData.is_owner ? '<span class="admin-nav-label">Configuración</span><a href="/admin/usuarios/" data-admin-nav-item="users">Equipo y permisos</a>' : '') +
@@ -278,17 +278,21 @@
     return "https://wa.me/" + encodeURIComponent(phone) + "?text=" + encodeURIComponent(message);
   }
 
+  function manualWhatsAppMode() { return document.body.getAttribute("data-whatsapp-delivery") === "manual"; }
+
   function ticketShareData(order) {
     var phone = String(order.phone || "").replace(/\D/g, "").replace(/^00/, "");
     if (phone.length === 9 && /^[67]/.test(phone)) phone = "34" + phone;
     var link = window.location.origin + "/entradas/pedido/?token=" + encodeURIComponent(order.public_token);
-    return { phone: phone, link: link, message: "Hola " + (order.name || "") + ",\n\nAquí tienes tus entradas para " + (order.event_title || "Perigallo") + ". Puedes verlas y descargarlas en PDF desde este enlace:\n" + link + "\n\nGuárdalas para mostrarlas en el acceso. ¡Nos vemos en Perigallo!" };
+    var local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);
+    if (local) return { phone:phone,link:link,local:true,message:"Hola " + (order.name || "") + ",\n\nTe envío el PDF de prueba con tus entradas para " + (order.event_title || "Perigallo") + ".\n\nPRUEBA LOCAL · Sin validez de acceso." };
+    return { phone: phone, link: link, local:false, message: "Hola " + (order.name || "") + ",\n\nAquí tienes tus entradas para " + (order.event_title || "Perigallo") + ". Puedes verlas y descargarlas en PDF desde este enlace:\n" + link + "\n\nGuárdalas para mostrarlas en el acceso. ¡Nos vemos en Perigallo!" };
   }
 
   function manualTicketWhatsAppLink(order) {
     if (!state.session || state.session.role !== "admin" || !order.public_token || isClosedOrder(order)) return "";
     if (order.payment_status !== "paid" && order.status !== "paid" && !(order.sales_channel === "cash" && order.order_status === "confirmed")) return "";
-    return '<button type="button" class="text-action" data-ticket-share="' + Number(order.id) + '">Enviar entradas por WhatsApp Web</button>';
+    return '<button type="button" class="text-action" data-ticket-share="' + Number(order.id) + '">Compartir por WhatsApp Business</button>';
   }
 
   function openTicketShare(order, trigger) {
@@ -296,6 +300,17 @@
     var modal = document.createElement("div");
     modal.className = "ticket-access-modal";
     modal.innerHTML = '<div class="ticket-access-modal-card" role="dialog" aria-modal="true" aria-labelledby="ticket-share-title"><button type="button" class="ticket-access-modal-close" aria-label="Cerrar">×</button><section class="ticket-access-decision"><span class="ticket-eyebrow">Reenvío manual</span><h2 id="ticket-share-title">Compartir entradas</h2><p>Abre el mensaje en WhatsApp o cópialo para pegarlo en el chat que elijas. El envío lo confirmas tú en WhatsApp.</p><div class="ticket-form"><div class="ticket-field"><label for="ticket-share-phone">Teléfono de destino (con prefijo)</label><input id="ticket-share-phone" type="tel" value="' + escapeHtml(data.phone) + '" autocomplete="off"><small>Puedes cambiarlo para esta entrega. No modifica el teléfono del pedido.</small></div><div class="ticket-field"><label for="ticket-share-message">Mensaje y enlace de descarga</label><textarea id="ticket-share-message" rows="8">' + escapeHtml(data.message) + '</textarea></div></div><div class="ticket-actions"><a class="ticket-btn primary" data-share-web>Abrir WhatsApp Web</a><a class="ticket-btn" data-share-app target="_blank" rel="noopener noreferrer">Abrir WhatsApp móvil</a><button class="ticket-btn" type="button" data-share-copy>Copiar mensaje</button><button class="ticket-btn" type="button" data-share-link>Copiar enlace</button><a class="ticket-btn" href="' + escapeHtml(data.link) + '" target="_blank" rel="noopener noreferrer">Ver entradas</a></div><p role="status" aria-live="polite" data-share-status></p></section></div>';
+    var pdfLink = document.createElement('a');
+    pdfLink.className = 'ticket-btn';pdfLink.textContent = 'Descargar PDF para adjuntar';
+    pdfLink.href = '/api/orders/tickets/' + encodeURIComponent(order.public_token);
+    pdfLink.setAttribute('download', 'Entradas-Perigallo.pdf');
+    modal.querySelector('.ticket-actions').prepend(pdfLink);
+    modal.querySelector('.ticket-eyebrow').textContent = 'WhatsApp Business · Envío manual';
+    if (data.local) {
+      modal.querySelector('.ticket-access-decision > p').textContent = '1. Descarga el PDF. 2. Abre WhatsApp Business. 3. Adjunta el PDF en el chat y confirma el envío. En estas pruebas el enlace local solo se abre en este ordenador.';
+      modal.querySelector('[data-share-link]').remove();
+      modal.querySelector('label[for="ticket-share-message"]').textContent = 'Mensaje para acompañar el PDF';
+    }
     var phone = modal.querySelector('#ticket-share-phone'), message = modal.querySelector('#ticket-share-message'), status = modal.querySelector('[data-share-status]');
     function update() {
       var recipient = phone.value.replace(/\D/g, '').replace(/^00/, '');
@@ -335,12 +350,27 @@
     });
   }
 
+  function openLocalPaymentShare(order, trigger) {
+    var data = new URL(cashWhatsAppUrl(order));
+    var message = data.searchParams.get("text") || "";
+    var modal = document.createElement("div");
+    modal.className = "ticket-access-modal";
+    modal.innerHTML = '<div class="ticket-access-modal-card" role="dialog" aria-modal="true" aria-labelledby="local-payment-share-title"><button type="button" class="ticket-access-modal-close" aria-label="Cerrar">×</button><section class="ticket-access-decision"><span class="ticket-eyebrow">Prueba local · Sin envío</span><h2 id="local-payment-share-title">Enlace de pago por WhatsApp</h2><p>Este es el mensaje que prepara el panel para el cliente. En esta prueba puedes copiarlo y abrir el enlace en este ordenador.</p><div class="ticket-form"><div class="ticket-field"><label for="local-payment-phone">Teléfono de destino</label><input id="local-payment-phone" readonly value="' + escapeHtml(data.pathname.slice(1)) + '"></div><div class="ticket-field"><label for="local-payment-message">Mensaje preparado</label><textarea id="local-payment-message" readonly rows="9">' + escapeHtml(message) + '</textarea></div></div><div class="ticket-actions"><button type="button" class="ticket-btn" data-local-copy>Copiar mensaje</button><a class="ticket-btn primary" href="' + escapeHtml(manualCardPaymentUrl(order)) + '" target="_blank" rel="noopener">Probar enlace de pago</a></div><p data-local-copy-status role="status" aria-live="polite">El enlace localhost funciona en este ordenador. No se envía ningún WhatsApp ni se marca como entregado.</p></section></div>';
+    function close() { modal.remove(); if(trigger) trigger.focus(); }
+    modal.querySelector('[aria-label="Cerrar"]').onclick = close;
+    modal.addEventListener('keydown',function(e){ if(e.key === 'Escape') close(); });
+    modal.querySelector('[data-local-copy]').onclick = function() {
+      navigator.clipboard.writeText(message).then(function(){modal.querySelector('[data-local-copy-status]').textContent = 'Mensaje copiado. No se ha enviado ningún WhatsApp.';}).catch(function(){modal.querySelector('[data-local-copy-status]').textContent = 'Selecciona el mensaje y cópialo manualmente.';});
+    };
+    document.body.appendChild(modal);modal.querySelector('[aria-label="Cerrar"]').focus();
+  }
+
   function manualCardPaymentUrl(order) {
     return window.location.origin + "/entradas/pedido/?token=" + encodeURIComponent(order.public_token) + "&pay=1";
   }
 
   function deliveryStatusLabel(status) {
-    return ({sent:"Enviado",delivered:"Entregado",read:"Leído",manual_sent:"Enviado manualmente",queued:"En cola",pending:"Pendiente",blocked:"Bloqueado",failed:"Fallido",not_authorized:"No autorizado"})[status] || "Pendiente";
+    return ({captured:"Capturado en local",sent:"Enviado",delivered:"Entregado",read:"Leído",manual_sent:"Enviado manualmente",queued:"En cola",pending:"Pendiente",blocked:"Bloqueado",failed:"Fallido",not_authorized:"No autorizado"})[status] || "Pendiente";
   }
 
   function deliveryStatusClass(status) {
@@ -367,7 +397,7 @@
     if ((order.payment_status === "paid" || order.status === "paid") && order.sales_channel !== "cash") {
       if (order.email_delivery_status !== "sent") actions += '<button type="button" class="text-action" data-order-action="delivery-email-confirm" data-order-id="' + Number(order.id) + '">Marcar correo enviado</button>';
       actions += '<button type="button" class="text-action" data-order-action="delivery-email" data-order-id="' + Number(order.id) + '">Reenviar correo</button>';
-      if (Number(order.whatsapp_consent)) actions += '<button type="button" class="text-action" data-order-action="delivery-whatsapp" data-order-id="' + Number(order.id) + '">Reenviar WhatsApp</button>';
+      if (!manualWhatsAppMode() && Number(order.whatsapp_consent)) actions += '<button type="button" class="text-action" data-order-action="delivery-whatsapp" data-order-id="' + Number(order.id) + '">Reenviar WhatsApp</button>';
     }
     if (state.session.is_owner && order.sales_channel !== "cash" && !Number(order.is_test) && (order.payment_status === "paid" || order.status === "paid") && order.holded_status && order.holded_status !== "synced") actions += '<button type="button" class="text-action" data-order-action="holded-retry" data-order-id="' + Number(order.id) + '">Reintentar Holded</button>';
     if (state.session.is_owner && Number(order.is_test)) actions += '<button type="button" class="text-action danger" data-order-action="purge-test" data-order-id="' + Number(order.id) + '">Eliminar prueba</button>';
@@ -388,8 +418,8 @@
       var allergySummary = Number(order.allergy_attendee_count || 0) ? ' · ' + Number(order.allergy_attendee_count) + ' alergia' + (Number(order.allergy_attendee_count) === 1 ? '' : 's') + ' comunicada' + (Number(order.allergy_attendee_count) === 1 ? '' : 's') : '';
       var holded = order.sales_channel === "cash" ? '<small class="admin-order-holded admin-order-cash">Registro web · sin Holded</small>' : !Number(order.is_test) && order.holded_status ? '<small class="admin-order-holded">Holded: ' + escapeHtml({not_required:"No requerido",pending:"Pendiente",processing:"Procesando",synced:"Sincronizado",error:"Reintento programado",requires_review:"Revisión necesaria"}[order.holded_status] || order.holded_status) + (order.holded_document_number ? ' · ' + escapeHtml(order.holded_document_number) : '') + '</small>' : '';
       var paymentNote = order.sales_channel === "cash" && order.cash_payment_notes ? '<small class="admin-order-cash-note">Efectivo: ' + escapeHtml(order.cash_payment_notes) + '</small>' : '';
-      var emailDeliveryStatus = ["sent", "queued", "pending", "failed"].indexOf(order.email_delivery_status) !== -1 ? order.email_delivery_status : "pending";
-      var whatsAppDeliveryStatus = !Number(order.whatsapp_consent) ? "not_authorized" : (["sent", "delivered", "read", "queued", "pending", "blocked", "failed", "not_authorized"].indexOf(order.whatsapp_delivery_status) !== -1 ? order.whatsapp_delivery_status : "queued");
+      var emailDeliveryStatus = ["captured", "sent", "queued", "pending", "failed"].indexOf(order.email_delivery_status) !== -1 ? order.email_delivery_status : "pending";
+      var whatsAppDeliveryStatus = !Number(order.whatsapp_consent) ? "not_authorized" : (["captured", "sent", "delivered", "read", "queued", "pending", "blocked", "failed", "not_authorized"].indexOf(order.whatsapp_delivery_status) !== -1 ? order.whatsapp_delivery_status : "queued");
       var isPaidCashOrder = order.sales_channel === "cash" && order.cash_payment_status === "paid";
       var delivery = isPaidCashOrder
         ? '<small class="admin-order-delivery"><span><strong>Entrega:</strong> ' + deliveryStatusMarkup("WhatsApp", "manual_sent") + '<span class="admin-delivery-meta"> · envío desde WhatsApp Business</span></span></small>'
@@ -1167,6 +1197,7 @@
           var template = data[2] && data[2].template || {};
           var labels = {not_configured:"No configurada",not_created:"No creada",in_review:"En revisión",approved:"Aprobada",rejected:"Rechazada",paused:"Pausada",disabled:"Deshabilitada",unknown:"Estado desconocido"};
           templateStatus.textContent = "Plantilla de WhatsApp · " + (template.template || "entradas_perigallo_confirmadas_v1") + ": " + (labels[template.status] || template.status || "Sin estado") + (template.reason ? " · " + template.reason : "");
+          if (manualWhatsAppMode()) templateStatus.textContent = "WhatsApp Business · Envío manual de entradas. Descarga el PDF desde Compartir y adjúntalo en el chat. Envío automático pendiente de coexistencia de Meta.";
         }
         populateCashEvents();
         populateAttendeeExportEvents();
@@ -1258,6 +1289,11 @@
           if (action === "edit") {
             var editableOrder = (state.orders || []).find(function (order) { return Number(order.id) === id; });
             if (editableOrder) openEditModal(editableOrder);
+            return;
+          }
+          if (id && action === "send-manual-card" && ["127.0.0.1", "localhost"].indexOf(window.location.hostname) !== -1) {
+            var localOrder = (state.orders || []).find(function(order){return Number(order.id) === id;});
+            if(localOrder) openLocalPaymentShare(localOrder,button);
             return;
           }
           if (!id || !window.confirm(actionMessage(action))) return;

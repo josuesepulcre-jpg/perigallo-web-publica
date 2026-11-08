@@ -43,6 +43,13 @@ final class WhatsAppDeliveryService
     {
         $config = $this->config();
         $recipient = (string) ($order['whatsapp_phone_e164'] ?? '');
+        $season=json_decode((string)@file_get_contents(__DIR__.'/season-catalog.json'),true);
+        if(($season['whatsapp_delivery_mode']??'')==='manual') {
+            $reason='Envío manual por WhatsApp Business. Pendiente de coexistencia de Meta.';
+            $this->upsertLog($pdo,(int)$order['id'],$idempotencyKey,'blocked',$this->maskPhone($recipient),$config,null,null,$reason);
+            return ['status'=>'blocked','message_id'=>null,'error'=>$reason];
+        }
+
         if (empty($order['whatsapp_consent']) || $recipient === '') {
             $this->upsertLog($pdo, (int) $order['id'], $idempotencyKey, 'not_authorized', $this->maskPhone($recipient), $config, null, null, 'No existe consentimiento de WhatsApp para esta compra.');
             return ['status' => 'not_authorized', 'message_id' => null, 'error' => null];

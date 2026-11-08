@@ -1,0 +1,22 @@
+{
+  "christmas_performance_enabled": false,
+  "whatsapp_delivery_mode": "manual",
+  "max_capacity": 100,
+  "plans": {
+    "navidad": {
+      "slug": "navidad-2026",
+      "adult": 6500,
+      "child": 2800
+    },
+    "hora": {
+      "slug": "hora-cero-2026",
+      "adult": 12000,
+      "child": null
+    },
+    "nuevo": {
+      "slug": "ano-nuevo-2027",
+      "adult": 5000,
+      "child": 2800
+    }
+  }
+}

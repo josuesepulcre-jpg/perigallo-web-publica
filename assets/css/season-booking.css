@@ -1,0 +1,48 @@
+body{background:#f6f4ed}
+.site-header{background:#141414;color:#f6f4ed;height:90px;padding:0 6%;gap:24px;position:relative}
+.site-header .identity-lockup{display:flex;gap:15px;align-items:center;width:228px;flex:none}
+.site-header .identity-lockup .identity-symbol{width:30px;height:32px;filter:brightness(0) invert(1)}
+.site-header .identity-lockup img:not(.identity-symbol){width:180px;height:auto}
+.site-header nav{display:flex;gap:24px;font-size:14px}
+.site-header .menu{display:none;color:inherit;background:transparent;border:1px solid #ffffff66;padding:10px 15px}
+.booking-page{max-width:1250px;margin:0 auto;padding:48px 5% 80px}
+.back-link{display:inline-block;font-size:13px;margin-bottom:30px}
+.booking-page h1{font-size:clamp(38px,5vw,66px);margin:12px 0}
+.booking-date{color:#5c6459;margin-bottom:28px}
+.booking-grid{display:grid;grid-template-columns:1.55fr 1fr;gap:50px;margin-top:28px;align-items:start}
+.booking-page fieldset{border:0;border-top:1px solid #ccc7b6;padding:20px 0 28px;margin:0}
+.booking-page legend{padding-right:15px;font-size:20px;letter-spacing:-.5px}
+.booking-page label:not(.privacy-check){display:block;font-size:13px;margin-bottom:16px}
+.booking-page input:not([type=radio]):not([type=checkbox]),.booking-page textarea{display:block;background:#fffef8;width:100%;padding:11px 12px;border:1px solid #c8c9bb;margin-top:7px;border-radius:0;font:inherit}
+.field-pair{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.booking-modes{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.booking-modes label{border:1px solid #ccc7b6;padding:15px;display:flex!important;gap:10px;align-items:start}
+.booking-modes label:has(input:checked){background:#e7ebdf;border-color:#456044}
+.booking-modes input{accent-color:#3c5142;margin-top:5px;flex:none}
+.booking-modes strong{font-size:16px;font-weight:500;display:block;margin-bottom:8px}
+.booking-modes small{display:block;font-size:12px;line-height:1.5}
+.field-note,.optional{font-size:12px;color:#626859}
+.privacy-check{display:flex;gap:10px;font-size:12px;align-items:start}
+.privacy-check input{accent-color:#3c5142;margin-top:5px}
+.local-notice{font-size:12px;color:#5c6358;margin:20px 0;line-height:1.6}
+.booking-primary{display:block;padding:14px 20px;background:#3c5142;color:#fffef7;border:0;width:100%;text-decoration:none;text-align:center;font:inherit;font-size:14px}
+.booking-primary:disabled{opacity:.5;cursor:wait}
+#form-status,#bank-status{font-size:13px;color:#75252b;margin:12px 0}
+.order-summary{background:#e8ebdf;padding:30px}
+.order-summary h2{font-size:31px;margin:14px 0}
+.order-summary>p{font-size:14px;margin:10px 0}
+.order-total{border-top:1px solid #c1c6b5;padding-top:20px;margin-top:24px;display:flex;flex-direction:column;gap:5px}
+.order-total span{font-size:12px}.order-total strong{font-size:35px;font-weight:500;letter-spacing:-1px}
+.order-page .booking-grid{grid-template-columns:1fr 1fr}
+.booking-details h2,.management-booking h2{font-size:24px;margin-bottom:15px}
+.booking-details>p{font-size:14px;margin:15px 0}
+.order-tools{display:flex;flex-wrap:wrap;gap:15px;font-size:12px}
+.order-tools button,.management-actions button{background:none;text-decoration:underline;border:0;padding:0;font:inherit;cursor:pointer}
+.management-booking{border-top:1px solid #c5c7b9;padding:28px 0;display:grid;grid-template-columns:1fr auto;gap:15px;margin-top:25px}
+.management-booking>strong{font-size:24px;font-weight:500}
+.management-booking p{font-size:13px;margin:8px 0}
+.management-actions{grid-column:1/-1;display:flex;gap:20px;flex-wrap:wrap;font-size:13px}
+.prepared-link{grid-column:1/-1}.empty-bookings{padding:40px 0;color:#5d6655}
+@media(max-width:1000px){.site-header .menu{display:block;margin-left:auto}.site-header nav{display:none;position:absolute;top:90px;left:0;right:0;padding:25px 6%;background:#141414;z-index:10}.site-header nav.open{display:flex;flex-direction:column;align-items:start}.booking-grid{gap:25px}}
+@media(max-width:740px){.booking-page{padding-top:26px}.booking-grid,.order-page .booking-grid{grid-template-columns:1fr}.checkout-aside{grid-row:1}.order-summary{padding:22px}.booking-modes{grid-template-columns:1fr}.field-pair{gap:12px}.booking-page h1{font-size:42px}.management-booking{grid-template-columns:1fr}.site-header nav>a:nth-child(2){display:block}}
+@media print{body>*:not(main),.back-link,.local-notice,.order-tools,.booking-primary{display:none!important}.booking-grid,.order-page .booking-grid{display:block}.booking-page{padding:0}.order-summary{background:white;border:1px solid #ccc}}

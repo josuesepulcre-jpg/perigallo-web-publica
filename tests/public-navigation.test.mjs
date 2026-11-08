@@ -23,7 +23,7 @@ test('public pages have one accessible navigation and working local destinations
 });
 test('every agenda consumer loads the date policy before the consuming script',()=>{
  for(const path of ['index.html','experiencias/index.html','eventos/index.html','eventos/evento.html']){
-  const html=readFileSync(path,'utf8');const helper=html.indexOf('public-agenda.js');const consumer=html.indexOf(html.includes('live-agenda.js')?'live-agenda.js':'ticketing.js');
+  const html=readFileSync(path,'utf8');const helper=html.indexOf('public-agenda.js');const consumer=html.indexOf(html.includes('live-agenda.js')?'live-agenda.js':html.includes('experience-archive.js')?'experience-archive.js':'ticketing.js');
   assert.ok(helper>=0&&helper<consumer,path);
  }
 });

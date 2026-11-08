@@ -42,6 +42,18 @@ try {
         return $instance ??= new HoldedSyncService(Database::pdo(), new HoldedClient());
     };
 
+    if (preg_match('#^/season-reservations(?:/([A-Za-z0-9_-]+)(/start-payment)?)?$#', $path, $season)) {
+        header('Cache-Control: no-store');
+        if((int)($_SERVER['CONTENT_LENGTH']??0)>12000){json_response(['error'=>'La solicitud es demasiado grande.'],413);return;}
+        $service=new \Perigallo\Ticketing\SeasonReservations(Database::pdo(),$ticketing());
+        if($method==='GET'&&empty($season[1]))json_response($service->catalog());
+        elseif($method==='POST'&&empty($season[1])){ $body=read_json_body();$result=$service->create($body);$result['booking']['mode']=$body['mode'];json_response($result,201); }
+        elseif($method==='GET'&&empty($season[2]))json_response(['booking'=>$service->booking($season[1])]);
+        elseif($method==='POST'&&!empty($season[2]))json_response($service->payment($season[1]));
+        else json_response(['error'=>'Método no permitido.'],405);
+        return;
+    }
+
     if ($method === 'GET' && $path === '/whatsapp/webhook') {
         $whatsApp = new WhatsAppDeliveryService();
         $mode = (string) ($_GET['hub_mode'] ?? '');
