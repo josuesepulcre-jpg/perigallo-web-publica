@@ -682,3 +682,23 @@
     margin-inline: auto;
   }
 }
+
+/* Paired photographs keep their framing; portrait films sit beside their copy. */
+@media (min-width: 901px) {
+  .archive-section.has-media .archive-frame:first-child:nth-last-child(2) img,
+  .archive-section.has-media .archive-frame:first-child:nth-last-child(2) ~ .archive-frame img {
+    aspect-ratio: auto 4/3;
+    height: auto;
+  }
+  .archive-detail .archive-section.has-single-media:has(.archive-video) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding-inline: max(var(--gutter), calc((100vw - 1160px) / 2));
+  }
+  .archive-section.has-single-media:has(.archive-video) .archive-frame.is-portrait {
+    width: min(100%, 360px, 39.375svh);
+    justify-self: end;
+  }
+  .archive-section.has-single-media.is-media-reversed:has(.archive-video) .archive-frame.is-portrait {
+    justify-self: start;
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "stagingPlayback": [
+    {
+      "error": false,
+      "label": "Vídeo de los preparativos de La Perigalla Comedy",
+      "time": 6.003696
+    },
+    {
+      "error": false,
+      "label": "Rubén Serrano durante su monólogo en La Perigalla Comedy",
+      "time": 4.595164
+    },
+    {
+      "error": false,
+      "label": "Rubén Serrano se graba con el público durante La Perigalla Comedy",
+      "time": 5.220382
+    },
+    {
+      "error": false,
+      "label": "Música en directo ante el público de La Perigalla Comedy",
+      "time": 5.693728
+    }
+  ],
+  "laptop": {
+    "overflow": false,
+    "videoSections": [
+      {
+        "horizontalGap": 76.796875,
+        "textWidth": 534.1015625,
+        "title": "Todo empezaba alrededor de la mesa.",
+        "verticalOverlap": 270.84375,
+        "videoWidth": 315
+      },
+      {
+        "horizontalGap": 76.796875,
+        "textWidth": 534.1015625,
+        "title": "El turno de las carcajadas.",
+        "verticalOverlap": 169.671875,
+        "videoWidth": 315
+      },
+      {
+        "horizontalGap": 76.796875,
+        "textWidth": 534.1015625,
+        "title": "Desde el escenario.",
+        "verticalOverlap": 169.671875,
+        "videoWidth": 315
+      },
+      {
+        "horizontalGap": 76.796875,
+        "textWidth": 534.1015625,
+        "title": "La sala, en directo.",
+        "verticalOverlap": 169.671875,
+        "videoWidth": 315
+      }
+    ],
+    "width": 1280
+  },
+  "mobileBefore": {
+    "sections": [
+      1262.671875,
+      1183.53125,
+      1088.015625,
+      1018.4375,
+      1018.4375
+    ],
+    "width": 390
+  },
+  "mobileAfter": {
+    "overflow": false,
+    "sections": [
+      1262.671875,
+      1183.53125,
+      1088.015625,
+      1018.4375,
+      1018.4375
+    ],
+    "width": 390
+  },
+  "productionPlayback": {
+    "error": false,
+    "height": 640,
+    "time": 3.164879,
+    "width": 360
+  },
+  "consoleErrors": []
+}
