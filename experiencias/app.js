@@ -24,6 +24,20 @@ const inquiryDrafts={};
 const inquiryMenuIds=()=>activePlan.id==='degustacion'?['navidad-individual']:groupMenuIds;
 const inquiryOptions=()=>({kind:activePlan.id==='degustacion'?'tasting':'group',maxPeople:activePlan.id==='degustacion'?6:100});
 let groupInquiryDraft={};
+function tastingCalendarHTML() {
+ const weekdays=['L','M','X','J','V','S','D'];
+ const selected=decemberServiceDates.includes(groupInquiryDraft.date)?groupInquiryDraft.date:'';
+ const cells=['<td aria-hidden="true"></td>']; // December 2026 starts on Tuesday.
+ for(let day=1;day<=31;day++) {
+  const date='2026-12-'+String(day).padStart(2,'0'),available=decemberServiceDates.includes(date);
+  const label=new Intl.DateTimeFormat('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z'));
+  cells.push(`<td><button type="button" data-tasting-date="${date}" aria-label="${esc(label)}${available?'':day===25?' · Menú de Navidad':' · No disponible'}" ${available?`aria-pressed="${selected===date}"`:'disabled'}>${day}</button></td>`);
+ }
+ while(cells.length%7)cells.push('<td aria-hidden="true"></td>');
+ const rows=[];for(let i=0;i<cells.length;i+=7)rows.push('<tr>'+cells.slice(i,i+7).join('')+'</tr>');
+ const selectedLabel=selected?new Intl.DateTimeFormat('es-ES',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(selected+'T12:00:00Z')):'Elige una de las fechas disponibles.';
+ return `<div class="tasting-calendar-field"><p id="tasting-date-label" class="calendar-field-label">Día de la reserva</p><input type="hidden" name="date" value="${selected}"><div class="tasting-calendar" role="group" aria-labelledby="tasting-date-label"><table><caption>Diciembre <span>2026</span></caption><thead><tr>${weekdays.map(day=>`<th scope="col">${day}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table><p class="calendar-selection" role="status" aria-live="polite">${esc(selectedLabel)}</p></div></div>`;
+}
 function groupInquiryHTML() {
  const value=key=>esc(groupInquiryDraft[key]||'');
  return `<article class="group-inquiry leaf">
@@ -36,10 +50,10 @@ function groupInquiryHTML() {
     <label>Teléfono<input name="phone" type="tel" autocomplete="tel" required maxlength="30" value="${value('phone')}"></label>
     <label>Correo electrónico<input name="email" type="email" autocomplete="email" required maxlength="190" value="${value('email')}"></label>
    </div></fieldset>
-   <fieldset><legend>¿Cómo os gustaría venir?</legend><div class="inquiry-fields">
-    <label>Día de la reserva<select name="date" required><option value="">Elegid un día disponible</option>${decemberServiceDates.map(date=>`<option value="${date}" ${groupInquiryDraft.date===date&&groupInquiryDraft.date_request!=='other'?'selected':''}>${esc(new Intl.DateTimeFormat('es-ES',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z')))}</option>`).join('')}${activePlan.id==='diciembre'?`<option value="other" ${groupInquiryDraft.date_request==='other'?'selected':''}>Nos gustaría otro día · a valorar</option>`:''}</select></label>
+   <fieldset><legend>¿Cómo os gustaría venir?</legend><div class="inquiry-fields ${activePlan.id==='degustacion'?'inquiry-fields--tasting':''}">
+    ${activePlan.id==='degustacion'?tastingCalendarHTML():`<label>Día de la reserva<select name="date" required><option value="">Elegid un día disponible</option>${decemberServiceDates.map(date=>`<option value="${date}" ${groupInquiryDraft.date===date&&groupInquiryDraft.date_request!=='other'?'selected':''}>${esc(new Intl.DateTimeFormat('es-ES',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z')))}</option>`).join('')}${activePlan.id==='diciembre'?`<option value="other" ${groupInquiryDraft.date_request==='other'?'selected':''}>Nos gustaría otro día · a valorar</option>`:''}</select></label>`}
     ${activePlan.id==='diciembre'?`<label data-requested-date ${groupInquiryDraft.date_request==='other'?'':'hidden'}>¿Qué día os gustaría venir?<input name="requested_date" type="date" min="2026-12-01" max="2026-12-31" ${groupInquiryDraft.date_request==='other'?'required':'disabled'} value="${groupInquiryDraft.date_request==='other'?value('date'):''}"><span class="inquiry-hint">Estudiaremos vuestra propuesta. La fecha y el turno están pendientes de valoración y confirmación.</span></label>`:''}
-    ${activePlan.id==='degustacion'?`<label>Turno<select name="shift" required><option value="lunch" selected>Comida · mediodía</option></select></label>`:`<label>Turno<select name="shift" required><option value="">Elegid el turno</option><option value="lunch" ${groupInquiryDraft.shift==='lunch'?'selected':''}>Comida · mediodía</option><option value="dinner" ${groupInquiryDraft.shift==='dinner'?'selected':''}>Cena · noche</option></select></label>`}
+    ${activePlan.id==='degustacion'?`<div class="fixed-shift"><span>Turno</span><p>Comida · mediodía</p><small>Único turno disponible</small><input name="shift" type="hidden" value="lunch"></div>`:`<label>Turno<select name="shift" required><option value="">Elegid el turno</option><option value="lunch" ${groupInquiryDraft.shift==='lunch'?'selected':''}>Comida · mediodía</option><option value="dinner" ${groupInquiryDraft.shift==='dinner'?'selected':''}>Cena · noche</option></select></label>`}
     <label>Número de personas<input name="people" type="number" min="1" max="${inquiryOptions().maxPeople}" step="1" required value="${value('people')}" inputmode="numeric"></label>
     <label>Menú que os interesa<select name="menu" required><option value="">Elegid un menú</option>${inquiryMenuIds().map(id=>`<option value="${id}" ${groupInquiryDraft.menu===id?'selected':''}>${esc(MENUS[id].title)} · ${esc(MENUS[id].price)}</option>`).join('')}</select></label>
    </div><p class="inquiry-hint">${activePlan.id==='degustacion'?'Hasta seis personas. Viernes, sábados y domingos de diciembre, solo al mediodía. El 25 está reservado al menú de Navidad.':'Comida o cena los viernes, sábados y domingos de diciembre, excepto el 25. Si preferís otra fecha, elegid «Nos gustaría otro día» y valoraremos vuestra propuesta.'}</p></fieldset>
@@ -66,6 +80,12 @@ function bindGroupInquiry() {
   return data;};
  const syncRequestedDate=()=>{const field=form.querySelector('[data-requested-date]');if(!field)return;const other=form.elements.date.value==='other';field.hidden=!other;form.elements.requested_date.disabled=!other;form.elements.requested_date.required=other;};
  form.elements.date.addEventListener('change',syncRequestedDate);syncRequestedDate();
+ for(const button of form.querySelectorAll('[data-tasting-date]:not(:disabled)'))button.addEventListener('click',()=>{
+  form.elements.date.value=button.dataset.tastingDate;
+  for(const day of form.querySelectorAll('[data-tasting-date]:not(:disabled)'))day.setAttribute('aria-pressed',String(day===button));
+  form.querySelector('.calendar-selection').textContent=new Intl.DateTimeFormat('es-ES',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(button.dataset.tastingDate+'T12:00:00Z'));
+  form.elements.date.dispatchEvent(new Event('input',{bubbles:true}));
+ });
  form.addEventListener('input',event=>{
   if(event.target.setCustomValidity)event.target.setCustomValidity('');
   syncRequestedDate();groupInquiryDraft=snapshot();form.querySelector('.inquiry-message').hidden=true;form.querySelector('.inquiry-message a').removeAttribute('href');form.querySelector('.inquiry-status').textContent='';
@@ -74,6 +94,10 @@ function bindGroupInquiry() {
   event.preventDefault();
   for(const key of ['first_name','last_name'])form.elements[key].setCustomValidity(form.elements[key].value.trim()?'':'Este dato es obligatorio.');
   if(!form.reportValidity())return;
+  if(contextPlan==='degustacion'&&!decemberServiceDates.includes(form.elements.date.value)){
+   form.querySelector('.inquiry-status').textContent='Elige una fecha disponible en el calendario.';form.querySelector('[data-tasting-date]:not(:disabled)').focus();return;
+  }
+
   const button=form.querySelector('button[type="submit"]'),status=form.querySelector('.inquiry-status');button.disabled=true;
   try {
    const tools=await groupInquiryTools,menus=Object.fromEntries(menuIds.map(id=>[id,MENUS[id]]));

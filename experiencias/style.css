@@ -182,3 +182,25 @@ dialog{border:0;padding:0;background:var(--paper);color:var(--ink);width:min(126
 @media(max-width:500px){.inquiry-fields{grid-template-columns:1fr;gap:17px}.group-inquiry{padding:24px 20px}}
 
 .inquiry-fields [hidden]{display:none!important}
+
+/* Tasting dates are selected directly from the December calendar. */
+.tasting-calendar-field{grid-row:span 3;min-width:0}
+.calendar-field-label,.fixed-shift>span{font-size:12px;color:#495642;margin:0 0 8px}
+.tasting-calendar{border:1px solid #c7cbbd;background:#fffef9;padding:16px 12px 10px}
+.tasting-calendar table{width:100%;border-collapse:separate;border-spacing:3px;table-layout:fixed}
+.tasting-calendar caption{text-align:left;color:#3c5142;font-size:18px;font-weight:500;letter-spacing:-.03em;padding:0 5px 14px}
+.tasting-calendar caption span{font-size:13px;color:#796237;margin-left:5px;font-weight:400}
+.tasting-calendar th{font-size:10px;font-weight:400;color:#7b806f;padding-bottom:8px;text-align:center}
+.tasting-calendar td{padding:0;text-align:center;height:36px}
+.tasting-calendar button{display:block;width:100%;min-height:36px;padding:0;border:1px solid #c6d2c3;border-radius:3px;background:#eef2e8;color:#31543b;font:13px Geist,Arial;line-height:1}
+.tasting-calendar button:hover:not(:disabled){background:#dce7d7;border-color:#3c5142}
+.tasting-calendar button[aria-pressed="true"]{background:#3c5142;border-color:#3c5142;color:#fffef9;box-shadow:inset 0 -2px #b5a06a}
+.tasting-calendar button:disabled{background:transparent;color:#b4b6aa;border-color:transparent;cursor:default}
+.calendar-selection{font-size:11px!important;line-height:1.5;color:#536247;border-top:1px solid #e0e2d7;margin:12px 3px 0;padding-top:10px;min-height:28px}
+.fixed-shift{display:flex;flex-direction:column;align-self:start}
+.fixed-shift>span{margin:0 0 8px}
+.fixed-shift p{font-size:16px;margin:0;padding:11px 12px;min-height:46px;border:1px solid #c7cbbd;background:#f0f0e7;color:#3c5142}
+.fixed-shift small{font-size:11px;color:#6c725f;margin-top:5px}
+@media(max-width:500px){.tasting-calendar-field{grid-row:auto}.tasting-calendar{max-width:370px;width:100%;box-sizing:border-box}}
+
+.tasting-calendar button[aria-pressed="true"]:hover{background:#3c5142;border-color:#3c5142}
