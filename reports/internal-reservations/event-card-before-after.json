@@ -1,0 +1,16 @@
+{
+  "environment": "Node local: generación de HTML de 50 tarjetas de evento; solo CPU, no petición, pintura ni persistencia",
+  "baselineCommit": "06aea81",
+  "before": {
+    "samples": 20,
+    "p50": 0.11983299999999986,
+    "p95": 0.15775000000000006,
+    "max": 0.35145800000000094
+  },
+  "after": {
+    "samples": 20,
+    "p50": 0.1345409999999987,
+    "p95": 0.15829199999999588,
+    "max": 0.16570799999999508
+  }
+}

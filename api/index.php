@@ -422,6 +422,30 @@ try {
         return;
     }
 
+    if (str_starts_with($path, '/admin/internal-reservations') || preg_match('#^/admin/events/[0-9]+/reservations$#', $path)) header('Cache-Control: no-store');
+    if ($method === 'GET' && $path === '/admin/internal-reservations/meta') {
+        AdminAuth::require();
+        json_response(['ok'=>true,'events'=>$ticketing()->adminInternalReservationEvents()]); return;
+    }
+    if (preg_match('#^/admin/events/([0-9]+)/reservations$#', $path, $m)) {
+        if ($method==='GET') { AdminAuth::require(); json_response(['ok'=>true]+$ticketing()->adminInternalReservations((int)$m[1],$_GET)); return; }
+        if ($method==='POST') { AdminAuth::requireCsrf(); json_response(['ok'=>true]+$ticketing()->adminCreateInternalReservation((int)$m[1],read_json_body(),AdminAuth::operatorName()),201); return; }
+    }
+    if (preg_match('#^/admin/internal-reservations/([0-9]+)(?:/(request-payment|confirm|cancel))?$#', $path, $m)) {
+        $id=(int)$m[1]; $action=$m[2]??'';
+        if ($method==='GET' && $action==='') { AdminAuth::require(); json_response(['ok'=>true]+$ticketing()->adminInternalReservation($id)); return; }
+        if ($method==='PUT' && $action==='') { AdminAuth::requireCsrf(); json_response(['ok'=>true]+$ticketing()->adminEditInternalReservation($id,read_json_body(),AdminAuth::operatorName())); return; }
+        if ($method==='POST' && $action!=='') {
+            AdminAuth::requireCsrf(); $body=read_json_body(); $operator=AdminAuth::operatorName();
+            $result=match($action) {
+                'request-payment'=>$ticketing()->adminRequestInternalReservationPayment($id,$operator),
+                'confirm'=>$ticketing()->adminConfirmInternalReservation($id,$body,$operator),
+                'cancel'=>$ticketing()->adminCancelInternalReservation($id,$operator,(string)($body['reason']??''))
+            };
+            json_response(['ok'=>true]+$result); return;
+        }
+    }
+
     if ($method === 'GET' && $path === '/admin/cash-orders/meta') {
         AdminAuth::require();
         json_response(['ok' => true] + $ticketing()->adminCashOrderMeta());

@@ -13,7 +13,7 @@ jobs:
         with:
           node-version: 24
       - name: Verify approved identity, public navigation and ticket PDF
-        run: node --test tests/brand-identity.test.mjs tests/public-navigation.test.mjs tests/public-agenda.test.mjs tests/analytics-batching.test.mjs tests/api-database-pressure.test.mjs
+        run: node --test tests/brand-identity.test.mjs tests/public-navigation.test.mjs tests/public-agenda.test.mjs tests/analytics-batching.test.mjs tests/api-database-pressure.test.mjs tests/internal-reservations-ui.test.mjs
       - name: Verify ticket delivery and historical document selection
         run: |
           node tests/static-ticketing-check.mjs
@@ -22,3 +22,6 @@ jobs:
           php tests/ticket-mail-idempotency-test.php
           php tests/database-pressure-test.php
           php tests/redsys-secret-key-test.php
+          php -l api/src/InternalReservationsTrait.php
+          php -l api/src/Ticketing.php
+          node --check assets/js/admin-reservations.js
