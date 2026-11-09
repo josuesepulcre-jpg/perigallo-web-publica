@@ -163,7 +163,7 @@ function menuHTML(menu) {
  ${sections}
  <p class="allergy-note">Si tenéis alguna alergia, consultadnos al reservar.</p>
  ${reservationHTML()}
- <div class="reader-tools"><a href="menus/${menu.id}.png${menu.id==='navidad-individual'?'?v=mediodia-20261108':''}" download>Descargar carta ↓</a><button data-print>Imprimir / guardar PDF ↗</button></div>
+ <div class="reader-tools"><a href="menus/${menu.id}.png${menu.id==='navidad-individual'?'?v=mediodia-20261108':menu.id==='ano-nuevo-menu'?'?v=bebidas-incluidas-20261109':''}" download>Descargar carta ↓</a><button data-print>Imprimir / guardar PDF ↗</button></div>
  </article>`;
 }
 function reservationHTML() {
