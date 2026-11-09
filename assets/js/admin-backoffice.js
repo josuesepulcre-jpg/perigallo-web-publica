@@ -55,7 +55,7 @@
   function currentNav() {
     var path = window.location.pathname;
     if (path.indexOf("/admin/experiencias") === 0) return "archive";
-    if (path.indexOf("/admin/eventos") === 0) return "events";
+    if (path.indexOf("/admin/eventos") === 0 || path.indexOf("/admin/reservas") === 0) return "events";
     if (path.indexOf("/admin/ventas") === 0) return "sales";
     if (path.indexOf("/admin/contactos") === 0) return "contacts";
     if (path.indexOf("/admin/facturacion") === 0) return "billing";
@@ -221,7 +221,7 @@
 
   function eventCard(event, featured) {
     var image = event.card_image_url || event.image_url || "/assets/images/perigallo-hero-original-01.jpg";
-    var occupancy = event.capacity ? Math.min(100, Math.round(Number(event.sold || 0) * 100 / Number(event.capacity))) : 0;
+    var occupancy = event.capacity ? Math.min(100, Math.round((Number(event.sold || 0) + Number(event.reserved || 0)) * 100 / Number(event.capacity))) : 0;
     var archived = (event.effective_status || event.status) === "archived";
     var testMode = Number(event.is_test) === 1;
     var deleteControl = state.session && state.session.is_owner
@@ -234,8 +234,8 @@
       '<div class="admin-featured-image" style="background-image:url(' + escapeHtml(image) + ')"></div>' +
       '<div class="admin-featured-copy"><span class="status-pill status-' + escapeHtml(event.effective_status || event.status) + '">' + escapeHtml(statusLabel(event.effective_status || event.status)) + '</span>' + (testMode ? '<span class="status-pill status-scheduled">Modo prueba</span>' : '') +
       '<h2>' + escapeHtml(event.title) + '</h2><p>' + escapeHtml(formatDate(event.starts_at, true)) + ' · ' + escapeHtml(event.location || "Ubicación por definir") + '</p>' +
-      '<div class="admin-progress"><span><strong>' + Number(event.sold || 0) + '</strong> entradas vendidas</span><span>' + Number(event.capacity || 0) + ' aforo · ' + occupancy + '%</span><i><b style="width:' + occupancy + '%"></b></i></div>' +
-      '<div class="admin-inline-actions"><a class="ticket-btn primary" href="/admin/eventos/' + Number(event.id) + '/editar/">Editar evento</a><a class="ticket-btn" href="/admin/ventas/?event=' + Number(event.id) + '">Ver ventas</a><a class="ticket-btn" href="/admin/acceso/?event=' + Number(event.id) + '">Control de acceso</a><a class="text-action" href="/eventos/' + encodeURIComponent(event.slug) + '/" target="_blank" rel="noopener noreferrer">Página pública</a></div>' + lifecycleActions + '</div></article>';
+      '<div class="admin-progress"><span><strong>' + Number(event.sold || 0) + '</strong> confirmadas · <strong>' + Number(event.reserved || 0) + '</strong> reservadas</span><span>' + Number(event.capacity || 0) + ' aforo · ' + occupancy + '%</span><i><b style="width:' + occupancy + '%"></b></i></div>' +
+      '<div class="admin-inline-actions"><a class="ticket-btn primary" href="/admin/reservas/?event=' + Number(event.id) + '">Reservas</a><a class="ticket-btn" href="/admin/eventos/' + Number(event.id) + '/editar/">Editar evento</a><a class="ticket-btn" href="/admin/ventas/?event=' + Number(event.id) + '">Ver ventas</a><a class="ticket-btn" href="/admin/acceso/?event=' + Number(event.id) + '">Control de acceso</a><a class="text-action" href="/eventos/' + encodeURIComponent(event.slug) + '/" target="_blank" rel="noopener noreferrer">Página pública</a></div>' + lifecycleActions + '</div></article>';
   }
 
   function renderDashboard(summary, orders) {
@@ -385,6 +385,7 @@
 
   function orderActions(order) {
     if (!state.session || state.session.role !== "admin") return "";
+    if (order.sales_channel === "manual_card" && order.order_status === "draft") return '<div class="admin-order-actions"><a class="text-action" href="/admin/reservas/?reservation=' + Number(order.id) + '">Gestionar reserva interna</a></div>';
     var actions = '<div class="admin-order-actions"><a class="text-action" href="/entradas/pedido/?token=' + encodeURIComponent(order.public_token) + '" target="_blank" rel="noopener noreferrer">Ver pedido</a><button type="button" class="text-action" data-order-action="edit" data-order-id="' + Number(order.id) + '">Editar</button>';
     actions += manualTicketWhatsAppLink(order);
     if (Number(order.allergy_attendee_count || 0)) actions += '<button type="button" class="text-action" data-order-allergies data-order-id="' + Number(order.id) + '">Alergias (' + Number(order.allergy_attendee_count) + ')</button>';
@@ -1958,7 +1959,7 @@
   }
 
   function initAdminChrome() {
-    if (!document.querySelector("[data-admin-nav]") || document.querySelector("[data-admin-dashboard]")) return;
+    if (!document.querySelector("[data-admin-nav]") || document.querySelector("[data-admin-dashboard]") || document.querySelector("[data-admin-reservations-page]")) return;
     requireSession(function () { /* The scanner shares the authenticated administrative shell. */ });
   }
 
@@ -1974,4 +1975,9 @@
   initDiscountCodes();
   initAnalytics();
   initContacts();
+  var internalReservationsRoot = document.querySelector('[data-admin-reservations-page]');
+  if (internalReservationsRoot && window.PerigalloInternalReservations) requireSession(function (session) {
+    if (session.role !== 'admin') { renderPageError('Esta sección está reservada para administración.'); return; }
+    window.PerigalloInternalReservations.init(internalReservationsRoot, { csrf: state.csrf });
+  });
 })();

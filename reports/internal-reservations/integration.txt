@@ -1,0 +1,12 @@
+Perigallo Redsys notification processed: order=261109950756 attempt=37 method=card response=0190 accepted=0
+Perigallo Redsys notification processed: order=261109462208 attempt=38 method=card response=0000 accepted=1
+Perigallo Redsys notification processed: order=261109462208 attempt=38 method=card response=0000 accepted=1
+Perigallo Redsys notification processed: order=261109501390 attempt=39 method=card response=0000 accepted=1
+Perigallo Redsys notification processed: order=261109501390 attempt=39 method=card response=0190 accepted=0
+Perigallo Redsys notification processed: order=261109434141 attempt=40 method=card response=0190 accepted=0
+Perigallo Redsys notification processed: order=261109434141 attempt=40 method=card response=0190 accepted=0
+Perigallo Redsys notification processed: order=261109434141 attempt=40 method=card response=0000 accepted=1
+Perigallo Redsys notification processed: order=261109754816 attempt=41 method=card response=0190 accepted=0
+Perigallo Redsys notification processed: order=261109754816 attempt=41 method=card response=0190 accepted=0
+PASS: durable idempotent holds, shared capacity, concurrent overbooking protection, delayed payment links, signed callbacks, late payment review, door/cash/free confirmation, cancellation, expiration, edit and event isolation.
+{"event_id":51,"adult_id":101,"child_id":102,"race_event_id":55,"other_event_id":58}

@@ -1,0 +1,97 @@
+{
+  "environment": "Chromium local y PHP 8.5/MariaDB 12.3 en base desechable, zona Europe/Madrid; sin trabajadores de envío ni transacciones remotas",
+  "data": {
+    "reservations": 1000,
+    "ticketTypes": 2,
+    "pageSize": 20
+  },
+  "metrics": {
+    "editor.visible": {
+      "samples": 20,
+      "p50": 33.6,
+      "p95": 35.8,
+      "max": 36.4
+    },
+    "save.feedback.visible": {
+      "samples": 20,
+      "p50": 34.5,
+      "p95": 36.4,
+      "max": 36.4
+    },
+    "save.durable-roundtrip": {
+      "samples": 20,
+      "p50": 16.3,
+      "p95": 17.5,
+      "max": 18.5
+    },
+    "save.screen-after-confirmation": {
+      "samples": 20,
+      "p50": 18.7,
+      "p95": 20.4,
+      "max": 20.9
+    },
+    "list.http": {
+      "samples": 20,
+      "p50": 6.9,
+      "p95": 7.4,
+      "max": 7.5
+    },
+    "save.durable.http": {
+      "samples": 20,
+      "p50": 13.7,
+      "p95": 15,
+      "max": 15.3
+    },
+    "cancel.durable.http": {
+      "samples": 20,
+      "p50": 7.5,
+      "p95": 8.1,
+      "max": 8.4
+    }
+  },
+  "errors": [],
+  "networkErrors": [],
+  "apiErrors": 0,
+  "requests": {
+    "GET /api/admin/session": 1,
+    "GET /api/admin/internal-reservations/meta": 1,
+    "GET /api/admin/events/6/reservations": 23,
+    "POST /api/admin/events/6/reservations": 41,
+    "POST /api/admin/internal-reservations/1155/request-payment": 1,
+    "POST /api/admin/internal-reservations/1155/confirm": 1,
+    "POST /api/admin/orders/1155/cash-payment": 1,
+    "GET /api/admin/internal-reservations/1155": 1,
+    "POST /api/admin/internal-reservations/1176/cancel": 1,
+    "POST /api/admin/internal-reservations/1177/cancel": 1,
+    "POST /api/admin/internal-reservations/1178/cancel": 1,
+    "POST /api/admin/internal-reservations/1179/cancel": 1,
+    "POST /api/admin/internal-reservations/1180/cancel": 1,
+    "POST /api/admin/internal-reservations/1181/cancel": 1,
+    "POST /api/admin/internal-reservations/1182/cancel": 1,
+    "POST /api/admin/internal-reservations/1183/cancel": 1,
+    "POST /api/admin/internal-reservations/1184/cancel": 1,
+    "POST /api/admin/internal-reservations/1185/cancel": 1,
+    "POST /api/admin/internal-reservations/1186/cancel": 1,
+    "POST /api/admin/internal-reservations/1187/cancel": 1,
+    "POST /api/admin/internal-reservations/1188/cancel": 1,
+    "POST /api/admin/internal-reservations/1189/cancel": 1,
+    "POST /api/admin/internal-reservations/1190/cancel": 1,
+    "POST /api/admin/internal-reservations/1191/cancel": 1,
+    "POST /api/admin/internal-reservations/1192/cancel": 1,
+    "POST /api/admin/internal-reservations/1193/cancel": 1,
+    "POST /api/admin/internal-reservations/1194/cancel": 1,
+    "POST /api/admin/internal-reservations/1195/cancel": 1
+  },
+  "checks": [
+    "guardar espera respuesta durable",
+    "aforo canónico",
+    "enlace manual pendiente hasta Redsys",
+    "confirmación en puerta sin fingir cobro",
+    "registro efectivo explícito",
+    "clipboard con enlace de pago",
+    "filtro de internas",
+    "desktop 1440/tablet 768/mobile 390",
+    "sin desbordamiento",
+    "acceso administrativo y CSRF"
+  ]
+}

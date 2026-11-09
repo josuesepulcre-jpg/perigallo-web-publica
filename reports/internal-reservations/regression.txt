@@ -1,0 +1,34 @@
+✔ old sold-out events appear only in history; future sold-out events remain current (2.200208ms)
+✔ in-progress events remain current until their actual end, including overnight (0.208916ms)
+✔ missing, invalid or copied end dates stay current through the Madrid calendar day (0.893333ms)
+✔ undated drafts remain accessible; finished and archived events go to history (0.172917ms)
+✔ search stays within its view, history sorts newest first, upcoming nearest first (0.818708ms)
+Analytics batching passed: grouped events, no hidden-tab pings, flush on leaving, no duplicate sends.
+✔ tests/analytics-batching.test.mjs (96.781334ms)
+11 isolated API scenarios passed: no unnecessary connections, cached listing and 503 on overload (including payment callback).
+✔ tests/api-database-pressure.test.mjs (776.765458ms)
+✔ approved logos and compatibility icons cannot revert to the old monogram (2.303333ms)
+✔ all customer email templates use the approved email-compatible PNG (0.403ms)
+✔ email and browser tickets share the approved A5 layout and produce a multipage PDF (226.616334ms)
+✔ a complete inquiry includes every contact and booking detail (14.234583ms)
+✔ every requested field and privacy consent are required before preparing the message (0.361459ms)
+✔ inquiry rejects dates outside December, invalid shifts, impossible party sizes and unknown menus (0.171167ms)
+✔ WhatsApp always targets Perigallo and preserves accented names and the complete message (0.474084ms)
+✔ the independent tasting experience admits six people and rejects seven (0.233667ms)
+✔ tasting accepts only the eleven December weekend dates, excluding Christmas, at midday (1.576083ms)
+✔ groups support Friday dinner and clearly marked other-date requests (0.548041ms)
+✔ occupancy includes held places and has a direct reservation action per event (0.9055ms)
+✔ an internal draft cannot expose the old sales payment/share actions (0.188959ms)
+✔ Madrid civil dates use summer and winter offsets independently of visitor timezone (1.236833ms)
+✔ invalid and missing dates cannot enter the agenda (0.152041ms)
+✔ agenda excludes past, started, cancelled and drafts; future editions sort by start (0.309542ms)
+✔ public pages have one accessible navigation and working local destinations/assets (7.869375ms)
+✔ every agenda consumer loads the date policy before the consuming script (0.331125ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 24
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 787.884584
