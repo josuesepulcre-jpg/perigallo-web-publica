@@ -197,7 +197,7 @@
 
   function render() {
     if (!snapshot) return;
-    $('ai-status').textContent = aiReady() ? 'Clave configurada · pendiente de prueba' : 'Pendiente de configurar';
+    $('ai-status').textContent = aiReady() ? 'Clave configurada' : 'Pendiente de configurar';
     $('pause-status').textContent = isPaused() ? 'En pausa' : 'Disponible para simulación';
     $('current-user').textContent = text(capabilities.current_user?.name, 'Acceso administrativo');
     renderDrafts(); renderConversations(); renderTasks(); renderReports(); renderSettings(); updateControls();
