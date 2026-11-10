@@ -30,7 +30,7 @@ function renderCheckout(){
  <p class="eyebrow">RESERVAS Y ENTRADAS</p><h1>${plan.title}</h1><p class="booking-date">${dates(plan.date)} · Finca La Llaguna</p>
  <div class="booking-grid"><form id="reserve-form">
  <fieldset><legend>¿Cómo quieres reservar?</legend><div class="booking-modes">
- <label><input type="radio" name="mode" value="reserve" ${params.get('mode')!=='pay'?'checked':''}><span><strong>Reservar primero</strong><small>Solicita tu reserva. Te enviaremos un enlace para completar el pago.</small></span></label>
+ <label><input type="radio" name="mode" value="reserve" ${params.get('mode')!=='pay'?'checked':''}><span><strong>Reservar primero</strong><small>Contactaremos con vosotros para acordar cómo realizar el pago anticipado.</small></span></label>
  <label><input type="radio" name="mode" value="pay" ${params.get('mode')==='pay'?'checked':''}><span><strong>Comprar y pagar</strong><small>Completa tus datos y continúa al pago con tarjeta.</small></span></label></div></fieldset>
  <fieldset><legend>Vuestras plazas</legend><div class="field-pair">
  <label>${params.get('plan')==='hora'?'Entradas':'Adultos'} · ${money(plan.price)}<input type="number" name="adults" value="1" min="1" max="10" required></label>
@@ -41,10 +41,9 @@ function renderCheckout(){
  <div class="field-pair"><label>Teléfono / WhatsApp<input type="tel" name="phone" autocomplete="tel" required maxlength="30" pattern="[+0-9 ()-]{9,30}"></label>
  <label>Correo electrónico<input type="email" name="email" autocomplete="email" required maxlength="190"></label></div>
  <label>Observaciones para tu reserva <span class="optional">(opcional)</span><textarea name="notes" rows="3" maxlength="800"></textarea></label></fieldset>
- <label class="privacy-check"><input type="checkbox" name="privacy" required><span>He leído la <a href="/politica-privacidad/" target="_blank" rel="noopener">política de privacidad</a> y acepto el contacto para gestionar esta reserva.</span></label>
- <label class="privacy-check"><input type="checkbox" name="terms" required><span>Acepto las <a href="/condiciones/" target="_blank" rel="noopener">condiciones de compra</a> y la <a href="/politica-cancelacion/" target="_blank" rel="noopener">política de cancelación</a>.</span></label>
+ <label class="privacy-check"><input type="checkbox" name="privacy" required><span>Acepto la <a href="/politica-privacidad/" target="_blank" rel="noopener">política de privacidad</a> y las <a href="/condiciones/" target="_blank" rel="noopener">condiciones de reserva</a> y la <a href="/politica-cancelacion/" target="_blank" rel="noopener">política de cancelación</a>.</span></label>
  <label class="privacy-check"><input type="checkbox" name="adult_buyer" required><span>Soy mayor de 18 años.</span></label>
- <label class="privacy-check"><input type="checkbox" name="whatsapp_consent"><span>Quiero recibir también mis entradas por WhatsApp al teléfono indicado (España: +34; otros países: incluye tu prefijo).</span></label>
+ <p class="field-note">La confirmación con el código QR se envía automáticamente por correo electrónico cuando se confirma el pago.</p>
 
  <p id="form-status" role="status"></p><button class="booking-primary" type="submit" id="submit-reserve">Solicitar reserva ↗</button>
  </form><aside id="checkout-summary" class="checkout-aside"></aside></div></div>`;
@@ -64,15 +63,16 @@ function renderCheckout(){
   const phoneDigits=form.elements.phone.value.replace(/\D/g,'');
   form.elements.phone.setCustomValidity(phoneDigits.length>=9 && phoneDigits.length<=15 ? '' : 'Introduce un teléfono válido, con su prefijo si es internacional.');
   if(!form.reportValidity())return;
+  const mode=form.elements.mode.value;
   const button=document.querySelector('#submit-reserve'),status=document.querySelector('#form-status');
   button.disabled=true;status.textContent='Guardando tu solicitud…';
   try{
    const data=await request('/api/season-reservations',{method:'POST',body:JSON.stringify({
     operation,plan:params.get('plan'),adults:Number(form.elements.adults.value),children:Number(form.elements.children?.value)||0,
-    mode:form.elements.mode.value,first_name:form.elements.first_name.value.trim(),last_name:form.elements.last_name.value.trim(),name:(form.elements.first_name.value+' '+form.elements.last_name.value).trim(),phone:form.elements.phone.value,email:form.elements.email.value,
-    notes:form.elements.notes.value,privacy:form.elements.privacy.checked,terms:form.elements.terms.checked,adult_buyer:form.elements.adult_buyer.checked,whatsapp_consent:form.elements.whatsapp_consent.checked
+    mode,first_name:form.elements.first_name.value.trim(),last_name:form.elements.last_name.value.trim(),name:form.elements.first_name.value.trim()+' '+form.elements.last_name.value.trim(),phone:form.elements.phone.value,email:form.elements.email.value,
+    notes:form.elements.notes.value,privacy:form.elements.privacy.checked,terms:form.elements.privacy.checked,adult_buyer:form.elements.adult_buyer.checked,whatsapp_consent:false
    })});
-   location.assign('/entradas/reserva/pedido/?token='+encodeURIComponent(data.booking.token)+(data.booking.mode==='pay'?'&pay=1':''));
+   location.assign('/entradas/reserva/pedido/?token='+encodeURIComponent(data.booking.token)+(mode==='pay'?'&pay=1':''));
   }catch(error){status.textContent=error.message;button.disabled=false;}
  });
 }
@@ -88,7 +88,7 @@ async function renderOrder(){
   <div class="booking-grid">${summary(booking)}<div class="booking-details">
   <h2>${safe(booking.name)}</h2><p>${safe(booking.phone)}<br>${safe(booking.email)}</p>
   ${booking.notes?`<p>${safe(booking.notes)}</p>`:''}
-  <p>${paid?'Pago confirmado. Puedes descargar las entradas de tu reserva.':pay?'El pago de tu reserva se realiza mediante el TPV de CaixaBank / Cyberpac Redsys.':'Tu reserva tiene un importe pendiente. Puedes completar el pago con el enlace de tu pedido.'}</p>
+  <p>${paid?'Pago confirmado. Puedes descargar las entradas de tu reserva.':pay?'El pago de tu reserva se realiza mediante el TPV de CaixaBank / Cyberpac Redsys.':'Contactaremos con vosotros para acordar cómo realizar el pago anticipado.'}</p>
   ${pay?'<button class="booking-primary" id="continue-bank">Continuar al TPV de CaixaBank ↗</button><p id="bank-status" role="status"></p>':''}
 
   <div class="order-tools"><button type="button" id="print-order">${paid?'Imprimir justificante de pago':'Imprimir justificante de reserva'}</button>${!pay&&!paid?'<a href="'+safe(paymentLink(booking))+'">Ver el enlace de pago ↗</a>':''}
