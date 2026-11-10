@@ -115,7 +115,7 @@ function bindGroupInquiry() {
 function bookingActions(plan) {
  if (inquiryPlanIds.includes(plan)) return `<div class="plan-booking"><a href="tel:+34691499985">Reservar por teléfono ↗</a><button type="button" class="reserve-link" data-group-inquiry="${plan}">Reservar por WhatsApp ↗</button></div>`;
  const checkout = bookingOrigin + '/entradas/reserva/?plan=' + encodeURIComponent(plan);
- return `<div class="plan-booking"><a class="reserve-link" href="${checkout}&mode=reserve">Reservar ↗</a><a href="${checkout}&mode=pay">Comprar y pagar ↗</a></div>`;
+ return `<div class="plan-booking"><a class="reserve-link" href="${checkout}&mode=reserve">Reservar ↗</a></div>`;
 }
 $('#plan-grid').innerHTML=PLANS.map(p=>`<article class="plan-card" data-plan="${p.id}" data-period="${p.period||p.id}"><button class="plan-art" data-open="${p.id}" aria-label="Abrir ${esc(p.name)}"><img src="${p.image||`assets/temporada-${p.id}.webp`}" alt="${esc(sceneDescriptions[p.id])}" loading="lazy"></button><div class="card-copy"><span class="card-date">${p.date}</span><h3>${esc(p.name)}</h3><p>${esc(p.description)}</p><div class="card-price">${p.price} <small>/ persona</small></div><div class="price-note">${p.note}</div><button class="card-open" data-open="${p.id}">${p.action}<span aria-hidden="true">↗</span></button>${bookingActions(p.id)}</div></article>`).join('');
 for(const b of document.querySelectorAll('[data-filter]'))b.addEventListener('click',()=>{
