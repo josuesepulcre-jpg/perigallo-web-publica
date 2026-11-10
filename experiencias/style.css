@@ -204,3 +204,5 @@ dialog{border:0;padding:0;background:var(--paper);color:var(--ink);width:min(126
 @media(max-width:500px){.tasting-calendar-field{grid-row:auto}.tasting-calendar{max-width:370px;width:100%;box-sizing:border-box}}
 
 .tasting-calendar button[aria-pressed="true"]:hover{background:#3c5142;border-color:#3c5142}
+
+.performance-program{display:grid;gap:24px}.performance-times p{margin:0 0 14px;line-height:1.65}.performance-clip{margin:0}.performance-clip video{display:block;width:100%;max-width:380px;max-height:68vh;margin:auto;background:#141414;object-fit:contain}.performance-clip figcaption{margin-top:12px;font-size:11px;line-height:1.5;color:#62655c}
