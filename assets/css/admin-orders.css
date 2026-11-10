@@ -10,3 +10,18 @@
 .admin-card-order-export{margin-top:-12px;background:linear-gradient(110deg,rgba(119,165,151,.12),rgba(245,241,229,.025))}.admin-payment-export{margin-top:-12px;background:linear-gradient(110deg,rgba(205,177,151,.15),rgba(245,241,229,.025))}.admin-card-order-export-controls{display:grid;grid-template-columns:minmax(180px,1fr) auto;gap:12px;align-items:end}.admin-card-order-export-controls label{display:grid;gap:8px;color:var(--pg-gold);font:500 .55rem var(--body-font,Geist,Arial,sans-serif);letter-spacing:.14em;text-transform:uppercase}.admin-card-order-export-controls select{box-sizing:border-box;width:100%;min-height:46px;border:1px solid var(--pg-border);background:rgba(7,18,21,.18);color:var(--pg-cream);padding:0 12px;font:400 .78rem var(--body-font,Geist,Arial,sans-serif);letter-spacing:0;color-scheme:dark}.admin-card-order-export-controls select:focus,.admin-card-order-export-controls .ticket-btn:focus-visible{outline:2px solid var(--pg-gold-l);outline-offset:2px}.admin-card-order-export-controls select option{background:#20373b;color:var(--pg-cream)}.admin-card-order-export-controls .ticket-btn{min-height:46px;white-space:nowrap}@media(max-width:640px){.admin-card-order-export-controls{grid-template-columns:1fr}.admin-card-order-export-controls .ticket-btn{width:100%}}
 
 .status-door_pending{color:var(--pg-gold-l);border-color:var(--pg-gold);white-space:normal;line-height:1.5}
+
+/* Seguimiento de reservas por evento. */
+.admin-sales-event-context{color:var(--pg-gold-l);font-size:1rem;line-height:1.6;margin:0 0 20px}
+.admin-sales-exports{margin-top:32px;border-top:1px solid var(--pg-border);padding-top:20px}
+.admin-sales-exports>summary{color:var(--pg-gold-l);cursor:pointer;padding:12px 0;font-size:.9rem}
+[data-admin-sales-page] .admin-order-actions{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:12px 20px;padding-top:12px;border-top:1px solid var(--pg-border)}
+[data-admin-sales-page] .admin-order-actions .text-action{font-size:.75rem;min-height:32px;display:inline-flex;align-items:center}
+[data-admin-sales-page] .admin-order-row{grid-template-columns:minmax(200px,1fr) auto auto auto}
+[data-admin-sales-page] .admin-order-toolbar{align-items:end}
+.status-pill.status-expired{color:var(--pg-muted);border-color:var(--pg-border)}
+@media(max-width:640px){[data-admin-sales-page] .admin-order-row{grid-template-columns:1fr 1fr}[data-admin-sales-page] .admin-order-actions{gap:10px 16px}.admin-sales-event-context{font-size:.9rem}}
+
+[data-admin-sales-page] .admin-sales-summary{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media(max-width:1100px){[data-admin-sales-page] .admin-sales-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){[data-admin-sales-page] .admin-sales-summary{grid-template-columns:1fr}}

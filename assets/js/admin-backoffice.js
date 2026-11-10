@@ -49,7 +49,7 @@
   }
   function loginUrl() { return "/admin/login/?next=" + encodeURIComponent(window.location.pathname + window.location.search); }
   function statusLabel(status) {
-    return ({ draft: "Borrador", scheduled: "Programado", published: "Publicado", sold_out: "Agotado", finished: "Finalizado", cancelled: "Cancelado", archived: "Archivado", paid: "Pagado", door_pending: "Vendida · pago en puerta pendiente", pending: "Pendiente", failed: "Fallido", rejected: "Rechazado", refunded: "Reembolsado", blocked: "Pendiente de cobro" })[status] || status || "Sin estado";
+    return ({ draft: "Borrador", scheduled: "Programado", published: "Publicado", sold_out: "Agotado", finished: "Finalizado", cancelled: "Cancelado", archived: "Archivado", paid: "Pagado", door_pending: "Vendida · pago en puerta pendiente", pending: "Pendiente", expired: "Caducada", payment_processing: "Pago en proceso", failed: "Fallido", rejected: "Rechazado", refunded: "Reembolsado", blocked: "Pendiente de cobro" })[status] || status || "Sin estado";
   }
 
   function currentNav() {
@@ -129,7 +129,7 @@
             '<span class="admin-nav-label">Gestión</span>' +
             '<a href="/admin/eventos/" data-admin-nav-item="events">Eventos</a>' +
             '<a href="/admin/experiencias/" data-admin-nav-item="archive">Experiencias vividas</a>' +
-            '<a href="/admin/ventas/" data-admin-nav-item="sales">Pedidos y ventas</a>' +
+            '<a href="/admin/ventas/" data-admin-nav-item="sales">Reservas y ventas</a>' +
             (sessionData.is_owner ? '<a href="/admin/facturacion/" data-admin-nav-item="billing">Facturación</a>' : '') +
             '<a href="/admin/contactos/" data-admin-nav-item="contacts">Base de datos</a>' +
             '<a href="/admin/formulario/" data-admin-nav-item="lead_form">Formulario</a>' +
@@ -221,7 +221,7 @@
 
   function eventCard(event, featured) {
     var image = event.card_image_url || event.image_url || "/assets/images/perigallo-hero-original-01.jpg";
-    var occupancy = event.capacity ? Math.min(100, Math.round(Number(event.sold || 0) * 100 / Number(event.capacity))) : 0;
+    var occupancy = event.capacity ? Math.min(100, Math.round((Number(event.sold || 0) + Number(event.reserved || 0)) * 100 / Number(event.capacity))) : 0;
     var archived = (event.effective_status || event.status) === "archived";
     var testMode = Number(event.is_test) === 1;
     var deleteControl = state.session && state.session.is_owner
@@ -234,8 +234,8 @@
       '<div class="admin-featured-image" style="background-image:url(' + escapeHtml(image) + ')"></div>' +
       '<div class="admin-featured-copy"><span class="status-pill status-' + escapeHtml(event.effective_status || event.status) + '">' + escapeHtml(statusLabel(event.effective_status || event.status)) + '</span>' + (testMode ? '<span class="status-pill status-scheduled">Modo prueba</span>' : '') +
       '<h2>' + escapeHtml(event.title) + '</h2><p>' + escapeHtml(formatDate(event.starts_at, true)) + ' · ' + escapeHtml(event.location || "Ubicación por definir") + '</p>' +
-      '<div class="admin-progress"><span><strong>' + Number(event.sold || 0) + '</strong> entradas vendidas</span><span>' + Number(event.capacity || 0) + ' aforo · ' + occupancy + '%</span><i><b style="width:' + occupancy + '%"></b></i></div>' +
-      '<div class="admin-inline-actions"><a class="ticket-btn primary" href="/admin/eventos/' + Number(event.id) + '/editar/">Editar evento</a><a class="ticket-btn" href="/admin/ventas/?event=' + Number(event.id) + '">Ver ventas</a><a class="ticket-btn" href="/admin/acceso/?event=' + Number(event.id) + '">Control de acceso</a><a class="text-action" href="/eventos/' + encodeURIComponent(event.slug) + '/" target="_blank" rel="noopener noreferrer">Página pública</a></div>' + lifecycleActions + '</div></article>';
+      '<div class="admin-progress"><span><strong>' + Number(event.sold || 0) + '</strong> entradas vendidas · <strong>' + Number(event.reserved || 0) + '</strong> plazas reservadas · ' + Number(event.available || 0) + ' disponibles</span><span>' + Number(event.capacity || 0) + ' aforo · ' + occupancy + '% ocupado</span><i><b style="width:' + occupancy + '%"></b></i></div>' +
+      '<div class="admin-inline-actions"><a class="ticket-btn primary" href="/admin/eventos/' + Number(event.id) + '/editar/">Editar evento</a><a class="ticket-btn" href="/admin/ventas/?event=' + Number(event.id) + '">Reservas y ventas</a><a class="ticket-btn" href="/admin/acceso/?event=' + Number(event.id) + '">Control de acceso</a><a class="text-action" href="/eventos/' + encodeURIComponent(event.slug) + '/" target="_blank" rel="noopener noreferrer">Página pública</a></div>' + lifecycleActions + '</div></article>';
   }
 
   function renderDashboard(summary, orders) {
@@ -254,7 +254,7 @@
         '<article><span>Holded · revisión</span><strong>' + holdedReview + '</strong><small>' + (holdedReview ? 'Pedidos que requieren revisión' : 'Sin alertas fiscales') + '</small></article>' +
       '</section>' +
       (featured ? '<section class="admin-dashboard-section"><div class="admin-section-label"><span class="ticket-eyebrow">Próximo evento</span><a class="text-action" href="/admin/eventos/">Ver todos los eventos</a></div>' + eventCard(featured, true) + '</section>' : '<section class="admin-empty"><strong>Todavía no hay eventos.</strong><span>Crea la primera experiencia para empezar a vender entradas.</span><a class="ticket-btn primary" href="/admin/eventos/?new=1">Crear evento</a></section>') +
-      '<section class="admin-dashboard-section"><div class="admin-section-label"><div><span class="ticket-eyebrow">Actividad reciente</span><h2>Últimos pedidos</h2></div><a class="text-action" href="/admin/ventas/">Ver ventas</a></div><div class="admin-recent-orders">' + renderOrdersRows(orders.slice(0, 6), true) + '</div></section>';
+      '<section class="admin-dashboard-section"><div class="admin-section-label"><div><span class="ticket-eyebrow">Actividad reciente</span><h2>Últimos pedidos</h2></div><a class="text-action" href="/admin/ventas/">Reservas y ventas</a></div><div class="admin-recent-orders">' + renderOrdersRows(orders.slice(0, 6), true) + '</div></section>';
   }
 
   function isClosedOrder(order) { return [order.display_status, order.status, order.order_status, order.payment_status].some(function (status) { return status === "cancelled" || status === "refunded"; }); }
@@ -267,9 +267,69 @@
     return !isClosedOrder(order) && (order.payment_status === "paid" || order.status === "paid" || isDoorPaymentPending(order));
   }
 
+  // MySQL datetimes are in APP_TIMEZONE (Europe/Madrid), independent of the operator's browser.
+  function isExpiredReservation(order, now) {
+    if (isClosedOrder(order) || isSoldOrder(order)) return false;
+    if ([order.status, order.payment_status, order.display_status].indexOf("expired") !== -1) return true;
+    if (!order.reservation_expires_at) return false;
+    var parts = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" }).formatToParts(now || new Date());
+    var values = {};
+    parts.forEach(function (part) { values[part.type] = part.value; });
+    var madridNow = values.year + "-" + values.month + "-" + values.day + " " + values.hour + ":" + values.minute + ":" + values.second;
+    return String(order.reservation_expires_at).replace("T", " ").slice(0, 19) <= madridNow;
+  }
+
+  function reservationDateText(value) {
+    if (!value) return "Por definir";
+    var date = new Date(String(value).replace(" ", "T") + "Z");
+    return Number.isNaN(date.getTime()) ? "Por definir" : new Intl.DateTimeFormat("es-ES", { timeZone: "UTC", dateStyle: "medium", timeStyle: "short" }).format(date);
+  }
+
+  function isPendingReservation(order) {
+    return !isClosedOrder(order) && !isSoldOrder(order) && !isExpiredReservation(order) && ["pending", "payment_processing"].indexOf(order.status) !== -1;
+  }
+
+  function canOpenPayment(order) {
+    return !!order.public_token && order.sales_channel === "manual_card" && isPendingReservation(order);
+  }
+
+  function salesOrderMatches(order, activeFilter) {
+    var displayStatus = isExpiredReservation(order) ? "expired" : isDoorPaymentPending(order) ? "door_pending" : (order.display_status || order.payment_status || order.status);
+    if (activeFilter !== "tests" && Number(order.is_test) === 1) return false;
+    if (activeFilter === "open") return isSoldOrder(order) || isPendingReservation(order);
+    if (activeFilter === "expired") return isExpiredReservation(order);
+    if (activeFilter === "active") return Number(order.is_test) !== 1 && isSoldOrder(order);
+    if (activeFilter === "door-pending") return Number(order.is_test) !== 1 && isDoorPaymentPending(order);
+    if (activeFilter === "pending") return isPendingReservation(order);
+    if (activeFilter === "cancelled") return displayStatus === "cancelled";
+    if (activeFilter === "refunded") return displayStatus === "refunded";
+    if (activeFilter === "tests") return Number(order.is_test) === 1;
+    if (activeFilter === "with-notes") return orderNotes(order) !== "";
+    if (activeFilter === "email-failed") return order.email_delivery_status === "failed";
+    if (activeFilter === "whatsapp-failed") return order.whatsapp_delivery_status === "failed";
+    if (activeFilter === "partial-delivery") return (order.email_delivery_status === "sent") !== ["sent", "delivered", "read", "not_authorized"].includes(order.whatsapp_delivery_status || (Number(order.whatsapp_consent) ? "pending" : "not_authorized"));
+    if (activeFilter === "no-delivery") return order.email_delivery_status !== "sent" && !["sent", "delivered", "read"].includes(order.whatsapp_delivery_status || "");
+    return true;
+  }
+
+  function orderNotes(order) {
+    return String(order.cash_payment_notes || "").replace(/^\[season-op:[^\]]+\]\[request:[^\]]+\]\s*/, "").trim();
+  }
+
+  function orderOrigin(order) {
+    if (/^\[season-op:/.test(order.cash_payment_notes || "")) return "Reserva web";
+    return order.sales_channel === "cash" ? "Gestión manual · efectivo" : order.sales_channel === "manual_card" ? "Gestión manual · tarjeta" : "Compra web";
+  }
+
+  function orderContactUrl(order) {
+    var phone = String(order.phone || "").replace(/\D/g, "").replace(/^00/, "");
+    if (phone.length === 9 && /^[6-9]/.test(phone)) phone = "34" + phone;
+    return /^[1-9][0-9]{7,14}$/.test(phone) ? "https://wa.me/" + phone : "";
+  }
+
   function cashWhatsAppUrl(order) {
-    var phone = String(order.phone || "").replace(/\D/g, "");
-    if (phone.length === 9 && /^[67]/.test(phone)) phone = "34" + phone;
+    var phone = String(order.phone || "").replace(/\D/g, "").replace(/^00/, "");
+    if (phone.length === 9 && /^[6-9]/.test(phone)) phone = "34" + phone;
     var manualCard = order.sales_channel === "manual_card";
     var link = window.location.origin + "/entradas/pedido/?token=" + encodeURIComponent(order.public_token) + (manualCard ? "&pay=1" : "");
     var message = manualCard
@@ -388,10 +448,12 @@
     var actions = '<div class="admin-order-actions"><a class="text-action" href="/entradas/pedido/?token=' + encodeURIComponent(order.public_token) + '" target="_blank" rel="noopener noreferrer">Ver pedido</a><button type="button" class="text-action" data-order-action="edit" data-order-id="' + Number(order.id) + '">Editar</button>';
     actions += manualTicketWhatsAppLink(order);
     if (Number(order.allergy_attendee_count || 0)) actions += '<button type="button" class="text-action" data-order-allergies data-order-id="' + Number(order.id) + '">Alergias (' + Number(order.allergy_attendee_count) + ')</button>';
-    if (order.sales_channel === "cash" && order.status === "pending" && order.order_status !== "confirmed" && order.cash_payment_status !== "paid" && !isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="confirm-door" data-order-id="' + Number(order.id) + '">Confirmar venta · pago en puerta</button>';
-    if (order.sales_channel === "cash" && order.cash_payment_status !== "paid" && !isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="cash-payment" data-order-id="' + Number(order.id) + '">Registrar cobro</button>';
-    if (order.sales_channel === "cash" && !isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="send-cash" data-order-id="' + Number(order.id) + '">' + ((order.cash_payment_status === "paid" || order.order_status === "confirmed") ? "Abrir WhatsApp" : "Enviar reserva") + '</button>';
-    if (order.sales_channel === "manual_card" && order.payment_status !== "paid" && !isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="copy-payment-link" data-order-id="' + Number(order.id) + '">Copiar enlace de pago</button><button type="button" class="text-action" data-order-action="send-manual-card" data-order-id="' + Number(order.id) + '">Enviar link por WhatsApp</button>';
+    if (order.sales_channel === "cash" && order.status === "pending" && order.order_status !== "confirmed" && order.cash_payment_status !== "paid" && !isClosedOrder(order) && !isExpiredReservation(order)) actions += '<button type="button" class="text-action" data-order-action="confirm-door" data-order-id="' + Number(order.id) + '">Confirmar venta · pago en puerta</button>';
+    if (order.sales_channel === "cash" && order.cash_payment_status !== "paid" && !isClosedOrder(order) && !isExpiredReservation(order)) actions += '<button type="button" class="text-action" data-order-action="cash-payment" data-order-id="' + Number(order.id) + '">Registrar cobro</button>';
+    if (order.sales_channel === "cash" && !isClosedOrder(order) && !isExpiredReservation(order)) actions += '<button type="button" class="text-action" data-order-action="send-cash" data-order-id="' + Number(order.id) + '">' + ((order.cash_payment_status === "paid" || order.order_status === "confirmed") ? "Abrir WhatsApp" : "Enviar reserva") + '</button>';
+    var contactUrl = orderContactUrl(order);
+    if (contactUrl) actions += '<a class="text-action" href="' + escapeHtml(contactUrl) + '" target="_blank" rel="noopener noreferrer">Abrir chat de WhatsApp</a>';
+    if (canOpenPayment(order)) actions += '<a class="text-action" href="' + escapeHtml(manualCardPaymentUrl(order)) + '" target="_blank" rel="noopener noreferrer">Abrir enlace de pago</a><button type="button" class="text-action" data-order-action="copy-payment-link" data-order-id="' + Number(order.id) + '">Copiar enlace de pago</button><button type="button" class="text-action" data-order-action="send-manual-card" data-order-id="' + Number(order.id) + '">Preparar pago en WhatsApp</button>';
     if (!isClosedOrder(order)) actions += '<button type="button" class="text-action" data-order-action="cancel" data-order-id="' + Number(order.id) + '">Cancelar</button>';
     if (!isClosedOrder(order) && (order.payment_status === "paid" || order.status === "paid")) actions += '<button type="button" class="text-action" data-order-action="refund" data-order-id="' + Number(order.id) + '">Registrar devolución</button>';
     if ((order.payment_status === "paid" || order.status === "paid") && order.sales_channel !== "cash") {
@@ -408,7 +470,7 @@
     if (!orders.length) return '<div class="admin-empty"><strong>No se han registrado pedidos.</strong><span>Los pedidos aparecerán aquí cuando se complete una compra.</span></div>';
     return orders.map(function (order) {
       var reference = order.redsys_order || order.test_reference || ("Pedido " + order.id);
-      var displayStatus = isDoorPaymentPending(order) ? "door_pending" : (order.display_status || order.payment_status || order.status);
+      var displayStatus = isExpiredReservation(order) ? "expired" : isDoorPaymentPending(order) ? "door_pending" : (order.display_status || order.payment_status || order.status);
       var paymentMethod = order.payment_method === "cash" ? "Efectivo" : (order.payment_method === "bizum" ? "Bizum" : "Tarjeta");
       var cashStatus = order.sales_channel === "cash" ? ' · ' + (order.cash_payment_status === "paid" ? "Cobrado" : "Pendiente de cobro") : (order.sales_channel === "manual_card" ? ' · ' + (order.payment_status === "paid" ? "Cobrado con tarjeta" : "Pago con tarjeta pendiente") : "");
       var discount = Number(order.discount_amount_cents || 0);
@@ -417,14 +479,20 @@
         : '<strong>' + formatMoney(order.total_cents) + '</strong>';
       var allergySummary = Number(order.allergy_attendee_count || 0) ? ' · ' + Number(order.allergy_attendee_count) + ' alergia' + (Number(order.allergy_attendee_count) === 1 ? '' : 's') + ' comunicada' + (Number(order.allergy_attendee_count) === 1 ? '' : 's') : '';
       var holded = order.sales_channel === "cash" ? '<small class="admin-order-holded admin-order-cash">Registro web · sin Holded</small>' : !Number(order.is_test) && order.holded_status ? '<small class="admin-order-holded">Holded: ' + escapeHtml({not_required:"No requerido",pending:"Pendiente",processing:"Procesando",synced:"Sincronizado",error:"Reintento programado",requires_review:"Revisión necesaria"}[order.holded_status] || order.holded_status) + (order.holded_document_number ? ' · ' + escapeHtml(order.holded_document_number) : '') + '</small>' : '';
-      var paymentNote = order.sales_channel === "cash" && order.cash_payment_notes ? '<small class="admin-order-cash-note">Efectivo: ' + escapeHtml(order.cash_payment_notes) + '</small>' : '';
+      var paymentNote = orderNotes(order) ? '<small class="admin-order-cash-note">Notas: ' + escapeHtml(orderNotes(order)) + '</small>' : '';
       var emailDeliveryStatus = ["captured", "sent", "queued", "pending", "failed"].indexOf(order.email_delivery_status) !== -1 ? order.email_delivery_status : "pending";
       var whatsAppDeliveryStatus = !Number(order.whatsapp_consent) ? "not_authorized" : (["captured", "sent", "delivered", "read", "queued", "pending", "blocked", "failed", "not_authorized"].indexOf(order.whatsapp_delivery_status) !== -1 ? order.whatsapp_delivery_status : "queued");
       var isPaidCashOrder = order.sales_channel === "cash" && order.cash_payment_status === "paid";
       var delivery = isPaidCashOrder
-        ? '<small class="admin-order-delivery"><span><strong>Entrega:</strong> ' + deliveryStatusMarkup("WhatsApp", "manual_sent") + '<span class="admin-delivery-meta"> · envío desde WhatsApp Business</span></span></small>'
+        ? '<small class="admin-order-delivery"><span><strong>Entrega:</strong> ' + '<span class="admin-delivery-meta">WhatsApp Business · envío manual sin verificar</span></span></small>'
         : '<small class="admin-order-delivery"><span><strong>Entrega:</strong> ' + deliveryStatusMarkup("Email", emailDeliveryStatus) + (order.email_delivery_error ? '<span class="admin-delivery-error"> · ' + escapeHtml(order.email_delivery_error) + '</span>' : '') + '</span><span>' + deliveryStatusMarkup("WhatsApp", whatsAppDeliveryStatus) + (order.whatsapp_recipient ? '<span class="admin-delivery-meta"> · ' + escapeHtml(order.whatsapp_recipient) + '</span>' : '') + (order.whatsapp_template_name ? '<span class="admin-delivery-meta"> · ' + escapeHtml(order.whatsapp_template_name) + '</span>' : '') + (order.whatsapp_delivery_error ? '<span class="admin-delivery-error"> · ' + escapeHtml(order.whatsapp_delivery_error) + '</span>' : '') + '</span></small>';
-      return '<article class="admin-order-row"><div><strong>' + escapeHtml(order.name || "Comprador sin nombre") + '</strong><small>' + escapeHtml(order.event_title || "Evento por asignar") + ' · ' + escapeHtml(reference) + ' · ' + paymentMethod + cashStatus + allergySummary + (Number(order.is_test) ? ' · Prueba' : '') + '</small>' + paymentNote + holded + delivery + '</div><span>' + Number(order.ticket_quantity || 0) + ' entrada' + (Number(order.ticket_quantity || 0) === 1 ? "" : "s") + '</span><span class="status-pill status-' + escapeHtml(displayStatus) + '">' + escapeHtml(statusLabel(displayStatus)) + '</span><span class="admin-order-amount">' + amount + '</span>' + (compact ? (manualTicketWhatsAppLink(order) ? '<div class="admin-order-actions">' + manualTicketWhatsAppLink(order) + '</div>' : "") : orderActions(order)) + '</article>';
+      var metadata = '<small>' + escapeHtml(orderOrigin(order)) + ' · Creada: ' + escapeHtml(reservationDateText(order.created_at)) + ' · Madrid' + '</small>' +
+        '<small>Contacto: ' + escapeHtml(order.phone || "Sin teléfono") + ' · ' + escapeHtml(order.email || "Sin correo") + '</small>' +
+        (order.reservation_expires_at && !isSoldOrder(order) ? '<small>' + (isExpiredReservation(order) ? 'Caducó: ' : 'Caduca: ') + escapeHtml(reservationDateText(order.reservation_expires_at)) + ' · hora de Madrid</small>' : '') +
+        (order.cash_payment_recorded_by ? '<small>Cobro registrado por: ' + escapeHtml(order.cash_payment_recorded_by) + '</small>' : '');
+      if (isPendingReservation(order)) delivery = '<small>Reserva pendiente de pago · entradas todavía sin emitir</small>';
+      if (isExpiredReservation(order)) delivery = '<small>Reserva caducada · enlace de pago no disponible</small>';
+      return '<article class="admin-order-row"><div><strong>' + escapeHtml(order.name || "Comprador sin nombre") + '</strong><small>' + escapeHtml(order.event_title || "Evento por asignar") + ' · ' + escapeHtml(reference) + ' · ' + paymentMethod + cashStatus + allergySummary + (Number(order.is_test) ? ' · Prueba' : '') + '</small>' + metadata + paymentNote + holded + delivery + '</div><span>' + Number(order.ticket_quantity || 0) + ' entrada' + (Number(order.ticket_quantity || 0) === 1 ? "" : "s") + '</span><span class="status-pill status-' + escapeHtml(displayStatus) + '">' + escapeHtml(statusLabel(displayStatus)) + '</span><span class="admin-order-amount">' + amount + '</span>' + (compact ? (manualTicketWhatsAppLink(order) ? '<div class="admin-order-actions">' + manualTicketWhatsAppLink(order) + '</div>' : "") : orderActions(order)) + '</article>';
     }).join("");
   }
 
@@ -545,7 +613,7 @@
     requireSession(function (sessionData) {
       var search = root.querySelector("[data-admin-sales-search]");
       var filters = root.querySelectorAll("[data-admin-order-filter]");
-      var activeFilter = "active";
+      var activeFilter = "open";
       var salesEvent = root.querySelector('[data-admin-sales-event]');
       var selectedSalesEvent = Math.max(0, Number(new URLSearchParams(window.location.search).get('event')) || 0);
       var salesLoadSequence = 0;
@@ -592,38 +660,26 @@
         var sold = state.orders.filter(function (order) { return Number(order.is_test) !== 1 && isSoldOrder(order); });
         var doorPending = sold.filter(isDoorPaymentPending);
         var cashPaid = paid.filter(function (order) { return order.sales_channel === "cash"; });
-        var cashReserved = state.orders.filter(function (order) { return Number(order.is_test) !== 1 && !isClosedOrder(order) && order.sales_channel === "cash" && order.cash_payment_status === "reserved" && !isDoorPaymentPending(order); });
+        var reservations = state.orders.filter(function (order) { return Number(order.is_test) !== 1 && isPendingReservation(order); });
         function tickets(rows) { return rows.reduce(function (total, order) { return total + Number(order.ticket_quantity || 0); }, 0); }
         summary.innerHTML = '<article><span>Entradas vendidas</span><strong>' + tickets(sold) + '</strong><small>Incluye ventas pendientes de pago en puerta</small></article>' +
           '<article><span>Ingresos cobrados</span><strong>' + formatMoney(paid.reduce(function (total, order) { return total + Number(order.total_cents || 0); }, 0)) + '</strong><small>Web, tarjeta y efectivo cobrados</small></article>' +
           '<article><span>Efectivo cobrado</span><strong>' + tickets(cashPaid) + '</strong><small>' + formatMoney(cashPaid.reduce(function (total, order) { return total + Number(order.total_cents || 0); }, 0)) + '</small></article>' +
           '<article><span>Pago en puerta pendiente</span><strong>' + tickets(doorPending) + '</strong><small>' + formatMoney(doorPending.reduce(function (total, order) { return total + Number(order.total_cents || 0); }, 0)) + ' por cobrar</small></article>' +
-          '<article><span>Reservas en efectivo</span><strong>' + tickets(cashReserved) + '</strong><small>Pendientes de cobro</small></article>';
-      }
-      function matchesFilter(order) {
-        var displayStatus = isDoorPaymentPending(order) ? "door_pending" : (order.display_status || order.payment_status || order.status);
-        if (activeFilter === "active") return Number(order.is_test) !== 1 && isSoldOrder(order);
-        if (activeFilter === "door-pending") return Number(order.is_test) !== 1 && isDoorPaymentPending(order);
-        if (activeFilter === "pending") return !isClosedOrder(order) && !(displayStatus === "paid" || order.status === "paid" || order.payment_status === "paid");
-        if (activeFilter === "cancelled") return displayStatus === "cancelled";
-        if (activeFilter === "refunded") return displayStatus === "refunded";
-        if (activeFilter === "tests") return Number(order.is_test) === 1;
-        if (activeFilter === "with-notes") return String(order.cash_payment_notes || "").trim() !== "";
-        if (activeFilter === "email-failed") return order.email_delivery_status === "failed";
-        if (activeFilter === "whatsapp-failed") return order.whatsapp_delivery_status === "failed";
-        if (activeFilter === "partial-delivery") return (order.email_delivery_status === "sent") !== ["sent", "delivered", "read", "not_authorized"].includes(order.whatsapp_delivery_status || (Number(order.whatsapp_consent) ? "pending" : "not_authorized"));
-        if (activeFilter === "no-delivery") return order.email_delivery_status !== "sent" && !["sent", "delivered", "read"].includes(order.whatsapp_delivery_status || "");
-        return true;
+          '<article><span>Reservas pendientes</span><strong>' + tickets(reservations) + ' plazas</strong><small>' + reservations.length + (reservations.length === 1 ? ' pedido · ' : ' pedidos · ') + formatMoney(reservations.reduce(function (total, order) { return total + Number(order.total_cents || 0); }, 0)) + ' por cobrar</small></article>';
       }
       function render(filter) {
         var term = String(filter || "").trim().toLowerCase();
         var rows = state.orders.filter(function (order) {
-          return matchesFilter(order) && (!term || [order.name, order.email, order.phone, order.redsys_order, order.test_reference, order.event_title, order.payment_status, order.display_status, isDoorPaymentPending(order) ? "vendida pago en puerta pendiente" : ""].join(" ").toLowerCase().includes(term));
+          return salesOrderMatches(order, activeFilter) && (!term || [order.name, order.email, order.phone, order.redsys_order, order.test_reference, order.event_title, orderNotes(order), orderOrigin(order), order.payment_status, order.display_status, isDoorPaymentPending(order) ? "vendida pago en puerta pendiente" : ""].join(" ").toLowerCase().includes(term));
         });
         root.querySelector("[data-admin-orders-list]").innerHTML = !selectedSalesEvent
           ? '<div class="admin-empty"><strong>Selecciona un evento para consultar sus ventas.</strong></div>'
           : rows.length ? renderOrdersRows(rows, false) : '<div class="admin-empty"><strong>No hay pedidos con estos filtros para el evento seleccionado.</strong></div>';
         if (status) status.textContent = selectedSalesEvent ? rows.length + (rows.length === 1 ? " pedido mostrado" : " pedidos mostrados") : '';
+        var context = root.querySelector("[data-sales-event-context]");
+        var event = state.events.find(function (item) { return Number(item.id) === selectedSalesEvent; });
+        if (context) context.textContent = event ? event.title + " · " + formatDate(event.starts_at, true) : "Selecciona un evento para ver sus reservas y ventas.";
         renderSalesSummary();
       }
       function reload() {
@@ -1201,8 +1257,14 @@
         }
         populateCashEvents();
         populateAttendeeExportEvents();
-        bindSalesEvents(data[3].events || []);
+        state.events = data[3].events || [];
+        bindSalesEvents(state.events);
         render();
+        var refresh = root.querySelector("[data-refresh-sales]");
+        if (refresh) refresh.addEventListener("click", function () {
+          refresh.disabled = true;
+          reload().finally(function () { refresh.disabled = false; });
+        });
         search.addEventListener("input", function () { render(search.value); });
         filters.forEach(function (button) {
           button.addEventListener("click", function () {
@@ -1293,26 +1355,25 @@
           }
           if (id && action === "send-manual-card" && ["127.0.0.1", "localhost"].indexOf(window.location.hostname) !== -1) {
             var localOrder = (state.orders || []).find(function(order){return Number(order.id) === id;});
-            if(localOrder) openLocalPaymentShare(localOrder,button);
+            if(localOrder && canOpenPayment(localOrder)) openLocalPaymentShare(localOrder,button);
+            return;
+          }
+          if (action === "copy-payment-link") {
+            var copyOrder = state.orders.find(function (order) { return Number(order.id) === id; });
+            if (!copyOrder || !canOpenPayment(copyOrder)) return;
+            navigator.clipboard.writeText(manualCardPaymentUrl(copyOrder)).then(function () { button.textContent = "Enlace copiado"; }).catch(function () { renderPageError("No se ha podido copiar el enlace de pago."); });
+            return;
+          }
+          if (action === "send-manual-card") {
+            var paymentOrder = state.orders.find(function (order) { return Number(order.id) === id; });
+            if (!paymentOrder || !canOpenPayment(paymentOrder)) return;
+            window.open(cashWhatsAppUrl(paymentOrder), "_blank", "noopener");
             return;
           }
           if (!id || !window.confirm(actionMessage(action))) return;
           if (action === "send-cash") {
             var cashOrder = (state.orders || []).find(function (order) { return Number(order.id) === id; });
             if (cashOrder) window.open(cashWhatsAppUrl(cashOrder), "_blank", "noopener");
-            return;
-          }
-          if (action === "send-manual-card") {
-            var manualCardOrder = (state.orders || []).find(function (order) { return Number(order.id) === id; });
-            if (manualCardOrder) window.open(cashWhatsAppUrl(manualCardOrder), "_blank", "noopener");
-            return;
-          }
-          if (action === "copy-payment-link") {
-            var orderWithLink = (state.orders || []).find(function (order) { return Number(order.id) === id; });
-            if (!orderWithLink) return;
-            navigator.clipboard.writeText(manualCardPaymentUrl(orderWithLink)).then(function () {
-              button.textContent = "Enlace copiado";
-            }).catch(function () { renderPageError("No se ha podido copiar el enlace de pago."); });
             return;
           }
           var holdedConfirmation = false;
@@ -1445,6 +1506,12 @@
   function renderLeadFormAdmin(root, settings, requests, selected) {
     var selectedDetail = selected ? '<section class="admin-dashboard-section"><div class="admin-section-label"><div><span class="ticket-eyebrow">Solicitud ' + escapeHtml(selected.public_reference) + '</span><h2>' + escapeHtml(selected.name) + (selected.partner_name ? ' y ' + escapeHtml(selected.partner_name) : '') + '</h2></div><button class="text-action" type="button" data-lead-close-detail>Cerrar ficha</button></div><article class="admin-empty" style="justify-items:stretch"><p><strong>Contacto</strong><br>' + escapeHtml(selected.email || 'Sin email') + ' · ' + escapeHtml(selected.phone || 'Sin teléfono') + '</p><p><strong>Evento</strong><br>' + escapeHtml(selected.event_type) + ' · ' + escapeHtml(selected.event_date || 'Fecha por definir') + ' · ' + escapeHtml(selected.guest_count || 'Asistentes por definir') + '</p><p><strong>Notificación</strong><br>' + escapeHtml(selected.email_status) + (selected.email_error ? ' · ' + escapeHtml(selected.email_error) : '') + '</p><label class="admin-search" style="width:100%"><span>Estado comercial</span><select data-lead-detail-status>' + ["new", "contacted", "follow_up", "proposal_sent", "closed", "discarded"].map(function (status) { return '<option value="' + status + '"' + (selected.status === status ? ' selected' : '') + '>' + leadStatusLabel(status) + '</option>'; }).join('') + '</select></label><pre style="overflow:auto;max-height:58vh;white-space:pre-wrap;color:var(--pg-cream);font:400 .75rem/1.6 monospace">' + escapeHtml(JSON.stringify(selected.answers || {}, null, 2)) + '</pre></article></section>' : '';
     var rows = requests.length ? requests.map(function (requestItem) {
+      var metadata = '<small>' + escapeHtml(orderOrigin(order)) + ' · Creada: ' + escapeHtml(reservationDateText(order.created_at)) + ' · Madrid' + '</small>' +
+        '<small>Contacto: ' + escapeHtml(order.phone || "Sin teléfono") + ' · ' + escapeHtml(order.email || "Sin correo") + '</small>' +
+        (order.reservation_expires_at && !isSoldOrder(order) ? '<small>' + (isExpiredReservation(order) ? 'Caducó: ' : 'Caduca: ') + escapeHtml(reservationDateText(order.reservation_expires_at)) + ' · hora de Madrid</small>' : '') +
+        (order.cash_payment_recorded_by ? '<small>Cobro registrado por: ' + escapeHtml(order.cash_payment_recorded_by) + '</small>' : '');
+      if (isPendingReservation(order)) delivery = '<small>Reserva pendiente de pago · entradas todavía sin emitir</small>';
+      if (isExpiredReservation(order)) delivery = '<small>Reserva caducada · enlace de pago no disponible</small>';
       return '<article class="admin-order-row"><div><strong>' + escapeHtml(requestItem.name) + (requestItem.partner_name ? ' y ' + escapeHtml(requestItem.partner_name) : '') + '</strong><small>Recibida ' + escapeHtml(formatDate(requestItem.created_at, true)) + ' · ' + escapeHtml(requestItem.event_type) + ' · ' + escapeHtml(requestItem.event_date || 'Fecha por definir') + ' · ' + escapeHtml(requestItem.public_reference) + '</small></div><span>' + escapeHtml(requestItem.guest_count || '—') + ' invitados</span><span class="status-pill status-' + escapeHtml(requestItem.status) + '">' + escapeHtml(leadStatusLabel(requestItem.status)) + '</span><span>' + (requestItem.email_status === 'sent' ? 'Email enviado' : requestItem.email_status === 'failed' ? 'Email fallido' : 'Email pendiente') + '</span><button type="button" class="text-action" data-lead-open="' + Number(requestItem.id) + '">Ver solicitud</button></article>';
     }).join('') : '<div class="admin-empty"><strong>Aún no hay solicitudes.</strong><span>Las respuestas recibidas desde /formulario/ aparecerán aquí.</span></div>';
     root.innerHTML = '<section class="admin-page-heading admin-page-heading-compact"><div><span class="ticket-eyebrow">Captación</span><h1>Formulario y <em>solicitudes.</em></h1><p>La base de datos es la fuente de verdad: cada solicitud queda guardada aunque el correo de aviso falle.</p></div><a class="ticket-btn" href="/formulario/" target="_blank" rel="noopener noreferrer">Ver formulario público</a></section>' +
