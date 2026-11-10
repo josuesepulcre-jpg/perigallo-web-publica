@@ -61,6 +61,7 @@ if ($ext === 'html') {
 <link rel="icon" href="/assets/icons/favicon-32.png?v=20261109-blanco-barras" type="image/png" sizes="32x32">
 <link rel="icon" href="/favicon.svg?v=20261109-blanco-barras" type="image/svg+xml" sizes="any">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=20261109-blanco-barras" sizes="180x180">
+<script src="/admin/instagram/agent/bridge.js?v=1" defer></script>
 HTML;
     if (stripos($html, '</head>') !== false) {
         $html = preg_replace('~</head>~i', $icons . "\n</head>", $html, 1);
