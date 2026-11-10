@@ -1,9 +1,9 @@
 'use strict';
 const $=s=>document.querySelector(s), esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const PLANS=[
- {id:'diciembre',date:'TODO EL MES DE DICIEMBRE',title:'Una comida<br>para juntarnos.',name:'Menús de grupo',description:'Con buen pie, Un paso más y Por todo lo alto. Tres menús para compartir y celebrar en grupo.',price:'Desde 44,95 €',note:'Por persona · IVA y bebidas incluidos',cover:'navidad-01',action:'Ver los tres menús',menus:['navidad-02','navidad-03','navidad-04'],default:'navidad-02'},
+ {id:'diciembre',date:'TODO EL MES DE DICIEMBRE',title:'Una comida<br>para juntarnos.',name:'Menús de grupo',description:'Menú Raíces, Menú La Mesa y Menú Brindis. Tres menús para compartir y celebrar en grupo.',price:'Desde 44,95 €',note:'Por persona · IVA y bebidas incluidos',cover:'navidad-01',action:'Ver los tres menús',menus:['navidad-02','navidad-03','navidad-04'],default:'navidad-02'},
  {id:'degustacion',period:'diciembre',date:'DICIEMBRE · VIERNES, SÁBADOS Y DOMINGOS',title:'Una experiencia<br>gastronómica.',name:'Menú degustación',description:'Una experiencia gastronómica para mesas de hasta seis personas. Viernes, sábados y domingos de diciembre, solo al mediodía, excepto el 25.',price:'38 €',note:'Por persona · IVA incluido · Bebidas aparte',image:'assets/temporada-degustacion.webp',cover:'navidad-01',action:'Descubrir el menú degustación',menus:['navidad-individual'],default:'navidad-individual'},
- {id:'navidad',date:'25 DE DICIEMBRE · NAVIDAD',title:'A la mesa.<br>Y un rato más.',name:'El día de Navidad',description:'Una comida de Navidad alrededor de la mesa, con nuestro puchero y menú infantil para los peques.',price:'65 €',note:'Por persona · IVA y bebidas incluidos',cover:'navidad-25-portada',action:'Ver los menús',menus:['navidad-25-menu','navidad-25-infantil'],default:'navidad-25-menu'},
+ {id:'navidad',date:'25 DE DICIEMBRE · NAVIDAD',title:'A la mesa.<br>Y un rato más.',name:'El día de Navidad',description:'Una comida de Navidad con nuestro puchero, menú infantil y la actuación de Verónica Romero con «Contigo en Navidad» después de comer.',price:'65 €',note:'Por persona · IVA y bebidas incluidos',cover:'navidad-25-portada',action:'Ver los menús',menus:['navidad-25-menu','navidad-25-infantil'],default:'show'},
  {id:'hora',date:'31 DE DICIEMBRE · HORA CERO',title:'Seis destinos.<br>Un Año Nuevo.',name:'Tardevieja · Hora Cero',description:'Australia, Japón, China, Vietnam, India y Rusia. Gastronomía, lago, barra libre, Bollywood y DJ durante el recorrido.',price:'120 €',note:'Por persona · IVA incluido · Plazas limitadas',cover:'hora-cero-01',action:'Descubrir el recorrido',menus:[],default:'route'},
  {id:'nuevo',date:'1 DE ENERO · AÑO NUEVO',title:'La primera<br>mesa del año.',name:'El día de Año Nuevo',description:'Marisco, entrantes, principal a elegir y flan de turrón. Empezamos 2027 alrededor de la mesa, también con los peques.',price:'50 €',note:'Por persona · IVA y bebidas incluidos · Agua, refrescos, cerveza y vino',cover:'ano-nuevo-portada',action:'Ver los menús',menus:['ano-nuevo-menu','ano-nuevo-infantil'],default:'ano-nuevo-menu'}
 ];
@@ -139,6 +139,7 @@ function openPlan(id, choice) {
  const options = activePlan.menus.map(key => [key, MENUS[key].title + ' · ' + MENUS[key].price]);
  if(inquiryPlanIds.includes(id))options.push(['consulta','Consultar disponibilidad']);
 
+ if (id === 'navidad') options.unshift(['show','Actuación · Verónica Romero']);
  if (id === 'hora') options.push(
    ['route','Recorrido y gastronomía'], ['video','Vídeo de Hora Cero'],
    ...ROUTE.map(stop => [stop.id, stop.country + ' · ' + stop.time]),
@@ -163,13 +164,30 @@ function menuHTML(menu) {
  ${sections}
  <p class="allergy-note">Si tenéis alguna alergia, consultadnos al reservar.</p>
  ${reservationHTML()}
- <div class="reader-tools"><a href="menus/${menu.id}.png${menu.id==='navidad-individual'?'?v=mediodia-20261108':menu.id==='ano-nuevo-menu'?'?v=bebidas-incluidas-20261109':''}" download>Descargar carta ↓</a><button data-print>Imprimir / guardar PDF ↗</button></div>
+ <div class="reader-tools"><a href="menus/${menu.id}.png${menu.id==='navidad-individual'?'?v=mediodia-20261108':menu.id==='ano-nuevo-menu'?'?v=bebidas-incluidas-20261109':['navidad-02','navidad-03','navidad-04'].includes(menu.id)?'?v=nombres-originales-20261109':''}" download>Descargar carta ↓</a><button data-print>Imprimir / guardar PDF ↗</button></div>
  </article>`;
 }
 function reservationHTML() {
  if(inquiryPlanIds.includes(activePlan.id))return `<div class="leaf-reserve">${bookingActions(activePlan.id)}<p>Para más info y reservas · Cuéntanos la fecha, el turno y vuestro menú.</p></div>`;
  const message = 'Hola, me gustaría consultar disponibilidad para ' + activePlan.name + '.';
  return `<div class="leaf-reserve">${bookingActions(activePlan.id)}<p>Para más info y reservas</p><a href="https://wa.me/34691499985?text=${encodeURIComponent(message)}" target="_blank" rel="noopener">Escribir por WhatsApp ↗</a><a href="tel:+34691499985">Llamar al 691 499 985</a></div>`;
+}
+function showHTML() {
+ return `<article class="performance-page">
+  <p class="eyebrow">ACTUACIÓN NAVIDEÑA</p>
+  <h3>Verónica Romero</h3>
+  <div class="performance-program">
+   <div class="performance-times">
+    <p>Sobre las <strong>17:00</strong></p>
+    <p>Duración aproximada <strong>30 minutos</strong></p>
+    <p>Para amenizar la sobremesa, Verónica Romero nos acompañará con su espectáculo «Contigo en Navidad». Una ocasión para celebrar la Navidad juntos y disfrutar de un día especial con música en directo.</p>
+   </div>
+   <figure class="performance-clip">
+    <video controls playsinline preload="metadata" poster="assets/veronica-video-poster.jpg" src="assets/veronica-contigo-navidad.mp4?v=veronica-20261109" aria-label="Fragmento de Contigo en Navidad de Verónica Romero"></video>
+    <figcaption>Vídeo de @errebeene · @veronica_romero_vero</figcaption>
+   </figure>
+  </div>
+ </article>${reservationHTML()}`;
 }
 function routeHTML() {
  const stops = ROUTE.map(stop => `<button data-stop="${stop.id}">
@@ -212,13 +230,14 @@ function selectChoice(id) {
  $('#leaf-nav [data-book="prev"]').disabled = index === 0;
  $('#leaf-nav [data-book="next"]').disabled = index === count - 1;
  $('.book-counter').textContent = (index + 1) + ' / ' + count;
- const isPerformance = false;
+ const isPerformance = activePlan.id === 'navidad' && id === 'show';
  $('#dialog-heading').textContent = activePlan.name;
  const photo = $('#reader-photo');
  photo.parentElement.classList.toggle('single-cover', isPerformance);
  photo.dataset.scene = isPerformance ? 'show' : activePlan.id;
- photo.src = (activePlan.image||`assets/temporada-${activePlan.id}.webp`);
- photo.alt = sceneDescriptions[activePlan.id];
+ photo.src = isPerformance ? 'assets/veronica-retrato-sin-texto.jpg?v=veronica-limpia-20261109' : (activePlan.image||`assets/temporada-${activePlan.id}.webp`);
+ photo.alt = isPerformance ? 'Verónica Romero · Contigo en Navidad' : sceneDescriptions[activePlan.id];
+ if(isPerformance)$('#dialog-heading').textContent = 'Verónica Romero';
  const stop = activePlan.id === 'hora' && ROUTE.find(item => item.id === id);
  photo.parentElement.classList.toggle('country-cover', Boolean(stop));
  $('#dialog-date').textContent = activePlan.date;
@@ -230,6 +249,7 @@ function selectChoice(id) {
  }
  else if (id === 'reservas') view.innerHTML = routeBookingHTML();
 
+ else if (id === 'show' && activePlan.id === 'navidad') view.innerHTML = showHTML();
  else if (id === 'consulta') {view.innerHTML=groupInquiryHTML();bindGroupInquiry();}
  else if (id === 'route') view.innerHTML = routeHTML();
  else if (id === 'video') view.innerHTML = `<article class="route-intro"><p class="eyebrow">31 DE DICIEMBRE / LA PERIGALLA</p><h3>Esto es Hora Cero.</h3><video controls playsinline preload="none" poster="assets/hora-cero-01.jpg" src="assets/hora-cero-final-uvas.mp4?v=final-uvas-20261109" aria-label="Presentación de Hora Cero"></video></article>${reservationHTML()}`;
