@@ -1,0 +1,44 @@
+name: Reservation payments integration
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  reservation-payments:
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: qa-reservations-only
+          MARIADB_DATABASE: perigallo_reservation_qa
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      APP_ENV: test
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: perigallo_reservation_qa
+      DB_USERNAME: root
+      DB_PASSWORD: qa-reservations-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install the MariaDB PHP driver
+        run: sudo apt-get update -qq && sudo apt-get install -y php-mysql
+      - name: Check syntax and financial UI projections
+        run: |
+          php -l api/src/ReservationOperations.php
+          php -l api/src/Ticketing.php
+          php -l api/index.php
+          node --check assets/js/admin-reservations.js
+          node --check assets/js/reservation-payment.js
+          node --test tests/admin-sales.test.mjs tests/reservation-payments.test.mjs
+      - name: Exercise the real InnoDB reservation and payment lifecycle
+        run: php -d disable_functions=mail tests/reservation-payments-test.php

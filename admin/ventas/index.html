@@ -7,6 +7,7 @@
 <title>Reservas y ventas | Administración Perigallo</title>
 <link rel="stylesheet" href="/assets/css/ticketing.css?v=unif-0c01463180">
 <link rel="stylesheet" href="/assets/css/admin-orders.css?v=reservas-20261110">
+<link rel="stylesheet" href="/assets/css/admin-reservations.css?v=20261111-1">
 <link rel="stylesheet" href="/assets/css/admin-cash-orders.css?v=unif-360a3ed417">
 <link rel="stylesheet" href="/assets/css/admin-delivery-status.css?v=20260820-v2">
 <link rel="stylesheet" href="/brand/fonts.css"><link rel="stylesheet" href="/brand/web-tokens.css"><link rel="stylesheet" href="/assets/css/unified-brand.css?v=unif-c57012efd3"><link rel="icon" href="/favicon.ico?v=20261109-blanco-barras" sizes="16x16 32x32 48x48">
@@ -19,7 +20,7 @@
   <aside class="admin-sidebar" data-admin-nav></aside>
   <main class="admin-workspace" data-admin-sales-page>
     <p class="ticket-status is-error" data-admin-page-status hidden></p>
-    <header class="admin-page-heading admin-page-heading-compact"><div><span class="ticket-eyebrow">Gestión</span><h1>Reservas y <em>ventas</em></h1><p>Controla quién reserva, cuánto ha pagado y qué queda por cobrar en cada evento.</p></div><div class="admin-sales-actions"><button type="button" class="ticket-btn primary" data-open-manual-order>Generar entrada manual</button></div></header>
+    <header class="admin-page-heading admin-page-heading-compact"><div><span class="ticket-eyebrow">Gestión</span><h1>Reservas y <em>ventas</em></h1><p>Controla quién reserva, cuánto ha pagado y qué queda por cobrar en cada evento.</p></div><div class="admin-sales-actions"><button type="button" class="ticket-btn primary" data-new-reservation>+ Nueva reserva</button><button type="button" class="ticket-btn" data-open-manual-order>Generar entrada manual</button></div></header>
     <section class="admin-order-toolbar admin-discount-list-filters" aria-label="Seleccionar evento de ventas">
       <label>Evento<select data-admin-sales-event aria-label="Evento de ventas" disabled><option value="">Selecciona un evento</option></select></label><button type="button" class="ticket-btn" data-refresh-sales>Actualizar pedidos</button>
     </section>
@@ -28,6 +29,7 @@
     <p class="admin-orders-status" data-admin-whatsapp-template-status aria-live="polite"></p>
     <section class="admin-order-toolbar" aria-label="Filtros de pedidos">
       <div class="admin-filter-group" role="group" aria-label="Estado del pedido">
+        <button type="button" data-admin-order-filter="reservations">Reservas</button>
         <button type="button" class="is-active" data-admin-order-filter="open">Reservas y ventas</button>
         <button type="button" data-admin-order-filter="active">Entradas vendidas</button>
         <button type="button" data-admin-order-filter="door-pending">Pago en puerta pendiente</button>
@@ -43,6 +45,7 @@
         <button type="button" data-admin-order-filter="no-delivery">Sin entrega</button>
         <button type="button" data-admin-order-filter="all">Todas</button>
       </div>
+      <label class="reservation-economic-filter">Estado económico<select data-reservation-economic-filter><option value="">Todos los estados</option><option value="pending">Pendiente de pago</option><option value="partial">Parcialmente pagada</option><option value="paid">Pagada</option><option value="partially_refunded">Devolución parcial</option><option value="refunded">Reembolsada</option></select></label>
       <label class="admin-search"><span>Buscar pedido</span><input type="search" data-admin-sales-search placeholder="Comprador, evento, referencia o estado"></label>
     </section>
     <p class="admin-orders-status" data-admin-orders-status aria-live="polite"></p>
@@ -133,6 +136,7 @@
   </main>
 </div>
 <script src="/assets/vendor/jspdf.umd.min.js?v=20260825-pdf-list-v1" defer></script>
-<script src="/assets/js/admin-backoffice.js?v=reservas-20261110" defer></script>
+<script src="/assets/js/admin-reservations.js?v=20261111-1" defer></script>
+<script src="/assets/js/admin-backoffice.js?v=reservas-pagos-20261111-1" defer></script>
 </body>
 </html>

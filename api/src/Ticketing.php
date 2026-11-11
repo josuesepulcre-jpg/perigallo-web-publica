@@ -11,6 +11,7 @@ use RuntimeException;
 
 final class Ticketing
 {
+    use ReservationOperations;
     private ?DiscountCodes $discountCodes = null;
     private ?bool $cashOrderSchemaAvailable = null;
     private ?bool $manualCardPaymentSchemaAvailable = null;
@@ -811,7 +812,7 @@ final class Ticketing
             $transactionType = (string) ($params['DS_TRANSACTIONTYPE'] ?? '');
             $responseCode = str_pad((string) ($params['DS_RESPONSE'] ?? '9999'), 4, '0', STR_PAD_LEFT);
 
-            if ($amount !== (int) $order['total_cents']) {
+            if ($amount !== (int) (!empty($attempt['reservation_link_id']) ? $attempt['amount_cents'] : $order['total_cents'])) {
                 throw new RuntimeException('Importe Redsys no coincide.');
             }
             if ($currency !== (string) $order['currency']) {
@@ -827,6 +828,7 @@ final class Ticketing
                 throw new RuntimeException('Tipo de operacion Redsys no coincide.');
             }
             $accepted = ctype_digit($responseCode) && (int) $responseCode >= 0 && (int) $responseCode <= 99;
+            if (!empty($attempt['reservation_link_id'])) return $this->reservationRedsysNotification($attempt,$order,$params,$notificationHash,$responseCode,$accepted);
             $attemptStatus = $accepted ? 'accepted' : 'denied';
             $orderStatus = $accepted ? 'paid' : 'denied';
             $commercialStatus = $accepted ? 'confirmed' : 'pending_payment';
@@ -1230,6 +1232,7 @@ final class Ticketing
         $this->pdo->beginTransaction();
         try {
             $order = $this->lockedOrder($orderId);
+            if(($order['sales_channel']??'')==='reservation')throw new RuntimeException('Edita esta reserva desde su ficha de reserva y pagos.',409);
             $set = 'first_name = ?, last_name = ?, name = ?, email = ?, phone = ?, whatsapp_phone_input = ?';
             $values = [$firstName, $lastName, $name, $email, $phone, $phone];
             $changed = [];
@@ -1300,7 +1303,7 @@ final class Ticketing
         $paymentMethod = $this->cashOrderSchemaAvailable()
             ? 'CASE WHEN o.sales_channel = "cash" THEN "cash" ELSE COALESCE((SELECT pa.payment_method FROM payment_attempts pa WHERE pa.order_id = o.id ORDER BY pa.id DESC LIMIT 1), "card") END'
             : 'COALESCE((SELECT pa.payment_method FROM payment_attempts pa WHERE pa.order_id = o.id ORDER BY pa.id DESC LIMIT 1), "card")';
-        return $this->pdo->query(
+        $orders = $this->pdo->query(
             'SELECT o.id, o.public_token, o.redsys_order, o.test_reference, o.is_test, o.environment,
                     o.order_status, o.payment_status, o.delivery_status, ' . $cashColumns . ', o.first_name, o.last_name, o.name, o.email, o.phone, o.whatsapp_consent,
                     (SELECT ed.status FROM email_deliveries ed WHERE ed.order_id = o.id AND ed.idempotency_key IS NOT NULL ORDER BY ed.id DESC LIMIT 1) AS email_delivery_status,
@@ -1340,6 +1343,7 @@ final class Ticketing
              ) attendee_data ON attendee_data.order_id = o.id
              ' . $eventWhere . ' ORDER BY o.id DESC ' . $limitSql
         )->fetchAll();
+        return $this->reservationEnrichOrders($orders);
     }
 
     public function adminOrderAttendees(int $orderId): array
@@ -1458,6 +1462,7 @@ final class Ticketing
         $this->pdo->beginTransaction();
         try {
             $order = $this->lockedOrder($orderId);
+            if(($order['sales_channel']??'')==='reservation')throw new RuntimeException('Gestiona la cancelación y las devoluciones desde la ficha de reserva y pagos.',409);
             $currentStatus = (string) ($order['status'] ?? '');
             if (in_array($currentStatus, ['cancelled', 'refunded'], true)) {
                 throw new RuntimeException('Este pedido ya está ' . ($currentStatus === 'refunded' ? 'reembolsado' : 'cancelado') . '.');
@@ -1511,7 +1516,7 @@ final class Ticketing
                     (SELECT ed.status FROM email_deliveries ed WHERE ed.order_id = o.id AND ed.idempotency_key IS NOT NULL ORDER BY ed.id DESC LIMIT 1) AS email_delivery_status,
                     (SELECT dl.status FROM ticket_delivery_logs dl WHERE dl.order_id = o.id AND dl.channel = "whatsapp" AND dl.idempotency_key IS NOT NULL ORDER BY dl.id DESC LIMIT 1) AS whatsapp_delivery_status,
                     (SELECT dl.recipient FROM ticket_delivery_logs dl WHERE dl.order_id = o.id AND dl.channel = "whatsapp" AND dl.idempotency_key IS NOT NULL ORDER BY dl.id DESC LIMIT 1) AS whatsapp_recipient,
-                    o.total_cents, o.status, o.reservation_expires_at, o.paid_at, o.created_at,
+                    o.holded_status,o.holded_document_id,o.holded_document_number,o.holded_last_error,o.holded_excluded,o.total_cents, o.status, o.reservation_expires_at, o.paid_at, o.created_at,
                     CASE WHEN o.status IN ("cancelled", "refunded") THEN o.status ELSE COALESCE(o.payment_status, o.status) END AS display_status,
                     ' . $paymentMethod . ' AS payment_method,
                     COALESCE(items.ticket_quantity, 0) AS ticket_quantity, items.event_title
@@ -1528,7 +1533,7 @@ final class Ticketing
         $statement->execute([$orderId]);
         $order = $statement->fetch();
         if ($order) {
-            return $order;
+            return $this->reservationEnrichOrders([$order])[0];
         }
         throw new RuntimeException('Pedido no encontrado.');
     }
@@ -2330,7 +2335,7 @@ final class Ticketing
              WHERE m.event_id = ? ORDER BY m.id DESC LIMIT 100'
         );
         $history->execute([$eventId]);
-        return ['metrics' => $metrics, 'attendees' => $tickets, 'history' => $history->fetchAll()];
+        return ['metrics' => $metrics, 'attendees' => $tickets, 'history' => $history->fetchAll(), 'pending_reservations'=>$includeOrderNotes?array_values(array_filter($this->reservationEventOrders($eventId),fn($o)=>$this->reservationActive($o)&&(int)$o['outstanding_cents']>0)):[]];
     }
 
     /** Pedidos cobrados de un evento, listos para el PDF de cierre de caja. */
@@ -2363,6 +2368,7 @@ final class Ticketing
                 WHERE toi.event_id = ? AND t.event_id = ? AND t.status = "issued"
                 GROUP BY toi.order_id
              ) issued ON issued.order_id = o.id
+             WHERE o.sales_channel<>"reservation"
              ORDER BY o.created_at ASC, o.id ASC'
         );
         $rows->execute([$eventId, $eventId]);
@@ -2380,7 +2386,7 @@ final class Ticketing
             }
             $totals['total_cents'] += $amount;
         }
-        return ['orders' => $orders, 'totals' => $totals];
+        return $this->reservationPaymentReport($eventId,$orders,$totals);
     }
 
     public function reverseTicketCheckIn(int $eventId, string $code, string $reason = ''): array
@@ -2650,27 +2656,31 @@ final class Ticketing
 
     private function eventMetrics(int $eventId): array
     {
+        $excludeManaged=$this->cashOrderSchemaAvailable()?' AND tor.sales_channel<>"reservation"':'';
+        $includeManaged=$this->cashOrderSchemaAvailable()?' OR tor.sales_channel="reservation"':'';
         $stmt = $this->pdo->prepare(
             'SELECT
-              COALESCE(SUM(CASE WHEN (tor.status="paid" OR (tor.status="pending" AND tor.order_status="confirmed" AND tor.reservation_expires_at IS NULL)) THEN toi.quantity ELSE 0 END), 0) AS sold,
-              COALESCE(SUM(CASE WHEN tor.status IN ("pending","payment_processing") AND (tor.reservation_expires_at > NOW() OR (tor.status="payment_processing" AND tor.order_status="confirmed" AND tor.reservation_expires_at IS NULL)) THEN toi.quantity ELSE 0 END), 0) AS reserved,
-              COALESCE(SUM(CASE WHEN tor.status="paid" THEN toi.total_cents ELSE 0 END), 0) AS revenue_cents
+              COALESCE(SUM(CASE WHEN (tor.status="paid" OR (tor.status="pending" AND tor.order_status="confirmed" AND tor.reservation_expires_at IS NULL' . $excludeManaged . ')) THEN toi.quantity ELSE 0 END), 0) AS sold,
+              COALESCE(SUM(CASE WHEN tor.status IN ("pending","payment_processing") AND (tor.reservation_expires_at > NOW() OR ((tor.status="payment_processing"' . $includeManaged . ') AND tor.order_status="confirmed" AND tor.reservation_expires_at IS NULL)) THEN toi.quantity ELSE 0 END), 0) AS reserved,
+              COALESCE(SUM(CASE WHEN tor.status="paid"' . $excludeManaged . ' THEN toi.total_cents ELSE 0 END), 0) AS revenue_cents
              FROM ticket_order_items toi JOIN ticket_orders tor ON tor.id=toi.order_id WHERE toi.event_id=? AND tor.is_test = 0'
         );
         $stmt->execute([$eventId]);
         $row = $stmt->fetch() ?: [];
-        return ['sold' => (int) ($row['sold'] ?? 0), 'reserved' => (int) ($row['reserved'] ?? 0), 'revenue_cents' => (int) ($row['revenue_cents'] ?? 0)];
+        return ['sold' => (int) ($row['sold'] ?? 0), 'reserved' => (int) ($row['reserved'] ?? 0), 'revenue_cents' => (int) ($row['revenue_cents'] ?? 0) + $this->reservationRevenue($eventId)];
     }
 
     private function ticketMetrics(int $ticketTypeId): array
     {
         $manualCondition = $this->manualReserveInventorySchemaAvailable() ? 'tor.inventory_mode="manual_reserve"' : '0';
+        $excludeManaged=$this->cashOrderSchemaAvailable()?' AND tor.sales_channel<>"reservation"':'';
+        $includeManaged=$this->cashOrderSchemaAvailable()?' OR tor.sales_channel="reservation"':'';
         $stmt = $this->pdo->prepare(
             'SELECT
-              COALESCE(SUM(CASE WHEN (tor.status="paid" OR (tor.status="pending" AND tor.order_status="confirmed" AND tor.reservation_expires_at IS NULL)) THEN toi.quantity ELSE 0 END), 0) AS sold,
-              COALESCE(SUM(CASE WHEN tor.status IN ("pending","payment_processing") AND (tor.reservation_expires_at > NOW() OR (tor.status="payment_processing" AND tor.order_status="confirmed" AND tor.reservation_expires_at IS NULL)) THEN toi.quantity ELSE 0 END), 0) AS reserved,
-              COALESCE(SUM(CASE WHEN (tor.status="paid" OR (tor.status="pending" AND tor.order_status="confirmed" AND tor.reservation_expires_at IS NULL)) AND ' . $manualCondition . ' THEN toi.quantity ELSE 0 END), 0) AS manual_sold,
-              COALESCE(SUM(CASE WHEN tor.status IN ("pending","payment_processing") AND (tor.reservation_expires_at > NOW() OR (tor.status="payment_processing" AND tor.order_status="confirmed" AND tor.reservation_expires_at IS NULL)) AND ' . $manualCondition . ' THEN toi.quantity ELSE 0 END), 0) AS manual_reserved
+              COALESCE(SUM(CASE WHEN (tor.status="paid" OR (tor.status="pending" AND tor.order_status="confirmed" AND tor.reservation_expires_at IS NULL' . $excludeManaged . ')) THEN toi.quantity ELSE 0 END), 0) AS sold,
+              COALESCE(SUM(CASE WHEN tor.status IN ("pending","payment_processing") AND (tor.reservation_expires_at > NOW() OR ((tor.status="payment_processing"' . $includeManaged . ') AND tor.order_status="confirmed" AND tor.reservation_expires_at IS NULL)) THEN toi.quantity ELSE 0 END), 0) AS reserved,
+              COALESCE(SUM(CASE WHEN (tor.status="paid" OR (tor.status="pending" AND tor.order_status="confirmed" AND tor.reservation_expires_at IS NULL' . $excludeManaged . ')) AND ' . $manualCondition . ' THEN toi.quantity ELSE 0 END), 0) AS manual_sold,
+              COALESCE(SUM(CASE WHEN tor.status IN ("pending","payment_processing") AND (tor.reservation_expires_at > NOW() OR ((tor.status="payment_processing"' . $includeManaged . ') AND tor.order_status="confirmed" AND tor.reservation_expires_at IS NULL)) AND ' . $manualCondition . ' THEN toi.quantity ELSE 0 END), 0) AS manual_reserved
              FROM ticket_order_items toi JOIN ticket_orders tor ON tor.id=toi.order_id WHERE toi.ticket_type_id=? AND tor.is_test = 0'
         );
         $stmt->execute([$ticketTypeId]);
@@ -3342,7 +3352,7 @@ final class Ticketing
         throw new RuntimeException('No se pudo generar numero de pedido Redsys.');
     }
 
-    private function redsysForm(string $redsysOrder, int $amountCents, array $event, string $publicToken, string $paymentMethod = 'card'): array
+    private function redsysForm(string $redsysOrder, int $amountCents, array $event, string $publicToken, string $paymentMethod = 'card', ?string $returnPath = null): array
     {
         $base = app_base_url();
         $params = [
@@ -3353,8 +3363,8 @@ final class Ticketing
             'DS_MERCHANT_TRANSACTIONTYPE' => env_value('REDSYS_TRANSACTION_TYPE', '0'),
             'DS_MERCHANT_TERMINAL' => $this->redsys->terminal(),
             'DS_MERCHANT_MERCHANTURL' => $base . '/api/redsys/notification',
-            'DS_MERCHANT_URLOK' => $base . '/entradas/pago/correcto/?token=' . rawurlencode($publicToken),
-            'DS_MERCHANT_URLKO' => $base . '/entradas/pago/error/?token=' . rawurlencode($publicToken),
+            'DS_MERCHANT_URLOK' => $returnPath ? $base . $returnPath : $base . '/entradas/pago/correcto/?token=' . rawurlencode($publicToken),
+            'DS_MERCHANT_URLKO' => $returnPath ? $base . $returnPath : $base . '/entradas/pago/error/?token=' . rawurlencode($publicToken),
             'DS_MERCHANT_MERCHANTNAME' => 'Perigallo',
             'DS_MERCHANT_PRODUCTDESCRIPTION' => mb_substr('Entradas ' . preg_replace('/[^A-Za-z0-9 \\-]/', '', (string) $event['title']), 0, 120),
         ];
@@ -3603,7 +3613,7 @@ final class Ticketing
         }
     }
 
-    private function generateTicketsOnce(int $orderId, string $ticketStatus = 'issued'): void
+    private function generateTicketsOnce(int $orderId, string $ticketStatus = 'issued', bool $fillMissing = false): void
     {
         if (!in_array($ticketStatus, ['issued', 'blocked'], true)) {
             throw new InvalidArgumentException('El estado inicial de la entrada no es válido.');
@@ -3612,7 +3622,7 @@ final class Ticketing
             'SELECT COUNT(*) FROM tickets t JOIN ticket_order_items toi ON toi.id = t.order_item_id WHERE toi.order_id = ?'
         );
         $existing->execute([$orderId]);
-        if ((int) $existing->fetchColumn() > 0) {
+        if ((int) $existing->fetchColumn() > 0 && !$fillMissing) {
             return;
         }
         $orderStmt = $this->pdo->prepare('SELECT is_test, test_reference FROM ticket_orders WHERE id = ?');
@@ -3628,7 +3638,8 @@ final class Ticketing
             'UPDATE ticket_attendees SET ticket_id = ?, updated_at = NOW() WHERE order_item_id = ? AND ticket_sequence = ?'
         );
         foreach ($items->fetchAll() as $item) {
-            for ($i = 0; $i < (int) $item['quantity']; $i++) {
+            $start=0;if($fillMissing){$q=$this->pdo->prepare('SELECT COUNT(*) FROM tickets WHERE order_item_id=? AND status NOT IN ("cancelled","refunded")');$q->execute([$item['id']]);$start=(int)$q->fetchColumn();}
+            for ($i = $start; $i < (int) $item['quantity']; $i++) {
                 $token = public_token(32);
                 $code = !empty($order['is_test'])
                     ? 'PG-TEST-' . strtoupper(substr(bin2hex(random_bytes(7)), 0, 10))

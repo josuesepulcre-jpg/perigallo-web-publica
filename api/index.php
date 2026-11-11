@@ -42,6 +42,29 @@ try {
         return $instance ??= new HoldedSyncService(Database::pdo(), new HoldedClient());
     };
 
+    if (preg_match('#^/reservation-payment-links/([A-Za-z0-9_-]{30,96})(/start)?$#',$path,$m)) {
+        header('Cache-Control: private, no-store');
+        if($method==='GET'&&empty($m[2]))json_response(['ok'=>true,'link'=>$ticketing()->reservationPublicLink($m[1])]);
+        elseif($method==='POST'&&!empty($m[2]))json_response(['ok'=>true,'payment'=>$ticketing()->startReservationLink($m[1])]);
+        else json_response(['ok'=>false,'error'=>'Método no permitido.'],405);
+        return;
+    }
+    if (preg_match('#^/admin/reservations(?:/(meta|[0-9]+)(?:/(payments|refunds|links|cancel)(?:/([0-9]+)/cancel)?)?)?$#',$path,$m)) {
+        AdminAuth::require();header('Cache-Control: private, no-store');
+        if($method==='GET'&&($m[1]??'')==='meta') { json_response(['ok'=>true]+$ticketing()->adminCashOrderMeta()+['can_edit_price'=>!empty(AdminAuth::sessionPayload()['is_owner'])]);return; }
+        if($method==='GET'&&!empty($m[1])&&empty($m[2])) { json_response(['ok'=>true]+$ticketing()->adminReservationDetail((int)$m[1]));return; }
+        AdminAuth::requireCsrf();$data=read_json_body();$id=(int)($m[1]??0);$action=$m[2]??'';$actor=AdminAuth::operatorName();
+        if($method==='POST'&&!$id)$result=$ticketing()->adminCreateReservation($data,$actor,!empty(AdminAuth::sessionPayload()['is_owner']));
+        elseif($method==='PUT'&&$id&&!$action)$result=$ticketing()->adminUpdateReservation($id,$data,$actor,!empty(AdminAuth::sessionPayload()['is_owner']));
+        elseif($method==='POST'&&$action==='payments')$result=$ticketing()->adminReservationPayment($id,$data,$actor);
+        elseif($method==='POST'&&$action==='refunds'){AdminAuth::requireOwner();$result=$ticketing()->adminReservationPayment($id,$data,$actor,true);}
+        elseif($method==='POST'&&$action==='links'&&!empty($m[3]))$result=$ticketing()->adminCancelReservationLink($id,(int)$m[3],$data,$actor,!empty(AdminAuth::sessionPayload()['is_owner']));
+        elseif($method==='POST'&&$action==='links')$result=$ticketing()->adminReservationLink($id,$data,$actor);
+        elseif($method==='POST'&&$action==='cancel')$result=$ticketing()->adminCancelReservation($id,$data,$actor);
+        else {json_response(['ok'=>false,'error'=>'Método no permitido.'],405);return;}
+        json_response(['ok'=>true]+$result,$id?200:201);return;
+    }
+
     if (preg_match('#^/season-reservations(?:/([A-Za-z0-9_-]+)(/start-payment)?)?$#', $path, $season)) {
         header('Cache-Control: no-store');
         if((int)($_SERVER['CONTENT_LENGTH']??0)>12000){json_response(['error'=>'La solicitud es demasiado grande.'],413);return;}
@@ -831,7 +854,7 @@ try {
     error_log('Perigallo database operation failed. SQLSTATE: ' . (string) $e->getCode());
     json_response(['ok' => false, 'error' => 'No se pudo procesar la solicitud.'], 500);
 } catch (RuntimeException $e) {
-    if (in_array($e->getCode(), [409, 422, 429, 503], true)) {
+    if (in_array($e->getCode(), [403, 404, 409, 422, 429, 503], true)) {
         if ($e->getCode() === 503) header('Retry-After: 15');
         json_response(['ok' => false, 'error' => $e->getMessage()], $e->getCode());
         return;

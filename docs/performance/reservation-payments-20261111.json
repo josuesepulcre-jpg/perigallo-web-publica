@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "anonymousRejected": true,
+    "csrfRejected": true,
+    "accessRoleRejected": true,
+    "priceOverrideOwnerOnly": true,
+    "refundOwnerOnly": true,
+    "operatorReceiptAllowed": true
+  },
+  "environment": "PHP 8.5 / MariaDB 12.3 local, real transactions; no external services",
+  "read": {
+    "n": 20,
+    "p50": 3.895917000000054,
+    "p95": 4.217333000000053,
+    "max": 6.491875000000164
+  },
+  "durableCanonicalReceipt": {
+    "n": 20,
+    "p50": 6.620417000000089,
+    "p95": 6.972083999999995,
+    "max": 8.192833000000064
+  }
+}

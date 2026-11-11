@@ -215,7 +215,7 @@
       published: events.filter(function (event) { return event.visible; }).length,
       sold: events.reduce(function (total, event) { return total + Number(event.sold || 0); }, 0),
       pending: events.reduce(function (total, event) { return total + Number(event.available || 0); }, 0),
-      revenue: paid.reduce(function (total, order) { return total + Number(order.total_cents || 0); }, 0)
+      revenue: events.reduce(function(total,event){return total+Number(event.revenue_cents||0);},0)
     };
   }
 
@@ -257,7 +257,7 @@
       '<section class="admin-dashboard-section"><div class="admin-section-label"><div><span class="ticket-eyebrow">Actividad reciente</span><h2>Últimos pedidos</h2></div><a class="text-action" href="/admin/ventas/">Reservas y ventas</a></div><div class="admin-recent-orders">' + renderOrdersRows(orders.slice(0, 6), true) + '</div></section>';
   }
 
-  function isClosedOrder(order) { return [order.display_status, order.status, order.order_status, order.payment_status].some(function (status) { return status === "cancelled" || status === "refunded"; }); }
+  function isClosedOrder(order) { if(order.is_reservation)return order.occupancy_status==='cancelled'; return [order.display_status, order.status, order.order_status, order.payment_status].some(function (status) { return status === "cancelled" || status === "refunded"; }); }
 
   function isDoorPaymentPending(order) {
     return !isClosedOrder(order) && order.sales_channel === "cash" && order.order_status === "confirmed" && !order.reservation_expires_at && order.status === "pending" && order.payment_status !== "paid" && order.cash_payment_status !== "paid";
@@ -294,8 +294,10 @@
   }
 
   function salesOrderMatches(order, activeFilter) {
+    if (activeFilter === 'reservations') return !!order.is_reservation && Number(order.is_test)!==1;
     var displayStatus = isExpiredReservation(order) ? "expired" : isDoorPaymentPending(order) ? "door_pending" : (order.display_status || order.payment_status || order.status);
     if (activeFilter !== "tests" && Number(order.is_test) === 1) return false;
+    if(order.is_reservation && activeFilter==="refunded")return Number(order.refunded_cents)>0;
     if (activeFilter === "open") return isSoldOrder(order) || isPendingReservation(order);
     if (activeFilter === "expired") return isExpiredReservation(order);
     if (activeFilter === "active") return Number(order.is_test) !== 1 && isSoldOrder(order);
@@ -317,6 +319,7 @@
   }
 
   function orderOrigin(order) {
+    if(order.is_reservation)return 'Reserva manual';
     if (/^\[season-op:/.test(order.cash_payment_notes || "")) return "Reserva web";
     return order.sales_channel === "cash" ? "Gestión manual · efectivo" : order.sales_channel === "manual_card" ? "Gestión manual · tarjeta" : "Compra web";
   }
@@ -444,6 +447,7 @@
   }
 
   function orderActions(order) {
+    if(order.is_reservation && window.PerigalloReservations) return window.PerigalloReservations.actions(order);
     if (!state.session || state.session.role !== "admin") return "";
     var actions = '<div class="admin-order-actions"><a class="text-action" href="/entradas/pedido/?token=' + encodeURIComponent(order.public_token) + '" target="_blank" rel="noopener noreferrer">Ver pedido</a><button type="button" class="text-action" data-order-action="edit" data-order-id="' + Number(order.id) + '">Editar</button>';
     actions += manualTicketWhatsAppLink(order);
@@ -472,6 +476,7 @@
       var reference = order.redsys_order || order.test_reference || ("Pedido " + order.id);
       var displayStatus = isExpiredReservation(order) ? "expired" : isDoorPaymentPending(order) ? "door_pending" : (order.display_status || order.payment_status || order.status);
       var paymentMethod = order.payment_method === "cash" ? "Efectivo" : (order.payment_method === "bizum" ? "Bizum" : "Tarjeta");
+      if(order.is_reservation){var methods=Object.keys(order.payments_by_method||{}).filter(function(m){return Number(order.payments_by_method[m])!==0;});paymentMethod=methods.length>1?'Cobros mixtos':({cash:'Efectivo',card_online:'Tarjeta online',card_present:'Tarjeta presencial',bank_transfer:'Transferencia',other:'Otros'})[methods[0]]||'Sin cobros registrados';}
       var cashStatus = order.sales_channel === "cash" ? ' · ' + (order.cash_payment_status === "paid" ? "Cobrado" : "Pendiente de cobro") : (order.sales_channel === "manual_card" ? ' · ' + (order.payment_status === "paid" ? "Cobrado con tarjeta" : "Pago con tarjeta pendiente") : "");
       var discount = Number(order.discount_amount_cents || 0);
       var amount = discount
@@ -492,7 +497,8 @@
         (order.cash_payment_recorded_by ? '<small>Cobro registrado por: ' + escapeHtml(order.cash_payment_recorded_by) + '</small>' : '');
       if (isPendingReservation(order)) delivery = '<small>Reserva pendiente de pago · entradas todavía sin emitir</small>';
       if (isExpiredReservation(order)) delivery = '<small>Reserva caducada · enlace de pago no disponible</small>';
-      return '<article class="admin-order-row"><div><strong>' + escapeHtml(order.name || "Comprador sin nombre") + '</strong><small>' + escapeHtml(order.event_title || "Evento por asignar") + ' · ' + escapeHtml(reference) + ' · ' + paymentMethod + cashStatus + allergySummary + (Number(order.is_test) ? ' · Prueba' : '') + '</small>' + metadata + paymentNote + holded + delivery + '</div><span>' + Number(order.ticket_quantity || 0) + ' entrada' + (Number(order.ticket_quantity || 0) === 1 ? "" : "s") + '</span><span class="status-pill status-' + escapeHtml(displayStatus) + '">' + escapeHtml(statusLabel(displayStatus)) + '</span><span class="admin-order-amount">' + amount + '</span>' + (compact ? (manualTicketWhatsAppLink(order) ? '<div class="admin-order-actions">' + manualTicketWhatsAppLink(order) + '</div>' : "") : orderActions(order)) + '</article>';
+      if(order.is_reservation)amount='<strong>'+formatMoney(order.total_cents)+'</strong><small>Pagado '+formatMoney(order.paid_cents)+' · Pendiente '+formatMoney(order.outstanding_cents)+'</small>';
+      return '<article class="admin-order-row"><div><strong>' + escapeHtml(order.name || "Comprador sin nombre") + '</strong><small>' + escapeHtml(order.event_title || "Evento por asignar") + ' · ' + escapeHtml(reference) + ' · ' + paymentMethod + cashStatus + allergySummary + (Number(order.is_test) ? ' · Prueba' : '') + '</small>' + metadata + paymentNote + holded + delivery + '</div><span>' + Number(order.ticket_quantity || 0) + (order.is_reservation?' plaza':' entrada') + (Number(order.ticket_quantity || 0) === 1 ? "" : "s") + '</span>' + (order.is_reservation && window.PerigalloReservations ? window.PerigalloReservations.pill(order) : '<span class="status-pill status-' + escapeHtml(displayStatus) + '">' + escapeHtml(statusLabel(displayStatus)) + '</span>') + '<span class="admin-order-amount">' + amount + '</span>' + (compact ? (manualTicketWhatsAppLink(order) ? '<div class="admin-order-actions">' + manualTicketWhatsAppLink(order) + '</div>' : "") : orderActions(order)) + '</article>';
     }).join("");
   }
 
@@ -654,6 +660,7 @@
       var paymentListButton = root.querySelector("[data-download-payment-list]");
       var paymentListStatus = root.querySelector("[data-payment-list-status]");
       function renderSalesSummary() {
+        if(window.PerigalloReservations){var target=root.querySelector("[data-admin-sales-summary]");if(target)target.innerHTML=window.PerigalloReservations.summary(state.orders,{isClosedOrder:isClosedOrder,isSoldOrder:isSoldOrder,isPendingReservation:isPendingReservation,isDoorPaymentPending:isDoorPaymentPending});return;}
         var summary = root.querySelector("[data-admin-sales-summary]");
         if (!summary) return;
         var paid = state.orders.filter(function (order) { return Number(order.is_test) !== 1 && !isClosedOrder(order) && (order.payment_status === "paid" || order.status === "paid"); });
@@ -671,11 +678,11 @@
       function render(filter) {
         var term = String(filter || "").trim().toLowerCase();
         var rows = state.orders.filter(function (order) {
-          return salesOrderMatches(order, activeFilter) && (!term || [order.name, order.email, order.phone, order.redsys_order, order.test_reference, order.event_title, orderNotes(order), orderOrigin(order), order.payment_status, order.display_status, isDoorPaymentPending(order) ? "vendida pago en puerta pendiente" : ""].join(" ").toLowerCase().includes(term));
+          return salesOrderMatches(order, activeFilter) && (!root.querySelector('[data-reservation-economic-filter]')?.value || (order.economic_status||order.payment_status||order.status)===root.querySelector('[data-reservation-economic-filter]').value) && (!term || [order.name, order.email, order.phone, order.redsys_order, order.test_reference, order.event_title, orderNotes(order), orderOrigin(order), order.payment_status, order.display_status, isDoorPaymentPending(order) ? "vendida pago en puerta pendiente" : ""].join(" ").toLowerCase().includes(term));
         });
         root.querySelector("[data-admin-orders-list]").innerHTML = !selectedSalesEvent
           ? '<div class="admin-empty"><strong>Selecciona un evento para consultar sus ventas.</strong></div>'
-          : rows.length ? renderOrdersRows(rows, false) : '<div class="admin-empty"><strong>No hay pedidos con estos filtros para el evento seleccionado.</strong></div>';
+          : rows.length ? (activeFilter==='reservations'&&window.PerigalloReservations?window.PerigalloReservations.table(rows):renderOrdersRows(rows, false)) : '<div class="admin-empty"><strong>No hay pedidos con estos filtros para el evento seleccionado.</strong></div>';
         if (status) status.textContent = selectedSalesEvent ? rows.length + (rows.length === 1 ? " pedido mostrado" : " pedidos mostrados") : '';
         var context = root.querySelector("[data-sales-event-context]");
         var event = state.events.find(function (item) { return Number(item.id) === selectedSalesEvent; });
@@ -693,6 +700,11 @@
           render(search.value);
         }).catch(function (error) { if (sequence === salesLoadSequence) renderPageError(error.message); });
       }
+      if(window.PerigalloReservations)window.PerigalloReservations.init({root:root,session:sessionData,read:request,request:jsonRequest,selectedEvent:function(){return selectedSalesEvent;},error:renderPageError,onChange:function(data){
+        var eventId=Number(data.items?.[0]?.event_id);if(eventId&&eventId!==selectedSalesEvent){salesEvent.value=String(eventId);salesEvent.dispatchEvent(new Event('change'));return;}
+        var index=state.orders.findIndex(function(o){return Number(o.id)===Number(data.order.id);});if(index>=0)state.orders[index]=Object.assign({},state.orders[index],data.order);else state.orders.unshift(data.order);render(search.value);
+      }});
+      root.querySelector('[data-reservation-economic-filter]')?.addEventListener('change',function(){render(search.value);});
       function setCashStatus(message) {
         var target = form && form.querySelector("[data-cash-order-status]");
         if (target) target.textContent = message || "";
@@ -1083,6 +1095,7 @@
         setDoorListStatus("Preparando lista de invitados…");
         request(api + "/admin/events/" + eventId + "/attendees/print-list").then(function (data) {
           var attendees = (data.attendees || []).filter(function (attendee) { return attendee.status === "issued"; });
+          (data.pending_reservations||[]).forEach(function(o){for(var n=0;n<Number(o.ticket_quantity);n++)attendees.push({order_id:o.id,buyer_name:o.name,name:n===0?o.name:'',order_reference:o.redsys_order,payment_status:'pending',order_total_cents:o.outstanding_cents,status:'reservation',access_status:'not_entered'});});
           createDoorListPdf(attendees, event);
           setDoorListStatus(attendees.length + (attendees.length === 1 ? " invitado incluido en el PDF." : " invitados incluidos en el PDF."), "success");
         }).catch(function (error) {
@@ -1090,7 +1103,7 @@
         }).finally(function () { doorListButton.disabled = false; });
       }
       function paymentMethodLabel(method) {
-        return ({ cash: "Efectivo", bizum: "Bizum", card: "Tarjeta" })[method] || "Tarjeta";
+        return ({ cash: "Efectivo", bizum: "Bizum", card: "Tarjeta", card_online:"Tarjeta online",card_present:"Tarjeta presencial",bank_transfer:"Transferencia",other:"Otro",mixed:"Mixto" })[method] || "Tarjeta";
       }
       function setPaymentListStatus(message, stateName) {
         if (!paymentListStatus) return;
@@ -1123,6 +1136,8 @@
           pdf.text(attendeePdfText((event && event.title) || "Evento"), margin, 19);
           pdf.text(orders.length + (orders.length === 1 ? " pedido cobrado" : " pedidos cobrados"), pageWidth - margin, 19, { align: "right" });
           var summary = "Total: " + formatMoney(totals.total_cents) + " · Efectivo: " + formatMoney(totals.cash_cents) + " · Tarjeta: " + formatMoney(totals.card_cents);
+          if(Number(totals.bank_transfer_cents||0))summary+=" · Transferencia: "+formatMoney(totals.bank_transfer_cents);
+          if(Number(totals.other_cents||0))summary+=" · Otros: "+formatMoney(totals.other_cents);
           if (Number(totals.bizum_cents || 0) > 0) summary += " · Bizum: " + formatMoney(totals.bizum_cents);
           pdf.setFontSize(7);
           pdf.text(summary, margin, 24);
