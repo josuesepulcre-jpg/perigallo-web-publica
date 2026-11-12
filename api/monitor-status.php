@@ -10,7 +10,11 @@ if (!in_array($_SERVER['REQUEST_METHOD'] ?? 'GET',['GET','HEAD'],true)) {
     http_response_code(405); header('Allow: GET, HEAD'); echo '{"ok":false}'; return;
 }
 $file='/var/www/vhosts/perigallo.com/private/ops-monitor/public.json';
+$level=$_GET['level'] ?? 'all';
+if (!in_array($level,['all','critical'],true)) {
+    http_response_code(400); echo '{"ok":false}'; return;
+}
 $raw=is_readable($file) && filesize($file)<=1024 ? @file_get_contents($file) : null;
-$ok=\Perigallo\Ticketing\MonitorStatus::healthy(is_string($raw)?$raw:null,time());
+$ok=\Perigallo\Ticketing\MonitorStatus::healthy(is_string($raw)?$raw:null,time(),$level==='critical');
 http_response_code($ok?200:503);
 echo $ok?'{"ok":true}':'{"ok":false}';
