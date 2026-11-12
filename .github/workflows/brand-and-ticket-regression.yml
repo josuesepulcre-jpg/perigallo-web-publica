@@ -22,6 +22,7 @@ jobs:
           php tests/ticket-mail-idempotency-test.php
           php tests/database-pressure-test.php
           php tests/redsys-secret-key-test.php
+          php tests/monitor-status-test.php
       - name: Verify private Instagram simulation boundaries
         run: |
           php tests/instagram-agent-service-test.php
