@@ -85,4 +85,16 @@ check($p->query('SELECT t.id FROM tickets t JOIN ticket_order_items i ON i.id=t.
 $edit['items'][0]['quantity']=6;$edit['expected_revision']=$mixed['order']['reservation_revision'];$mixed=$t->adminUpdateReservation($mixedId,$edit,'qa',true);check(activeTickets($mixedId),0,'extra place blocks unpaid tickets');$mixed=pay($mixed,'65');check(activeTickets($mixedId),7,'additional place creates one extra QR');
 $p->prepare('UPDATE tickets SET entry_count=1 WHERE id=?')->execute([$qrIds[0]]);$edit['items'][0]['quantity']=7;$edit['expected_revision']=$mixed['order']['reservation_revision'];rejected(fn()=>$t->adminUpdateReservation($mixedId,$edit,'qa',true),'used mixed QR prevents seat changes');
 echo "PASS mixed adult/child menus, activation, per-menu and event capacity, price permissions, edits, payments and QR preservation\n";
+// Event availability respects both its physical capacity and enabled ticket quotas.
+$quota=fixture(100);$quota['quantity']=6;$quotaType=$quota['ticket_type_id'];$quotaEvent=$quota['event_id'];
+$p->prepare('UPDATE ticket_types SET capacity=80 WHERE id=?')->execute([$quotaType]);$quotaReservation=$t->adminCreateReservation($quota,'qa',true);
+$e=$t->adminGetEvent($quotaEvent);check($e['capacity'],100,'physical event capacity unchanged');check($e['ticket_capacity'],80,'ticket quota is 80');check($e['available'],74,'80 tickets less six reservations');
+$child=$t->adminCreateTicketType($quotaEvent,['name'=>'Infantil','price_cents'=>2800,'capacity'=>20,'tax_rate'=>0]);$p->prepare('UPDATE ticket_types SET status="on_sale",active=1 WHERE id=?')->execute([$child['id']]);
+$e=$t->adminGetEvent($quotaEvent);check($e['ticket_capacity'],100,'enabled menu quotas are combined');check($e['available'],94,'combined 100 less six reservations');
+$p->prepare('UPDATE ticket_types SET active=0 WHERE id=?')->execute([$child['id']]);check($t->adminGetEvent($quotaEvent)['available'],74,'disabled ticket quota excluded');
+$p->prepare('UPDATE ticket_types SET active=1,status="draft" WHERE id=?')->execute([$child['id']]);check($t->adminGetEvent($quotaEvent)['available'],74,'draft ticket quota excluded');
+$p->prepare('UPDATE ticket_types SET capacity=20,manual_reserve_capacity=10 WHERE id=?')->execute([$quotaType]);check($t->adminGetEvent($quotaEvent)['available'],24,'manual quota contributes once');
+$p->prepare('UPDATE events SET capacity=20 WHERE id=?')->execute([$quotaEvent]);check($t->adminGetEvent($quotaEvent)['available'],14,'physical event capacity still caps saleable tickets');
+$p->prepare('UPDATE ticket_types SET capacity=0,manual_reserve_capacity=0 WHERE id=?')->execute([$quotaType]);check($t->adminGetEvent($quotaEvent)['available'],0,'historical commitments beyond quota never underflow');
+echo "PASS event availability respects enabled menus, manual quotas and physical capacity\n";
 echo "PASS reservation lifecycle, mixed payments, signed callbacks, reports, refunds, idempotency, permissions, QR and concurrent capacity\n";

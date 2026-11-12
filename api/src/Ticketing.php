@@ -2539,7 +2539,9 @@ final class Ticketing
         $event['faq'] = $this->decodedArray($event['faq_json'] ?? null);
         $event['sold'] = $metrics['sold'];
         $event['reserved'] = $metrics['reserved'];
-        $event['available'] = max(0, $event['capacity'] - $metrics['sold'] - $metrics['reserved']);
+        $committed=$metrics['sold']+$metrics['reserved'];
+        $event['available'] = min(max(0, $event['capacity'] - $committed), $this->eventTicketAvailability((int)$event['id']));
+        $event['ticket_capacity'] = min($event['capacity'], $committed + $event['available']);
         $event['revenue_cents'] = $metrics['revenue_cents'];
         $event['effective_status'] = $this->eventEffectiveStatus($event);
         return $event;
@@ -2668,6 +2670,22 @@ final class Ticketing
         $stmt->execute([$eventId]);
         $row = $stmt->fetch() ?: [];
         return ['sold' => (int) ($row['sold'] ?? 0), 'reserved' => (int) ($row['reserved'] ?? 0), 'revenue_cents' => (int) ($row['revenue_cents'] ?? 0) + $this->reservationRevenue($eventId)];
+    }
+
+    /** Remaining enabled ticket quotas, bounded separately by the physical event capacity. */
+    private function eventTicketAvailability(int $eventId): int
+    {
+        $manual=$this->manualReserveInventorySchemaAvailable()?'tt.manual_reserve_capacity':'0';
+        $q=$this->pdo->prepare('SELECT COALESCE(SUM(GREATEST(0,CAST(tt.capacity AS SIGNED)+CAST('.$manual.' AS SIGNED)-COALESCE(used.quantity,0))),0)
+            FROM ticket_types tt LEFT JOIN (
+                SELECT i.ticket_type_id,SUM(i.quantity) quantity FROM ticket_order_items i JOIN ticket_orders o ON o.id=i.order_id
+                WHERE i.event_id=? AND o.is_test=0 AND (
+                    o.status="paid" OR (o.status="pending" AND o.order_status="confirmed" AND o.reservation_expires_at IS NULL)
+                    OR (o.status IN ("pending","payment_processing") AND (o.reservation_expires_at>NOW() OR (o.status="payment_processing" AND o.order_status="confirmed" AND o.reservation_expires_at IS NULL)))
+                ) GROUP BY i.ticket_type_id
+            ) used ON used.ticket_type_id=tt.id
+            WHERE tt.event_id=? AND tt.active=1 AND tt.status NOT IN ("draft","archived")');
+        $q->execute([$eventId,$eventId]);return (int)$q->fetchColumn();
     }
 
     private function ticketMetrics(int $ticketTypeId): array
