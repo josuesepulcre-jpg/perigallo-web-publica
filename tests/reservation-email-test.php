@@ -46,10 +46,25 @@ $p->prepare('UPDATE email_deliveries SET status="failed" WHERE idempotency_key=?
 $p->prepare('UPDATE ticket_reservation_links SET expires_at=DATE_SUB(NOW(),INTERVAL 1 DAY) WHERE id=?')->execute([$failed]);
 try{$t->adminEmailReservationLink($order,$failed,'qa');throw new RuntimeException('expired link sent');}catch(RuntimeException $e){verify($e->getCode()===409,'expired link rejected');}
 verify(count($GLOBALS['reservation_test_messages'])===$count,'expired message not sent');
-// Missing address must not create a payment link.
+// No address is needed for internal reservations or manual payment links.
 $p->prepare('UPDATE ticket_orders SET email="" WHERE id=?')->execute([$order]);
-try{$t->adminReservationLink($order,['request_id'=>keyId(),'expected_revision'=>$r['order']['reservation_revision'],'amount_euros'=>'10'],'qa');throw new RuntimeException('missing email accepted');}catch(InvalidArgumentException $expected){}
-verify(count($t->adminReservationDetail($order)['links'])===2,'missing email creates no link');
+$count=count($GLOBALS['reservation_test_messages']);
+$body=['request_id'=>keyId(),'expected_revision'=>$r['order']['reservation_revision'],'amount_euros'=>'10','send_email'=>false];
+$r=$t->adminReservationLink($order,$body,'qa');
+verify($r['reservation_email']['status']==='skipped','missing email uses manual delivery');
+verify(count($r['links'])===3,'link created without email');
+$t->adminReservationLink($order,$body,'qa');
+verify(count($t->adminReservationDetail($order)['links'])===3,'manual link retry is idempotent');
+verify(count($GLOBALS['reservation_test_messages'])===$count,'no mail without address');
+$body=['request_id'=>keyId(),'expected_revision'=>$r['order']['reservation_revision'],'amount_euros'=>'10'];
+$r=$t->adminReservationLink($order,$body,'qa');
+verify($r['reservation_email']['status']==='skipped','legacy client without email can also create links');
+$p->prepare('UPDATE ticket_orders SET email="qa@example.invalid" WHERE id=?')->execute([$order]);
+$r=$t->adminReservationLink($order,['request_id'=>keyId(),'expected_revision'=>$r['order']['reservation_revision'],'amount_euros'=>'10','send_email'=>false],'qa');
+verify(count($GLOBALS['reservation_test_messages'])===$count,'explicit opt-out never emails');
+// Public experience checkout continues to require a real email address.
+$public=new \Perigallo\Ticketing\SeasonReservations($p,$t);
+try{$public->create(['first_name'=>'Prueba','last_name'=>'Publica','phone'=>'600000000','email'=>'']);throw new RuntimeException('public email was optional');}catch(InvalidArgumentException $expected){}
 // Real signed callback: 720 EUR reservation, 180 EUR received, 540 EUR remaining.
 $r=$t->adminCreateReservation(['request_id'=>keyId(),'event_id'=>$id,'ticket_type_id'=>$type['id'],'first_name'=>'Prueba','last_name'=>'Anticipo','phone'=>'600000000','email'=>'qa@example.invalid','quantity'=>6,'unit_price_euros'=>'120'],'qa',true);
 $receiptOrder=(int)$r['order']['id'];
