@@ -1,6 +1,17 @@
 import {readFileSync} from 'node:fs';import vm from 'node:vm';import test from 'node:test';import assert from 'node:assert/strict';
-const context=vm.createContext({window:{},Intl});vm.runInContext(readFileSync(new URL('../assets/js/admin-reservations.js',import.meta.url),'utf8'),context);const ui=context.window.PerigalloReservations;
+const context=vm.createContext({window:{},Intl,URL,location:{origin:"https://perigallo.test"}});vm.runInContext(readFileSync(new URL('../assets/js/admin-reservations.js',import.meta.url),'utf8'),context);const ui=context.window.PerigalloReservations;
 const helpers={isClosedOrder:o=>o.status==='cancelled',isSoldOrder:o=>o.status==='paid',isPendingReservation:o=>o.status==='pending',isDoorPaymentPending:()=>false};
 test('reservas muestran total, neto recibido y deuda separados y escapan datos del cliente',()=>{const html=ui.table([{id:1,name:'<script>no</script>',phone:'<bad>',redsys_order:'RES-1',ticket_quantity:8,total_cents:52000,paid_cents:32000,outstanding_cents:20000,economic_status:'partial',occupancy_status:'confirmed'}]);assert.doesNotMatch(html,/<script>|<bad>/);assert.match(html,/&lt;script&gt;/);for(const text of ['520,00','320,00','200,00','Parcialmente pagada','Confirmada','data-reservation-open="1"'])assert.ok(html.includes(text));});
 test('indicadores suman cobros parciales y métodos mixtos sin contabilizar deuda como ingreso',()=>{const rows=[{is_reservation:true,total_cents:52000,paid_cents:32000,outstanding_cents:20000,payments_by_method:{cash:12000,card_online:20000},ticket_quantity:8,economic_status:'partial',occupancy_status:'confirmed'},{status:'paid',sales_channel:'web',total_cents:13000,ticket_quantity:2}];const html=ui.summary(rows,helpers);for(const text of ['650,00','450,00','200,00','120,00','330,00'])assert.ok(html.includes(text),text);assert.match(html,/Reservas parciales<\/span><strong>1/);});
 test('cancelar libera compromisos pero conserva el dinero hasta registrar su devolución',()=>{const html=ui.summary([{is_reservation:true,total_cents:52000,paid_cents:12000,outstanding_cents:40000,payments_by_method:{cash:12000},ticket_quantity:8,economic_status:'partial',occupancy_status:'cancelled',status:'cancelled'}],helpers);assert.match(html,/Plazas comprometidas<\/span><strong>0/);assert.match(html,/Cobrado neto<\/span><strong>120,00/);assert.match(html,/Pendiente de cobro<\/span><strong>0,00/);});
+
+test('WhatsApp prepares payment and confirmation for phone-only reservations without claiming delivery',()=>{
+ const data={order:{name:'Ana',phone:'600 000 000',event_title:'Navidad',redsys_order:'R-1',ticket_quantity:6,total_cents:31600,paid_cents:10000,outstanding_cents:21600,occupancy_status:'confirmed',economic_status:'partial',public_token:'secret'},items:[{event_starts_at:'2026-12-25 14:00:00'}]};
+ const link={amount_cents:10000,expires_at:'2026-12-20 12:00:00',url:'https://perigallo.test/entradas/pago-reserva/?token=payment'};
+ const text=ui.whatsAppMessage(data,link),url=new URL(ui.whatsAppUrl(data.order.phone,text));
+ assert.equal(url.hostname,'web.whatsapp.com');assert.equal(url.searchParams.get('phone'),'34600000000');assert.equal(url.searchParams.get('text'),text);
+ for(const part of ['confirmada','2026-12-25','316,00','216,00',link.url])assert.ok(text.includes(part),part);
+ assert.doesNotMatch(text,/códigos QR|enviado/);data.order.economic_status='paid';assert.match(ui.whatsAppMessage(data),/entradas\/pedido\/\?token=secret/);
+ data.order.occupancy_status='pending';assert.match(ui.whatsAppMessage(data),/pendiente de confirmación/);
+ assert.equal(new URL(ui.whatsAppUrl('0033612345678','hola')).searchParams.get('phone'),'33612345678');
+});

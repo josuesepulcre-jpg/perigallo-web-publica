@@ -142,7 +142,7 @@ trait ReservationOperations
     public function adminReservationDetail(int $id): array
     {
         $this->reservationRequireSchema();$o=$this->adminOrderById($id);if(($o['sales_channel']??'')!=='reservation')throw new RuntimeException('Reserva no encontrada.',404);
-        $q=$this->pdo->prepare('SELECT * FROM ticket_order_items WHERE order_id=? ORDER BY id');$q->execute([$id]);$items=$q->fetchAll();
+        $q=$this->pdo->prepare('SELECT i.*,e.starts_at AS event_starts_at FROM ticket_order_items i JOIN events e ON e.id=i.event_id WHERE i.order_id=? ORDER BY i.id');$q->execute([$id]);$items=$q->fetchAll();
         $q=$this->pdo->prepare('SELECT l.*, (SELECT status FROM email_deliveries WHERE idempotency_key=CONCAT("reservation-link:",l.id)) AS email_status FROM ticket_reservation_links l WHERE order_id=? ORDER BY id DESC');$q->execute([$id]);$links=$q->fetchAll();foreach($links as &$l){$l['url']=app_base_url().'/entradas/pago-reserva/?token='.rawurlencode($l['public_token']);if($l['status']==='pending'&&strtotime($l['expires_at'])<=time())$l['status']='expired';}unset($l);
         $q=$this->pdo->prepare('SELECT action,actor,context_json,created_at FROM ticket_admin_audit_logs WHERE entity_type="ticket_order" AND entity_id=? ORDER BY id DESC LIMIT 50');$q->execute([$id]);
         return ['order'=>$o,'items'=>$items,'payments'=>$this->reservationPayments($id),'links'=>$links,'history'=>$q->fetchAll(),'processing_cents'=>$this->reservationHolds($id)];
@@ -183,7 +183,6 @@ trait ReservationOperations
         $expires=trim((string)($data['expires_at']??''));$when=$this->cashReservationExpiry($expires);$hash=$this->reservationHash([$amount,$expires]);
         $this->reservationTransaction(function()use($id,$data,$actor,$key,$amount,$when,$hash){
             $o=$this->reservationLock($id);$q=$this->pdo->prepare('SELECT request_hash FROM ticket_reservation_links WHERE order_id=? AND idempotency_key=?');$q->execute([$id,$key]);if($prior=$q->fetch()){if($prior['request_hash']!==$hash)throw new RuntimeException('Esta referencia ya corresponde a otro enlace.',409);return;}
-            if(!filter_var($o['email']??'',FILTER_VALIDATE_EMAIL))throw new InvalidArgumentException('Añade un correo válido en Editar reserva antes de generar el enlace.');
             $this->reservationVersion($o,$data);if(!$this->reservationActive($o))throw new RuntimeException('La reserva no admite nuevos enlaces de pago.',409);
             $f=$this->reservationFinance($o,$this->reservationPayments($id));$q=$this->pdo->prepare('SELECT COALESCE(SUM(amount_cents),0) FROM ticket_reservation_links WHERE order_id=? AND (status="processing" OR (status="pending" AND expires_at>NOW()))');$q->execute([$id]);if($amount>(int)$f['outstanding_cents']-(int)$q->fetchColumn())throw new RuntimeException('El importe supera el saldo libre de otros enlaces. Cancela primero los enlaces pendientes que quieras sustituir.',409);
             $expiry=$when;if(!empty($o['reservation_expires_at'])&&$o['reservation_expires_at']<$expiry)$expiry=$o['reservation_expires_at'];
@@ -191,7 +190,15 @@ trait ReservationOperations
             $this->pdo->prepare('UPDATE ticket_orders SET reservation_revision=reservation_revision+1,updated_at=NOW() WHERE id=?')->execute([$id]);$this->reservationAudit($actor,'reservation_payment_link_created',$id,['amount_cents'=>$amount,'request_id'=>$key]);
         });
         $q=$this->pdo->prepare('SELECT id FROM ticket_reservation_links WHERE order_id=? AND idempotency_key=?');$q->execute([$id,$key]);
-        return $this->adminEmailReservationLink($id,(int)$q->fetchColumn(),$actor);
+        $linkId=(int)$q->fetchColumn();
+        $detail=$this->adminReservationDetail($id);
+        $sendEmail=array_key_exists('send_email',$data)
+            ? filter_var($data['send_email'],FILTER_VALIDATE_BOOLEAN)
+            : (bool)filter_var($detail['order']['email']??'',FILTER_VALIDATE_EMAIL);
+        if(!$sendEmail)return $detail+['reservation_email'=>['status'=>'skipped','recipient'=>'']];
+        // El enlace ya está guardado aunque el correo no esté disponible.
+        if(!filter_var($detail['order']['email']??'',FILTER_VALIDATE_EMAIL))return $detail+['reservation_email'=>['status'=>'skipped','recipient'=>'']];
+        return $this->adminEmailReservationLink($id,$linkId,$actor);
     }
 
     public function adminEmailReservationLink(int $id,int $linkId,string $actor): array
@@ -305,7 +312,7 @@ trait ReservationOperations
         $q=$this->pdo->prepare('SELECT event_id FROM ticket_order_items WHERE order_id=? ORDER BY id LIMIT 1');$q->execute([$id]);$eventId=(int)$q->fetchColumn();if(!$eventId)throw new RuntimeException('Reserva no encontrada.',404);
         $this->reservationTransaction(function()use($id,$data,$actor,$canEditPrice,$contact,$qty,$eventId){
             $this->pdo->prepare('SELECT id FROM events WHERE id=? FOR UPDATE')->execute([$eventId]);$o=$this->reservationLock($id);$this->reservationVersion($o,$data);
-            $q=$this->pdo->prepare('SELECT * FROM ticket_order_items WHERE order_id=? ORDER BY id FOR UPDATE');$q->execute([$id]);$items=$q->fetchAll();if(count($items)!==1)throw new RuntimeException('Esta reserva requiere conservar su desglose de tarifas.',409);$item=$items[0];
+            $q=$this->pdo->prepare('SELECT i.*,e.starts_at AS event_starts_at FROM ticket_order_items i JOIN events e ON e.id=i.event_id WHERE i.order_id=? ORDER BY i.id FOR UPDATE');$q->execute([$id]);$items=$q->fetchAll();if(count($items)!==1)throw new RuntimeException('Esta reserva requiere conservar su desglose de tarifas.',409);$item=$items[0];
             $typeId=(int)($data['ticket_type_id']??$item['ticket_type_id']);$type=$this->lockCashTicketType($typeId,$eventId);if(!$type)throw new InvalidArgumentException('La tarifa no está disponible.');
             [$price,$base,$tax,$rate,$fee,$reference]=$this->reservationPrice($type,$data,$canEditPrice,$typeId===(int)$item['ticket_type_id']?(int)$item['unit_price_cents']:null);
             $total=$price*$qty;if($total>2000000000)throw new InvalidArgumentException('El importe de la reserva es demasiado alto.');
