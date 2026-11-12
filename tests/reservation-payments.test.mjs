@@ -6,11 +6,11 @@ test('indicadores suman cobros parciales y métodos mixtos sin contabilizar deud
 test('cancelar libera compromisos pero conserva el dinero hasta registrar su devolución',()=>{const html=ui.summary([{is_reservation:true,total_cents:52000,paid_cents:12000,outstanding_cents:40000,payments_by_method:{cash:12000},ticket_quantity:8,economic_status:'partial',occupancy_status:'cancelled',status:'cancelled'}],helpers);assert.match(html,/Plazas comprometidas<\/span><strong>0/);assert.match(html,/Cobrado neto<\/span><strong>120,00/);assert.match(html,/Pendiente de cobro<\/span><strong>0,00/);});
 
 test('WhatsApp prepares payment and confirmation for phone-only reservations without claiming delivery',()=>{
- const data={order:{name:'Ana',phone:'600 000 000',event_title:'Navidad',redsys_order:'R-1',ticket_quantity:6,total_cents:31600,paid_cents:10000,outstanding_cents:21600,occupancy_status:'confirmed',economic_status:'partial',public_token:'secret'},items:[{event_starts_at:'2026-12-25 14:00:00'}]};
+ const data={order:{name:'Ana',phone:'600 000 000',event_title:'Navidad',redsys_order:'R-1',ticket_quantity:6,total_cents:31600,paid_cents:10000,outstanding_cents:21600,occupancy_status:'confirmed',economic_status:'partial',public_token:'secret'},items:[{event_starts_at:'2026-12-25 14:00:00',ticket_type_name:'Menú adultos',quantity:4},{ticket_type_name:'Menú infantil',quantity:2}]};
  const link={amount_cents:10000,expires_at:'2026-12-20 12:00:00',url:'https://perigallo.test/entradas/pago-reserva/?token=payment'};
  const text=ui.whatsAppMessage(data,link),url=new URL(ui.whatsAppUrl(data.order.phone,text));
  assert.equal(url.hostname,'web.whatsapp.com');assert.equal(url.searchParams.get('phone'),'34600000000');assert.equal(url.searchParams.get('text'),text);
- for(const part of ['confirmada','2026-12-25','316,00','216,00',link.url])assert.ok(text.includes(part),part);
+ for(const part of ['confirmada','2026-12-25','316,00','216,00','4 × Menú adultos','2 × Menú infantil',link.url])assert.ok(text.includes(part),part);
  assert.doesNotMatch(text,/códigos QR|enviado/);data.order.economic_status='paid';assert.match(ui.whatsAppMessage(data),/entradas\/pedido\/\?token=secret/);
  data.order.occupancy_status='pending';assert.match(ui.whatsAppMessage(data),/pendiente de confirmación/);
  assert.equal(new URL(ui.whatsAppUrl('0033612345678','hola')).searchParams.get('phone'),'33612345678');

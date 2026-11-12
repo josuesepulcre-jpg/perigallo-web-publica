@@ -384,7 +384,7 @@ final class Ticketing
             return null;
         }
 
-        $items = $this->pdo->prepare('SELECT * FROM ticket_order_items WHERE order_id = ? ORDER BY id ASC');
+        $items = $this->pdo->prepare('SELECT * FROM ticket_order_items WHERE order_id = ? AND quantity > 0 ORDER BY id ASC');
         $items->execute([(int) $order['id']]);
         $orderItems = $this->orderItemsWithReference($items->fetchAll());
 

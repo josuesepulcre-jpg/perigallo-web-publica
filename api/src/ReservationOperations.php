@@ -116,24 +116,57 @@ trait ReservationOperations
         return [$price,$base,$tax,$taxRate,$fee,$reference];
     }
 
+    /** One line per enabled menu; legacy single-tariff requests remain supported. */
+    private function reservationRequestedItems(array $data): array
+    {
+        $items=$data['items']??[['ticket_type_id'=>$data['ticket_type_id']??0,'quantity'=>$data['quantity']??0]+(array_key_exists('unit_price_euros',$data)?['unit_price_euros'=>$data['unit_price_euros']]:[])];
+        if(!is_array($items)||!$items||count($items)>100)throw new InvalidArgumentException('Añade al menos un menú a la reserva.');
+        $out=[];$total=0;
+        foreach($items as $item){
+            if(!is_array($item))throw new InvalidArgumentException('El desglose de menús no es válido.');
+            $type=filter_var($item['ticket_type_id']??0,FILTER_VALIDATE_INT);$qty=filter_var($item['quantity']??0,FILTER_VALIDATE_INT);
+            if(!$type||$type<1||!$qty||$qty<1||$qty>5000||isset($out[$type]))throw new InvalidArgumentException('Revisa las tarifas y cantidades de los menús.');
+            $out[$type]=['ticket_type_id'=>$type,'quantity'=>$qty]+(array_key_exists('unit_price_euros',$item)?['unit_price_euros'=>$item['unit_price_euros']]:[]);$total+=$qty;
+        }
+        if($total>5000)throw new InvalidArgumentException('Indica entre 1 y 5000 personas en total.');
+        ksort($out);return array_values($out);
+    }
+
+    private function reservationMenuLines(int $eventId,array $requested,bool $canEditPrice,array $oldItems=[],bool $wasActive=false,string $mode='standard'): array
+    {
+        $oldByType=[];foreach($oldItems as $item)$oldByType[(int)$item['ticket_type_id']]=$item;
+        $lines=[];
+        foreach($requested as $item){
+            $typeId=$item['ticket_type_id'];$old=$oldByType[$typeId]??null;
+            $q=$this->pdo->prepare('SELECT * FROM ticket_types WHERE id=? AND event_id=? FOR UPDATE');$q->execute([$typeId,$eventId]);$type=$q->fetch();
+            if(!$type)throw new InvalidArgumentException('El menú no pertenece a este evento.');
+            $enabled=!empty($type['active'])&&!in_array($type['status'],['draft','archived'],true);
+            if(!$enabled&&(!$old||$item['quantity']>(int)$old['quantity']))throw new InvalidArgumentException('El menú '.$type['name'].' no está activo para este evento.');
+            [$price,$base,$tax,$rate,$fee,$reference]=$this->reservationPrice($type,$item,$canEditPrice,$old?(int)$old['unit_price_cents']:null);
+            $own=$wasActive&&$old?(int)$old['quantity']:0;
+            $available=$mode==='manual_reserve'?$this->manualReserveAvailableForType($type):$this->standardAvailableForType($type);
+            if($item['quantity']>$available+$own)throw new RuntimeException('No hay suficientes plazas para '.$type['name'].' en el cupo seleccionado.',409);
+            $lines[]=['type'=>$type,'quantity'=>$item['quantity'],'price'=>$price,'base'=>$base,'tax'=>$tax,'rate'=>$rate,'fee'=>$fee,'reference'=>$reference,'total'=>$price*$item['quantity'],'old'=>$old];
+        }
+        return $lines;
+    }
+
     public function adminCreateReservation(array $data,string $actor,bool $canEditPrice): array
     {
-        $this->reservationRequireSchema();$key=$this->reservationKey($data);$contact=$this->reservationContact($data);$qty=filter_var($data['quantity']??0,FILTER_VALIDATE_INT);$eventId=(int)($data['event_id']??0);$typeId=(int)($data['ticket_type_id']??0);
-        if(!$qty||$qty<1||$qty>5000||$eventId<1||$typeId<1)throw new InvalidArgumentException('Selecciona evento, tarifa y un número de personas entre 1 y 5000.');
+        $this->reservationRequireSchema();$key=$this->reservationKey($data);$contact=$this->reservationContact($data);$requested=$this->reservationRequestedItems($data);$qty=array_sum(array_column($requested,'quantity'));$eventId=(int)($data['event_id']??0);
+        if($eventId<1)throw new InvalidArgumentException('Selecciona un evento.');
         $occupancy=(string)($data['occupancy_status']??'confirmed');if(!in_array($occupancy,['confirmed','pending'],true))throw new InvalidArgumentException('Estado inicial de reserva no válido.');
         $expiry=trim((string)($data['reservation_expires_at']??''));$expiry=$expiry!==''?$this->cashReservationExpiry($expiry):($occupancy==='pending'?$this->cashReservationExpiry(''):null);
-        $notes=clean_string((string)($data['notes']??''),1000);$mode=($data['inventory_mode']??'standard')==='manual_reserve'?'manual_reserve':'standard';$hash=$this->reservationHash([$contact,$qty,$eventId,$typeId,$data['unit_price_euros']??null,$occupancy,$data['reservation_expires_at']??'',$notes,$mode]);
-        $id=$this->reservationTransaction(function()use($data,$actor,$canEditPrice,$key,$contact,$qty,$eventId,$typeId,$occupancy,$expiry,$notes,$mode,$hash){
+        $notes=clean_string((string)($data['notes']??''),1000);$mode=($data['inventory_mode']??'standard')==='manual_reserve'?'manual_reserve':'standard';$hash=array_key_exists('items',$data)?$this->reservationHash([$contact,$requested,$eventId,$occupancy,$data['reservation_expires_at']??'',$notes,$mode]):$this->reservationHash([$contact,$qty,$eventId,$requested[0]['ticket_type_id'],$data['unit_price_euros']??null,$occupancy,$data['reservation_expires_at']??'',$notes,$mode]);
+        $id=$this->reservationTransaction(function()use($data,$actor,$canEditPrice,$key,$contact,$requested,$qty,$eventId,$occupancy,$expiry,$notes,$mode,$hash){
             $this->pdo->prepare('SELECT id FROM events WHERE id=? FOR UPDATE')->execute([$eventId]);
             $q=$this->pdo->prepare('SELECT id,reservation_request_hash FROM ticket_orders WHERE reservation_request_id=?');$q->execute([$key]);if($old=$q->fetch()){if($old['reservation_request_hash']!==$hash)throw new RuntimeException('La referencia de guardado ya corresponde a otra reserva.',409);return (int)$old['id'];}
             $event=$this->requireAdminEvent($eventId);if(in_array($event['status'],['draft','archived','cancelled'],true))throw new InvalidArgumentException('Selecciona un evento disponible para reservas.');
-            $this->lockEventPlaces($eventId,[['quantity'=>$qty]]);$type=$this->lockCashTicketType($typeId,$eventId);if(!$type)throw new InvalidArgumentException('La tarifa no está disponible.');
-            $available=$mode==='manual_reserve'?$this->manualReserveAvailableForType($type):$this->standardAvailableForType($type);if($qty>$available)throw new RuntimeException('No hay suficientes plazas en el cupo seleccionado.',409);
-            [$price,$base,$tax,$rate,$fee,$reference]=$this->reservationPrice($type,$data,$canEditPrice);$total=$price*$qty;if($total>2000000000)throw new InvalidArgumentException('El importe de la reserva es demasiado alto.');
+            $this->lockEventPlaces($eventId,$requested);$lines=$this->reservationMenuLines($eventId,$requested,$canEditPrice,[],false,$mode);$total=array_sum(array_column($lines,'total'));if($total>2000000000)throw new InvalidArgumentException('El importe de la reserva es demasiado alto.');
             $q=$this->pdo->prepare('INSERT INTO ticket_orders (public_token,redsys_order,first_name,last_name,name,email,phone,subtotal_cents,total_cents,currency,status,order_status,payment_status,delivery_status,sales_channel,inventory_mode,cash_payment_status,cash_payment_notes,reservation_expires_at,reservation_request_id,reservation_request_hash,reservation_revision,is_test,environment,holded_status,holded_excluded,holded_exclusion_reason,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,"pending",?,"pending","pending","reservation",?,"not_applicable",?,?,?,?,1,?, ?,"not_required",1,"reservation_unpaid",NOW(),NOW())');
             $q->execute([public_token(),$this->nextRedsysOrder(),...$contact,$total,$total,env_value('REDSYS_CURRENCY','978'),$occupancy==='confirmed'?'confirmed':'pending_payment',$mode,$notes?:null,$expiry,$key,$hash,!empty($event['is_test'])?1:0,!empty($event['is_test'])?'sandbox':'production']);$id=(int)$this->pdo->lastInsertId();
-            $this->insertOrderItem($id,$eventId,$typeId,$type['name'],$qty,$price,$base,$tax,$rate,$fee,$reference,$total,null);
-            $this->reservationAudit($actor,'reservation_created',$id,['event_id'=>$eventId,'quantity'=>$qty,'total_cents'=>$total,'occupancy_status'=>$occupancy,'request_id'=>$key]);
+            foreach($lines as $l)$this->insertOrderItem($id,$eventId,(int)$l['type']['id'],$l['type']['name'],$l['quantity'],$l['price'],$l['base'],$l['tax'],$l['rate'],$l['fee'],$l['reference'],$l['total'],null);
+            $this->reservationAudit($actor,'reservation_created',$id,['event_id'=>$eventId,'quantity'=>$qty,'items'=>$requested,'total_cents'=>$total,'occupancy_status'=>$occupancy,'request_id'=>$key]);
             if($total===0)$this->reservationSync($id);
             return $id;
         });return $this->adminReservationDetail($id);
@@ -142,7 +175,7 @@ trait ReservationOperations
     public function adminReservationDetail(int $id): array
     {
         $this->reservationRequireSchema();$o=$this->adminOrderById($id);if(($o['sales_channel']??'')!=='reservation')throw new RuntimeException('Reserva no encontrada.',404);
-        $q=$this->pdo->prepare('SELECT i.*,e.starts_at AS event_starts_at FROM ticket_order_items i JOIN events e ON e.id=i.event_id WHERE i.order_id=? ORDER BY i.id');$q->execute([$id]);$items=$q->fetchAll();
+        $q=$this->pdo->prepare('SELECT i.*,e.starts_at AS event_starts_at FROM ticket_order_items i JOIN events e ON e.id=i.event_id WHERE i.order_id=? AND i.quantity>0 ORDER BY i.id');$q->execute([$id]);$items=$q->fetchAll();
         $q=$this->pdo->prepare('SELECT l.*, (SELECT status FROM email_deliveries WHERE idempotency_key=CONCAT("reservation-link:",l.id)) AS email_status FROM ticket_reservation_links l WHERE order_id=? ORDER BY id DESC');$q->execute([$id]);$links=$q->fetchAll();foreach($links as &$l){$l['url']=app_base_url().'/entradas/pago-reserva/?token='.rawurlencode($l['public_token']);if($l['status']==='pending'&&strtotime($l['expires_at'])<=time())$l['status']='expired';}unset($l);
         $q=$this->pdo->prepare('SELECT action,actor,context_json,created_at FROM ticket_admin_audit_logs WHERE entity_type="ticket_order" AND entity_id=? ORDER BY id DESC LIMIT 50');$q->execute([$id]);
         return ['order'=>$o,'items'=>$items,'payments'=>$this->reservationPayments($id),'links'=>$links,'history'=>$q->fetchAll(),'processing_cents'=>$this->reservationHolds($id)];
@@ -308,29 +341,27 @@ trait ReservationOperations
     }
     public function adminUpdateReservation(int $id,array $data,string $actor,bool $canEditPrice): array
     {
-        $contact=$this->reservationContact($data);$qty=filter_var($data['quantity']??0,FILTER_VALIDATE_INT);if(!$qty||$qty<1||$qty>5000)throw new InvalidArgumentException('Indica entre 1 y 5000 personas.');
+        $contact=$this->reservationContact($data);
         $q=$this->pdo->prepare('SELECT event_id FROM ticket_order_items WHERE order_id=? ORDER BY id LIMIT 1');$q->execute([$id]);$eventId=(int)$q->fetchColumn();if(!$eventId)throw new RuntimeException('Reserva no encontrada.',404);
-        $this->reservationTransaction(function()use($id,$data,$actor,$canEditPrice,$contact,$qty,$eventId){
+        $this->reservationTransaction(function()use($id,$data,$actor,$canEditPrice,$contact,$eventId){
             $this->pdo->prepare('SELECT id FROM events WHERE id=? FOR UPDATE')->execute([$eventId]);$o=$this->reservationLock($id);$this->reservationVersion($o,$data);
-            $q=$this->pdo->prepare('SELECT i.*,e.starts_at AS event_starts_at FROM ticket_order_items i JOIN events e ON e.id=i.event_id WHERE i.order_id=? ORDER BY i.id FOR UPDATE');$q->execute([$id]);$items=$q->fetchAll();if(count($items)!==1)throw new RuntimeException('Esta reserva requiere conservar su desglose de tarifas.',409);$item=$items[0];
-            $typeId=(int)($data['ticket_type_id']??$item['ticket_type_id']);$type=$this->lockCashTicketType($typeId,$eventId);if(!$type)throw new InvalidArgumentException('La tarifa no está disponible.');
-            [$price,$base,$tax,$rate,$fee,$reference]=$this->reservationPrice($type,$data,$canEditPrice,$typeId===(int)$item['ticket_type_id']?(int)$item['unit_price_cents']:null);
-            $total=$price*$qty;if($total>2000000000)throw new InvalidArgumentException('El importe de la reserva es demasiado alto.');
+            $q=$this->pdo->prepare('SELECT * FROM ticket_order_items WHERE order_id=? ORDER BY id FOR UPDATE');$q->execute([$id]);$items=$q->fetchAll();
+            if(!array_key_exists('items',$data)){if(count(array_filter($items,fn($i)=>(int)$i['quantity']>0))!==1)throw new RuntimeException('Conserva el desglose de todos los menús de esta reserva.',409);$activeItems=array_values(array_filter($items,fn($i)=>(int)$i['quantity']>0));$data['ticket_type_id']??=$activeItems[0]['ticket_type_id'];}
+            $requested=$this->reservationRequestedItems($data);$qty=array_sum(array_column($requested,'quantity'));$oldQty=array_sum(array_column($items,'quantity'));$wasActive=$this->reservationActive($o);
+            $this->lockEventPlaces($eventId,[['quantity'=>max(0,$qty-($wasActive?$oldQty:0))]]);
+            $lines=$this->reservationMenuLines($eventId,$requested,$canEditPrice,$items,$wasActive,$o['inventory_mode']??'standard');$total=array_sum(array_column($lines,'total'));if($total>2000000000)throw new InvalidArgumentException('El importe de la reserva es demasiado alto.');
             $f=$this->reservationFinance($o,$this->reservationPayments($id));if($total<$f['paid_cents'])throw new RuntimeException('El nuevo total es inferior a lo cobrado. Registra primero la devolución ya realizada.',409);
             $occupancy=(string)($data['occupancy_status']??'confirmed');if(!in_array($occupancy,['confirmed','pending'],true))throw new InvalidArgumentException('Estado de ocupación no válido.');
             $expiry=trim((string)($data['reservation_expires_at']??''));$expiry=$expiry!==''?$this->cashReservationExpiry($expiry):($occupancy==='pending'?$this->cashReservationExpiry(''):null);
-            $financialChange=$qty!==(int)$item['quantity']||$price!==(int)$item['unit_price_cents']||$typeId!==(int)$item['ticket_type_id'];
-            if($this->reservationHolds($id)>0&&($financialChange||$expiry!==$o['reservation_expires_at']||$occupancy!==$o['order_status']))throw new RuntimeException('Hay un pago online en curso. Espera su confirmación antes de modificar plazas, importe o vigencia.',409);
+            $before=[];foreach($items as $i)if((int)$i['quantity']>0)$before[(int)$i['ticket_type_id']]=[(int)$i['quantity'],(int)$i['unit_price_cents']];
+            $after=[];foreach($lines as $l)$after[(int)$l['type']['id']]=[$l['quantity'],$l['price']];ksort($before);ksort($after);$financialChange=$before!==$after;
+            if($this->reservationHolds($id)>0&&($financialChange||$expiry!==$o['reservation_expires_at']||($occupancy==='confirmed'?'confirmed':'pending_payment')!==$o['order_status']))throw new RuntimeException('Hay un pago online en curso. Espera su confirmación antes de modificar plazas, importe o vigencia.',409);
             if($financialChange){$q=$this->pdo->prepare('SELECT COUNT(*) FROM tickets t JOIN ticket_order_items i ON i.id=t.order_item_id WHERE i.order_id=? AND t.entry_count>0');$q->execute([$id]);if((int)$q->fetchColumn()>0)throw new RuntimeException('Ya se ha utilizado una entrada. Conserva las plazas y el importe de esta reserva.',409);if(!empty($o['holded_document_id']))throw new RuntimeException('La reserva ya tiene un documento fiscal. Debe gestionarse su rectificación antes de cambiar el importe.',409);}
-            $wasActive=$this->reservationActive($o);$oldQty=$wasActive?(int)$item['quantity']:0;
-            $this->lockEventPlaces($eventId,[['quantity'=>max(0,$qty-$oldQty)]]);
-            $available=($o['inventory_mode']??'standard')==='manual_reserve'?$this->manualReserveAvailableForType($type):$this->standardAvailableForType($type);
-            if($qty>$available+($typeId===(int)$item['ticket_type_id']?$oldQty:0))throw new RuntimeException('No hay suficientes plazas para el cambio solicitado.',409);
-            if($typeId!==(int)$item['ticket_type_id'])$this->pdo->prepare('UPDATE tickets SET status="cancelled",updated_at=NOW() WHERE order_item_id=? AND status NOT IN ("cancelled","refunded")')->execute([$item['id']]);
-            else { $q=$this->pdo->prepare('SELECT id FROM tickets WHERE order_item_id=? AND status NOT IN ("cancelled","refunded") ORDER BY id');$q->execute([$item['id']]);$ids=array_column($q->fetchAll(),'id');foreach(array_slice($ids,$qty) as $ticketId)$this->pdo->prepare('UPDATE tickets SET status="cancelled",updated_at=NOW() WHERE id=?')->execute([$ticketId]); }
-            $this->pdo->prepare('UPDATE ticket_order_items SET ticket_type_id=?,ticket_type_name=?,quantity=?,unit_price_cents=?,unit_base_cents=?,unit_tax_cents=?,tax_rate=?,unit_fee_cents=?,reference_unit_price_cents=?,reference_total_cents=?,total_cents=? WHERE id=?')->execute([$typeId,$type['name'],$qty,$price,$base,$tax,$rate,$fee,$reference,$reference*$qty,$total,$item['id']]);
+            // Keep existing item and QR identities. Removed menus retain a zero-quantity history row.
+            foreach($items as $item){$newQty=$after[(int)$item['ticket_type_id']][0]??0;$q=$this->pdo->prepare('SELECT id FROM tickets WHERE order_item_id=? AND status NOT IN ("cancelled","refunded") ORDER BY id');$q->execute([$item['id']]);foreach(array_slice(array_column($q->fetchAll(),'id'),$newQty) as $ticketId)$this->pdo->prepare('UPDATE tickets SET status="cancelled",updated_at=NOW() WHERE id=?')->execute([$ticketId]);if(!$newQty)$this->pdo->prepare('UPDATE ticket_order_items SET quantity=0,total_cents=0,reference_total_cents=0 WHERE id=?')->execute([$item['id']]);}
+            foreach($lines as $l){$type=$l['type'];if($l['old'])$this->pdo->prepare('UPDATE ticket_order_items SET ticket_type_name=?,quantity=?,unit_price_cents=?,unit_base_cents=?,unit_tax_cents=?,tax_rate=?,unit_fee_cents=?,reference_unit_price_cents=?,reference_total_cents=?,total_cents=? WHERE id=?')->execute([$type['name'],$l['quantity'],$l['price'],$l['base'],$l['tax'],$l['rate'],$l['fee'],$l['reference'],$l['reference']*$l['quantity'],$l['total'],$l['old']['id']]);else $this->insertOrderItem($id,$eventId,(int)$type['id'],$type['name'],$l['quantity'],$l['price'],$l['base'],$l['tax'],$l['rate'],$l['fee'],$l['reference'],$l['total'],null);}
             $notes=clean_string((string)($data['notes']??''),1000);$this->pdo->prepare('UPDATE ticket_orders SET first_name=?,last_name=?,name=?,email=?,phone=?,subtotal_cents=?,total_cents=?,cash_payment_notes=?,status="pending",order_status=?,reservation_expires_at=?,updated_at=NOW() WHERE id=?')->execute([...$contact,$total,$total,$notes?:null,$occupancy==='confirmed'?'confirmed':'pending_payment',$expiry,$id]);
-            $this->reservationCancelPendingLinks($id,'La reserva ha sido modificada');$this->reservationSync($id);$this->reservationAudit($actor,'reservation_updated',$id,['previous_quantity'=>$item['quantity'],'quantity'=>$qty,'previous_total_cents'=>$o['total_cents'],'total_cents'=>$total,'occupancy_status'=>$occupancy]);
+            $this->reservationCancelPendingLinks($id,'La reserva ha sido modificada');$this->reservationSync($id);$this->reservationAudit($actor,'reservation_updated',$id,['previous_quantity'=>$oldQty,'quantity'=>$qty,'items'=>$requested,'previous_total_cents'=>$o['total_cents'],'total_cents'=>$total,'occupancy_status'=>$occupancy]);
         });return $this->adminReservationDetail($id);
     }
 

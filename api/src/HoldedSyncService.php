@@ -380,7 +380,7 @@ final class HoldedSyncService
 
     private function issueDocument(array $order, string $documentType): array
     {
-        $items = $this->pdo->prepare('SELECT ticket_type_name, quantity, unit_base_cents, unit_tax_cents, tax_rate, unit_fee_cents FROM ticket_order_items WHERE order_id = ? ORDER BY id ASC');
+        $items = $this->pdo->prepare('SELECT ticket_type_name, quantity, unit_base_cents, unit_tax_cents, tax_rate, unit_fee_cents FROM ticket_order_items WHERE order_id = ? AND quantity > 0 ORDER BY id ASC');
         $items->execute([(int) $order['id']]);
         $payloadItems = [];
         foreach ($items->fetchAll() as $item) {
