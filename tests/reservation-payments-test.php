@@ -56,4 +56,33 @@ $results=[];foreach($processes as [$proc,$pipes]){$results[]=trim(stream_get_con
 
 // Two real processes compete for 5 seats: only one group of 3 may commit.
 $race=fixture(5);$race['quantity']=3;$processes=[];for($i=0;$i<2;$i++){$race['request_id']=keyForTest();$pipes=[];$proc=proc_open([PHP_BINARY,__FILE__,'race',base64_encode(json_encode($race))],[1=>['pipe','w'],2=>['pipe','w']],$pipes);$processes[]=[$proc,$pipes];}$results=[];foreach($processes as [$proc,$pipes]){$results[]=trim(stream_get_contents($pipes[1]));$errors=stream_get_contents($pipes[2]);fclose($pipes[1]);fclose($pipes[2]);if(proc_close($proc)!==0)throw new RuntimeException($errors);}sort($results);check($results,['full','reserved'],'concurrent capacity lock');
+// Mixed adult/child reservations share one balance, capacity pool and QR lifecycle.
+$mixedBody=fixture(30);$adultType=$mixedBody['ticket_type_id'];$eventId=$mixedBody['event_id'];
+$childType=$t->adminCreateTicketType($eventId,['name'=>'Menú infantil','price_cents'=>2800,'capacity'=>8,'tax_rate'=>0]);$childId=(int)$childType['id'];
+$p->prepare('UPDATE ticket_types SET status="on_sale",active=1 WHERE id=?')->execute([$childId]);
+unset($mixedBody['quantity'],$mixedBody['ticket_type_id']);$mixedBody['email']='';$mixedBody['items']=[['ticket_type_id'=>$adultType,'quantity'=>4],['ticket_type_id'=>$childId,'quantity'=>2]];
+$mixed=$t->adminCreateReservation($mixedBody,'qa',true);$mixedId=(int)$mixed['order']['id'];
+check(count($mixed['items']),2,'two menu lines');check((int)$mixed['order']['ticket_quantity'],6,'six places');check((int)$mixed['order']['total_cents'],31600,'4 adults and 2 children total 316');
+check($t->adminCreateReservation($mixedBody,'qa',true)['order']['id'],$mixed['order']['id'],'mixed create retry');
+$invalid=$mixedBody;$invalid['request_id']=keyForTest();$invalid['items'][1]['quantity']=9;rejected(fn()=>$t->adminCreateReservation($invalid,'qa',true),'child capacity checked independently');
+$invalid['items']=[['ticket_type_id'=>$adultType,'quantity'=>1],['ticket_type_id'=>$adultType,'quantity'=>1]];rejected(fn()=>$t->adminCreateReservation($invalid,'qa',true),'duplicate menu rejected');
+$other=fixture();$invalid['items']=[['ticket_type_id'=>$other['ticket_type_id'],'quantity'=>1]];rejected(fn()=>$t->adminCreateReservation($invalid,'qa',true),'menu must belong to same event');
+$invalid['items']=[['ticket_type_id'=>$adultType,'quantity'=>1,'unit_price_euros'=>'1']];rejected(fn()=>$t->adminCreateReservation($invalid,'operator',false),'price permissions apply per menu');
+$invalid['items']=[['ticket_type_id'=>$adultType,'quantity'=>29],['ticket_type_id'=>$childId,'quantity'=>1]];rejected(fn()=>$t->adminCreateReservation($invalid,'qa',true),'combined event capacity checked');
+$mixed=pay($mixed,'100');
+$edit=['first_name'=>'Familia','last_name'=>'Local','phone'=>'600000000','email'=>'','items'=>[['ticket_type_id'=>$adultType,'quantity'=>5],['ticket_type_id'=>$childId,'quantity'=>1]],'expected_revision'=>$mixed['order']['reservation_revision']];
+$mixed=$t->adminUpdateReservation($mixedId,$edit,'qa',true);check((int)$mixed['order']['total_cents'],35300,'mixed edit total');check($mixed['order']['outstanding_cents'],25300,'mixed edit retains receipt');
+$p->prepare('UPDATE ticket_types SET active=0 WHERE id=?')->execute([$childId]);
+$invalid=$mixedBody;$invalid['request_id']=keyForTest();rejected(fn()=>$t->adminCreateReservation($invalid,'qa',true),'disabled child menu cannot be booked');
+$edit['expected_revision']=$mixed['order']['reservation_revision'];$mixed=$t->adminUpdateReservation($mixedId,$edit,'qa',true);check(count($mixed['items']),2,'disabled historical menu preserved');
+$edit['items'][1]['quantity']=2;$edit['expected_revision']=$mixed['order']['reservation_revision'];rejected(fn()=>$t->adminUpdateReservation($mixedId,$edit,'qa',true),'disabled menu cannot gain seats');
+$edit['items']=array_slice($edit['items'],0,1);$mixed=$t->adminUpdateReservation($mixedId,$edit,'qa',true);check(count($mixed['items']),1,'removed menu hidden from live detail');check((int)$mixed['order']['total_cents'],32500,'remove child menu updates total');check(count($t->getOrderByToken($mixed['order']['public_token'])['items']),1,'public order excludes removed menu history');
+$p->prepare('UPDATE ticket_types SET active=1 WHERE id=?')->execute([$childId]);$edit['items'][]=['ticket_type_id'=>$childId,'quantity'=>1];$edit['expected_revision']=$mixed['order']['reservation_revision'];$mixed=$t->adminUpdateReservation($mixedId,$edit,'qa',true);check(count($mixed['items']),2,'child menu can be restored');
+$mixed=pay($mixed,'253');check(activeTickets($mixedId),6,'one QR per adult and child after settlement');
+$qrIds=$p->query('SELECT t.id FROM tickets t JOIN ticket_order_items i ON i.id=t.order_item_id WHERE i.order_id='.$mixedId.' AND t.status="issued" ORDER BY t.id')->fetchAll(PDO::FETCH_COLUMN);
+$edit['expected_revision']=$mixed['order']['reservation_revision'];$edit['first_name']='Contacto actualizado';$mixed=$t->adminUpdateReservation($mixedId,$edit,'qa',true);
+check($p->query('SELECT t.id FROM tickets t JOIN ticket_order_items i ON i.id=t.order_item_id WHERE i.order_id='.$mixedId.' AND t.status="issued" ORDER BY t.id')->fetchAll(PDO::FETCH_COLUMN),$qrIds,'contact edit preserves all QR identities');
+$edit['items'][0]['quantity']=6;$edit['expected_revision']=$mixed['order']['reservation_revision'];$mixed=$t->adminUpdateReservation($mixedId,$edit,'qa',true);check(activeTickets($mixedId),0,'extra place blocks unpaid tickets');$mixed=pay($mixed,'65');check(activeTickets($mixedId),7,'additional place creates one extra QR');
+$p->prepare('UPDATE tickets SET entry_count=1 WHERE id=?')->execute([$qrIds[0]]);$edit['items'][0]['quantity']=7;$edit['expected_revision']=$mixed['order']['reservation_revision'];rejected(fn()=>$t->adminUpdateReservation($mixedId,$edit,'qa',true),'used mixed QR prevents seat changes');
+echo "PASS mixed adult/child menus, activation, per-menu and event capacity, price permissions, edits, payments and QR preservation\n";
 echo "PASS reservation lifecycle, mixed payments, signed callbacks, reports, refunds, idempotency, permissions, QR and concurrent capacity\n";
