@@ -221,7 +221,8 @@
 
   function eventCard(event, featured) {
     var image = event.card_image_url || event.image_url || "/assets/images/perigallo-hero-original-01.jpg";
-    var occupancy = event.capacity ? Math.min(100, Math.round((Number(event.sold || 0) + Number(event.reserved || 0)) * 100 / Number(event.capacity))) : 0;
+    var ticketCapacity = Number(event.ticket_capacity == null ? event.capacity : event.ticket_capacity) || 0;
+    var occupancy = ticketCapacity ? Math.min(100, Math.round((Number(event.sold || 0) + Number(event.reserved || 0)) * 100 / ticketCapacity)) : 0;
     var archived = (event.effective_status || event.status) === "archived";
     var testMode = Number(event.is_test) === 1;
     var deleteControl = state.session && state.session.is_owner
@@ -234,7 +235,7 @@
       '<div class="admin-featured-image" style="background-image:url(' + escapeHtml(image) + ')"></div>' +
       '<div class="admin-featured-copy"><span class="status-pill status-' + escapeHtml(event.effective_status || event.status) + '">' + escapeHtml(statusLabel(event.effective_status || event.status)) + '</span>' + (testMode ? '<span class="status-pill status-scheduled">Modo prueba</span>' : '') +
       '<h2>' + escapeHtml(event.title) + '</h2><p>' + escapeHtml(formatDate(event.starts_at, true)) + ' · ' + escapeHtml(event.location || "Ubicación por definir") + '</p>' +
-      '<div class="admin-progress"><span><strong>' + Number(event.sold || 0) + '</strong> entradas vendidas · <strong>' + Number(event.reserved || 0) + '</strong> plazas reservadas · ' + Number(event.available || 0) + ' disponibles</span><span>' + Number(event.capacity || 0) + ' aforo · ' + occupancy + '% ocupado</span><i><b style="width:' + occupancy + '%"></b></i></div>' +
+      '<div class="admin-progress"><span><strong>' + Number(event.sold || 0) + '</strong> entradas vendidas · <strong>' + Number(event.reserved || 0) + '</strong> plazas reservadas · ' + Number(event.available || 0) + ' disponibles</span><span>' + Number(event.capacity || 0) + ' aforo' + (ticketCapacity !== Number(event.capacity || 0) ? ' · ' + ticketCapacity + ' cupo habilitado' : '') + ' · ' + occupancy + '% ocupado</span><i><b style="width:' + occupancy + '%"></b></i></div>' +
       '<div class="admin-inline-actions"><a class="ticket-btn primary" href="/admin/eventos/' + Number(event.id) + '/editar/">Editar evento</a><a class="ticket-btn" href="/admin/ventas/?event=' + Number(event.id) + '">Reservas y ventas</a><a class="ticket-btn" href="/admin/acceso/?event=' + Number(event.id) + '">Control de acceso</a><a class="text-action" href="/eventos/' + encodeURIComponent(event.slug) + '/" target="_blank" rel="noopener noreferrer">Página pública</a></div>' + lifecycleActions + '</div></article>';
   }
 

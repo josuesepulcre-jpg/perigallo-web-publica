@@ -67,3 +67,5 @@ test('event overview shows reserved and remaining seats and occupancy includes r
  assert.match(html,/50% ocupado/);
  assert.match(html,/\/admin\/ventas\/\?event=5/);
 });
+
+test('event card distinguishes ticket quota from physical capacity',()=>{const html=s.eventCard({id:4,title:'Hora Cero',capacity:100,ticket_capacity:80,available:74,sold:0,reserved:6},false);assert.match(html,/74 disponibles/);assert.match(html,/100 aforo · 80 cupo habilitado · 8% ocupado/);assert.doesNotMatch(html,/94 disponibles/);});
