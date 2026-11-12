@@ -49,6 +49,10 @@ try {
         else json_response(['ok'=>false,'error'=>'Método no permitido.'],405);
         return;
     }
+    if ($method==='POST' && preg_match('#^/admin/reservations/([0-9]+)/links/([0-9]+)/email$#',$path,$m)) {
+        AdminAuth::requireCsrf();
+        json_response(['ok'=>true]+$ticketing()->adminEmailReservationLink((int)$m[1],(int)$m[2],AdminAuth::operatorName()));return;
+    }
     if (preg_match('#^/admin/reservations(?:/(meta|[0-9]+)(?:/(payments|refunds|links|cancel)(?:/([0-9]+)/cancel)?)?)?$#',$path,$m)) {
         AdminAuth::require();header('Cache-Control: private, no-store');
         if($method==='GET'&&($m[1]??'')==='meta') { json_response(['ok'=>true]+$ticketing()->adminCashOrderMeta()+['can_edit_price'=>!empty(AdminAuth::sessionPayload()['is_owner'])]);return; }

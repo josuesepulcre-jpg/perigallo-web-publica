@@ -155,6 +155,16 @@ final class Mailer
         );
     }
 
+    public function sendReservationMessage(string $email, array $message): bool
+    {
+        $boundary = 'perigallo-reservation-' . bin2hex(random_bytes(12));
+        $html = $this->basicOrderHtml('Tu reserva en Perigallo', $message['body'], 'Realizar este pago', $message['url']);
+        $headers = ['From: Perigallo <' . env_value('MAIL_FROM', 'entradas@perigallo.com') . '>', 'MIME-Version: 1.0', 'Content-Type: multipart/alternative; boundary="' . $boundary . '"'];
+        $body = "--{$boundary}\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n" . $message['body']
+            . "\r\n--{$boundary}\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n" . $html . "\r\n--{$boundary}--";
+        return mail($email, '=?UTF-8?B?' . base64_encode($message['subject']) . '?=', $body, implode("\r\n", $headers));
+    }
+
     private function queue(PDO $pdo, int $orderId, string $email, string $subject, string $body, ?string $htmlBody = null): string
     {
         $stmt = $pdo->prepare(
@@ -213,10 +223,10 @@ final class Mailer
             "Hola " . $name . ",\n\nAdjuntamos el PDF con " . $count . " para " . $title . ". Cada entrada incluye su código QR de acceso.\n\nGuarda este documento y preséntalo al llegar.");
     }
 
-    private function basicOrderHtml(string $subject, string $body, string $buttonLabel = 'Descargar mis entradas'): string
+    private function basicOrderHtml(string $subject, string $body, string $buttonLabel = 'Descargar mis entradas', ?string $explicitLink = null): string
     {
         preg_match('#https?://\S+#', $body, $linkMatch);
-        $link = (string) ($linkMatch[0] ?? '');
+        $link = $explicitLink ?? (string) ($linkMatch[0] ?? '');
         $copy = $link === '' ? $body : trim(str_replace($link, '', $body));
         $escapedBody = nl2br(htmlspecialchars($copy, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
         $safeSubject = htmlspecialchars($subject, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
