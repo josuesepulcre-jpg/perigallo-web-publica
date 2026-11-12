@@ -257,6 +257,29 @@ trait ReservationOperations
         });
     }
 
+    private function reservationQueuePaymentEmail(array $order,int $attemptId,int $amount): void
+    {
+        if(!filter_var($order['email']??'',FILTER_VALIDATE_EMAIL))return;
+        $q=$this->pdo->prepare('SELECT e.title,e.starts_at,e.location,SUM(i.quantity) AS quantity FROM ticket_order_items i JOIN events e ON e.id=i.event_id WHERE i.order_id=? GROUP BY e.id,e.title,e.starts_at,e.location');$q->execute([$order['id']]);$event=$q->fetch();
+        $finance=$this->reservationFinance($order,$this->reservationPayments((int)$order['id']));
+        $message=ReservationEmail::payment($order,$finance,$event,$amount);
+        $this->pdo->prepare('INSERT INTO email_deliveries(order_id,idempotency_key,recipient_email,subject,body,status,error_message,created_at,updated_at) VALUES(?,?,?,?,?,"pending","reservation_receipt_ready",NOW(),NOW())')->execute([$order['id'],'reservation-payment:'.$attemptId,$order['email'],$message['subject'],$message['body']]);
+    }
+
+    /** Runs after commit. Only a definite transport failure is eligible for retry. */
+    private function reservationSendPaymentEmail(int $attemptId): void
+    {
+        try {
+            $q=$this->pdo->prepare('SELECT * FROM email_deliveries WHERE idempotency_key=?');$q->execute(['reservation-payment:'.$attemptId]);$job=$q->fetch();if(!$job)return;
+            $claim=$this->pdo->prepare('UPDATE email_deliveries SET status="pending",error_message="reservation_receipt_sending",updated_at=NOW() WHERE id=? AND ((status="pending" AND error_message="reservation_receipt_ready") OR (status="failed" AND error_message="mail_not_accepted"))');$claim->execute([$job['id']]);if($claim->rowCount()!==1)return;
+            try{$sent=$this->mailer->sendReservationMessage($job['recipient_email'],['subject'=>$job['subject'],'heading'=>'Hemos recibido tu pago','body'=>$job['body'],'url'=>'']);}catch(\Throwable $e){$sent=false;}
+            $this->pdo->prepare('UPDATE email_deliveries SET status=?,error_message=?,sent_at=IF(?="sent",NOW(),NULL),updated_at=NOW() WHERE id=?')->execute([$sent?'sent':'failed',$sent?null:'mail_not_accepted',$sent?'sent':'failed',$job['id']]);
+        } catch(\Throwable $e) {
+            // A receipt failure must never undo an already confirmed payment.
+            error_log('Reservation payment email requires review for attempt '.$attemptId);
+        }
+    }
+
     private function reservationRestoreExpiry(int $id,array $link): void
     {
         if($this->reservationHolds($id)===0 && !empty($link['reservation_expiry_snapshot'])) {
@@ -270,11 +293,11 @@ trait ReservationOperations
     {
         $id=(int)$o['id'];$q=$this->pdo->prepare('SELECT * FROM ticket_reservation_links WHERE id=? AND order_id=? FOR UPDATE');$q->execute([$attempt['reservation_link_id'],$id]);$link=$q->fetch();if(!$link||(int)$link['attempt_id']!==(int)$attempt['id']||(int)$link['amount_cents']!==(int)$attempt['amount_cents'])throw new RuntimeException('La referencia del pago parcial no coincide.');
         // An accepted notification is terminal: a later denial cannot undo money received.
-        if($attempt['status']==='accepted'||($attempt['status']==='denied'&&!$accepted)){$this->pdo->commit();return ['ok'=>true,'accepted'=>$attempt['status']==='accepted','duplicate'=>true,'order'=>$attempt['redsys_order']];}
+        if($attempt['status']==='accepted'||($attempt['status']==='denied'&&!$accepted)){$this->pdo->commit();if($attempt['status']==='accepted')$this->reservationSendPaymentEmail((int)$attempt['id']);return ['ok'=>true,'accepted'=>$attempt['status']==='accepted','duplicate'=>true,'order'=>$attempt['redsys_order']];}
         $this->pdo->prepare('UPDATE payment_attempts SET response_code=?,authorisation_code=?,status=?,notification_hash=?,notification_received_at=NOW(),raw_response=?,updated_at=NOW() WHERE id=?')->execute([$response,$params['DS_AUTHORISATIONCODE']??'',$accepted?'accepted':'denied',$hash,json_encode(array_intersect_key($params,array_flip(['DS_ORDER','DS_AMOUNT','DS_CURRENCY','DS_MERCHANTCODE','DS_TERMINAL','DS_TRANSACTIONTYPE','DS_RESPONSE','DS_AUTHORISATIONCODE'])),JSON_UNESCAPED_UNICODE),$attempt['id']]);
-        if($accepted){$f=$this->reservationFinance($o,$this->reservationPayments($id));$review=!$this->reservationActive($o)||(int)$attempt['amount_cents']>$f['outstanding_cents']||$link['status']!=='processing'||$attempt['status']==='manual_review';$this->pdo->prepare('INSERT INTO ticket_reservation_payments (order_id,kind,method,amount_cents,paid_at,reference,actor,idempotency_key,request_hash,payment_attempt_id,review_required,created_at) VALUES (?,"receipt","card_online",?,NOW(),?,"redsys",?,?,?,?,NOW())')->execute([$id,$attempt['amount_cents'],$params['DS_AUTHORISATIONCODE']??$attempt['redsys_order'],'redsys-'.$attempt['id'],$hash,$attempt['id'],$review?1:0]);$this->pdo->prepare('UPDATE ticket_reservation_links SET status="paid",updated_at=NOW() WHERE id=?')->execute([$link['id']]);if($link['status']==='processing')$this->reservationRestoreExpiry($id,$link);if($review&&!$this->reservationActive($o))$this->pdo->prepare('UPDATE ticket_orders SET status="expired" WHERE id=? AND status NOT IN ("cancelled","refunded")')->execute([$id]);$this->reservationSync($id);$this->reservationAudit('redsys',$review?'reservation_online_payment_review':'reservation_online_payment_confirmed',$id,['attempt_id'=>$attempt['id'],'amount_cents'=>$attempt['amount_cents'],'review_required'=>$review]);}
+        if($accepted){$f=$this->reservationFinance($o,$this->reservationPayments($id));$review=!$this->reservationActive($o)||(int)$attempt['amount_cents']>$f['outstanding_cents']||$link['status']!=='processing'||$attempt['status']==='manual_review';$this->pdo->prepare('INSERT INTO ticket_reservation_payments (order_id,kind,method,amount_cents,paid_at,reference,actor,idempotency_key,request_hash,payment_attempt_id,review_required,created_at) VALUES (?,"receipt","card_online",?,NOW(),?,"redsys",?,?,?,?,NOW())')->execute([$id,$attempt['amount_cents'],$params['DS_AUTHORISATIONCODE']??$attempt['redsys_order'],'redsys-'.$attempt['id'],$hash,$attempt['id'],$review?1:0]);$this->pdo->prepare('UPDATE ticket_reservation_links SET status="paid",updated_at=NOW() WHERE id=?')->execute([$link['id']]);if($link['status']==='processing')$this->reservationRestoreExpiry($id,$link);if($review&&!$this->reservationActive($o))$this->pdo->prepare('UPDATE ticket_orders SET status="expired" WHERE id=? AND status NOT IN ("cancelled","refunded")')->execute([$id]);$this->reservationSync($id);$this->reservationAudit('redsys',$review?'reservation_online_payment_review':'reservation_online_payment_confirmed',$id,['attempt_id'=>$attempt['id'],'amount_cents'=>$attempt['amount_cents'],'review_required'=>$review]);if(!$review)$this->reservationQueuePaymentEmail($o,(int)$attempt['id'],(int)$attempt['amount_cents']);}
         else {$this->pdo->prepare('UPDATE ticket_reservation_links SET status="failed",updated_at=NOW() WHERE id=? AND status IN ("pending","processing")')->execute([$link['id']]);if($link['status']==='processing')$this->reservationRestoreExpiry($id,$link);$this->reservationSync($id);}
-        $this->pdo->commit();$this->reservationRevenueCache=null;return ['ok'=>true,'accepted'=>$accepted,'order'=>$attempt['redsys_order']];
+        $this->pdo->commit();$this->reservationRevenueCache=null;if($accepted)$this->reservationSendPaymentEmail((int)$attempt['id']);return ['ok'=>true,'accepted'=>$accepted,'order'=>$attempt['redsys_order']];
     }
     public function adminUpdateReservation(int $id,array $data,string $actor,bool $canEditPrice): array
     {

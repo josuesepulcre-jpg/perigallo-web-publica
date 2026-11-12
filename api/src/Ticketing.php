@@ -1306,9 +1306,9 @@ final class Ticketing
         $orders = $this->pdo->query(
             'SELECT o.id, o.public_token, o.redsys_order, o.test_reference, o.is_test, o.environment,
                     o.order_status, o.payment_status, o.delivery_status, ' . $cashColumns . ', o.first_name, o.last_name, o.name, o.email, o.phone, o.whatsapp_consent,
-                    (SELECT ed.status FROM email_deliveries ed WHERE ed.order_id = o.id AND ed.idempotency_key IS NOT NULL AND ed.idempotency_key NOT LIKE "reservation-link:%" ORDER BY ed.id DESC LIMIT 1) AS email_delivery_status,
-                    (SELECT ed.sent_at FROM email_deliveries ed WHERE ed.order_id = o.id AND ed.idempotency_key IS NOT NULL AND ed.idempotency_key NOT LIKE "reservation-link:%" ORDER BY ed.id DESC LIMIT 1) AS email_delivery_at,
-                    (SELECT ed.error_message FROM email_deliveries ed WHERE ed.order_id = o.id AND ed.idempotency_key IS NOT NULL AND ed.idempotency_key NOT LIKE "reservation-link:%" ORDER BY ed.id DESC LIMIT 1) AS email_delivery_error,
+                    (SELECT ed.status FROM email_deliveries ed WHERE ed.order_id = o.id AND ed.idempotency_key IS NOT NULL AND ed.idempotency_key NOT LIKE "reservation-%" ORDER BY ed.id DESC LIMIT 1) AS email_delivery_status,
+                    (SELECT ed.sent_at FROM email_deliveries ed WHERE ed.order_id = o.id AND ed.idempotency_key IS NOT NULL AND ed.idempotency_key NOT LIKE "reservation-%" ORDER BY ed.id DESC LIMIT 1) AS email_delivery_at,
+                    (SELECT ed.error_message FROM email_deliveries ed WHERE ed.order_id = o.id AND ed.idempotency_key IS NOT NULL AND ed.idempotency_key NOT LIKE "reservation-%" ORDER BY ed.id DESC LIMIT 1) AS email_delivery_error,
                     (SELECT dl.status FROM ticket_delivery_logs dl WHERE dl.order_id = o.id AND dl.channel = "whatsapp" AND dl.idempotency_key IS NOT NULL ORDER BY dl.id DESC LIMIT 1) AS whatsapp_delivery_status,
                     (SELECT dl.recipient FROM ticket_delivery_logs dl WHERE dl.order_id = o.id AND dl.channel = "whatsapp" AND dl.idempotency_key IS NOT NULL ORDER BY dl.id DESC LIMIT 1) AS whatsapp_recipient,
                     (SELECT dl.template_name FROM ticket_delivery_logs dl WHERE dl.order_id = o.id AND dl.channel = "whatsapp" AND dl.idempotency_key IS NOT NULL ORDER BY dl.id DESC LIMIT 1) AS whatsapp_template_name,
@@ -1513,7 +1513,7 @@ final class Ticketing
         $statement = $this->pdo->prepare(
             'SELECT o.id, o.public_token, o.redsys_order, o.test_reference, o.is_test, o.environment,
                     o.order_status, o.payment_status, o.delivery_status, ' . $cashColumns . ', o.first_name, o.last_name, o.name, o.email, o.phone, o.whatsapp_consent,
-                    (SELECT ed.status FROM email_deliveries ed WHERE ed.order_id = o.id AND ed.idempotency_key IS NOT NULL AND ed.idempotency_key NOT LIKE "reservation-link:%" ORDER BY ed.id DESC LIMIT 1) AS email_delivery_status,
+                    (SELECT ed.status FROM email_deliveries ed WHERE ed.order_id = o.id AND ed.idempotency_key IS NOT NULL AND ed.idempotency_key NOT LIKE "reservation-%" ORDER BY ed.id DESC LIMIT 1) AS email_delivery_status,
                     (SELECT dl.status FROM ticket_delivery_logs dl WHERE dl.order_id = o.id AND dl.channel = "whatsapp" AND dl.idempotency_key IS NOT NULL ORDER BY dl.id DESC LIMIT 1) AS whatsapp_delivery_status,
                     (SELECT dl.recipient FROM ticket_delivery_logs dl WHERE dl.order_id = o.id AND dl.channel = "whatsapp" AND dl.idempotency_key IS NOT NULL ORDER BY dl.id DESC LIMIT 1) AS whatsapp_recipient,
                     o.holded_status,o.holded_document_id,o.holded_document_number,o.holded_last_error,o.holded_excluded,o.total_cents, o.status, o.reservation_expires_at, o.paid_at, o.created_at,

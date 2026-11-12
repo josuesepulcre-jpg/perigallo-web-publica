@@ -158,7 +158,7 @@ final class Mailer
     public function sendReservationMessage(string $email, array $message): bool
     {
         $boundary = 'perigallo-reservation-' . bin2hex(random_bytes(12));
-        $html = $this->basicOrderHtml('Tu reserva en Perigallo', $message['body'], 'Realizar este pago', $message['url']);
+        $html = $this->basicOrderHtml($message['heading'] ?? 'Tu reserva en Perigallo', $message['body'], 'Realizar este pago', $message['url']);
         $headers = ['From: Perigallo <' . env_value('MAIL_FROM', 'entradas@perigallo.com') . '>', 'MIME-Version: 1.0', 'Content-Type: multipart/alternative; boundary="' . $boundary . '"'];
         $body = "--{$boundary}\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n" . $message['body']
             . "\r\n--{$boundary}\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n" . $html . "\r\n--{$boundary}--";
