@@ -676,6 +676,13 @@ try {
         return;
     }
 
+    if ($method === 'GET' && $path === '/admin/calendar/suite-events') {
+        AdminAuth::require();
+        header('Cache-Control: private, no-store');
+        json_response(['ok' => true] + \Perigallo\Ticketing\SuiteCalendar::forApplication()->read());
+        return;
+    }
+
     if ($method === 'GET' && $path === '/admin/events') {
         AdminAuth::requireAccess();
         json_response(['ok' => true, 'events' => $ticketing()->adminListEvents()]);

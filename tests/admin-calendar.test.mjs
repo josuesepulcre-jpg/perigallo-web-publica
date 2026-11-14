@@ -1,0 +1,31 @@
+import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
+import assert from 'node:assert/strict';
+const context = { window: {}, Intl, Date };
+vm.runInNewContext(readFileSync('assets/js/admin-calendar.js', 'utf8'), context);
+const calendar = context.window.PerigalloCalendar;
+assert.equal(calendar.shiftMonth('2026-12', 1), '2027-01');
+assert.equal(calendar.shiftMonth('2027-01', -1), '2026-12');
+assert.equal(calendar.shiftMonth('2027-01', 1), '2027-02');
+for (const month of ['2026-02', '2027-02', '2028-02', '2026-11', '2026-12', '2027-01']) {
+  const days = Array.from(calendar.monthDays(month));
+  assert.equal(days.length % 7, 0);
+  assert.equal(new Date(days[0] + 'T12:00:00Z').getUTCDay(), 1);
+  assert.equal(new Set(days).size, days.length);
+  for (let i = 1; i < days.length; i++) assert.equal(Date.parse(days[i]) - Date.parse(days[i - 1]), 86400000);
+  const [year, m] = month.split('-').map(Number);
+  assert.equal(days.filter(day => day.startsWith(month)).length, new Date(Date.UTC(year, m, 0)).getUTCDate());
+}
+assert.equal(calendar.dateKey('2026-12-31 14:00:00'), '2026-12-31');
+assert.equal(calendar.dateKey('2026-12-31T23:30:00Z'), '2027-01-01');
+assert.equal(calendar.dateKey('2026-07-01T22:30:00Z'), '2026-07-02');
+assert.equal(calendar.dateKey('invalid'), '');
+assert.equal(calendar.dateKey(null), '');
+let numbers = calendar.numbers({ sold: 20, reserved: 6, capacity: 100, ticket_capacity: 80, available: 54 });
+assert.equal(numbers.percent, 33);
+assert.equal(numbers.capacity, 80);
+assert.equal(numbers.available, 54);
+assert.equal(calendar.numbers({ sold: 100, capacity: 80 }).percent, 100);
+assert.equal(calendar.numbers({ capacity: 0 }).percent, 0);
+assert.equal(calendar.numbers({ sold: 20, reserved: 10, capacity: 40 }).available, 10);
+console.log('Calendar: month boundaries, leap years, Madrid time zone and enabled-capacity metrics passed.');
