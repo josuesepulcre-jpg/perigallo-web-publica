@@ -54,6 +54,7 @@
 
   function currentNav() {
     var path = window.location.pathname;
+    if (path.indexOf("/admin/calendario") === 0) return "calendar";
     if (path.indexOf("/admin/experiencias") === 0) return "archive";
     if (path.indexOf("/admin/eventos") === 0) return "events";
     if (path.indexOf("/admin/ventas") === 0) return "sales";
@@ -126,6 +127,7 @@
         : '<nav class="admin-side-nav" aria-label="Navegación de administración">' +
             '<span class="admin-nav-label">Inicio</span>' +
             '<a href="/admin/" data-admin-nav-item="dashboard">Panel principal</a>' +
+            '<a href="/admin/calendario/" data-admin-nav-item="calendar">Calendario</a>' +
             '<span class="admin-nav-label">Gestión</span>' +
             '<a href="/admin/eventos/" data-admin-nav-item="events">Eventos</a>' +
             '<a href="/admin/experiencias/" data-admin-nav-item="archive">Experiencias vividas</a>' +
@@ -614,13 +616,24 @@
     });
   }
 
+  function renderCalendarBookings(orders) {
+    var people = orders.reduce(function (sum, order) { return sum + Number(order.ticket_quantity || 0); }, 0);
+    return '<p class="admin-sales-event-context">' + orders.length + (orders.length === 1 ? ' reserva' : ' reservas') + ' · ' + people + (people === 1 ? ' persona' : ' personas') + '</p><div class="reservation-table-wrap"><table class="reservation-table"><thead><tr><th>Cliente</th><th>Personas</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>' + orders.slice().sort(function (a, b) { return String(a.name || '').localeCompare(String(b.name || ''), 'es'); }).map(function (order) {
+      var orderStatus = order.is_reservation ? ({ confirmed: 'Confirmada', pending: 'Por confirmar' }[order.occupancy_status] || statusLabel(order.occupancy_status)) : statusLabel(isDoorPaymentPending(order) ? 'door_pending' : order.payment_status || order.status);
+      return '<tr><td data-label="Cliente"><strong>' + escapeHtml(order.name || 'Sin nombre') + '</strong><small>' + escapeHtml(order.phone || '') + '</small></td><td data-label="Personas">' + Number(order.ticket_quantity || 0) + '</td><td data-label="Estado">' + escapeHtml(orderStatus) + '</td><td data-label="Acciones">' + orderActions(order) + '</td></tr>';
+    }).join('') + '</tbody></table></div>';
+  }
+
   function initSales() {
     var root = document.querySelector("[data-admin-sales-page]");
     if (!root) return;
     requireSession(function (sessionData) {
       var search = root.querySelector("[data-admin-sales-search]");
       var filters = root.querySelectorAll("[data-admin-order-filter]");
-      var activeFilter = "open";
+      var calendarReservations = new URLSearchParams(window.location.search).get("vista") === "reservas";
+      var calendarListFocused = false;
+      var activeFilter = calendarReservations ? "reservations" : "open";
+      filters.forEach(function (button) { button.classList.toggle("is-active", button.getAttribute("data-admin-order-filter") === activeFilter); });
       var salesEvent = root.querySelector('[data-admin-sales-event]');
       var selectedSalesEvent = Math.max(0, Number(new URLSearchParams(window.location.search).get('event')) || 0);
       var salesLoadSequence = 0;
@@ -679,16 +692,25 @@
       function render(filter) {
         var term = String(filter || "").trim().toLowerCase();
         var rows = state.orders.filter(function (order) {
-          return salesOrderMatches(order, activeFilter) && (!root.querySelector('[data-reservation-economic-filter]')?.value || (order.economic_status||order.payment_status||order.status)===root.querySelector('[data-reservation-economic-filter]').value) && (!term || [order.name, order.email, order.phone, order.redsys_order, order.test_reference, order.event_title, orderNotes(order), orderOrigin(order), order.payment_status, order.display_status, isDoorPaymentPending(order) ? "vendida pago en puerta pendiente" : ""].join(" ").toLowerCase().includes(term));
+          return salesOrderMatches(order, calendarReservations && activeFilter === "reservations" ? "open" : activeFilter) && (!root.querySelector('[data-reservation-economic-filter]')?.value || (order.economic_status||order.payment_status||order.status)===root.querySelector('[data-reservation-economic-filter]').value) && (!term || [order.name, order.email, order.phone, order.redsys_order, order.test_reference, order.event_title, orderNotes(order), orderOrigin(order), order.payment_status, order.display_status, isDoorPaymentPending(order) ? "vendida pago en puerta pendiente" : ""].join(" ").toLowerCase().includes(term));
         });
         root.querySelector("[data-admin-orders-list]").innerHTML = !selectedSalesEvent
           ? '<div class="admin-empty"><strong>Selecciona un evento para consultar sus ventas.</strong></div>'
-          : rows.length ? (activeFilter==='reservations'&&window.PerigalloReservations?window.PerigalloReservations.table(rows):renderOrdersRows(rows, false)) : '<div class="admin-empty"><strong>No hay pedidos con estos filtros para el evento seleccionado.</strong></div>';
+          : rows.length ? (calendarReservations && activeFilter === 'reservations' ? renderCalendarBookings(rows) : (activeFilter==='reservations'&&window.PerigalloReservations?window.PerigalloReservations.table(rows):renderOrdersRows(rows, false))) : '<div class="admin-empty"><strong>No hay pedidos con estos filtros para el evento seleccionado.</strong></div>';
         if (status) status.textContent = selectedSalesEvent ? rows.length + (rows.length === 1 ? " pedido mostrado" : " pedidos mostrados") : '';
         var context = root.querySelector("[data-sales-event-context]");
         var event = state.events.find(function (item) { return Number(item.id) === selectedSalesEvent; });
         if (context) context.textContent = event ? event.title + " · " + formatDate(event.starts_at, true) : "Selecciona un evento para ver sus reservas y ventas.";
         renderSalesSummary();
+        if (calendarReservations && !calendarListFocused && selectedSalesEvent) {
+          var list = root.querySelector("[data-admin-orders-list]");
+          list.id = "listado-reservas";
+          list.setAttribute("tabindex", "-1");
+          list.style.scrollMarginTop = "90px";
+          list.focus({ preventScroll: true });
+          list.scrollIntoView({ block: "start" });
+          calendarListFocused = true;
+        }
       }
       function reload() {
         var sequence = ++salesLoadSequence;
@@ -2041,11 +2063,21 @@
   }
 
   function initAdminChrome() {
-    if (!document.querySelector("[data-admin-nav]") || document.querySelector("[data-admin-dashboard]")) return;
+    if (!document.querySelector("[data-admin-nav]") || document.querySelector("[data-admin-dashboard], [data-admin-calendar]")) return;
     requireSession(function () { /* The scanner shares the authenticated administrative shell. */ });
   }
 
   initTicketShare();
+  function initCalendar() {
+    var root = document.querySelector("[data-admin-calendar]");
+    if (!root) return;
+    requireSession(function (session) {
+      if (session.role === "control_acceso") { window.location.replace("/admin/"); return; }
+      window.PerigalloCalendar.mount(root, { request: request, escapeHtml: escapeHtml, statusLabel: statusLabel, onError: renderPageError });
+    });
+  }
+
+  initCalendar();
   initLogin();
   initAdminChrome();
   initDashboard();
