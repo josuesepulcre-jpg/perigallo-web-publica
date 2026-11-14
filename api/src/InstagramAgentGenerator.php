@@ -89,7 +89,7 @@ final class InstagramAgentGenerator
             'instructions' => $prompt,
             'input' => [['role' => 'user', 'content' => $input]],
             'reasoning' => ['effort' => 'low'],
-            'max_output_tokens' => 4500,
+            'max_output_tokens' => $kind === 'conversation' ? 1500 : 3000,
             'store' => false,
             'text' => ['format' => [
                 'type' => 'json_schema',

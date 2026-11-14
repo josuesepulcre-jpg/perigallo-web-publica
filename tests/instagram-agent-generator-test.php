@@ -135,7 +135,7 @@ try {
     iga_assert($result['_generation']['response_id'] === 'resp_mock_123', 'No se conservó el identificador del proveedor.');
     iga_assert($result['_generation']['model'] === 'gpt-5.4-mini-2026-03-17', 'No se conservó el modelo devuelto.');
     iga_assert($result['_generation']['usage']['total_tokens'] === 420 && !isset($result['_generation']['usage']['private_detail']), 'Los metadatos de uso no se filtraron correctamente.');
-    iga_assert($captured['model'] === 'gpt-5.4-mini' && $captured['store'] === false && $captured['max_output_tokens'] === 4500, 'La petición no respeta modelo, almacenamiento o límite de tokens.');
+    iga_assert($captured['model'] === 'gpt-5.4-mini' && $captured['store'] === false && $captured['max_output_tokens'] === 3000, 'La petición no respeta modelo, almacenamiento o límite de tokens.');
     iga_assert($captured['reasoning'] === ['effort' => 'low'] && !isset($captured['tools']), 'La petición añadió herramientas o cambió el esfuerzo.');
     iga_assert($captured['text']['format']['type'] === 'json_schema' && $captured['text']['format']['strict'] === true, 'No se solicitó el esquema estricto.');
     iga_assert(!str_contains(json_encode($captured, JSON_THROW_ON_ERROR), $secret), 'El transporte de pruebas recibió una credencial.');
@@ -143,8 +143,13 @@ try {
     $input = json_decode($captured['input'][0]['content'], true, 32, JSON_THROW_ON_ERROR);
     iga_assert($input['mode'] === 'SIMULATION' && $input['data']['format'] === 'photo', 'El contexto no está separado de las instrucciones.');
 
+    $conversationClient = new InstagramAgentGenerator(static function(array $request): array {
+        iga_assert($request['max_output_tokens'] === 1500, 'La conversación debe usar el límite económico específico.');
+        return ['status'=>200,'body'=>json_encode(iga_response(iga_conversation()),JSON_THROW_ON_ERROR)];
+    });
     $conversation = iga_generator(iga_response(iga_conversation()))->generate('conversation', ['message' => 'Quiero celebrar mi boda']);
     iga_assert($conversation['decision'] === 'REPLY' && $conversation['classification'] === 'EVENT_INQUIRY', 'No se aceptó la conversación válida.');
+    $conversationClient->generate('conversation',['message'=>'Consulta breve']);
     $noContact = array_replace(iga_conversation(), ['decision' => 'NO_CONTACT', 'reply' => '', 'lead_status' => 'NO_CONTACT']);
     iga_assert(iga_generator(iga_response($noContact))->generate('conversation', ['no_contact' => true, 'handoff' => true])['reply'] === '', 'La exclusión no prevaleció sobre la atención humana.');
     $human = array_replace(iga_conversation(), ['decision' => 'HUMAN_TAKEOVER', 'reply' => '', 'lead_status' => 'HUMAN_TAKEOVER']);
