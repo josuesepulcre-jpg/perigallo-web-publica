@@ -107,6 +107,9 @@ final class InstagramAgentGenerator
                 throw new RuntimeException('No se pudo confirmar el resultado de la generación. No se ha reintentado automáticamente.', $code);
             }
         } else {
+            require_once __DIR__ . '/AiEuroBudget.php';
+            $request['service_tier'] = 'default';
+            AiEuroBudget::reserve($request);
             $response = $this->request($request, $apiKey);
         }
         if (!is_array($response) || !is_int($response['status'] ?? null) || !is_string($response['body'] ?? null)) {

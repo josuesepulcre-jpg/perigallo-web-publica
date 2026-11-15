@@ -1,0 +1,23 @@
+[Unit]
+Description=Perigallo shared EUR 0.10 daily AI preflight ledger
+After=local-fs.target
+
+[Service]
+DynamicUser=yes
+StateDirectory=perigallo-ai-spend
+RuntimeDirectory=perigallo-ai-spend
+RuntimeDirectoryMode=0755
+ExecStart=/usr/bin/python3 /usr/local/lib/perigallo-ai-spend/guard.py
+Restart=on-failure
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+RestrictAddressFamilies=AF_UNIX
+IPAddressDeny=any
+MemoryMax=128M
+TasksMax=32
+
+[Install]
+WantedBy=multi-user.target
