@@ -85,6 +85,53 @@ check($p->query('SELECT t.id FROM tickets t JOIN ticket_order_items i ON i.id=t.
 $edit['items'][0]['quantity']=6;$edit['expected_revision']=$mixed['order']['reservation_revision'];$mixed=$t->adminUpdateReservation($mixedId,$edit,'qa',true);check(activeTickets($mixedId),0,'extra place blocks unpaid tickets');$mixed=pay($mixed,'65');check(activeTickets($mixedId),7,'additional place creates one extra QR');
 $p->prepare('UPDATE tickets SET entry_count=1 WHERE id=?')->execute([$qrIds[0]]);$edit['items'][0]['quantity']=7;$edit['expected_revision']=$mixed['order']['reservation_revision'];rejected(fn()=>$t->adminUpdateReservation($mixedId,$edit,'qa',true),'used mixed QR prevents seat changes');
 echo "PASS mixed adult/child menus, activation, per-menu and event capacity, price permissions, edits, payments and QR preservation\n";
+
+// Named seats use historical positions so removing one guest preserves the other QR codes.
+$namedBody=fixture(3);
+$namedBody['quantity']=3;
+$named=$t->adminCreateReservation($namedBody,'qa',true);
+$namedId=(int)$named['order']['id'];
+$namedType=$namedBody['ticket_type_id'];
+$namedBody['people']=[$namedType=>[
+    ['position'=>1,'name'=>'Ana'],['position'=>2,'name'=>'Bruno'],['position'=>3,'name'=>'Carla'],
+]];
+$namedBody['expected_revision']=$named['order']['reservation_revision'];
+$named=$t->adminUpdateReservation($namedId,$namedBody,'qa',false);
+$named=qaPaymentLink($named,'65');
+// A contact correction still works when the current capacity has been reduced below bookings.
+$p->prepare('UPDATE events SET capacity=2 WHERE id=?')->execute([$namedBody['event_id']]);
+$namedBody['phone']='600000001';
+$namedBody['expected_revision']=$named['order']['reservation_revision'];
+$namedBody['people'][$namedType][0]['name']='Ana María';
+$named=$t->adminUpdateReservation($namedId,$namedBody,'qa',false);
+check($named['order']['phone'],'600000001','contact correction above current capacity');
+check($named['links'][0]['status'],'pending','contact correction leaves active payment link');
+check(array_column($named['attendees'],'attendee_name'),['Ana María','Bruno','Carla'],'names editable before payment');
+$named=pay($named,'195');
+$buyerToken=$named['order']['public_token'];
+$public=$t->getOrderByToken($buyerToken);
+$initialCodes=array_column($public['tickets'],'public_code','attendee_name');
+check(array_keys($initialCodes),['Ana María','Bruno','Carla'],'issued tickets include the edited names');
+$namedBody['expected_revision']=$named['order']['reservation_revision'];
+$namedBody['people'][$namedType]=[
+    ['position'=>1,'name'=>'Ana María'],['position'=>3,'name'=>'Carla'],['position'=>null,'name'=>'Diana'],
+];
+$invalidPeople=$namedBody;
+$invalidPeople['people'][$namedType][1]['position']=1;
+rejected(fn()=>$t->adminUpdateReservation($namedId,$invalidPeople,'qa',false),'duplicate guest position');
+$named=$t->adminUpdateReservation($namedId,$namedBody,'qa',false);
+$updatedCodes=array_column($t->getOrderByToken($buyerToken)['tickets'],'public_code','attendee_name');
+check(array_keys($updatedCodes),['Ana María','Carla','Diana'],'remove a specific guest and add another');
+check($updatedCodes['Ana María'],$initialCodes['Ana María'],'first retained QR');
+check($updatedCodes['Carla'],$initialCodes['Carla'],'retained QR after middle guest removal');
+check(in_array($initialCodes['Bruno'],$updatedCodes,true),false,'removed guest QR is no longer valid');
+$removedTicket=$p->prepare('SELECT status FROM tickets WHERE public_code=?');
+$removedTicket->execute([$initialCodes['Bruno']]);
+check($removedTicket->fetchColumn(),'cancelled','removed guest is cancelled for access control');
+check($named['order']['paid_cents'],19500,'attendee edit keeps the payment history');
+check(count($named['payments']),1,'attendee edit does not create a financial movement');
+echo "PASS named seats, contact edits above capacity, payment links and individual QR preservation\n";
+
 // Event availability respects both its physical capacity and enabled ticket quotas.
 $quota=fixture(100);$quota['quantity']=6;$quotaType=$quota['ticket_type_id'];$quotaEvent=$quota['event_id'];
 $p->prepare('UPDATE ticket_types SET capacity=80 WHERE id=?')->execute([$quotaType]);$quotaReservation=$t->adminCreateReservation($quota,'qa',true);
