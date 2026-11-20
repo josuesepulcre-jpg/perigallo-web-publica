@@ -36,43 +36,186 @@ function init(options){
  var entry=root.querySelector('[data-new-reservation]');
  function loadMeta(){return meta?Promise.resolve(meta):(metaPromise||=read('/api/admin/reservations/meta').then(d=>{meta=d;return d;}).catch(e=>{metaPromise=null;throw e;}));}
  function close(){if(modal)modal.remove();modal=null;detail=null;if(trigger?.isConnected)trigger.focus();}
- function shell(title,content){
-  if(modal)modal.remove();modal=document.createElement('dialog');modal.className='reservation-dialog';modal.setAttribute('aria-labelledby','reservation-dialog-title');modal.innerHTML='<div class="reservation-dialog-head"><div><span class="ticket-eyebrow">Reservas y cobros</span><h2 id="reservation-dialog-title">'+esc(title)+'</h2></div><button type="button" class="ticket-btn" data-res-close aria-label="Cerrar reserva">Cerrar</button></div><div data-res-content>'+content+'</div><p class="admin-form-status" data-res-message role="status" aria-live="polite"></p>';document.body.append(modal);modal.querySelector('[data-res-close]').onclick=close;modal.addEventListener('cancel',e=>{e.preventDefault();close();});modal.showModal();
+ function shell(title,content,action=''){
+  if(modal)modal.remove();
+  modal=document.createElement('dialog');
+  modal.className='reservation-dialog';
+  modal.setAttribute('aria-labelledby','reservation-dialog-title');
+  modal.innerHTML='<div class="reservation-dialog-head"><div><span class="ticket-eyebrow">Reservas y cobros</span><h2 id="reservation-dialog-title">'+esc(title)+'</h2></div><div class="reservation-head-actions">'+action+'<button type="button" class="ticket-btn" data-res-close aria-label="Cerrar reserva">Cerrar</button></div></div><p class="admin-form-status" data-res-message role="status"></p><div data-res-content>'+content+'</div>';
+  document.body.append(modal);
+  modal.querySelector('[data-res-close]').onclick=close;
+  modal.addEventListener('cancel',e=>{e.preventDefault();close();});
+  modal.showModal();
  }
- function message(value){if(modal)modal.querySelector('[data-res-message]').textContent=value;}
+ function message(value,state=''){
+  var status=modal?.querySelector('[data-res-edit-message]')||modal?.querySelector('[data-res-message]');
+  if(status){status.textContent=value;status.dataset.state=state;}
+ }
  function field(label,name,value='',extra='',type='text'){if(type==='datetime-local')extra+=' step="1"';return '<label>'+label+'<input name="'+name+'" type="'+type+'" value="'+esc(value)+'" '+extra+'></label>';}
  function methodSelect(){return '<label>Método de pago<select name="method">'+Object.entries(methods).filter(([k])=>k!=='card_online').map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select></label>';}
  function emailResult(result){var m=result.reservation_email;if(!m)return 'Guardado.';if(m.status==='skipped')return 'Enlace creado. Puedes prepararlo para WhatsApp Web Business o copiarlo.';return m.status==='sent'?'Enlace creado. Correo aceptado para envío a '+m.recipient+'.':m.status==='failed'?'El enlace está creado, pero el correo no se ha enviado. Puedes reintentarlo desde el enlace.':'El envío está en curso o pendiente de comprobación. No se enviará un duplicado.';}
  function cached(scope){try{return JSON.parse(sessionStorage.getItem('perigallo-reservation-'+scope))||{};}catch{return {};}}
  async function submit(form,path,method,body,scope){
-  var prior=cached(scope);body.request_id=prior.key||form.dataset.requestId||crypto.randomUUID();form.dataset.requestId=body.request_id;
-  sessionStorage.setItem('perigallo-reservation-'+scope,JSON.stringify({key:body.request_id,body}));var button=form.querySelector('[type=submit]');button.disabled=true;message('Guardando…');
-  try{var result=await api('/api/admin/reservations'+path,method,body);sessionStorage.removeItem('perigallo-reservation-'+scope);options.onChange(result);showDetail(result);message(emailResult(result));return result;}catch(e){message(e.message);throw e;}finally{if(button.isConnected)button.disabled=false;}
+  var editing=method==='PUT',prior=editing?{}:cached(scope);
+  body.request_id=prior.key||form.dataset.requestId||crypto.randomUUID();
+  form.dataset.requestId=body.request_id;
+  if(!editing)sessionStorage.setItem('perigallo-reservation-'+scope,JSON.stringify({key:body.request_id,body}));
+  var button=form.querySelector('[type=submit]');
+  button.disabled=true;
+  message('Guardando…');
+  try{
+   var result=await api('/api/admin/reservations'+path,method,body);
+   sessionStorage.removeItem('perigallo-reservation-'+scope);
+   options.onChange(result);
+   if(form.isConnected){
+    showDetail(result);
+    message(editing?'Cambios guardados.':emailResult(result),'success');
+   }
+   return result;
+  }catch(e){
+   if(form.isConnected)message(e.message,'error');
+   throw e;
+  }finally{
+   if(button.isConnected)button.disabled=false;
+  }
  }
  function editForm(current){
-  var o=current?.order,oldItems=current?.items||[],selectedEvent=oldItems[0]?.event_id||options.selectedEvent()||'',draft=cached(o?'edit-'+o.id:'create').body;
-  var body='<form class="admin-cash-order-form reservation-form" data-res-edit>'+(!o?'<label class="admin-form-span">Evento<select name="event_id" required><option value="">Selecciona un evento</option>'+meta.events.filter(e=>!['draft','archived','cancelled'].includes(e.status)).map(e=>'<option value="'+e.id+'" '+(String(e.id)===String(selectedEvent)?'selected':'')+'>'+esc(e.title)+'</option>').join('')+'</select></label>':'<p class="admin-form-span">'+esc(o.event_title)+' · '+esc(o.redsys_order)+'</p><input type="hidden" name="event_id" value="'+oldItems[0].event_id+'">')+
-   '<section class="admin-form-span reservation-menu-section"><h3>Menús y personas</h3><p>Indica cuántas personas toman cada menú. Puedes combinar los menús activos de este evento.</p><div data-res-menus></div></section>'+
-   '<div class="reservation-form-total admin-form-span"><span>Total de la reserva · <span data-res-persons>0</span> personas</span><strong data-res-total>'+money(o?.total_cents)+'</strong><small>Guardar no registra ningún cobro.</small></div>'+
-   field('Nombre','first_name',o?.first_name||'','required maxlength="120" autocomplete="given-name"')+field('Apellidos','last_name',o?.last_name||'','required maxlength="160" autocomplete="family-name"')+field('Teléfono','phone',o?.phone||'','required maxlength="60" autocomplete="tel"','tel')+field('Email (opcional)','email',o?.email||'','maxlength="190" autocomplete="email"','email')+
-   '<label>Estado de ocupación<select name="occupancy_status"><option value="confirmed">Confirmada · plazas asignadas</option><option value="pending">Pendiente de confirmar · reserva temporal</option></select></label>'+field('Fecha límite (opcional)','reservation_expires_at',o?.reservation_expires_at?.replace(' ','T')||'','','datetime-local')+
+  var o=current?.order,oldItems=current?.items||[],selectedEvent=oldItems[0]?.event_id||options.selectedEvent()||'';
+  var draft=o?null:cached('create').body;
+  var contact=field('Nombre','first_name',o?.first_name||'','required maxlength="120" autocomplete="given-name"')+
+   field('Apellidos','last_name',o?.last_name||'','required maxlength="160" autocomplete="family-name"')+
+   field('Teléfono','phone',o?.phone||'','required maxlength="60" autocomplete="tel"','tel')+
+   field('Correo electrónico (opcional)','email',o?.email||'','maxlength="190" autocomplete="email"','email');
+  var body='<form class="admin-cash-order-form reservation-form" data-res-edit>'+
+   (o?'<p class="admin-form-span reservation-edit-context">'+esc(o.event_title)+' · #'+esc(o.redsys_order)+'</p><input type="hidden" name="event_id" value="'+selectedEvent+'"><h3 class="admin-form-span reservation-edit-heading">Titular de la reserva</h3>'+contact:
+    '<label class="admin-form-span">Evento<select name="event_id" required><option value="">Selecciona un evento</option>'+meta.events.filter(e=>!['draft','archived','cancelled'].includes(e.status)).map(e=>'<option value="'+e.id+'" '+(String(e.id)===String(selectedEvent)?'selected':'')+'>'+esc(e.title)+'</option>').join('')+'</select></label>')+
+   '<section class="admin-form-span reservation-menu-section"><h3>Menús y personas</h3><div data-res-menus></div></section>'+
+   '<div class="reservation-form-total admin-form-span"><span>Total de la reserva · <span data-res-persons>0 personas</span></span><strong data-res-total>'+money(o?.total_cents)+'</strong>'+
+   (o?'<small>Pagado '+money(o.paid_cents)+' · Pendiente <span data-res-pending></span></small>':'')+'</div>'+
+   (o?'':contact)+
+   '<label>Estado de ocupación<select name="occupancy_status"><option value="confirmed">Confirmada · plazas asignadas</option><option value="pending">Pendiente de confirmar · reserva temporal</option></select></label>'+
+   field('Fecha límite (opcional)','reservation_expires_at',o?.reservation_expires_at?.replace(' ','T')||'','','datetime-local')+
    (!o?'<label class="admin-form-span">Cupo de plazas<select name="inventory_mode"><option value="standard">Cupo general del evento</option><option value="manual_reserve">Cupo adicional de venta manual</option></select></label>':'')+
-   '<label class="admin-form-span">Observaciones internas<textarea name="notes" maxlength="1000">'+esc(o?.cash_payment_notes||'')+'</textarea></label><div class="admin-cash-form-actions admin-form-span"><button type="submit" class="ticket-btn primary">'+(o?'Guardar cambios':'Crear reserva sin pago')+'</button></div></form>';
-  shell(o?'Editar reserva':'Nueva reserva',body);var f=modal.querySelector('form');
+   '<label class="admin-form-span">Observaciones internas<textarea name="notes" maxlength="1000">'+esc(o?.cash_payment_notes||'')+'</textarea></label>'+
+   '<footer class="admin-form-span'+(o?' reservation-edit-footer':'')+'"><p class="admin-form-status" data-res-edit-message role="status"></p><div class="admin-cash-form-actions">'+
+   (o?'<button type="button" class="ticket-btn" data-res-edit-back>Volver a la ficha</button>':'')+
+   '<button type="submit" class="ticket-btn primary">'+(o?'Guardar cambios':'Crear reserva sin pago')+'</button></div></footer></form>';
+  shell(o?'Editar reserva':'Nueva reserva',body);
+  var f=modal.querySelector('form'),menus=f.querySelector('[data-res-menus]');
+  var people=new Map();
+  var names=new Map((current?.attendees||[]).map(a=>[a.ticket_type_id+':'+a.ticket_sequence,a.attendee_name]));
   function types(saved){
-   var event=meta.events.find(e=>String(e.id)===f.event_id.value),types=(event?.ticket_types||[]).filter(t=>t.active&&!['draft','archived'].includes(t.status));
-   oldItems.forEach(i=>{if(!types.some(t=>Number(t.id)===Number(i.ticket_type_id)))types.push({id:i.ticket_type_id,name:i.ticket_type_name,final_price_cents:i.unit_price_cents,active:false});});
-   f.querySelector('[data-res-menus]').innerHTML=types.length?types.map((t,index)=>{
-    var old=oldItems.find(i=>Number(i.ticket_type_id)===Number(t.id)),prior=saved?.find(i=>Number(i.ticket_type_id)===Number(t.id)),qty=prior?.quantity??old?.quantity??(!o&&index===0?1:0),price=prior?.unit_price_euros??(Number(old?.unit_price_cents??t.final_price_cents??t.price_cents)/100).toFixed(2);
-    return '<fieldset class="reservation-menu-line" data-res-menu="'+Number(t.id)+'"><legend>'+esc(t.name)+(t.active?'':' · No disponible para nuevas plazas')+'</legend>'+field('Personas · '+esc(t.name),'menu_qty_'+t.id,qty,'required min="0" max="'+(t.active?'5000':Number(old?.quantity||0))+'" step="1" data-menu-quantity','number')+field('Precio por persona (€) · '+esc(t.name),'menu_price_'+t.id,price,'required min="0" step="0.01" data-menu-price '+(session.is_owner?'':'readonly'),'number')+'<div class="reservation-menu-subtotal"><span>Subtotal</span><strong data-menu-total></strong></div></fieldset>';
-   }).join(''):'<p>Selecciona un evento con menús activos.</p>';total();
+   var event=meta.events.find(e=>String(e.id)===f.event_id.value);
+   var available=(event?.ticket_types||[]).filter(t=>t.active&&!['draft','archived'].includes(t.status));
+   oldItems.forEach(i=>{if(!available.some(t=>Number(t.id)===Number(i.ticket_type_id)))available.push({id:i.ticket_type_id,name:i.ticket_type_name,final_price_cents:i.unit_price_cents,active:false});});
+   menus.innerHTML=available.length?available.map((t,index)=>{
+    var old=oldItems.find(i=>Number(i.ticket_type_id)===Number(t.id)),prior=saved?.find(i=>Number(i.ticket_type_id)===Number(t.id));
+    var qty=prior?.quantity??old?.quantity??(!o&&index===0?1:0),max=t.active?5000:Number(old?.quantity||0);
+    var price=prior?.unit_price_euros??(Number(old?.unit_price_cents??t.final_price_cents??t.price_cents)/100).toFixed(2);
+    var menuName=esc(t.name);
+    if(o)people.set(String(t.id),Array.from({length:Number(qty)},(_,i)=>({position:i+1,name:names.get(t.id+':'+(i+1))||''})));
+    return '<fieldset class="reservation-menu-line" data-res-menu="'+Number(t.id)+'"><legend>'+menuName+(t.active?'':' · Cerrado a nuevas plazas')+'</legend>'+
+     (o?'<div class="reservation-quantity"><label for="reservation-qty-'+Number(t.id)+'">Personas</label><div>'+
+      '<button type="button" data-menu-step="-1" aria-label="Quitar una plaza de '+menuName+'">−</button>'+
+      '<input id="reservation-qty-'+Number(t.id)+'" type="number" inputmode="numeric" value="'+qty+'" required min="0" max="'+max+'" step="1" data-menu-quantity>'+
+      '<button type="button" data-menu-step="1" aria-label="Añadir una plaza de '+menuName+'">+</button></div></div>':
+      field('Personas · '+menuName,'menu_qty_'+t.id,qty,'required min="0" max="'+max+'" step="1" data-menu-quantity','number'))+
+     field('Precio por persona (€)','menu_price_'+t.id,price,'required min="0" step="0.01" data-menu-price '+(session.is_owner?'':'readonly'),'number')+
+     '<div class="reservation-menu-subtotal"><span>Subtotal</span><strong data-menu-total></strong></div>'+
+     (o?'<details class="reservation-attendees" data-menu-people><summary>Nombres de asistentes <span>(opcional)</span></summary><div data-menu-names></div></details>':'')+
+     '</fieldset>';
+   }).join(''):'<p>Selecciona un evento con menús activos.</p>';
+   if(o)menus.querySelectorAll('[data-res-menu]').forEach(row=>renderPeople(row,false));
+   total();
   }
-  function menuItems(){return Array.from(f.querySelectorAll('[data-res-menu]')).map(row=>({ticket_type_id:Number(row.dataset.resMenu),quantity:Number(row.querySelector('[data-menu-quantity]').value),unit_price_euros:row.querySelector('[data-menu-price]').value})).filter(i=>i.quantity>0);}
-  function total(){var sum=0,people=0;f.querySelectorAll('[data-res-menu]').forEach(row=>{var qty=Number(row.querySelector('[data-menu-quantity]').value)||0,amount=Math.round(Number(row.querySelector('[data-menu-price]').value||0)*100)*qty;sum+=amount;people+=qty;row.querySelector('[data-menu-total]').textContent=money(amount);});f.querySelector('[data-res-total]').textContent=money(sum);f.querySelector('[data-res-persons]').textContent=people;}
-  if(o)f.occupancy_status.value=o.occupancy_status==='pending'?'pending':'confirmed';
-  if(draft){if(!o)f.event_id.value=draft.event_id;for(var [k,v]of Object.entries(draft)){var el=f.elements.namedItem(k);if(el&&k!=='event_id')el.value=v;}}
-  types(draft?.items||(draft?.ticket_type_id?[draft]:null));if(!o)f.event_id.onchange=()=>types();f.querySelector('[data-res-menus]').oninput=total;
-  f.onsubmit=event=>{event.preventDefault();if(!f.reportValidity())return;var values=Object.fromEntries(new FormData(f));values.items=menuItems();if(!values.items.length){message('Indica al menos una persona en uno de los menús.');return;}if(values.items.reduce((n,i)=>n+i.quantity,0)>5000){message('La reserva no puede superar las 5000 personas.');return;}Object.keys(values).filter(k=>k.startsWith('menu_qty_')||k.startsWith('menu_price_')).forEach(k=>delete values[k]);if(o)values.expected_revision=o.reservation_revision;submit(f,o?'/'+o.id:'',o?'PUT':'POST',values,o?'edit-'+o.id:'create').catch(()=>{});};
+  function renderPeople(row,focusAfterRemoval){
+   var slots=people.get(row.dataset.resMenu),details=row.querySelector('[data-menu-people]'),list=row.querySelector('[data-menu-names]');
+   var qty=row.querySelector('[data-menu-quantity]'),less=row.querySelector('[data-menu-step="-1"]'),more=row.querySelector('[data-menu-step="1"]');
+   less.disabled=slots.length===0;
+   more.disabled=slots.length>=Number(qty.max);
+   details.hidden=slots.length===0;
+   if(!details.open){list.replaceChildren();return;}
+   list.innerHTML=slots.map((slot,i)=>'<div class="reservation-attendee"><label><span>Persona '+(i+1)+'</span><input type="text" maxlength="190" value="'+esc(slot.name)+'" data-menu-name="'+i+'"></label><button type="button" class="text-action" data-menu-remove="'+i+'" aria-label="Quitar a '+(slot.name?esc(slot.name):'la persona '+(i+1))+'">Quitar</button></div>').join('');
+   if(focusAfterRemoval!==false)(list.querySelectorAll('[data-menu-remove]')[Math.min(focusAfterRemoval,slots.length-1)]||(more.disabled?qty:more)).focus();
+  }
+  function resizePeople(row){
+   var input=row.querySelector('[data-menu-quantity]');
+   if(!input.validity.valid)return;
+   var slots=people.get(row.dataset.resMenu),size=Number(input.value);
+   if(size===slots.length)return;
+   if(slots.length>size)slots.length=size;
+   while(slots.length<size)slots.push({position:null,name:''});
+   renderPeople(row,false);
+  }
+  function menuItems(){
+   return Array.from(menus.querySelectorAll('[data-res-menu]')).map(row=>({ticket_type_id:Number(row.dataset.resMenu),quantity:Number(row.querySelector('[data-menu-quantity]').value),unit_price_euros:row.querySelector('[data-menu-price]').value})).filter(i=>i.quantity>0);
+  }
+  function total(){
+   var sum=0,count=0;
+   menus.querySelectorAll('[data-res-menu]').forEach(row=>{
+    var qty=Number(row.querySelector('[data-menu-quantity]').value)||0,amount=Math.round(Number(row.querySelector('[data-menu-price]').value||0)*100)*qty;
+    sum+=amount;
+    count+=qty;
+    row.querySelector('[data-menu-total]').textContent=money(amount);
+   });
+   f.querySelector('[data-res-total]').textContent=money(sum);
+   f.querySelector('[data-res-persons]').textContent=count+(count===1?' persona':' personas');
+   if(o)f.querySelector('[data-res-pending]').textContent=money(Math.max(0,sum-Number(o.paid_cents)));
+  }
+  if(o){
+   f.occupancy_status.value=o.occupancy_status==='pending'?'pending':'confirmed';
+   f.querySelector('[data-res-edit-back]').onclick=()=>showDetail(current);
+   menus.addEventListener('toggle',e=>{
+    if(e.target.matches('[data-menu-people]'))renderPeople(e.target.closest('[data-res-menu]'),false);
+   },true);
+   menus.addEventListener('change',e=>{
+    if(e.target.matches('[data-menu-quantity]'))resizePeople(e.target.closest('[data-res-menu]'));
+   });
+   menus.addEventListener('click',e=>{
+    var button=e.target.closest('[data-menu-step],[data-menu-remove]');
+    if(!button)return;
+    var row=button.closest('[data-res-menu]'),input=row.querySelector('[data-menu-quantity]'),slots=people.get(row.dataset.resMenu);
+    if(button.hasAttribute('data-menu-remove')){
+     var index=Number(button.dataset.menuRemove);
+     slots.splice(index,1);
+     input.value=slots.length;
+     renderPeople(row,index);
+    }else{
+     input.value=slots.length+Number(button.dataset.menuStep);
+     resizePeople(row);
+     if(button.disabled)input.focus();
+    }
+    total();
+   });
+  }
+  if(draft){
+   f.event_id.value=draft.event_id;
+   for(var [k,v]of Object.entries(draft)){var el=f.elements.namedItem(k);if(el&&k!=='event_id')el.value=v;}
+  }
+  types(draft?.items||(draft?.ticket_type_id?[draft]:null));
+  if(!o)f.event_id.onchange=()=>types();
+  menus.oninput=e=>{
+   if(o&&e.target.matches('[data-menu-name]')){
+    var index=Number(e.target.dataset.menuName);
+    people.get(e.target.closest('[data-res-menu]').dataset.resMenu)[index].name=e.target.value;
+    e.target.closest('.reservation-attendee').querySelector('[data-menu-remove]').setAttribute('aria-label',e.target.value?'Quitar a '+e.target.value:'Quitar a la persona '+(index+1));
+   }else total();
+  };
+  f.onsubmit=event=>{
+   event.preventDefault();
+   if(!f.reportValidity())return;
+   var values=Object.fromEntries(new FormData(f));
+   values.items=menuItems();
+   if(!values.items.length){message('Indica al menos una persona en uno de los menús.','error');return;}
+   if(values.items.reduce((n,i)=>n+i.quantity,0)>5000){message('La reserva no puede superar las 5000 personas.','error');return;}
+   Object.keys(values).filter(k=>k.startsWith('menu_qty_')||k.startsWith('menu_price_')).forEach(k=>delete values[k]);
+   if(o){
+    menus.querySelectorAll('[data-res-menu]').forEach(resizePeople);
+    values.expected_revision=o.reservation_revision;
+    values.people=Object.fromEntries(values.items.map(i=>[i.ticket_type_id,people.get(String(i.ticket_type_id))]));
+   }
+   submit(f,o?'/'+o.id:'',o?'PUT':'POST',values,o?'edit-'+o.id:'create').catch(()=>{});
+  };
  }
  function shareWhatsApp(data,link){
   var o=data.order;
@@ -87,18 +230,30 @@ function init(options){
   detail=data;var o=data.order,closed=['cancelled','expired'].includes(o.occupancy_status),canPay=!closed&&Number(o.outstanding_cents)>0;
   var payments=data.payments.map(p=>'<tr><td>'+esc(p.paid_at)+'</td><td>'+esc(methods[p.method]||p.method)+(p.kind==='refund'?' · Devolución':'')+(Number(p.review_required)?' · Requiere revisión':'')+'</td><td class="reservation-number">'+(p.kind==='refund'?'−':'')+money(p.amount_cents)+'</td><td>'+esc(p.reference||'')+(p.notes?'<small>'+esc(p.notes)+'</small>':'')+'</td></tr>').join('');
   var links=data.links.map(l=>'<li><div><strong>'+money(l.amount_cents)+'</strong><span>'+esc(linkStates[l.status])+'</span><small>Creado '+esc(l.created_at)+' · Vence '+esc(l.expires_at)+'</small><small>'+esc(({sent:'Correo aceptado para envío',failed:'Correo no enviado',pending:'Envío en curso o pendiente de comprobación'})[l.email_status]||'Sin envío de correo')+'</small></div><div class="reservation-row-actions">'+(['pending','processing'].includes(l.status)?'<button type="button" class="ticket-btn" data-res-copy="'+l.id+'">Copiar enlace</button><a class="text-action" href="'+esc(l.url)+'" target="_blank" rel="noopener">Ver enlace</a>':'')+(l.status==='pending'?'<button type="button" class="ticket-btn" data-res-whatsapp-link="'+l.id+'">Preparar pago en WhatsApp</button>':'')+(l.status==='pending'&&o.email&&l.email_status==='failed'?'<button type="button" class="ticket-btn" data-res-email="'+l.id+'">Reintentar correo</button>':'')+(['pending','failed'].includes(l.status)?'<button type="button" class="text-action" data-res-cancel-link="'+l.id+'">Cancelar enlace</button>':'')+(l.status==='processing'&&session.is_owner?'<button type="button" class="text-action" data-res-reconcile="'+l.id+'">Revisar pago en curso</button>':'')+'</div></li>').join('');
+  var editAction=o.occupancy_status==='cancelled'?'':'<button type="button" class="ticket-btn primary" data-res-edit-open>Editar reserva</button>';
   shell(o.name,'<div class="reservation-detail-meta">'+pill(o)+'<span>Plazas: '+esc(occupancy[o.occupancy_status])+'</span><span>'+esc(o.event_title)+' · '+Number(o.ticket_quantity)+' personas · #'+esc(o.redsys_order)+'</span><span>'+esc(o.phone)+(o.email?' · '+esc(o.email):'')+'</span></div>'+
-   '<section class="reservation-history"><h3>Menús reservados</h3>'+data.items.map(i=>'<p>'+Number(i.quantity)+' × '+esc(i.ticket_type_name)+' · '+money(i.unit_price_cents)+' por persona · '+money(i.total_cents)+'</p>').join('')+'</section><div class="reservation-balance">'+[['Total reserva',o.total_cents],['Pagado',o.paid_cents],['Pendiente',o.outstanding_cents]].map(([l,v])=>'<div><span>'+l+'</span><strong>'+money(v)+'</strong></div>').join('')+'</div>'+
+   '<section class="reservation-history"><h3>Menús reservados</h3>'+data.items.map(i=>{
+    var named=(data.attendees||[]).filter(a=>Number(a.ticket_type_id)===Number(i.ticket_type_id)&&a.attendee_name).map(a=>esc(a.attendee_name));
+    return '<p>'+Number(i.quantity)+' × '+esc(i.ticket_type_name)+' · '+money(i.unit_price_cents)+' por persona · '+money(i.total_cents)+(named.length?'<small class="reservation-named-guests">'+named.join(' · ')+'</small>':'')+'</p>';
+   }).join('')+'</section><div class="reservation-balance">'+[['Total reserva',o.total_cents],['Pagado',o.paid_cents],['Pendiente',o.outstanding_cents]].map(([l,v])=>'<div><span>'+l+'</span><strong>'+money(v)+'</strong></div>').join('')+'</div>'+
    (Number(o.refunded_cents)?'<p>Devoluciones registradas: '+money(o.refunded_cents)+'</p>':'')+(Number(o.credit_cents)||Number(o.review_cents)?'<p class="is-error">Pago que requiere revisión: '+money(o.review_cents||o.credit_cents)+'. Revisa el historial antes de registrar nuevos cobros.</p>':'')+
    (Number(data.processing_cents)?'<p class="reservation-processing">Hay '+money(data.processing_cents)+' en curso en la pasarela. Ese importe queda reservado hasta que se confirme el resultado.</p>':'')+
-   '<div class="reservation-row-actions">'+(!closed?'<button type="button" class="ticket-btn" data-res-whatsapp>Confirmación por WhatsApp</button>':'')+(canPay?'<button type="button" class="ticket-btn primary" data-res-operation="payments">Registrar pago manual</button><button type="button" class="ticket-btn" data-res-operation="links">Generar enlace de pago</button>':'')+(!closed?'<button type="button" class="ticket-btn" data-res-edit-open>Editar reserva</button><button type="button" class="text-action" data-res-operation="cancel">Cancelar reserva</button>':'')+(o.occupancy_status==='expired'?'<button type="button" class="ticket-btn" data-res-edit-open>Revisar vigencia y plazas</button>':'')+(session.is_owner&&Number(o.paid_cents)>0?'<button type="button" class="text-action" data-res-operation="refunds">Registrar devolución</button>':'')+(o.economic_status==='paid'&&!closed?'<a class="ticket-btn" target="_blank" rel="noopener" href="/entradas/pedido/?token='+encodeURIComponent(o.public_token)+'">Ver entradas</a>':'')+'<button type="button" class="text-action" data-res-refresh>Actualizar ficha</button></div><div data-res-operation-form></div>'+
+   '<div class="reservation-row-actions">'+(!closed?'<button type="button" class="ticket-btn" data-res-whatsapp>Confirmación por WhatsApp</button>':'')+(canPay?'<button type="button" class="ticket-btn primary" data-res-operation="payments">Registrar pago manual</button><button type="button" class="ticket-btn" data-res-operation="links">Generar enlace de pago</button>':'')+(!closed?'<button type="button" class="text-action" data-res-operation="cancel">Cancelar reserva</button>':'')+(session.is_owner&&Number(o.paid_cents)>0?'<button type="button" class="text-action" data-res-operation="refunds">Registrar devolución</button>':'')+(o.economic_status==='paid'&&!closed?'<a class="ticket-btn" target="_blank" rel="noopener" href="/entradas/pedido/?token='+encodeURIComponent(o.public_token)+'">Ver entradas</a>':'')+'<button type="button" class="text-action" data-res-refresh>Actualizar ficha</button></div><div data-res-operation-form></div>'+
    '<section class="reservation-history"><h3>Historial de pagos</h3>'+(payments?'<div class="reservation-table-wrap"><table class="reservation-table reservation-ledger"><thead><tr><th>Fecha y hora</th><th>Método</th><th>Importe</th><th>Referencia / notas</th></tr></thead><tbody>'+payments+'</tbody></table></div>':'<p>No se ha registrado ningún pago.</p>')+'</section>'+
    '<section class="reservation-history"><h3>Enlaces de pago</h3>'+(links?'<ul class="reservation-links">'+links+'</ul>':'<p>No hay enlaces de pago.</p>')+'</section>'+
-   '<section class="reservation-history"><h3>Observaciones internas</h3><p>'+esc(o.cash_payment_notes||'Sin observaciones.')+'</p></section><details class="reservation-history"><summary>Actividad de la reserva</summary>'+data.history.map(h=>'<p><time>'+esc(h.created_at)+'</time> · '+esc(h.actor)+' · '+esc(({reservation_email_requested:'Correo de reserva solicitado',reservation_created:'Reserva creada',reservation_updated:'Reserva modificada',reservation_payment_recorded:'Pago manual registrado',reservation_online_payment_confirmed:'Pago online confirmado',reservation_payment_link_created:'Enlace creado',reservation_cancelled:'Reserva cancelada',reservation_refund_recorded:'Devolución registrada',reservation_payment_link_cancelled:'Enlace cancelado',reservation_payment_attempt_reconciled:'Intento cerrado tras comprobación en Redsys',reservation_online_payment_review:'Pago online pendiente de revisión'})[h.action]||h.action)+'</p>').join('')+'</details>');
+   '<section class="reservation-history"><h3>Observaciones internas</h3><p>'+esc(o.cash_payment_notes||'Sin observaciones.')+'</p></section><details class="reservation-history"><summary>Actividad de la reserva</summary>'+data.history.map(h=>'<p><time>'+esc(h.created_at)+'</time> · '+esc(h.actor)+' · '+esc(({reservation_email_requested:'Correo de reserva solicitado',reservation_created:'Reserva creada',reservation_updated:'Reserva modificada',reservation_payment_recorded:'Pago manual registrado',reservation_online_payment_confirmed:'Pago online confirmado',reservation_payment_link_created:'Enlace creado',reservation_cancelled:'Reserva cancelada',reservation_refund_recorded:'Devolución registrada',reservation_payment_link_cancelled:'Enlace cancelado',reservation_payment_attempt_reconciled:'Intento cerrado tras comprobación en Redsys',reservation_online_payment_review:'Pago online pendiente de revisión'})[h.action]||h.action)+'</p>').join('')+'</details>',editAction);
   detail=data;
   modal.querySelector('[data-res-whatsapp]')?.addEventListener('click',()=>shareWhatsApp(data));
   modal.querySelectorAll('[data-res-whatsapp-link]').forEach(b=>b.onclick=()=>shareWhatsApp(data,data.links.find(l=>String(l.id)===b.dataset.resWhatsappLink)));
-  modal.querySelector('[data-res-refresh]').onclick=()=>open(o.id);modal.querySelector('[data-res-edit-open]')?.addEventListener('click',()=>loadMeta().then(()=>editForm(data)).catch(e=>message(e.message)));
+  modal.querySelector('[data-res-refresh]').onclick=()=>open(o.id);
+  var editButton=modal.querySelector('[data-res-edit-open]');
+  if(editButton)editButton.onclick=async()=>{
+   editButton.disabled=true;
+   message('Cargando…');
+   try{await loadMeta();if(editButton.isConnected)editForm(data);}
+   catch(e){if(editButton.isConnected)message(e.message,'error');}
+   finally{editButton.disabled=false;}
+  };
   modal.querySelectorAll('[data-res-operation]').forEach(b=>b.onclick=()=>operation(b.dataset.resOperation,data));
   modal.querySelectorAll('[data-res-copy]').forEach(b=>b.onclick=()=>{var l=data.links.find(l=>String(l.id)===b.dataset.resCopy);navigator.clipboard.writeText(l.url).then(()=>message('Enlace copiado. Puedes enviarlo manualmente al cliente.')).catch(()=>message('No se pudo copiar. Abre «Ver enlace» y copia su dirección.'));});
   modal.querySelectorAll('[data-res-email]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{var r=await api('/api/admin/reservations/'+o.id+'/links/'+b.dataset.resEmail+'/email','POST',{});showDetail(r);message(emailResult(r));}catch(e){message(e.message);b.disabled=false;}});

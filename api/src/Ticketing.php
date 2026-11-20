@@ -388,13 +388,15 @@ final class Ticketing
         $items->execute([(int) $order['id']]);
         $orderItems = $this->orderItemsWithReference($items->fetchAll());
 
+        $liveReservation = ($order['sales_channel'] ?? '') === 'reservation'
+            && !in_array($order['status'], ['cancelled', 'refunded'], true);
         $tickets = $this->pdo->prepare(
             'SELECT t.id, t.public_code, t.qr_token_ciphertext, t.status, t.issued_at, t.used_at, e.title AS event_title, e.subtitle AS event_subtitle, e.starts_at, e.ends_at, e.doors_open_at, e.location, e.address, e.locality, e.province, e.dress_code, toi.ticket_type_name, ta.attendee_name
              FROM tickets t
              JOIN events e ON e.id = t.event_id
              JOIN ticket_order_items toi ON toi.id = t.order_item_id
              LEFT JOIN ticket_attendees ta ON ta.ticket_id = t.id
-             WHERE toi.order_id = ?
+             WHERE toi.order_id = ?' . ($liveReservation ? ' AND t.status NOT IN ("cancelled", "refunded")' : '') . '
              ORDER BY t.id ASC'
         );
         $tickets->execute([(int) $order['id']]);
