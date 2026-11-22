@@ -112,10 +112,27 @@ function bindGroupInquiry() {
  });
 }
 
-function bookingActions(plan) {
- if (inquiryPlanIds.includes(plan)) return `<div class="plan-booking"><a href="tel:+34691499985">Reservar por teléfono ↗</a><button type="button" class="reserve-link" data-group-inquiry="${plan}">Reservar por WhatsApp ↗</button></div>`;
- const checkout = bookingOrigin + '/entradas/reserva/?plan=' + encodeURIComponent(plan);
- return `<div class="plan-booking"><a class="reserve-link" href="${checkout}&mode=reserve">Reservar ↗</a></div>`;
+function onlineBookingUrl(plan, menuId) {
+ if (!inquiryPlanIds.includes(plan)) {
+  return bookingOrigin + '/entradas/reserva/?plan=' + encodeURIComponent(plan) + '&mode=reserve';
+ }
+ const menus = {
+  'navidad-02': 'perigallo-raices',
+  'navidad-03': 'perigallo-mesa',
+  'navidad-04': 'perigallo-brindis',
+  'navidad-individual': 'perigallo-degustacion'
+ };
+ const url = new URL('https://reservas.perigallo.com/reservar?source=web');
+ const menu = plan === 'degustacion' ? menus['navidad-individual'] : menus[menuId];
+ if (menu) url.searchParams.set('menu', menu);
+ return url.href;
+}
+function bookingActions(plan, menuId) {
+ const online = `<a class="reserve-link" href="${esc(onlineBookingUrl(plan, menuId))}">Reservar online <span aria-hidden="true">↗</span></a>`;
+ const contact = inquiryPlanIds.includes(plan)
+  ? `<a href="tel:+34691499985">Reservar por teléfono ↗</a><button type="button" data-group-inquiry="${plan}">Reservar por WhatsApp ↗</button>`
+  : '';
+ return `<div class="plan-booking">${online}${contact}</div>`;
 }
 $('#plan-grid').innerHTML=PLANS.map(p=>`<article class="plan-card" data-plan="${p.id}" data-period="${p.period||p.id}"><button class="plan-art" data-open="${p.id}" aria-label="Abrir ${esc(p.name)}"><img src="${p.image||`assets/temporada-${p.id}.webp`}" alt="${esc(sceneDescriptions[p.id])}" loading="lazy"></button><div class="card-copy"><span class="card-date">${p.date}</span><h3>${esc(p.name)}</h3><p>${esc(p.description)}</p><div class="card-price">${p.price} <small>/ persona</small></div><div class="price-note">${p.note}</div><button class="card-open" data-open="${p.id}">${p.action}<span aria-hidden="true">↗</span></button>${bookingActions(p.id)}</div></article>`).join('');
 for(const b of document.querySelectorAll('[data-filter]'))b.addEventListener('click',()=>{
@@ -163,12 +180,12 @@ function menuHTML(menu) {
  ${activePlan.id==='degustacion'?'<p class="inquiry-hint">Viernes, sábados y domingos de diciembre, solo al mediodía. Excepto el 25, reservado al menú de Navidad.</p>':''}
  ${sections}
  <p class="allergy-note">Si tenéis alguna alergia, consultadnos al reservar.</p>
- ${reservationHTML()}
+ ${reservationHTML(menu.id)}
  <div class="reader-tools"><a href="menus/${menu.id}.png${menu.id==='navidad-individual'?'?v=mediodia-20261108':menu.id==='ano-nuevo-menu'?'?v=bebidas-incluidas-20261109':['navidad-02','navidad-03','navidad-04'].includes(menu.id)?'?v=nombres-originales-20261109':''}" download>Descargar carta ↓</a><button data-print>Imprimir / guardar PDF ↗</button></div>
  </article>`;
 }
-function reservationHTML() {
- if(inquiryPlanIds.includes(activePlan.id))return `<div class="leaf-reserve">${bookingActions(activePlan.id)}<p>Para más info y reservas · Cuéntanos la fecha, el turno y vuestro menú.</p></div>`;
+function reservationHTML(menuId) {
+ if(inquiryPlanIds.includes(activePlan.id))return `<div class="leaf-reserve">${bookingActions(activePlan.id,menuId)}<p>Para más info y reservas · Cuéntanos la fecha, el turno y vuestro menú.</p></div>`;
  const message = 'Hola, me gustaría consultar disponibilidad para ' + activePlan.name + '.';
  return `<div class="leaf-reserve">${bookingActions(activePlan.id)}<p>Para más info y reservas</p><a href="https://wa.me/34691499985?text=${encodeURIComponent(message)}" target="_blank" rel="noopener">Escribir por WhatsApp ↗</a><a href="tel:+34691499985">Llamar al 691 499 985</a></div>`;
 }
@@ -225,6 +242,7 @@ function selectChoice(id) {
  select.value = id;
  if(id==='consulta'&&!groupInquiryDraft.menu&&inquiryMenuIds().includes(activeChoice))groupInquiryDraft.menu=activeChoice;
  activeChoice = id;
+ $('#experience-book-online').href = onlineBookingUrl(activePlan.id, id);
  const index = select.selectedIndex;
  const count = select.options.length;
  $('#leaf-nav [data-book="prev"]').disabled = index === 0;

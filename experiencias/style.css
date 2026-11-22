@@ -74,7 +74,7 @@ dialog{border:0;padding:0;background:var(--paper);color:var(--ink);width:min(126
  .season-hero{min-height:490px}.season-photo{object-position:56% 50%}.season-hero::after{background:linear-gradient(0deg,#0e180ce8 0%,#15180e8a 52%,#12150c16)}
  .season-content{padding:40px 6%}.season-content h1{font-size:clamp(58px,14vw,90px)}.season-intro{max-width:32ch}
  .plan-grid{grid-template-columns:1fr;gap:36px}.plan-art{aspect-ratio:1.95}.card-copy{padding-top:15px}.card-price{padding-top:15px}
- #menu-dialog{width:100%;height:100dvh}.spread-toolbar{height:44px;padding:0 18px}
+ #menu-dialog{width:100%;height:100dvh}.spread-toolbar{height:48px;padding:0 18px}
  .spread{display:flex;flex-direction:column;height:calc(100% - 44px)}
  .spread-photo{height:clamp(105px,19dvh,180px);flex:none}.spread-photo img{object-position:50% 45%}
  .spread-photo::after{background:linear-gradient(90deg,#15200dd6,#18211070 60%,transparent)}
@@ -206,3 +206,14 @@ dialog{border:0;padding:0;background:var(--paper);color:var(--ink);width:min(126
 .tasting-calendar button[aria-pressed="true"]:hover{background:#3c5142;border-color:#3c5142}
 
 .performance-program{display:grid;gap:24px}.performance-times p{margin:0 0 14px;line-height:1.65}.performance-clip{margin:0}.performance-clip video{display:block;width:100%;max-width:380px;max-height:68vh;margin:auto;background:#141414;object-fit:contain}.performance-clip figcaption{margin-top:12px;font-size:11px;line-height:1.5;color:#62655c}
+
+.plan-booking .reserve-link {flex-basis:100%}
+.experience-book-online {
+ display:inline-flex;align-items:center;justify-content:center;gap:8px;
+ margin-left:auto;padding:0 14px;min-height:44px;background:var(--green);
+ color:var(--paper);text-decoration:none;white-space:nowrap;
+}
+.spread-toolbar .experience-book-online + button {margin-left:0}
+@media (max-width:420px) {
+ .spread-toolbar > span {display:none}
+}
