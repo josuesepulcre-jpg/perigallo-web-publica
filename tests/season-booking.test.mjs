@@ -1,3 +1,4 @@
+import {bookingMenuIds} from '../experiencias/group-inquiry.mjs';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {test} from 'node:test';
@@ -28,7 +29,7 @@ test('invalid or unaccepted form never creates an order',async()=>{const c=check
 test('all transactional experience cards and menus share one reservation entry point',()=>{
  const app=readFileSync(new URL('../experiencias/app.js',import.meta.url),'utf8');
  const fn=app.slice(app.indexOf('function onlineBookingUrl('),app.indexOf("$('#plan-grid')"));
- const c=vm.createContext({inquiryPlanIds:['diciembre','degustacion'],bookingOrigin:'',URL,esc:s=>s.replaceAll('&','&amp;')});vm.runInContext(fn+';globalThis.actions=bookingActions;',c);
+ const c=vm.createContext({inquiryPlanIds:['diciembre','degustacion'],bookingOrigin:'',bookingMenuIds,URL,esc:s=>s.replaceAll('&','&amp;')});vm.runInContext(fn+';globalThis.actions=bookingActions;',c);
  for(const [plan, menu, selected] of [
   ['diciembre',undefined,null],['diciembre','navidad-02','perigallo-raices'],
   ['diciembre','navidad-03','perigallo-mesa'],['diciembre','navidad-04','perigallo-brindis'],
