@@ -27,7 +27,18 @@ for(const mode of ['reserve','pay'])test(`${mode}: preserves buyer, seats, notes
 test('invalid or unaccepted form never creates an order',async()=>{const c=checkout('pay',false);await c.submit();assert.equal(c.sent.length,0);assert.equal(c.redirects.length,0);});
 test('all transactional experience cards and menus share one reservation entry point',()=>{
  const app=readFileSync(new URL('../experiencias/app.js',import.meta.url),'utf8');
- const fn=app.slice(app.indexOf('function bookingActions('),app.indexOf("$('#plan-grid')"));
- const c=vm.createContext({inquiryPlanIds:['diciembre','degustacion'],bookingOrigin:''});vm.runInContext(fn+';globalThis.actions=bookingActions;',c);
- for(const plan of ['navidad','hora','nuevo']){const html=c.actions(plan);assert.equal((html.match(/<a /g)||[]).length,1);assert.match(html,new RegExp(`plan=${plan}&mode=reserve`));assert.doesNotMatch(html,/Comprar y pagar/);}
+ const fn=app.slice(app.indexOf('function onlineBookingUrl('),app.indexOf("$('#plan-grid')"));
+ const c=vm.createContext({inquiryPlanIds:['diciembre','degustacion'],bookingOrigin:'',URL,esc:s=>s.replaceAll('&','&amp;')});vm.runInContext(fn+';globalThis.actions=bookingActions;',c);
+ for(const [plan, menu, selected] of [
+  ['diciembre',undefined,null],['diciembre','navidad-02','perigallo-raices'],
+  ['diciembre','navidad-03','perigallo-mesa'],['diciembre','navidad-04','perigallo-brindis'],
+  ['degustacion',undefined,'perigallo-degustacion']
+ ]){
+  const html=c.actions(plan,menu);
+  const url=new URL(html.match(/href="([^"]+)"/)[1].replaceAll('&amp;','&'));
+  assert.equal(url.origin+url.pathname,'https://reservas.perigallo.com/reservar');
+  assert.equal(url.searchParams.get('menu'),selected);
+  assert.match(html,/Reservar online/);
+ }
+ for(const plan of ['navidad','hora','nuevo']){const html=c.actions(plan);assert.equal((html.match(/<a /g)||[]).length,1);assert.match(html,new RegExp(`plan=${plan}&amp;mode=reserve`));assert.doesNotMatch(html,/Comprar y pagar/);}
 });
