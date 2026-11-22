@@ -1,31 +1,24 @@
 export const GROUP_WHATSAPP_NUMBER = '34691499985';
-const closedWeddingDate = '2026-12-05';
 const decemberDate = /^2026-12-(0[1-9]|[12][0-9]|3[01])$/;
+export const bookingMenuIds = {
+  'navidad-02':'perigallo-raices', 'navidad-03':'perigallo-mesa',
+  'navidad-04':'perigallo-brindis', 'navidad-individual':'perigallo-degustacion'
+};
 
-export function canRequestDate(date, otherDate = false) {
-  if (!decemberDate.test(date) || date === closedWeddingDate) return false;
-  if (otherDate) return true;
-  const weekday = new Date(date + 'T12:00:00Z').getUTCDay();
-  return date !== '2026-12-25' && [0, 5, 6].includes(weekday);
+export function offeredMenus(days, date, shift, menus) {
+  const offered = days?.[date]?.[shift];
+  return Array.isArray(offered) ? menus.filter(id => offered.includes(bookingMenuIds[id])) : [];
 }
 
 export function validateGroupInquiry(input, menus, options={}) {
   const value = Object.fromEntries(['first_name','last_name','date','shift','people','menu','phone','email'].map(key=>[key,String(input[key]??'').trim()]));
   for (const key of ['first_name','last_name']) if (!value[key] || value[key].length>160 || /[\r\n]/.test(value[key])) throw new Error('Indica tu nombre y apellidos.');
   if(!decemberDate.test(value.date)) throw new Error('Elige un día de diciembre de 2026.');
-  if(value.date === closedWeddingDate) throw new Error('El 5 de diciembre está cerrado. Elige otra fecha.');
-  if(options.kind==='tasting') {
-    if(!canRequestDate(value.date)) throw new Error('El menú degustación está disponible los viernes, sábados y domingos de diciembre, excepto el 5 y el 25.');
-    if(value.shift!=='lunch') throw new Error('El menú degustación solo está disponible para comida de mediodía.');
-  }
-  if(options.kind==='group') {
-    value.date_request=String(input.date_request??'standard').trim();
-    if(!['standard','other'].includes(value.date_request)) throw new Error('Indica si eliges una fecha disponible o quieres proponer otro día.');
-    if(!canRequestDate(value.date,value.date_request==='other')) throw new Error('Para solicitar otro día, marca «Proponer otra fecha».');
-  }
+  if(options.kind==='tasting' && value.shift!=='lunch') throw new Error('El menú degustación solo está disponible para comida de mediodía.');
   if(!['lunch','dinner'].includes(value.shift)) throw new Error('Indica si os interesa comida o cena.');
   if(!/^\d+$/.test(value.people)||Number(value.people)<1||Number(value.people)>(options.maxPeople??100)) throw new Error('Indica un número de personas entre 1 y '+(options.maxPeople??100)+'.');
   if(!Object.hasOwn(menus,value.menu)) throw new Error('Selecciona el menú que os interesa.');
+  if(!offeredMenus(options.days,value.date,value.shift,Object.keys(menus)).includes(value.menu)) throw new Error('Esta selección ya no está disponible. Elige una fecha, un turno y un menú abiertos.');
   if(!/^[+\d\s().-]+$/.test(value.phone)||value.phone.replace(/\D/g,'').length<9||value.phone.replace(/\D/g,'').length>15) throw new Error('Introduce un teléfono de contacto válido.');
   if(value.email.length>190||!/^\S+@[^\s@]+\.[^\s@]+$/.test(value.email)) throw new Error('Introduce un correo electrónico válido.');
   if(input.privacy!==true) throw new Error('Acepta el contacto para gestionar esta consulta.');
@@ -37,13 +30,12 @@ export function buildGroupMessage(input, menus, options={}) {
   return [options.kind==='tasting'?'Hola, me gustaría consultar disponibilidad para el menú degustación en diciembre.':'Hola, me gustaría consultar disponibilidad para los menús de grupo en diciembre.','',
     'Nombre y apellidos: '+data.first_name+' '+data.last_name,
     'Fecha: '+date,
-    ...(data.date_request==='other'?['Solicitud especial: nos gustaría otro día · pendiente de valoración por Perigallo.']:[]),
     'Turno: '+(data.shift==='lunch'?'Comida (mediodía)':'Cena (noche)'),
     'Personas: '+data.people,
     'Menú: '+menu.title+' · '+menu.price+' por persona',
     'Teléfono: '+data.phone,
     'Correo: '+data.email,'',
-    data.date_request==='other'?'Quedo pendiente de vuestra valoración y confirmación de la fecha y el turno.':'Quedo pendiente de vuestra confirmación de disponibilidad.'].join('\n');
+    'Quedo pendiente de vuestra confirmación de disponibilidad.'].join('\n');
 }
 export function groupWhatsAppUrl(message) {
   return 'https://wa.me/'+GROUP_WHATSAPP_NUMBER+'?text='+encodeURIComponent(message);

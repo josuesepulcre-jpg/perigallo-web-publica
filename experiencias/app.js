@@ -2,7 +2,7 @@
 const $=s=>document.querySelector(s), esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const PLANS=[
  {id:'diciembre',date:'TODO EL MES DE DICIEMBRE',title:'Una comida<br>para juntarnos.',name:'Menús de grupo',description:'Menú Raíces, Menú La Mesa y Menú Brindis. Tres menús para compartir y celebrar en grupo.',price:'Desde 44,95 €',note:'Por persona · IVA y bebidas incluidos',cover:'navidad-01',action:'Ver los tres menús',menus:['navidad-02','navidad-03','navidad-04'],default:'navidad-02'},
- {id:'degustacion',period:'diciembre',date:'DICIEMBRE · VIERNES, SÁBADOS Y DOMINGOS',title:'Una experiencia<br>gastronómica.',name:'Menú degustación',description:'Una experiencia gastronómica para mesas de hasta seis personas. Viernes, sábados y domingos de diciembre, solo al mediodía, excepto el 5 y el 25.',price:'38 €',note:'Por persona · IVA incluido · Bebidas aparte',image:'assets/temporada-degustacion.webp',cover:'navidad-01',action:'Descubrir el menú degustación',menus:['navidad-individual'],default:'navidad-individual'},
+ {id:'degustacion',period:'diciembre',date:'DICIEMBRE · VIERNES, SÁBADOS Y DOMINGOS',title:'Una experiencia<br>gastronómica.',name:'Menú degustación',description:'Una experiencia gastronómica para mesas de hasta seis personas. En diciembre, al mediodía. Consulta los días abiertos en el calendario.',price:'38 €',note:'Por persona · IVA incluido · Bebidas aparte',image:'assets/temporada-degustacion.webp',cover:'navidad-01',action:'Descubrir el menú degustación',menus:['navidad-individual'],default:'navidad-individual'},
  {id:'navidad',date:'25 DE DICIEMBRE · NAVIDAD',title:'A la mesa.<br>Y un rato más.',name:'El día de Navidad',description:'Una comida de Navidad con nuestro puchero, menú infantil y la actuación de Verónica Romero con «Contigo en Navidad» después de comer.',price:'65 €',note:'Por persona · IVA y bebidas incluidos',cover:'navidad-25-portada',action:'Ver los menús',menus:['navidad-25-menu','navidad-25-infantil'],default:'show'},
  {id:'hora',date:'31 DE DICIEMBRE · HORA CERO',title:'Seis destinos.<br>Un Año Nuevo.',name:'Tardevieja · Hora Cero',description:'Australia, Japón, China, Vietnam, India y Rusia. Gastronomía, lago, barra libre, Bollywood y DJ durante el recorrido.',price:'120 €',note:'Por persona · IVA incluido · Plazas limitadas',cover:'hora-cero-01',action:'Descubrir el recorrido',menus:[],default:'route'},
  {id:'nuevo',date:'1 DE ENERO · AÑO NUEVO',title:'La primera<br>mesa del año.',name:'El día de Año Nuevo',description:'Marisco, entrantes, principal a elegir y flan de turrón. Empezamos 2027 alrededor de la mesa, también con los peques.',price:'50 €',note:'Por persona · IVA y bebidas incluidos · Agua, refrescos, cerveza y vino',cover:'ano-nuevo-portada',action:'Ver los menús',menus:['ano-nuevo-menu','ano-nuevo-infantil'],default:'ano-nuevo-menu'}
@@ -16,7 +16,7 @@ const sceneDescriptions = {
 };
 // Reservations use the production event backend.
 const bookingOrigin = '';
-import {canRequestDate, validateGroupInquiry, buildGroupMessage, groupWhatsAppUrl} from './group-inquiry.mjs?v=calendario-20261122';
+import {bookingMenuIds, offeredMenus, buildGroupMessage, groupWhatsAppUrl} from './group-inquiry.mjs?v=disponibilidad-20261122';
 const groupMenuIds=['navidad-02','navidad-03','navidad-04'];
 const inquiryPlanIds=['diciembre','degustacion'];
 const inquiryDrafts={};
@@ -26,28 +26,22 @@ let groupInquiryDraft={};
 const inquiryDateLabel = new Intl.DateTimeFormat('es-ES',{
  weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'
 });
-function inquiryCalendarHTML(other, selected) {
+function inquiryCalendarHTML() {
  const weekdays=['L','M','X','J','V','S','D'];
  const cells=['<td aria-hidden="true"></td>']; // December 2026 starts on Tuesday.
  for(let day=1;day<=31;day++) {
-  const date='2026-12-'+String(day).padStart(2,'0'),available=canRequestDate(date,other);
+  const date='2026-12-'+String(day).padStart(2,'0');
   const label=inquiryDateLabel.format(new Date(date+'T12:00:00Z'));
-  cells.push(`<td><button type="button" data-inquiry-date="${date}" aria-label="${esc(label)}${available?'':day===25?' · Menú de Navidad':' · No disponible'}" ${available?`aria-pressed="${selected===date}"`:'disabled'}>${day}</button></td>`);
+  cells.push(`<td><button type="button" data-inquiry-date="${date}" aria-label="${esc(label)}" disabled>${day}</button></td>`);
  }
  while(cells.length%7)cells.push('<td aria-hidden="true"></td>');
  const rows=[];for(let i=0;i<cells.length;i+=7)rows.push('<tr>'+cells.slice(i,i+7).join('')+'</tr>');
- const selectedLabel=selected?inquiryDateLabel.format(new Date(selected+'T12:00:00Z')):'Elige un día en el calendario.';
- return `<table><caption>Diciembre <span>2026</span></caption><thead><tr>${weekdays.map(day=>`<th scope="col">${day}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table><p class="calendar-selection" role="status">${esc(selectedLabel)}</p>`;
+ return `<table><caption>Diciembre <span>2026</span></caption><thead><tr>${weekdays.map(day=>`<th scope="col">${day}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table><p class="calendar-selection" role="status">Consultando disponibilidad…</p>`;
 }
-function inquiryDateField() {
- const group=activePlan.id==='diciembre';
- const other=group && groupInquiryDraft.date_request==='other';
- const selected=canRequestDate(groupInquiryDraft.date,other)?groupInquiryDraft.date:'';
- return `<div class="tasting-calendar-field"><p id="inquiry-date-label" class="calendar-field-label">Día de la reserva</p>
-  <input type="hidden" name="date" value="${selected}">
-  <div class="tasting-calendar" role="group" aria-labelledby="inquiry-date-label">${inquiryCalendarHTML(other,selected)}</div>
-  ${group?`<label class="inquiry-other-date"><input type="checkbox" name="other_date" ${other?'checked':''}>Proponer otra fecha</label>`:''}
- </div>`;
+function inquiryChoices(name, legend, choices) {
+ return `<fieldset class="inquiry-choices"><legend>${legend}</legend><div>${choices.map(([id,label])=>
+  `<label><input type="radio" name="${name}" value="${id}" required disabled><span>${esc(label)}</span></label>`
+ ).join('')}</div></fieldset>`;
 }
 function groupInquiryHTML() {
  const value=key=>esc(groupInquiryDraft[key]||'');
@@ -62,16 +56,20 @@ function groupInquiryHTML() {
     <label>Correo electrónico<input name="email" type="email" autocomplete="email" required maxlength="190" value="${value('email')}"></label>
    </div></fieldset>
    <fieldset><legend>¿Cómo os gustaría venir?</legend><div class="inquiry-fields">
-    ${inquiryDateField()}
-    ${activePlan.id==='degustacion'?`<div class="fixed-shift"><span>Turno</span><p>Comida · mediodía</p><small>Único turno disponible</small><input name="shift" type="hidden" value="lunch"></div>`:`<label>Turno<select name="shift" required><option value="">Elegid el turno</option><option value="lunch" ${groupInquiryDraft.shift==='lunch'?'selected':''}>Comida · mediodía</option><option value="dinner" ${groupInquiryDraft.shift==='dinner'?'selected':''}>Cena · noche</option></select></label>`}
+    <div class="tasting-calendar-field"><p id="inquiry-date-label" class="calendar-field-label">Día de la reserva</p>
+     <input type="hidden" name="date">
+     <div class="tasting-calendar" role="group" aria-labelledby="inquiry-date-label">${inquiryCalendarHTML()}</div>
+     <button type="button" data-retry-calendar hidden>Volver a consultar</button>
+    </div>
+    ${inquiryChoices('shift','Turno',activePlan.id==='degustacion'?[['lunch','Comida']]:[['lunch','Comida'],['dinner','Cena']])}
     <label>Número de personas<input name="people" type="number" min="1" max="${inquiryOptions().maxPeople}" step="1" required value="${value('people')}" inputmode="numeric"></label>
-    <label>Menú que os interesa<select name="menu" required><option value="">Elegid un menú</option>${inquiryMenuIds().map(id=>`<option value="${id}" ${groupInquiryDraft.menu===id?'selected':''}>${esc(MENUS[id].title)} · ${esc(MENUS[id].price)}</option>`).join('')}</select></label>
-   </div><p class="inquiry-hint">${activePlan.id==='degustacion'?'Hasta seis personas. Viernes, sábados y domingos de diciembre, solo al mediodía. El 5 está cerrado y el 25 está reservado al menú de Navidad.':'El 5 está cerrado y el 25 tiene menú de Navidad. Para consultar otro día fuera de los turnos habituales, marca «Proponer otra fecha».'}</p></fieldset>
+    ${inquiryChoices('menu','Menú que os interesa',inquiryMenuIds().map(id=>[id,MENUS[id].title+' · '+MENUS[id].price]))}
+   </div></fieldset>
    <label class="inquiry-privacy"><input name="privacy" type="checkbox" required ${groupInquiryDraft.privacy?'checked':''}><span>He leído la <a href="/politica-privacidad/" target="_blank" rel="noopener">política de privacidad</a> y acepto el contacto para gestionar esta consulta.</span></label>
    <p class="inquiry-status" role="status" aria-live="polite"></p>
-   <button class="inquiry-submit" type="submit">Preparar mi consulta de WhatsApp <span aria-hidden="true">↗</span></button>
+   <button class="inquiry-submit" type="submit" disabled>Preparar mi consulta de WhatsApp <span aria-hidden="true">↗</span></button>
    <p class="inquiry-hint">La reserva queda pendiente de nuestra confirmación de disponibilidad.</p>
-   <section class="inquiry-message" hidden aria-label="Tu consulta preparada"><h4>Todo listo para escribirnos.</h4><pre></pre><a class="inquiry-submit" target="_blank" rel="noopener">Abrir WhatsApp con mi consulta ↗</a><p>Se abrirá el chat de Perigallo con el mensaje completo. Revísalo y pulsa enviar en WhatsApp.</p></section>
+   <section class="inquiry-message" hidden aria-label="Tu consulta preparada"><h4>Todo listo para escribirnos.</h4><pre></pre><button class="inquiry-submit" type="button" data-open-chat>Abrir WhatsApp con mi consulta ↗</button><p>Se abrirá el chat de Perigallo con el mensaje completo. Revísalo y pulsa enviar en WhatsApp.</p></section>
   </form>
  </article>`;
 }
@@ -82,68 +80,132 @@ function openGroupInquiry(menuId,planId='diciembre') {
  if(planId==='degustacion')groupInquiryDraft.menu='navidad-individual';
  selectChoice('consulta');view.focus({preventScroll:true});
 }
+let stopInquiryUpdates;
 function bindGroupInquiry() {
- const form=$('#group-inquiry-form');if(!form)return;
- const contextPlan=activePlan.id,menuIds=[...inquiryMenuIds()],options=inquiryOptions();
- const snapshot=()=>{
-  const data=Object.fromEntries(new FormData(form));
-  data.privacy=form.elements.privacy.checked;
-  if(contextPlan==='diciembre')data.date_request=form.elements.other_date.checked?'other':'standard';
-  delete data.other_date;
-  return data;
- };
- const calendar=form.querySelector('.tasting-calendar');
+ const form=$('#group-inquiry-form');
  const dateField=form.elements.date;
- form.elements.other_date?.addEventListener('input',()=>{
-  dateField.value='';
-  calendar.innerHTML=inquiryCalendarHTML(form.elements.other_date.checked,'');
- });
+ const calendar=form.querySelector('.tasting-calendar');
+ const caption=calendar.querySelector('.calendar-selection');
+ const retry=form.querySelector('[data-retry-calendar]');
+ const preview=form.querySelector('.inquiry-message');
+ const status=form.querySelector('.inquiry-status');
+ const submit=form.querySelector('[type="submit"]');
+ const menuIds=inquiryMenuIds(), options=inquiryOptions();
+ const menus=Object.fromEntries(menuIds.map(id=>[id,MENUS[id]]));
+ const shiftInputs=[...form.querySelectorAll('[name="shift"]')];
+ const menuInputs=[...form.querySelectorAll('[name="menu"]')];
+ const snapshot=()=>({...Object.fromEntries(new FormData(form)),privacy:form.elements.privacy.checked});
+ let days={}, loaded=false, disposed=false, pending, submitting=false;
+ let preferredMenu=groupInquiryDraft.menu;
+ dateField.value=groupInquiryDraft.date||'';
+ const initialShift=shiftInputs.find(input=>input.value===groupInquiryDraft.shift);
+ if(initialShift)initialShift.checked=true;
+
+ function render() {
+  for(const day of calendar.querySelectorAll('[data-inquiry-date]')){
+   const date=day.dataset.inquiryDate;
+   day.disabled=!shiftInputs.some(input=>offeredMenus(days,date,input.value,menuIds).length);
+   if(day.disabled && dateField.value===date)dateField.value='';
+   day.setAttribute('aria-pressed',String(!day.disabled && dateField.value===date));
+  }
+  for(const input of shiftInputs){
+   input.disabled=!offeredMenus(days,dateField.value,input.value,menuIds).length;
+   if(input.disabled)input.checked=false;
+  }
+  const availableShifts=shiftInputs.filter(input=>!input.disabled);
+  if(availableShifts.length===1)availableShifts[0].checked=true;
+  const shift=shiftInputs.find(input=>input.checked)?.value;
+  const availableMenus=offeredMenus(days,dateField.value,shift,menuIds);
+  for(const input of menuInputs){
+   input.disabled=!availableMenus.includes(input.value);
+   input.checked=!input.disabled && (availableMenus.length===1 || input.value===preferredMenu);
+  }
+  const hasDays=calendar.querySelector('button:not(:disabled)');
+  caption.textContent=!loaded?'Disponibilidad pendiente de comprobar.':dateField.value
+   ?inquiryDateLabel.format(new Date(dateField.value+'T12:00:00Z'))
+   :hasDays?'Elige un día disponible.':'No hay fechas abiertas para esta experiencia.';
+  submit.disabled=!loaded || !dateField.value || !availableMenus.length;
+ }
+ function refresh() {
+  if(pending)return pending;
+  const url=new URL('/api/public/booking/inquiry-calendar','https://reservas.perigallo.com');
+  url.searchParams.set('month','2026-12');
+  pending=(async()=>{
+   try{
+    const response=await fetch(url,{cache:'no-store',credentials:'omit',signal:AbortSignal.timeout(12000)});
+    if(!response.ok)throw new Error();
+    const data=await response.json();
+    if(data.month!=='2026-12'||!data.days||typeof data.days!=='object'||Array.isArray(data.days))throw new Error();
+    if(disposed)return false;
+    days=data.days;loaded=true;
+   }catch{
+    if(disposed)return false;
+    days={};loaded=false;
+   }
+   const before=snapshot();
+   render();
+   const after=snapshot();
+   if(!loaded || ['date','shift','menu'].some(key=>before[key]!==after[key])){
+    preview.hidden=true;
+    if(before.date)status.textContent='La disponibilidad ha cambiado. Revisa tu selección.';
+   }
+   retry.hidden=loaded;
+   return loaded;
+  })().finally(()=>{pending=undefined;});
+  return pending;
+ }
+ function resume(){if(!document.hidden)refresh();}
+ const timer=setInterval(resume,60000);
+ document.addEventListener('visibilitychange',resume);
+ window.addEventListener('focus',resume);
+ stopInquiryUpdates=()=>{
+  disposed=true;clearInterval(timer);
+  document.removeEventListener('visibilitychange',resume);
+  window.removeEventListener('focus',resume);
+ };
+ refresh();
+ retry.addEventListener('click',refresh);
  calendar.addEventListener('click',event=>{
   const button=event.target.closest('button[data-inquiry-date]:not(:disabled)');
   if(!button)return;
   dateField.value=button.dataset.inquiryDate;
-  for(const day of calendar.querySelectorAll('[aria-pressed]'))day.setAttribute('aria-pressed',String(day===button));
-  calendar.querySelector('.calendar-selection').textContent=inquiryDateLabel.format(new Date(dateField.value+'T12:00:00Z'));
   dateField.dispatchEvent(new Event('input',{bubbles:true}));
  });
  form.addEventListener('input',event=>{
   if(event.target.setCustomValidity)event.target.setCustomValidity('');
-  groupInquiryDraft=snapshot();form.querySelector('.inquiry-message').hidden=true;form.querySelector('.inquiry-message a').removeAttribute('href');form.querySelector('.inquiry-status').textContent='';
+  if(event.target.name==='menu')preferredMenu=event.target.value;
+  if(['date','shift','menu'].includes(event.target.name))render();
+  groupInquiryDraft=snapshot();preview.hidden=true;status.textContent='';
  });
- form.addEventListener('submit',event=>{
-  event.preventDefault();
+ async function prepare(openChat) {
+  if(submitting)return;
   for(const key of ['first_name','last_name'])form.elements[key].setCustomValidity(form.elements[key].value.trim()?'':'Este dato es obligatorio.');
   if(!form.reportValidity())return;
-  if(!canRequestDate(dateField.value,form.elements.other_date?.checked)){
-   form.querySelector('.inquiry-status').textContent='Elige una fecha disponible en el calendario.';calendar.querySelector('button:not(:disabled)').focus();return;
-  }
-
-  const button=form.querySelector('button[type="submit"]'),status=form.querySelector('.inquiry-status');button.disabled=true;
-  try {
-   const menus=Object.fromEntries(menuIds.map(id=>[id,MENUS[id]]));
-   if(!form.isConnected||activePlan.id!==contextPlan)return;
-   groupInquiryDraft=validateGroupInquiry(snapshot(),menus,options);
-   const message=buildGroupMessage(groupInquiryDraft,menus,options),preview=form.querySelector('.inquiry-message');
-   preview.querySelector('pre').textContent=message;preview.querySelector('a').href=groupWhatsAppUrl(message);preview.hidden=false;
+  const before=snapshot();
+  submitting=true;
+  try{
+   if(!await refresh() || disposed)return;
+   const after=snapshot();
+   if(['date','shift','menu'].some(key=>before[key]!==after[key]))return;
+   const message=buildGroupMessage(after,menus,{...options,days});
+   groupInquiryDraft=after;
+   if(openChat){window.location.assign(groupWhatsAppUrl(message));return;}
+   preview.querySelector('pre').textContent=message;preview.hidden=false;
    status.textContent='Consulta preparada. Todavía no se ha enviado.';
    preview.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'nearest'});
-  } catch(error){status.textContent=error.message;}
-  finally {button.disabled=false;}
- });
+  }catch(error){preview.hidden=true;status.textContent=error.message;}
+  finally{submitting=false;}
+ }
+ form.addEventListener('submit',event=>{event.preventDefault();prepare(false);});
+ form.querySelector('[data-open-chat]').addEventListener('click',()=>prepare(true));
 }
 
 function onlineBookingUrl(plan, menuId) {
  if (!inquiryPlanIds.includes(plan)) {
   return bookingOrigin + '/entradas/reserva/?plan=' + encodeURIComponent(plan) + '&mode=reserve';
  }
- const menus = {
-  'navidad-02': 'perigallo-raices',
-  'navidad-03': 'perigallo-mesa',
-  'navidad-04': 'perigallo-brindis',
-  'navidad-individual': 'perigallo-degustacion'
- };
  const url = new URL('https://reservas.perigallo.com/reservar?source=web');
- const menu = plan === 'degustacion' ? menus['navidad-individual'] : menus[menuId];
+ const menu = plan === 'degustacion' ? bookingMenuIds['navidad-individual'] : bookingMenuIds[menuId];
  if (menu) url.searchParams.set('menu', menu);
  return url.href;
 }
@@ -197,7 +259,7 @@ function menuHTML(menu) {
  <p class="eyebrow">${esc(menu.date)}</p>
  <h3>${esc(menu.title)}</h3><div class="leaf-price"><strong>${esc(menu.price)}</strong><span>por persona · IVA incluido</span></div>
  <p class="leaf-drinks">${esc(menu.drinks)}</p>
- ${activePlan.id==='degustacion'?'<p class="inquiry-hint">Viernes, sábados y domingos de diciembre, solo al mediodía. Excepto el 25, reservado al menú de Navidad.</p>':''}
+ ${activePlan.id==='degustacion'?'<p class="inquiry-hint">Servicio de mediodía. Consulta las fechas abiertas en el calendario.</p>':''}
  ${sections}
  <p class="allergy-note">Si tenéis alguna alergia, consultadnos al reservar.</p>
  ${reservationHTML(menu.id)}
@@ -256,6 +318,7 @@ function routeBookingHTML() {
   <p>Finca La Llaguna · Crevillent<br>Apertura a las 13:30 · Experiencia de 14:00 a 22:00 · Cierre a las 22:30.</p></article>${reservationHTML()}`;
 }
 function selectChoice(id) {
+ stopInquiryUpdates?.();stopInquiryUpdates=undefined;
  const previousIndex = Array.from(select.options).findIndex(option => option.value === activeChoice);
  const hadFocus = view.contains(document.activeElement);
  for (const video of view.querySelectorAll('video')) video.pause();
@@ -337,7 +400,7 @@ document.addEventListener('click', e => {
 });
 $('#close-dialog').addEventListener('click',()=>dialog.close());
 dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}});
-dialog.addEventListener('close',()=>{for(const v of dialog.querySelectorAll('video'))v.pause();document.body.style.overflow='';opener?.focus({preventScroll:true});});
+dialog.addEventListener('close',()=>{stopInquiryUpdates?.();stopInquiryUpdates=undefined;for(const v of dialog.querySelectorAll('video'))v.pause();document.body.style.overflow='';opener?.focus({preventScroll:true});});
 
 const params = new URLSearchParams(location.search);
 const initial = params.get('plan');
