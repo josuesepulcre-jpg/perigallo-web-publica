@@ -1,0 +1,90 @@
+.site-header a.header-reserve {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 18px;
+  border: 1px solid #f3f3ee;
+  background: #f3f3ee;
+  color: #141414;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.site-header a.header-reserve:hover {
+  border-color: #dfe6dc;
+  background: #dfe6dc;
+  color: #141414;
+}
+
+.site-header a.header-reserve:focus-visible {
+  outline: 2px solid #f3f3ee;
+  outline-offset: 3px;
+}
+
+.site-header .header-booking-actions {
+  display: none;
+}
+
+@media (min-width: 1101px) {
+  header.site-header.site-header--reservations nav {
+    gap: clamp(12px, 1.55vw, 28px);
+  }
+
+  .site-header .nav-cta {
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 1100px) {
+  header.site-header.site-header--reservations {
+    gap: 12px;
+  }
+
+  .site-header .header-booking-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .site-header nav a.header-reserve {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  header.site-header.site-header--reservations {
+    padding-inline: 12px;
+    gap: 8px;
+  }
+
+  header.site-header.site-header--reservations a.identity-lockup {
+    width: clamp(112px, 35vw, 145px);
+    gap: 7px;
+  }
+
+  header.site-header.site-header--reservations a.identity-lockup img.identity-symbol {
+    width: 22px !important;
+    height: 23px !important;
+    flex-basis: 22px;
+  }
+
+  header.site-header.site-header--reservations a.identity-lockup img:not(.identity-symbol) {
+    width: calc(100% - 29px) !important;
+  }
+
+  .site-header .header-booking-actions a.header-reserve {
+    padding-inline: 10px;
+  }
+
+  .site-header .header-booking-actions button.menu {
+    min-height: 44px;
+    padding-inline: 8px;
+    gap: 5px;
+    white-space: nowrap;
+  }
+}
