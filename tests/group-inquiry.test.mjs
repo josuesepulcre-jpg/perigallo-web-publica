@@ -28,16 +28,16 @@ test('the independent tasting experience admits six people and rejects seven',()
  assert.ok(buildGroupMessage({...inquiry,people:'6',menu:'navidad-individual'},tasting,options).includes('disponibilidad para el menú degustación en diciembre'));
 });
 
-test('tasting accepts only the eleven December weekend dates, excluding Christmas, at midday',()=>{
+test('tasting accepts only the ten December weekend dates, excluding the wedding and Christmas, at midday',()=>{
  const tasting={'navidad-individual':menus['navidad-individual']},options={kind:'tasting',maxPeople:6};
  const inquiry={...complete,shift:'lunch',people:'6',menu:'navidad-individual'};
- const available=[4,5,6,11,12,13,18,19,20,26,27];
+ const available=[4,6,11,12,13,18,19,20,26,27];
  for(let day=1;day<=31;day++) {
    const date='2026-12-'+String(day).padStart(2,'0');
    if(available.includes(day)) {
      assert.equal(validateGroupInquiry({...inquiry,date},tasting,options).date,date);
      assert.throws(()=>buildGroupMessage({...inquiry,date,shift:'dinner'},tasting,options),/mediodía/);
-   } else assert.throws(()=>buildGroupMessage({...inquiry,date},tasting,options),/excepto el 25/);
+   } else assert.throws(()=>buildGroupMessage({...inquiry,date},tasting,options),/excepto el 5 y el 25|5 de diciembre está cerrado/);
  }
  const message=buildGroupMessage({...inquiry,date:'2026-12-04'},tasting,options);
  assert.ok(message.includes('viernes, 4 de diciembre de 2026'));
@@ -58,5 +58,13 @@ test('groups support Friday dinner and clearly marked other-date requests',()=>{
  assert.throws(()=>buildGroupMessage({...other,shift:''},menus,options),/comida o cena/);
  assert.throws(()=>buildGroupMessage({...other,date_request:'unknown'},menus,options));
  const tasting={...other,menu:'navidad-individual',people:'6',shift:'lunch'};
- assert.throws(()=>buildGroupMessage(tasting,menus,{kind:'tasting',maxPeople:6}),/excepto el 25/);
+ assert.throws(()=>buildGroupMessage(tasting,menus,{kind:'tasting',maxPeople:6}),/excepto el 5 y el 25|5 de diciembre está cerrado/);
+});
+
+test('the wedding is closed to all December inquiries including alternative group dates',()=>{
+ for(const options of [{kind:'group'},{kind:'tasting'},{}]){
+  for(const date_request of ['standard','other']){
+   assert.throws(()=>buildGroupMessage({...complete,date:'2026-12-05',date_request},menus,options),/5 de diciembre está cerrado/);
+  }
+ }
 });

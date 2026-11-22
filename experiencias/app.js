@@ -2,7 +2,7 @@
 const $=s=>document.querySelector(s), esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const PLANS=[
  {id:'diciembre',date:'TODO EL MES DE DICIEMBRE',title:'Una comida<br>para juntarnos.',name:'Menús de grupo',description:'Menú Raíces, Menú La Mesa y Menú Brindis. Tres menús para compartir y celebrar en grupo.',price:'Desde 44,95 €',note:'Por persona · IVA y bebidas incluidos',cover:'navidad-01',action:'Ver los tres menús',menus:['navidad-02','navidad-03','navidad-04'],default:'navidad-02'},
- {id:'degustacion',period:'diciembre',date:'DICIEMBRE · VIERNES, SÁBADOS Y DOMINGOS',title:'Una experiencia<br>gastronómica.',name:'Menú degustación',description:'Una experiencia gastronómica para mesas de hasta seis personas. Viernes, sábados y domingos de diciembre, solo al mediodía, excepto el 25.',price:'38 €',note:'Por persona · IVA incluido · Bebidas aparte',image:'assets/temporada-degustacion.webp',cover:'navidad-01',action:'Descubrir el menú degustación',menus:['navidad-individual'],default:'navidad-individual'},
+ {id:'degustacion',period:'diciembre',date:'DICIEMBRE · VIERNES, SÁBADOS Y DOMINGOS',title:'Una experiencia<br>gastronómica.',name:'Menú degustación',description:'Una experiencia gastronómica para mesas de hasta seis personas. Viernes, sábados y domingos de diciembre, solo al mediodía, excepto el 5 y el 25.',price:'38 €',note:'Por persona · IVA incluido · Bebidas aparte',image:'assets/temporada-degustacion.webp',cover:'navidad-01',action:'Descubrir el menú degustación',menus:['navidad-individual'],default:'navidad-individual'},
  {id:'navidad',date:'25 DE DICIEMBRE · NAVIDAD',title:'A la mesa.<br>Y un rato más.',name:'El día de Navidad',description:'Una comida de Navidad con nuestro puchero, menú infantil y la actuación de Verónica Romero con «Contigo en Navidad» después de comer.',price:'65 €',note:'Por persona · IVA y bebidas incluidos',cover:'navidad-25-portada',action:'Ver los menús',menus:['navidad-25-menu','navidad-25-infantil'],default:'show'},
  {id:'hora',date:'31 DE DICIEMBRE · HORA CERO',title:'Seis destinos.<br>Un Año Nuevo.',name:'Tardevieja · Hora Cero',description:'Australia, Japón, China, Vietnam, India y Rusia. Gastronomía, lago, barra libre, Bollywood y DJ durante el recorrido.',price:'120 €',note:'Por persona · IVA incluido · Plazas limitadas',cover:'hora-cero-01',action:'Descubrir el recorrido',menus:[],default:'route'},
  {id:'nuevo',date:'1 DE ENERO · AÑO NUEVO',title:'La primera<br>mesa del año.',name:'El día de Año Nuevo',description:'Marisco, entrantes, principal a elegir y flan de turrón. Empezamos 2027 alrededor de la mesa, también con los peques.',price:'50 €',note:'Por persona · IVA y bebidas incluidos · Agua, refrescos, cerveza y vino',cover:'ano-nuevo-portada',action:'Ver los menús',menus:['ano-nuevo-menu','ano-nuevo-infantil'],default:'ano-nuevo-menu'}
@@ -16,27 +16,38 @@ const sceneDescriptions = {
 };
 // Reservations use the production event backend.
 const bookingOrigin = '';
-const groupInquiryTools = import('./group-inquiry.mjs?v=grupos-otro-dia-20261108');
+import {canRequestDate, validateGroupInquiry, buildGroupMessage, groupWhatsAppUrl} from './group-inquiry.mjs?v=calendario-20261122';
 const groupMenuIds=['navidad-02','navidad-03','navidad-04'];
-const decemberServiceDates=[4,5,6,11,12,13,18,19,20,26,27].map(day=>'2026-12-'+String(day).padStart(2,'0'));
 const inquiryPlanIds=['diciembre','degustacion'];
 const inquiryDrafts={};
 const inquiryMenuIds=()=>activePlan.id==='degustacion'?['navidad-individual']:groupMenuIds;
 const inquiryOptions=()=>({kind:activePlan.id==='degustacion'?'tasting':'group',maxPeople:activePlan.id==='degustacion'?6:100});
 let groupInquiryDraft={};
-function tastingCalendarHTML() {
+const inquiryDateLabel = new Intl.DateTimeFormat('es-ES',{
+ weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'
+});
+function inquiryCalendarHTML(other, selected) {
  const weekdays=['L','M','X','J','V','S','D'];
- const selected=decemberServiceDates.includes(groupInquiryDraft.date)?groupInquiryDraft.date:'';
  const cells=['<td aria-hidden="true"></td>']; // December 2026 starts on Tuesday.
  for(let day=1;day<=31;day++) {
-  const date='2026-12-'+String(day).padStart(2,'0'),available=decemberServiceDates.includes(date);
-  const label=new Intl.DateTimeFormat('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z'));
-  cells.push(`<td><button type="button" data-tasting-date="${date}" aria-label="${esc(label)}${available?'':day===25?' · Menú de Navidad':' · No disponible'}" ${available?`aria-pressed="${selected===date}"`:'disabled'}>${day}</button></td>`);
+  const date='2026-12-'+String(day).padStart(2,'0'),available=canRequestDate(date,other);
+  const label=inquiryDateLabel.format(new Date(date+'T12:00:00Z'));
+  cells.push(`<td><button type="button" data-inquiry-date="${date}" aria-label="${esc(label)}${available?'':day===25?' · Menú de Navidad':' · No disponible'}" ${available?`aria-pressed="${selected===date}"`:'disabled'}>${day}</button></td>`);
  }
  while(cells.length%7)cells.push('<td aria-hidden="true"></td>');
  const rows=[];for(let i=0;i<cells.length;i+=7)rows.push('<tr>'+cells.slice(i,i+7).join('')+'</tr>');
- const selectedLabel=selected?new Intl.DateTimeFormat('es-ES',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(selected+'T12:00:00Z')):'Elige una de las fechas disponibles.';
- return `<div class="tasting-calendar-field"><p id="tasting-date-label" class="calendar-field-label">Día de la reserva</p><input type="hidden" name="date" value="${selected}"><div class="tasting-calendar" role="group" aria-labelledby="tasting-date-label"><table><caption>Diciembre <span>2026</span></caption><thead><tr>${weekdays.map(day=>`<th scope="col">${day}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table><p class="calendar-selection" role="status" aria-live="polite">${esc(selectedLabel)}</p></div></div>`;
+ const selectedLabel=selected?inquiryDateLabel.format(new Date(selected+'T12:00:00Z')):'Elige un día en el calendario.';
+ return `<table><caption>Diciembre <span>2026</span></caption><thead><tr>${weekdays.map(day=>`<th scope="col">${day}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table><p class="calendar-selection" role="status">${esc(selectedLabel)}</p>`;
+}
+function inquiryDateField() {
+ const group=activePlan.id==='diciembre';
+ const other=group && groupInquiryDraft.date_request==='other';
+ const selected=canRequestDate(groupInquiryDraft.date,other)?groupInquiryDraft.date:'';
+ return `<div class="tasting-calendar-field"><p id="inquiry-date-label" class="calendar-field-label">Día de la reserva</p>
+  <input type="hidden" name="date" value="${selected}">
+  <div class="tasting-calendar" role="group" aria-labelledby="inquiry-date-label">${inquiryCalendarHTML(other,selected)}</div>
+  ${group?`<label class="inquiry-other-date"><input type="checkbox" name="other_date" ${other?'checked':''}>Proponer otra fecha</label>`:''}
+ </div>`;
 }
 function groupInquiryHTML() {
  const value=key=>esc(groupInquiryDraft[key]||'');
@@ -50,13 +61,12 @@ function groupInquiryHTML() {
     <label>Teléfono<input name="phone" type="tel" autocomplete="tel" required maxlength="30" value="${value('phone')}"></label>
     <label>Correo electrónico<input name="email" type="email" autocomplete="email" required maxlength="190" value="${value('email')}"></label>
    </div></fieldset>
-   <fieldset><legend>¿Cómo os gustaría venir?</legend><div class="inquiry-fields ${activePlan.id==='degustacion'?'inquiry-fields--tasting':''}">
-    ${activePlan.id==='degustacion'?tastingCalendarHTML():`<label>Día de la reserva<select name="date" required><option value="">Elegid un día disponible</option>${decemberServiceDates.map(date=>`<option value="${date}" ${groupInquiryDraft.date===date&&groupInquiryDraft.date_request!=='other'?'selected':''}>${esc(new Intl.DateTimeFormat('es-ES',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z')))}</option>`).join('')}${activePlan.id==='diciembre'?`<option value="other" ${groupInquiryDraft.date_request==='other'?'selected':''}>Nos gustaría otro día · a valorar</option>`:''}</select></label>`}
-    ${activePlan.id==='diciembre'?`<label data-requested-date ${groupInquiryDraft.date_request==='other'?'':'hidden'}>¿Qué día os gustaría venir?<input name="requested_date" type="date" min="2026-12-01" max="2026-12-31" ${groupInquiryDraft.date_request==='other'?'required':'disabled'} value="${groupInquiryDraft.date_request==='other'?value('date'):''}"><span class="inquiry-hint">Estudiaremos vuestra propuesta. La fecha y el turno están pendientes de valoración y confirmación.</span></label>`:''}
+   <fieldset><legend>¿Cómo os gustaría venir?</legend><div class="inquiry-fields">
+    ${inquiryDateField()}
     ${activePlan.id==='degustacion'?`<div class="fixed-shift"><span>Turno</span><p>Comida · mediodía</p><small>Único turno disponible</small><input name="shift" type="hidden" value="lunch"></div>`:`<label>Turno<select name="shift" required><option value="">Elegid el turno</option><option value="lunch" ${groupInquiryDraft.shift==='lunch'?'selected':''}>Comida · mediodía</option><option value="dinner" ${groupInquiryDraft.shift==='dinner'?'selected':''}>Cena · noche</option></select></label>`}
     <label>Número de personas<input name="people" type="number" min="1" max="${inquiryOptions().maxPeople}" step="1" required value="${value('people')}" inputmode="numeric"></label>
     <label>Menú que os interesa<select name="menu" required><option value="">Elegid un menú</option>${inquiryMenuIds().map(id=>`<option value="${id}" ${groupInquiryDraft.menu===id?'selected':''}>${esc(MENUS[id].title)} · ${esc(MENUS[id].price)}</option>`).join('')}</select></label>
-   </div><p class="inquiry-hint">${activePlan.id==='degustacion'?'Hasta seis personas. Viernes, sábados y domingos de diciembre, solo al mediodía. El 25 está reservado al menú de Navidad.':'Comida o cena los viernes, sábados y domingos de diciembre, excepto el 25. Si preferís otra fecha, elegid «Nos gustaría otro día» y valoraremos vuestra propuesta.'}</p></fieldset>
+   </div><p class="inquiry-hint">${activePlan.id==='degustacion'?'Hasta seis personas. Viernes, sábados y domingos de diciembre, solo al mediodía. El 5 está cerrado y el 25 está reservado al menú de Navidad.':'El 5 está cerrado y el 25 tiene menú de Navidad. Para consultar otro día fuera de los turnos habituales, marca «Proponer otra fecha».'}</p></fieldset>
    <label class="inquiry-privacy"><input name="privacy" type="checkbox" required ${groupInquiryDraft.privacy?'checked':''}><span>He leído la <a href="/politica-privacidad/" target="_blank" rel="noopener">política de privacidad</a> y acepto el contacto para gestionar esta consulta.</span></label>
    <p class="inquiry-status" role="status" aria-live="polite"></p>
    <button class="inquiry-submit" type="submit">Preparar mi consulta de WhatsApp <span aria-hidden="true">↗</span></button>
@@ -75,36 +85,46 @@ function openGroupInquiry(menuId,planId='diciembre') {
 function bindGroupInquiry() {
  const form=$('#group-inquiry-form');if(!form)return;
  const contextPlan=activePlan.id,menuIds=[...inquiryMenuIds()],options=inquiryOptions();
- const snapshot=()=>{const data=Object.fromEntries(new FormData(form));data.privacy=form.elements.privacy.checked;
-  if(contextPlan==='diciembre'){data.date_request=data.date==='other'?'other':'standard';if(data.date_request==='other')data.date=data.requested_date;delete data.requested_date;}
-  return data;};
- const syncRequestedDate=()=>{const field=form.querySelector('[data-requested-date]');if(!field)return;const other=form.elements.date.value==='other';field.hidden=!other;form.elements.requested_date.disabled=!other;form.elements.requested_date.required=other;};
- form.elements.date.addEventListener('change',syncRequestedDate);syncRequestedDate();
- for(const button of form.querySelectorAll('[data-tasting-date]:not(:disabled)'))button.addEventListener('click',()=>{
-  form.elements.date.value=button.dataset.tastingDate;
-  for(const day of form.querySelectorAll('[data-tasting-date]:not(:disabled)'))day.setAttribute('aria-pressed',String(day===button));
-  form.querySelector('.calendar-selection').textContent=new Intl.DateTimeFormat('es-ES',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(button.dataset.tastingDate+'T12:00:00Z'));
-  form.elements.date.dispatchEvent(new Event('input',{bubbles:true}));
+ const snapshot=()=>{
+  const data=Object.fromEntries(new FormData(form));
+  data.privacy=form.elements.privacy.checked;
+  if(contextPlan==='diciembre')data.date_request=form.elements.other_date.checked?'other':'standard';
+  delete data.other_date;
+  return data;
+ };
+ const calendar=form.querySelector('.tasting-calendar');
+ const dateField=form.elements.date;
+ form.elements.other_date?.addEventListener('input',()=>{
+  dateField.value='';
+  calendar.innerHTML=inquiryCalendarHTML(form.elements.other_date.checked,'');
+ });
+ calendar.addEventListener('click',event=>{
+  const button=event.target.closest('button[data-inquiry-date]:not(:disabled)');
+  if(!button)return;
+  dateField.value=button.dataset.inquiryDate;
+  for(const day of calendar.querySelectorAll('[aria-pressed]'))day.setAttribute('aria-pressed',String(day===button));
+  calendar.querySelector('.calendar-selection').textContent=inquiryDateLabel.format(new Date(dateField.value+'T12:00:00Z'));
+  dateField.dispatchEvent(new Event('input',{bubbles:true}));
  });
  form.addEventListener('input',event=>{
   if(event.target.setCustomValidity)event.target.setCustomValidity('');
-  syncRequestedDate();groupInquiryDraft=snapshot();form.querySelector('.inquiry-message').hidden=true;form.querySelector('.inquiry-message a').removeAttribute('href');form.querySelector('.inquiry-status').textContent='';
+  groupInquiryDraft=snapshot();form.querySelector('.inquiry-message').hidden=true;form.querySelector('.inquiry-message a').removeAttribute('href');form.querySelector('.inquiry-status').textContent='';
  });
- form.addEventListener('submit',async event=>{
+ form.addEventListener('submit',event=>{
   event.preventDefault();
   for(const key of ['first_name','last_name'])form.elements[key].setCustomValidity(form.elements[key].value.trim()?'':'Este dato es obligatorio.');
   if(!form.reportValidity())return;
-  if(contextPlan==='degustacion'&&!decemberServiceDates.includes(form.elements.date.value)){
-   form.querySelector('.inquiry-status').textContent='Elige una fecha disponible en el calendario.';form.querySelector('[data-tasting-date]:not(:disabled)').focus();return;
+  if(!canRequestDate(dateField.value,form.elements.other_date?.checked)){
+   form.querySelector('.inquiry-status').textContent='Elige una fecha disponible en el calendario.';calendar.querySelector('button:not(:disabled)').focus();return;
   }
 
   const button=form.querySelector('button[type="submit"]'),status=form.querySelector('.inquiry-status');button.disabled=true;
   try {
-   const tools=await groupInquiryTools,menus=Object.fromEntries(menuIds.map(id=>[id,MENUS[id]]));
+   const menus=Object.fromEntries(menuIds.map(id=>[id,MENUS[id]]));
    if(!form.isConnected||activePlan.id!==contextPlan)return;
-   groupInquiryDraft=tools.validateGroupInquiry(snapshot(),menus,options);
-   const message=tools.buildGroupMessage(groupInquiryDraft,menus,options),preview=form.querySelector('.inquiry-message');
-   preview.querySelector('pre').textContent=message;preview.querySelector('a').href=tools.groupWhatsAppUrl(message);preview.hidden=false;
+   groupInquiryDraft=validateGroupInquiry(snapshot(),menus,options);
+   const message=buildGroupMessage(groupInquiryDraft,menus,options),preview=form.querySelector('.inquiry-message');
+   preview.querySelector('pre').textContent=message;preview.querySelector('a').href=groupWhatsAppUrl(message);preview.hidden=false;
    status.textContent='Consulta preparada. Todavía no se ha enviado.';
    preview.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'nearest'});
   } catch(error){status.textContent=error.message;}
