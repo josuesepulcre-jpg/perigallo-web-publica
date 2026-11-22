@@ -1,18 +1,27 @@
 export const GROUP_WHATSAPP_NUMBER = '34691499985';
+const closedWeddingDate = '2026-12-05';
+const decemberDate = /^2026-12-(0[1-9]|[12][0-9]|3[01])$/;
+
+export function canRequestDate(date, otherDate = false) {
+  if (!decemberDate.test(date) || date === closedWeddingDate) return false;
+  if (otherDate) return true;
+  const weekday = new Date(date + 'T12:00:00Z').getUTCDay();
+  return date !== '2026-12-25' && [0, 5, 6].includes(weekday);
+}
+
 export function validateGroupInquiry(input, menus, options={}) {
   const value = Object.fromEntries(['first_name','last_name','date','shift','people','menu','phone','email'].map(key=>[key,String(input[key]??'').trim()]));
   for (const key of ['first_name','last_name']) if (!value[key] || value[key].length>160 || /[\r\n]/.test(value[key])) throw new Error('Indica tu nombre y apellidos.');
-  if(!/^2026-12-(0[1-9]|[12][0-9]|3[01])$/.test(value.date)) throw new Error('Elige un día de diciembre de 2026.');
+  if(!decemberDate.test(value.date)) throw new Error('Elige un día de diciembre de 2026.');
+  if(value.date === closedWeddingDate) throw new Error('El 5 de diciembre está cerrado. Elige otra fecha.');
   if(options.kind==='tasting') {
-    const day=new Date(value.date+'T12:00:00Z').getUTCDay();
-    if(value.date==='2026-12-25'||![0,5,6].includes(day)) throw new Error('El menú degustación está disponible los viernes, sábados y domingos de diciembre, excepto el 25.');
+    if(!canRequestDate(value.date)) throw new Error('El menú degustación está disponible los viernes, sábados y domingos de diciembre, excepto el 5 y el 25.');
     if(value.shift!=='lunch') throw new Error('El menú degustación solo está disponible para comida de mediodía.');
   }
   if(options.kind==='group') {
     value.date_request=String(input.date_request??'standard').trim();
     if(!['standard','other'].includes(value.date_request)) throw new Error('Indica si eliges una fecha disponible o quieres proponer otro día.');
-    const day=new Date(value.date+'T12:00:00Z').getUTCDay();
-    if(value.date_request==='standard'&&(value.date==='2026-12-25'||![0,5,6].includes(day))) throw new Error('Para esta fecha, elige «Nos gustaría otro día» y valoraremos vuestra propuesta.');
+    if(!canRequestDate(value.date,value.date_request==='other')) throw new Error('Para solicitar otro día, marca «Proponer otra fecha».');
   }
   if(!['lunch','dinner'].includes(value.shift)) throw new Error('Indica si os interesa comida o cena.');
   if(!/^\d+$/.test(value.people)||Number(value.people)<1||Number(value.people)>(options.maxPeople??100)) throw new Error('Indica un número de personas entre 1 y '+(options.maxPeople??100)+'.');

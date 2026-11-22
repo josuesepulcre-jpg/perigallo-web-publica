@@ -183,7 +183,9 @@ dialog{border:0;padding:0;background:var(--paper);color:var(--ink);width:min(126
 
 .inquiry-fields [hidden]{display:none!important}
 
-/* Tasting dates are selected directly from the December calendar. */
+/* December calendars for group and tasting inquiries. */
+.inquiry-fields label.inquiry-other-date {display:flex;flex-direction:row;align-items:center;gap:9px;min-height:44px;margin-top:6px}
+.inquiry-fields .inquiry-other-date input {width:18px;height:18px;min-height:0;margin:0;accent-color:var(--green)}
 .tasting-calendar-field{grid-row:span 3;min-width:0}
 .calendar-field-label,.fixed-shift>span{font-size:12px;color:#495642;margin:0 0 8px}
 .tasting-calendar{border:1px solid #c7cbbd;background:#fffef9;padding:16px 12px 10px}
