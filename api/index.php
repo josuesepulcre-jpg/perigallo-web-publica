@@ -73,7 +73,11 @@ try {
         header('Cache-Control: no-store');
         if((int)($_SERVER['CONTENT_LENGTH']??0)>12000){json_response(['error'=>'La solicitud es demasiado grande.'],413);return;}
         $service=new \Perigallo\Ticketing\SeasonReservations(Database::pdo(),$ticketing());
-        if($method==='GET'&&empty($season[1]))json_response($service->catalog());
+        if ($method === 'GET' && empty($season[1])) {
+            $plan = $_GET['plan'] ?? null;
+            if ($plan !== null && !is_string($plan)) throw new InvalidArgumentException('Elige una experiencia disponible.');
+            json_response($service->catalog($plan));
+        }
         elseif($method==='POST'&&empty($season[1])){ $body=read_json_body();$result=$service->create($body);$result['booking']['mode']=$body['mode'];json_response($result,201); }
         elseif($method==='GET'&&empty($season[2]))json_response(['booking'=>$service->booking($season[1])]);
         elseif($method==='POST'&&!empty($season[2]))json_response($service->payment($season[1]));

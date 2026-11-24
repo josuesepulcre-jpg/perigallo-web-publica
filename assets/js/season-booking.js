@@ -4,10 +4,10 @@ const params=new URLSearchParams(location.search);
 const money=cents=>new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(cents/100);
 const safe=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const dates=value=>new Date(value+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'});
-const catalog={
- navidad:{title:'El día de Navidad',date:'2026-12-25',price:6500,child:2800,copy:'Bebidas incluidas. También tenemos menú infantil.'},
- hora:{title:'Tardevieja · Hora Cero',date:'2026-12-31',price:12000,child:null,copy:'Gastronomía, bebidas, barra libre y experiencias. De 14:00 a 22:00. Apertura a las 13:30.'},
- nuevo:{title:'El día de Año Nuevo',date:'2027-01-01',price:5000,child:2800,copy:'Bebidas del menú de adultos aparte. El menú infantil incluye agua y refrescos.'}
+const planCopy={
+ navidad:'Bebidas incluidas. También tenemos menú infantil.',
+ hora:'Gastronomía, bebidas, barra libre y experiencias. De 14:00 a 22:00. Apertura a las 13:30.',
+ nuevo:'Bebidas del menú de adultos aparte. El menú infantil incluye agua y refrescos.'
 };
 async function request(url,options={}){
  const response=await fetch(url,{...options,headers:{'Content-Type':'application/json',...options.headers}});
@@ -22,20 +22,18 @@ function summary(booking){
  <h2>${safe(booking.title)}</h2><p>${dates(booking.date)}</p><p>${booking.adults} ${booking.plan==='hora'?(booking.adults===1?'entrada':'entradas'):(booking.adults===1?'adulto':'adultos')}${booking.children?' · '+booking.children+(booking.children===1?' infantil':' infantiles'):''}</p>
  <div class="order-total"><span>Total · IVA incluido</span><strong>${money(booking.total)}</strong></div></div>`;
 }
-function renderCheckout(){
- const plan=catalog[params.get('plan')];
- if(!plan){root.innerHTML='<div class="booking-page"><h1>Elige una experiencia</h1><a href="/experiencias/">Volver a Experiencias ↗</a></div>';return;}
+function renderCheckout(planId,plan){
  const operation=crypto.randomUUID();
- root.innerHTML=`<div class="booking-page"><a class="back-link" href="/experiencias/?plan=${safe(params.get('plan'))}">← Volver a la experiencia</a>
- <p class="eyebrow">RESERVAS Y ENTRADAS</p><h1>${plan.title}</h1><p class="booking-date">${dates(plan.date)} · Finca La Llaguna</p>
+ root.innerHTML=`<div class="booking-page"><a class="back-link" href="/experiencias/?plan=${safe(planId)}">← Volver a la experiencia</a>
+ <p class="eyebrow">RESERVAS Y ENTRADAS</p><h1>${safe(plan.title)}</h1><p class="booking-date">${dates(plan.date)} · Finca La Llaguna</p>
  <div class="booking-grid"><form id="reserve-form">
  <fieldset><legend>¿Cómo quieres reservar?</legend><div class="booking-modes">
  <label><input type="radio" name="mode" value="reserve" ${params.get('mode')!=='pay'?'checked':''}><span><strong>Reservar primero</strong><small>Contactaremos con vosotros para acordar cómo realizar el pago anticipado.</small></span></label>
  <label><input type="radio" name="mode" value="pay" ${params.get('mode')==='pay'?'checked':''}><span><strong>Comprar y pagar</strong><small>Completa tus datos y continúa al pago con tarjeta.</small></span></label></div></fieldset>
  <fieldset><legend>Vuestras plazas</legend><div class="field-pair">
- <label>${params.get('plan')==='hora'?'Entradas':'Adultos'} · ${money(plan.price)}<input type="number" name="adults" value="1" min="1" max="10" required></label>
+ <label>${planId==='hora'?'Entradas':'Adultos'} · ${money(plan.price)}<input type="number" name="adults" value="1" min="1" max="10" required></label>
  ${plan.child? `<label>Menú infantil · ${money(plan.child)}<input type="number" name="children" value="0" min="0" max="10" required></label>`:''}
- </div><p class="field-note">${plan.copy}</p></fieldset>
+ </div><p class="field-note">${planCopy[planId]}</p></fieldset>
  <fieldset><legend>Tus datos</legend>
  <div class="field-pair"><label>Nombre<input name="first_name" autocomplete="given-name" required maxlength="120"></label><label>Apellidos<input name="last_name" autocomplete="family-name" required maxlength="160"></label></div>
  <div class="field-pair"><label>Teléfono / WhatsApp<input type="tel" name="phone" autocomplete="tel" required maxlength="30" pattern="[+0-9 ()-]{9,30}"></label>
@@ -50,7 +48,7 @@ function renderCheckout(){
  const form=document.querySelector('#reserve-form');
  const update=()=>{
   const adults=Number(form.elements.adults.value)||0,children=Number(form.elements.children?.value)||0;
-  document.querySelector('#checkout-summary').innerHTML=summary({...plan,plan:params.get('plan'),adults,children,total:adults*plan.price+children*(plan.child||0)});
+  document.querySelector('#checkout-summary').innerHTML=summary({...plan,plan:planId,adults,children,total:adults*plan.price+children*(plan.child||0)});
   document.querySelector('#submit-reserve').textContent=form.elements.mode.value==='pay'?'Continuar al pago ↗':'Solicitar reserva ↗';
  };
  form.addEventListener('input',event=>{if(event.target.setCustomValidity)event.target.setCustomValidity('');update();});update();
@@ -68,7 +66,7 @@ function renderCheckout(){
   button.disabled=true;status.textContent='Guardando tu solicitud…';
   try{
    const data=await request('/api/season-reservations',{method:'POST',body:JSON.stringify({
-    operation,plan:params.get('plan'),adults:Number(form.elements.adults.value),children:Number(form.elements.children?.value)||0,
+    operation,plan:planId,adults:Number(form.elements.adults.value),children:Number(form.elements.children?.value)||0,
     mode,first_name:form.elements.first_name.value.trim(),last_name:form.elements.last_name.value.trim(),name:form.elements.first_name.value.trim()+' '+form.elements.last_name.value.trim(),phone:form.elements.phone.value,email:form.elements.email.value,
     notes:form.elements.notes.value,privacy:form.elements.privacy.checked,terms:form.elements.privacy.checked,adult_buyer:form.elements.adult_buyer.checked,whatsapp_consent:false
    })});
@@ -129,4 +127,20 @@ async function renderOrder(){
  }catch(error){root.innerHTML='<div class="booking-page"><h1>No podemos abrir la reserva</h1><p>'+safe(error.message)+'</p><a href="/experiencias/">Volver a Experiencias</a></div>';}
 }
 
-if(location.pathname.startsWith('/entradas/reserva/pedido'))renderOrder();else request('/api/season-reservations').then(data=>{for(const [key,value] of Object.entries(data.plans))if(catalog[key])Object.assign(catalog[key],value);renderCheckout();}).catch(error=>{root.innerHTML='<div class="booking-page"><h1>No hemos podido abrir las reservas</h1><p>'+safe(error.message)+'</p><a href="tel:+34691499985">Llamar al 691 499 985</a></div>';});
+async function loadCheckout(){
+ const planId=params.get('plan');
+ if(!Object.hasOwn(planCopy,planId)){
+  root.innerHTML='<div class="booking-page"><h1>Elige una experiencia</h1><a href="/experiencias/">Volver a Experiencias ↗</a></div>';
+  return;
+ }
+ try{
+  const {plans}=await request('/api/season-reservations?plan='+encodeURIComponent(planId));
+  const plan=plans?.[planId];
+  if(!plan)throw new Error('Esta experiencia no admite reservas en este momento.');
+  renderCheckout(planId,plan);
+ }catch(error){
+  root.innerHTML='<div class="booking-page"><h1>No hemos podido abrir la reserva</h1><p>'+safe(error.message)+'</p><a href="/experiencias/">Volver a Experiencias ↗</a><p><a href="tel:+34691499985">Llamar al 691 499 985</a></p></div>';
+ }
+}
+
+if(location.pathname.startsWith('/entradas/reserva/pedido'))renderOrder();else loadCheckout();

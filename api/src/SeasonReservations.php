@@ -14,18 +14,28 @@ final class SeasonReservations
         $entry=$this->config()['plans'][$plan]??null;
         if(!$entry)throw new InvalidArgumentException('Elige una experiencia disponible.');
         $q=$this->pdo->prepare('SELECT * FROM events WHERE slug=? AND status="published" AND visible=1 AND is_test=0 LIMIT 1');$q->execute([$entry['slug']]);$event=$q->fetch();
-        if(!$event||strtotime($event['starts_at'])<=time())throw new RuntimeException('Esta experiencia no admite reservas en este momento.');
+        if(!$event||strtotime($event['starts_at'])<=time())throw new RuntimeException('Esta experiencia no admite reservas en este momento.',409);
         $q=$this->pdo->prepare('SELECT * FROM ticket_types WHERE event_id=? AND active=1 AND visible=1 AND status="on_sale" ORDER BY sort_order,id');$q->execute([$event['id']]);$types=$q->fetchAll();
         $adult=null;$child=null;
         foreach($types as $type){if(preg_match('/infantil/iu',$type['name']))$child=$type;else if(!$adult)$adult=$type;}
-        if(!$adult||($entry['child']!==null&&!$child))throw new RuntimeException('Las entradas todavía no están disponibles.');
+        if(!$adult||($entry['child']!==null&&!$child))throw new RuntimeException('Las entradas todavía no están disponibles.',409);
         return [$event,$adult,$child];
     }
     private function gross(array $type): int {return (int)$type['price_cents']+(int)round($type['price_cents']*$type['tax_rate']/100)+(int)$type['fee_cents'];}
-    public function catalog(): array {
-        $out=[];
-        foreach($this->config()['plans'] as $plan=>$cfg){[$e,$a,$c]=$this->event($plan);$out[$plan]=['title'=>$e['title'],'date'=>substr($e['starts_at'],0,10),'price'=>$this->gross($a),'child'=>$c?$this->gross($c):null];}
-        return ['plans'=>$out];
+    public function catalog(?string $plan = null): array
+    {
+        $plans = $plan === null ? array_keys($this->config()['plans']) : [$plan];
+        $out = [];
+        foreach ($plans as $key) {
+            [$event, $adult, $child] = $this->event($key);
+            $out[$key] = [
+                'title' => $event['title'],
+                'date' => substr($event['starts_at'], 0, 10),
+                'price' => $this->gross($adult),
+                'child' => $child ? $this->gross($child) : null,
+            ];
+        }
+        return ['plans' => $out];
     }
     public function create(array $data): array {
         if(($_SERVER['CONTENT_LENGTH']??0)>12000)throw new InvalidArgumentException('La solicitud es demasiado grande.');
