@@ -44,6 +44,12 @@ final class WhatsAppDeliveryService
         $config = $this->config();
         $recipient = (string) ($order['whatsapp_phone_e164'] ?? '');
         $season=json_decode((string)@file_get_contents(__DIR__.'/season-catalog.json'),true);
+        if (env_value('WA_EXPERIENCE_CENTRAL') === 'true') {
+            $reason = 'Confirmación automática gestionada desde Suite. Para entregar el PDF, usa correo o el envío manual.';
+            $this->upsertLog($pdo, (int) $order['id'], $idempotencyKey, 'blocked', $this->maskPhone($recipient), $config, null, null, $reason);
+            return ['status' => 'blocked', 'message_id' => null, 'error' => $reason];
+        }
+
         if(($season['whatsapp_delivery_mode']??'')==='manual') {
             $reason='Envío manual por WhatsApp Business. Pendiente de coexistencia de Meta.';
             $this->upsertLog($pdo,(int)$order['id'],$idempotencyKey,'blocked',$this->maskPhone($recipient),$config,null,null,$reason);

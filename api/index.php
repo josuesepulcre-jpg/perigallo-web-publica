@@ -85,6 +85,28 @@ try {
         return;
     }
 
+    if ($method === 'GET' && $path === '/integrations/whatsapp-source') {
+        header('Cache-Control: private, no-store');
+        $expected = env_value('WA_EXPERIENCE_SECRET');
+        $provided = (string) ($_SERVER['HTTP_X_PERIGALLO_WHATSAPP_KEY'] ?? '');
+        if (!$expected || !hash_equals($expected, $provided)) {
+            json_response(['error' => 'No autorizado'], 401);
+            return;
+        }
+        $id = $_GET['id'] ?? null;
+        $since = $_GET['since'] ?? '';
+        $after = $_GET['after'] ?? '';
+        if ($id !== null ? (!is_string($id) || !preg_match('/^[1-9][0-9]{0,18}$/D', $id))
+            : (!is_string($since) || !preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/D', $since)
+                || !is_string($after) || ($after !== '' && !preg_match('/^[1-9][0-9]{0,18}$/D', $after)))) {
+            json_response(['error' => 'Consulta no válida'], 400);
+            return;
+        }
+        $source = new Perigallo\Ticketing\WhatsAppAutomationSource(Database::pdo());
+        json_response($id !== null ? ['record' => $source->record($id)] : ['ids' => $source->ids(new DateTimeImmutable($since), $after)]);
+        return;
+    }
+
     if ($method === 'GET' && $path === '/whatsapp/webhook') {
         $whatsApp = new WhatsAppDeliveryService();
         $mode = (string) ($_GET['hub_mode'] ?? '');
