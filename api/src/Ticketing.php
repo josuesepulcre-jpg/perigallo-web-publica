@@ -1397,45 +1397,13 @@ final class Ticketing
 
     public function adminPurgeTestOrder(int $orderId, string $operator): void
     {
-        $this->purgeDiscardableOrder($orderId, $operator, true, 'test_order_deleted');
-    }
-
-    /** Purga un pedido técnico o una invitación sin importe al eliminar su evento de prueba. */
-    private function purgeDiscardableOrder(int $orderId, string $operator, bool $requireTestOrder, string $auditAction, bool $allowPaidOrder = false): void
-    {
         $this->pdo->beginTransaction();
         try {
             $order = $this->lockedOrder($orderId);
-            if ($requireTestOrder && empty($order['is_test'])) {
-                throw new RuntimeException('Solo se pueden eliminar pedidos de prueba.');
+            if (empty($order['is_test'])) {
+                throw new RuntimeException('Solo se pueden eliminar pedidos de prueba.', 409);
             }
-            if (!$requireTestOrder && !$allowPaidOrder && empty($order['is_test']) && (int) ($order['total_cents'] ?? 0) > 0) {
-                throw new RuntimeException('No se puede eliminar un pedido con cobro real.');
-            }
-            $ticketStatement = $this->pdo->prepare('SELECT t.id FROM tickets t JOIN ticket_order_items oi ON oi.id = t.order_item_id WHERE oi.order_id = ?');
-            $ticketStatement->execute([$orderId]);
-            $ticketIds = array_map('intval', array_column($ticketStatement->fetchAll(), 'id'));
-            if ($ticketIds) {
-                $marks = implode(',', array_fill(0, count($ticketIds), '?'));
-                $movementStatement = $this->pdo->prepare('SELECT id FROM ticket_access_movements WHERE ticket_id IN (' . $marks . ')');
-                $movementStatement->execute($ticketIds);
-                $movementIds = array_map('intval', array_column($movementStatement->fetchAll(), 'id'));
-                if ($movementIds) {
-                    $movementMarks = implode(',', array_fill(0, count($movementIds), '?'));
-                    $this->pdo->prepare('UPDATE ticket_access_movements SET reversal_of_id = NULL WHERE reversal_of_id IN (' . $movementMarks . ')')->execute($movementIds);
-                    $this->pdo->prepare('DELETE FROM ticket_access_movements WHERE id IN (' . $movementMarks . ')')->execute($movementIds);
-                }
-                $this->pdo->prepare('UPDATE ticket_scans SET ticket_id = NULL WHERE ticket_id IN (' . $marks . ')')->execute($ticketIds);
-                $this->pdo->prepare('DELETE FROM tickets WHERE id IN (' . $marks . ')')->execute($ticketIds);
-            }
-            $this->pdo->prepare('DELETE FROM email_deliveries WHERE order_id = ?')->execute([$orderId]);
-            $this->pdo->prepare('DELETE FROM discount_code_usages WHERE order_id = ?')->execute([$orderId]);
-            $this->pdo->prepare('DELETE FROM payment_attempts WHERE order_id = ?')->execute([$orderId]);
-            $this->deleteOrderReferencesIfTableExists('holded_refund_requests', $orderId);
-            $this->deleteOrderReferencesIfTableExists('holded_sync_logs', $orderId);
-            $this->pdo->prepare('DELETE FROM ticket_order_items WHERE order_id = ?')->execute([$orderId]);
-            $this->pdo->prepare('DELETE FROM ticket_orders WHERE id = ?')->execute([$orderId]);
-            $this->auditAdminOperation($operator, $auditAction, $orderId, ['reference' => $order['test_reference'] ?: $order['redsys_order']]);
+            $this->purgeDiscardableOrder($order, $operator, 'test_order_deleted');
             $this->pdo->commit();
         } catch (\Throwable $error) {
             if ($this->pdo->inTransaction()) {
@@ -1445,10 +1413,51 @@ final class Ticketing
         }
     }
 
-    /** Algunas instalaciones aún no tienen el módulo Holded; su ausencia no debe bloquear una prueba. */
+    /** Borra un pedido descartable ya bloqueado dentro de la transacción del llamador. */
+    private function purgeDiscardableOrder(array $order, string $operator, string $auditAction): void
+    {
+        $orderId = (int) $order['id'];
+        $productionAttempt = $this->pdo->prepare(
+            'SELECT 1 FROM payment_attempts WHERE order_id = ? AND environment = "production"
+             AND amount_cents > 0 AND status IN ("created", "accepted", "manual_review") LIMIT 1 FOR UPDATE'
+        );
+        $productionAttempt->execute([$orderId]);
+        if ($productionAttempt->fetchColumn() || !empty($order['holded_document_id']) || !empty($order['holded_refund_document_id'])) {
+            throw new RuntimeException('El pedido tiene un intento de cobro en producción o un documento fiscal que debe conservarse.', 409);
+        }
+        $ticketStatement = $this->pdo->prepare('SELECT t.id FROM tickets t JOIN ticket_order_items oi ON oi.id = t.order_item_id WHERE oi.order_id = ?');
+        $ticketStatement->execute([$orderId]);
+        $ticketIds = array_map('intval', array_column($ticketStatement->fetchAll(), 'id'));
+        if ($ticketIds) {
+            $marks = implode(',', array_fill(0, count($ticketIds), '?'));
+            $movementStatement = $this->pdo->prepare('SELECT id FROM ticket_access_movements WHERE ticket_id IN (' . $marks . ')');
+            $movementStatement->execute($ticketIds);
+            $movementIds = array_map('intval', array_column($movementStatement->fetchAll(), 'id'));
+            if ($movementIds) {
+                $movementMarks = implode(',', array_fill(0, count($movementIds), '?'));
+                $this->pdo->prepare('UPDATE ticket_access_movements SET reversal_of_id = NULL WHERE reversal_of_id IN (' . $movementMarks . ')')->execute($movementIds);
+                $this->pdo->prepare('DELETE FROM ticket_access_movements WHERE id IN (' . $movementMarks . ')')->execute($movementIds);
+            }
+            $this->pdo->prepare('UPDATE ticket_scans SET ticket_id = NULL WHERE ticket_id IN (' . $marks . ')')->execute($ticketIds);
+            $this->pdo->prepare('DELETE FROM tickets WHERE id IN (' . $marks . ')')->execute($ticketIds);
+        }
+        $this->pdo->prepare('DELETE FROM email_deliveries WHERE order_id = ?')->execute([$orderId]);
+        $this->pdo->prepare('DELETE FROM discount_code_usages WHERE order_id = ?')->execute([$orderId]);
+        // Los cobros simulados y enlaces de una reserva referencian tanto el pedido como sus intentos.
+        $this->deleteOrderReferencesIfTableExists('ticket_reservation_payments', $orderId);
+        $this->deleteOrderReferencesIfTableExists('ticket_reservation_links', $orderId);
+        $this->pdo->prepare('DELETE FROM payment_attempts WHERE order_id = ?')->execute([$orderId]);
+        $this->deleteOrderReferencesIfTableExists('holded_refund_requests', $orderId);
+        $this->deleteOrderReferencesIfTableExists('holded_sync_logs', $orderId);
+        $this->pdo->prepare('DELETE FROM ticket_order_items WHERE order_id = ?')->execute([$orderId]);
+        $this->pdo->prepare('DELETE FROM ticket_orders WHERE id = ?')->execute([$orderId]);
+        $this->auditAdminOperation($operator, $auditAction, $orderId, ['reference' => $order['test_reference'] ?: $order['redsys_order']]);
+    }
+
+    /** Las instalaciones anteriores pueden carecer de algún módulo de referencias. */
     private function deleteOrderReferencesIfTableExists(string $table, int $orderId): void
     {
-        if (!in_array($table, ['holded_refund_requests', 'holded_sync_logs'], true)) {
+        if (!in_array($table, ['holded_refund_requests', 'holded_sync_logs', 'ticket_reservation_payments', 'ticket_reservation_links'], true)) {
             throw new InvalidArgumentException('Tabla de referencias no permitida.');
         }
         $exists = $this->pdo->prepare('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?');
@@ -2029,39 +2038,40 @@ final class Ticketing
     /** Solo los eventos clasificados previamente como prueba pueden eliminarse definitivamente. */
     public function adminDeleteEvent(int $eventId, string $operator): array
     {
-        $event = $this->requireAdminEvent($eventId);
-        if (empty($event['is_test'])) {
-            throw new RuntimeException('Este evento está protegido. Solo los eventos creados en modo prueba pueden eliminarse definitivamente; archívalo para conservar su historial.');
-        }
-        $orders = $this->pdo->prepare(
-            'SELECT DISTINCT o.id, o.is_test, o.total_cents FROM ticket_orders o JOIN ticket_order_items oi ON oi.order_id = o.id WHERE oi.event_id = ? ORDER BY o.id ASC'
-        );
-        $orders->execute([$eventId]);
-        $rows = $orders->fetchAll();
-        foreach ($rows as $order) {
-            $otherEventItems = $this->pdo->prepare('SELECT COUNT(*) FROM ticket_order_items WHERE order_id = ? AND event_id <> ?');
-            $otherEventItems->execute([(int) $order['id'], $eventId]);
-            if ((int) $otherEventItems->fetchColumn() > 0) {
-                throw new RuntimeException('No se puede eliminar la prueba porque uno de sus pedidos contiene entradas de otro evento protegido.');
-            }
-            $this->purgeDiscardableOrder((int) $order['id'], $operator, false, 'test_event_order_deleted', true);
-        }
-
         $this->pdo->beginTransaction();
         try {
-            $remaining = $this->pdo->prepare('SELECT COUNT(*) FROM ticket_order_items WHERE event_id=?');
-            $remaining->execute([$eventId]);
-            if ((int) $remaining->fetchColumn() > 0) {
-                throw new RuntimeException('No se puede eliminar el evento mientras conserve pedidos.');
+            $event = $this->pdo->prepare('SELECT is_test FROM events WHERE id = ? FOR UPDATE');
+            $event->execute([$eventId]);
+            $isTest = $event->fetchColumn();
+            if ($isTest === false) {
+                throw new RuntimeException('Evento no encontrado.', 404);
+            }
+            if (!$isTest) {
+                throw new RuntimeException('Este evento está protegido. Solo los eventos creados en modo prueba pueden eliminarse definitivamente; archívalo para conservar su historial.', 409);
+            }
+            $orders = $this->pdo->prepare('SELECT DISTINCT order_id FROM ticket_order_items WHERE event_id = ? ORDER BY order_id');
+            $orders->execute([$eventId]);
+            $orderIds = $orders->fetchAll(PDO::FETCH_COLUMN);
+            $otherEventItems = $this->pdo->prepare('SELECT 1 FROM ticket_order_items WHERE order_id = ? AND event_id <> ? LIMIT 1 FOR UPDATE');
+            foreach ($orderIds as $orderId) {
+                $order = $this->lockedOrder((int) $orderId);
+                $otherEventItems->execute([$orderId, $eventId]);
+                if ($otherEventItems->fetchColumn()) {
+                    throw new RuntimeException('No se puede eliminar la prueba porque uno de sus pedidos contiene entradas de otro evento protegido.', 409);
+                }
+                if (empty($order['is_test']) && ((int) $order['total_cents'] > 0 || ($order['sales_channel'] ?? '') === 'reservation')) {
+                    throw new RuntimeException('No se puede eliminar la prueba porque tiene una reserva o un pedido con importe registrado fuera del modo prueba.', 409);
+                }
+                $this->purgeDiscardableOrder($order, $operator, 'test_event_order_deleted');
             }
             $this->pdo->prepare('DELETE FROM ticket_scans WHERE event_id=?')->execute([$eventId]);
             $this->pdo->prepare('DELETE FROM discount_code_events WHERE event_id=?')->execute([$eventId]);
             $this->pdo->prepare('DELETE dct FROM discount_code_ticket_types dct JOIN ticket_types tt ON tt.id=dct.ticket_type_id WHERE tt.event_id=?')->execute([$eventId]);
             $this->pdo->prepare('DELETE FROM ticket_types WHERE event_id=?')->execute([$eventId]);
             $this->pdo->prepare('DELETE FROM events WHERE id=?')->execute([$eventId]);
-            $this->auditEventOperation($operator, 'event_deleted', $eventId, ['purged_test_orders' => count($rows)]);
+            $this->auditEventOperation($operator, 'event_deleted', $eventId, ['purged_test_orders' => count($orderIds)]);
             $this->pdo->commit();
-            return ['deleted' => true, 'purged_test_orders' => count($rows)];
+            return ['deleted' => true, 'purged_test_orders' => count($orderIds)];
         } catch (\Throwable $error) {
             if ($this->pdo->inTransaction()) $this->pdo->rollBack();
             throw $error;
