@@ -9,7 +9,7 @@ $p=Database::pdo();$t=new Ticketing($p,new Redsys(),new Mailer());
 function keyForTest():string{return bin2hex(random_bytes(16));}
 function check($actual,$expected,string $label):void{if($actual!==$expected)throw new RuntimeException($label.': '.json_encode([$actual,$expected]));}
 function rejected(callable $f,string $label):void{try{$f();}catch(InvalidArgumentException|RuntimeException $e){if($e instanceof PDOException)throw $e;return;}throw new RuntimeException('Expected rejection: '.$label);}
-function fixture(int $capacity=40):array{global $p,$t;$event=$t->adminCreateEvent(['title'=>'QA Reservas '.keyForTest(),'capacity'=>$capacity]);$id=(int)$event['id'];$p->prepare('UPDATE events SET status="published",visible=1 WHERE id=?')->execute([$id]);$type=$t->adminCreateTicketType($id,['name'=>'Adulto','price_cents'=>6500,'capacity'=>$capacity,'tax_rate'=>0]);$p->prepare('UPDATE ticket_types SET status="on_sale",visible=1 WHERE id=?')->execute([$type['id']]);return ['request_id'=>keyForTest(),'event_id'=>$id,'ticket_type_id'=>(int)$type['id'],'first_name'=>'Juan','last_name'=>'García','phone'=>'600000000','email'=>'qa@example.invalid','quantity'=>8];}
+function fixture(int $capacity=40, bool $testEvent=false):array{global $p,$t;$event=$t->adminCreateEvent(['title'=>'QA Reservas '.keyForTest(),'capacity'=>$capacity,'is_test'=>$testEvent]);$id=(int)$event['id'];$p->prepare('UPDATE events SET status="published",visible=1 WHERE id=?')->execute([$id]);$type=$t->adminCreateTicketType($id,['name'=>'Adulto','price_cents'=>6500,'capacity'=>$capacity,'tax_rate'=>0]);$p->prepare('UPDATE ticket_types SET status="on_sale",visible=1 WHERE id=?')->execute([$type['id']]);return ['request_id'=>keyForTest(),'event_id'=>$id,'ticket_type_id'=>(int)$type['id'],'first_name'=>'Juan','last_name'=>'García','phone'=>'600000000','email'=>'qa@example.invalid','quantity'=>8];}
 function pay(array $r,string $amount,string $method='cash'):array{global $t;return $t->adminReservationPayment((int)$r['order']['id'],['request_id'=>keyForTest(),'expected_revision'=>$r['order']['reservation_revision'],'amount_euros'=>$amount,'method'=>$method],'qa');}
 function callback(array $form,string $response='0000',?int $overrideAmount=null,bool $badSignature=false,array $overrides=[]):array{global $t;$gateway=new Redsys();$request=$gateway->decodeMerchantParameters($form['fields']['Ds_MerchantParameters']);$data=['DS_ORDER'=>$request['DS_MERCHANT_ORDER'],'DS_AMOUNT'=>(string)($overrideAmount??(int)$request['DS_MERCHANT_AMOUNT']),'DS_CURRENCY'=>'978','DS_MERCHANTCODE'=>'999008881','DS_TERMINAL'=>'001','DS_TRANSACTIONTYPE'=>'0','DS_RESPONSE'=>$response,'DS_AUTHORISATIONCODE'=>'QA-LOCAL'];$data=array_replace($data,$overrides);$encoded=$gateway->encodeMerchantParameters($data);return $t->processRedsysNotification(['Ds_MerchantParameters'=>$encoded,'Ds_SignatureVersion'=>'HMAC_SHA256_V1','Ds_Signature'=>$badSignature?'invalid':$gateway->sign($encoded,$data['DS_ORDER'])]);}
 function qaPaymentLink(array $r,string $amount):array{global $t;return $t->adminReservationLink((int)$r['order']['id'],['request_id'=>keyForTest(),'expected_revision'=>$r['order']['reservation_revision'],'amount_euros'=>$amount],'qa');}
@@ -144,4 +144,53 @@ $p->prepare('UPDATE ticket_types SET capacity=20,manual_reserve_capacity=10 WHER
 $p->prepare('UPDATE events SET capacity=20 WHERE id=?')->execute([$quotaEvent]);check($t->adminGetEvent($quotaEvent)['available'],14,'physical event capacity still caps saleable tickets');
 $p->prepare('UPDATE ticket_types SET capacity=0,manual_reserve_capacity=0 WHERE id=?')->execute([$quotaType]);check($t->adminGetEvent($quotaEvent)['available'],0,'historical commitments beyond quota never underflow');
 echo "PASS event availability respects enabled menus, manual quotas and physical capacity\n";
+
+// The archived test event can have a simulated receipt and a deactivated payment link.
+$testBody = fixture(testEvent: true);
+$testEventId = $testBody['event_id'];
+$testReservation = pay($t->adminCreateReservation($testBody, 'qa', true), '180', 'bank_transfer');
+$testReservation = qaPaymentLink($testReservation, '120');
+$testOrderId = (int) $testReservation['order']['id'];
+$testLink = $testReservation['links'][0];
+$testForm = $t->startReservationLink($testLink['public_token']);
+callback($testForm);
+$testReservation = $t->adminReservationDetail($testOrderId);
+$testReservation = qaPaymentLink($testReservation, '100');
+$inactiveLink = $testReservation['links'][0];
+$t->adminCancelReservationLink($testOrderId, (int) $inactiveLink['id'], [
+    'expected_revision' => $testReservation['order']['reservation_revision'],
+], 'qa');
+$t->adminSetEventArchived($testEventId, true);
+
+$attemptEnvironment = $p->prepare('UPDATE payment_attempts SET environment = ? WHERE order_id = ?');
+$attemptEnvironment->execute(['production', $testOrderId]);
+rejected(fn() => $t->adminDeleteEvent($testEventId, 'qa'), 'production payment attempt protects a test event from deletion');
+$attemptEnvironment->execute(['test', $testOrderId]);
+
+// Even a failure at the final DELETE must leave the reservation and its finance records intact.
+$p->exec("CREATE TRIGGER qa_event_delete_failure BEFORE DELETE ON events FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='QA event delete fault'");
+try {
+    try {
+        $t->adminDeleteEvent($testEventId, 'qa');
+        throw new RuntimeException('Event deletion fault was not propagated');
+    } catch (PDOException $expected) {
+        check(str_contains($expected->getMessage(), 'QA event delete fault'), true, 'deletion reached the event');
+    }
+} finally {
+    $p->exec('DROP TRIGGER qa_event_delete_failure');
+}
+check($t->adminReservationDetail($testOrderId)['order']['paid_cents'], 30000, 'failed event deletion retains receipts');
+check($t->reservationPublicLink($inactiveLink['public_token'])['status'], 'cancelled', 'failed event deletion retains link history');
+
+check($t->adminDeleteEvent($testEventId, 'qa'), ['deleted' => true, 'purged_test_orders' => 1], 'test event with a reservation can be deleted');
+check($t->adminGetEvent($testEventId), null, 'test event gone');
+foreach (['ticket_orders', 'ticket_order_items', 'ticket_reservation_payments', 'ticket_reservation_links', 'payment_attempts'] as $table) {
+    $column = $table === 'ticket_orders' ? 'id' : 'order_id';
+    $count = $p->prepare("SELECT COUNT(*) FROM $table WHERE $column = ?");
+    $count->execute([$testOrderId]);
+    check((int) $count->fetchColumn(), 0, "$table removed with test event");
+}
+rejected(fn() => $t->adminDeleteEvent($body['event_id'], 'qa'), 'real event is protected');
+check($t->adminReservationDetail($id)['order']['paid_cents'], 52000, 'real receipts preserved');
+echo "PASS archived test event deletion, reservation references, rollback and real-event protection\n";
 echo "PASS reservation lifecycle, mixed payments, signed callbacks, reports, refunds, idempotency, permissions, QR and concurrent capacity\n";
