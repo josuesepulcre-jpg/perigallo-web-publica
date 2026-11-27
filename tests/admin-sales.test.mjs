@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 const source = readFileSync(new URL('../assets/js/admin-backoffice.js', import.meta.url), 'utf8');
 const ctx = vm.createContext({Intl, Date, URL, window: {location: {origin:'https://example.test', hostname:'example.test'}}, document:{addEventListener:()=>{},body:{getAttribute:()=> 'manual'}}});
 // Exercise the real closure functions without starting the browser UI or making API calls.
-vm.runInContext(source.replace('  initTicketShare();', `  globalThis.sales = {isExpiredReservation, isPendingReservation, isSoldOrder, canOpenPayment, salesOrderMatches, orderOrigin, orderNotes, orderContactUrl, orderActions, renderOrdersRows, reservationDateText, eventCard}; state.session = {role:'admin'}; return;\n  initTicketShare();`), ctx);
+vm.runInContext(source.replace('  initTicketShare();', `  globalThis.sales = {isClosedOrder, isDoorPaymentPending, isExpiredReservation, isPendingReservation, isSoldOrder, canOpenPayment, salesOrderMatches, orderOrigin, orderNotes, orderContactUrl, orderActions, renderOrdersRows, reservationDateText, eventCard}; state.session = {role:'admin'}; return;\n  initTicketShare();`), ctx);
 const s = ctx.sales;
 const pending = {id:1, name:'Cliente de prueba', status:'pending', payment_status:'pending', sales_channel:'manual_card', public_token:'test-token', phone:'+34 600 000 000', reservation_expires_at:'2099-12-25 14:00:00', cash_payment_notes:'[season-op:test-operation][request:abc] Mesa junto a la ventana', total_cents:13000, ticket_quantity:2};
 const paid = {...pending, status:'paid', payment_status:'paid'};
@@ -69,3 +69,16 @@ test('event overview shows reserved and remaining seats and occupancy includes r
 });
 
 test('event card distinguishes ticket quota from physical capacity',()=>{const html=s.eventCard({id:4,title:'Hora Cero',capacity:100,ticket_capacity:80,available:74,sold:0,reserved:6},false);assert.match(html,/74 disponibles/);assert.match(html,/100 aforo · 80 cupo habilitado · 8% ocupado/);assert.doesNotMatch(html,/94 disponibles/);});
+
+test('el desglose de plazas cuenta solo las reservas y ventas comprometidas', () => {
+ const script = readFileSync(new URL('../assets/js/admin-reservations.js', import.meta.url), 'utf8');
+ vm.runInContext(script, ctx);
+ const summary = orders => ctx.window.PerigalloReservations.summary(orders, s);
+ const reservation = {is_reservation:true, occupancy_status:'confirmed', ticket_quantity:'3', child_quantity:'1'};
+ const sale = {...paid, ticket_quantity:2, child_quantity:1};
+ const rows = [reservation, sale, {...pending, child_quantity:1}, {...reservation, occupancy_status:'expired'},
+  {...reservation, occupancy_status:'cancelled'}, {...sale, is_test:1}, {...sale, status:'cancelled'}];
+ assert.match(summary(rows), /Plazas comprometidas<\/span><strong>7<\/strong><small>4 adultos · 3 niños<\/small>/);
+ assert.match(summary([sale]), /1 adulto · 1 niño/);
+ assert.match(summary([]), /0 adultos · 0 niños/);
+});
