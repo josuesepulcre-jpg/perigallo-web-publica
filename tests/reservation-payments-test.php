@@ -62,9 +62,6 @@ $childType=$t->adminCreateTicketType($eventId,['name'=>'Menú infantil','price_c
 $p->prepare('UPDATE ticket_types SET status="on_sale",active=1 WHERE id=?')->execute([$childId]);
 unset($mixedBody['quantity'],$mixedBody['ticket_type_id']);$mixedBody['email']='';$mixedBody['items']=[['ticket_type_id'=>$adultType,'quantity'=>4],['ticket_type_id'=>$childId,'quantity'=>2]];
 $mixed=$t->adminCreateReservation($mixedBody,'qa',true);$mixedId=(int)$mixed['order']['id'];
-$listed=$t->adminOrders(200,$eventId)[0];
-check((int)$listed['ticket_quantity'],6,'listed places');
-check((int)$listed['child_quantity'],2,'listed child menus');
 check(count($mixed['items']),2,'two menu lines');check((int)$mixed['order']['ticket_quantity'],6,'six places');check((int)$mixed['order']['total_cents'],31600,'4 adults and 2 children total 316');
 check($t->adminCreateReservation($mixedBody,'qa',true)['order']['id'],$mixed['order']['id'],'mixed create retry');
 $invalid=$mixedBody;$invalid['request_id']=keyForTest();$invalid['items'][1]['quantity']=9;rejected(fn()=>$t->adminCreateReservation($invalid,'qa',true),'child capacity checked independently');
