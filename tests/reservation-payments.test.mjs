@@ -15,3 +15,30 @@ test('WhatsApp prepares payment and confirmation for phone-only reservations wit
  data.order.occupancy_status='pending';assert.match(ui.whatsAppMessage(data),/pendiente de confirmación/);
  assert.equal(new URL(ui.whatsAppUrl('0033612345678','hola')).searchParams.get('phone'),'33612345678');
 });
+
+test('el justificante usa el importe del movimiento guardado y omite las notas internas',()=>{
+ const order={name:'Ana',event_title:'Cena de Navidad',redsys_order:'RES-42',paid_cents:32000,outstanding_cents:26500};
+ const payment={id:19,kind:'receipt',method:'cash',amount_cents:'15035',paid_at:'2026-11-27 10:30:02',notes:'[res-cash:deposit] <b>Interno</b>'};
+ const text=ui.cashReceiptMessage(order,payment);
+ assert.match(text,/150,35\s+€ en efectivo como señal/);
+ assert.match(text,/27\/11\/2026/);
+ assert.match(text,/Cena de Navidad/);
+ assert.match(text,/RES-42/);
+ assert.doesNotMatch(text,/320,00|265,00|Interno|res-cash|<b>/);
+ assert.match(ui.cashReceiptMessage(order,{...payment,notes:'[res-cash:advance]'}),/como adelanto/);
+ assert.match(ui.cashReceiptMessage(order,{...payment,notes:'Observación histórica'}),/en efectivo para tu reserva/);
+ assert.equal(new URL(ui.whatsAppUrl('600 000 000',text)).searchParams.get('text'),text);
+ const row=ui.paymentRow(payment);
+ assert.match(row,/Señal/);
+ assert.match(row,/data-res-cash-receipt="19"/);
+ assert.match(row,/&lt;b&gt;Interno&lt;\/b&gt;/);
+ assert.doesNotMatch(row,/\[res-cash:/);
+});
+
+test('solo los cobros válidos en efectivo tienen justificante en el historial',()=>{
+ const payment={id:20,kind:'receipt',method:'cash',amount_cents:2200,paid_at:'2026-11-27 11:00:00'};
+ assert.match(ui.paymentRow(payment),/Justificante por WhatsApp/);
+ for(const invalid of [{kind:'refund'},{method:'card_online'},{method:'card_present'},{review_required:'1'},{amount_cents:0}]){
+  assert.doesNotMatch(ui.paymentRow({...payment,...invalid}),/Justificante por WhatsApp/);
+ }
+});

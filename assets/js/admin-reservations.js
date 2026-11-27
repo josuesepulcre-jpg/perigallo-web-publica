@@ -5,6 +5,7 @@ var esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt
 var economic={pending:'Pendiente de pago',partial:'Parcialmente pagada',paid:'Pagada',partially_refunded:'Devolución parcial',refunded:'Reembolsada'};
 var occupancy={confirmed:'Confirmada',pending:'Por confirmar',expired:'Caducada',cancelled:'Cancelada'};
 var methods={cash:'Efectivo',card_present:'Tarjeta presencial',card_online:'Tarjeta online',bank_transfer:'Transferencia',other:'Otro método'};
+var cashPurposes={deposit:'Señal',advance:'Adelanto'};
 var linkStates={pending:'Pendiente',processing:'Pago en curso',paid:'Pagado',failed:'No completado',cancelled:'Cancelado',expired:'Caducado'};
 function pill(o){return '<span class="reservation-badge" data-state="'+esc(o.economic_status)+'">'+esc(economic[o.economic_status]||'Pendiente')+'</span>';}
 function actions(o){return '<div class="admin-order-actions"><button type="button" class="text-action" data-reservation-open="'+Number(o.id)+'">Ver reserva y pagos</button></div>';}
@@ -20,9 +21,42 @@ function summary(orders,h){
  var cards=[['Plazas comprometidas',seats(active)+seats(committed),'Confirmadas o con reserva vigente'],['Total comprometido',money(sum(active,'total_cents')+sum(committed,'total_cents')),'Reservas y ventas activas'],['Cobrado neto',money(collected),'Cobros menos devoluciones registradas'],['Pendiente de cobro',money(sum(active,'outstanding_cents')+sum(pending,'total_cents')),'No se contabiliza como ingreso'],['Tarjeta online',money(by.card_online),'Incluye ventas web y enlaces'],['Tarjeta presencial',money(by.card_present),'Cobros registrados de TPV externo'],['Efectivo',money(by.cash),'Saldo de cobros y devoluciones'],['Transferencia y otros',money(by.bank_transfer+by.other),'Movimientos registrados'],['Reservas pendientes',active.filter(o=>o.economic_status==='pending').length,'Sin cobros registrados'],['Reservas parciales',active.filter(o=>o.economic_status==='partial').length,'Con saldo pendiente'],['Reservas pagadas',active.filter(o=>o.economic_status==='paid').length,'Importe completo recibido']];
  return cards.map(([l,v,n])=>'<article><span>'+l+'</span><strong>'+v+'</strong><small>'+n+'</small></article>').join('');
 }
+function whatsAppPhone(phone){
+ var digits=String(phone||'').replace(/\D/g,'');
+ if(digits.startsWith('00'))digits=digits.slice(2);
+ return digits.length===9?'34'+digits:digits;
+}
 function whatsAppUrl(phone,text){
- var digits=String(phone||'').replace(/\D/g,'');if(digits.startsWith('00'))digits=digits.slice(2);if(digits.length===9)digits='34'+digits;
- return 'https://web.whatsapp.com/send?phone='+encodeURIComponent(digits)+'&text='+encodeURIComponent(text);
+ return 'https://web.whatsapp.com/send?phone='+encodeURIComponent(whatsAppPhone(phone))+'&text='+encodeURIComponent(text);
+}
+function cashPurposePrefix(purpose){
+ return Object.hasOwn(cashPurposes,purpose)?'[res-cash:'+purpose+'] ':'';
+}
+function cashPaymentDetails(notes){
+ var text=String(notes??''),prefix=/^\[res-cash:(deposit|advance)\](?: |$)/.exec(text);
+ return prefix?{purpose:prefix[1],notes:text.slice(prefix[0].length)}:{purpose:'',notes:text};
+}
+function isCashReceipt(payment){
+ var amount=Number(payment?.amount_cents);
+ return payment?.kind==='receipt'&&payment.method==='cash'&&!Number(payment.review_required)&&Number.isSafeInteger(amount)&&amount>0;
+}
+function cashReceiptMessage(order,payment){
+ var purpose=cashPurposes[cashPaymentDetails(payment.notes).purpose];
+ var date=/^(\d{4})-(\d{2})-(\d{2})(?:[ T]|$)/.exec(payment.paid_at||'');
+ return 'Hola '+order.name+',\n\nHemos recibido '+money(payment.amount_cents)+' en efectivo'+(purpose?' como '+purpose.toLowerCase():'')+
+  ' para tu reserva en Perigallo'+(order.event_title?' de «'+order.event_title+'»':'')+'.'+
+  (date?'\nFecha del pago: '+date[3]+'/'+date[2]+'/'+date[1]:'')+
+  '\nReferencia de la reserva: '+order.redsys_order+'\n\nGracias,\nEquipo Perigallo';
+}
+function paymentRow(payment){
+ var cash=isCashReceipt(payment);
+ var details=cash?cashPaymentDetails(payment.notes):{purpose:'',notes:payment.notes};
+ return '<tr><td>'+esc(payment.paid_at)+'</td><td>'+esc(methods[payment.method]||payment.method)+
+  (payment.kind==='refund'?' · Devolución':'')+(Number(payment.review_required)?' · Requiere revisión':'')+
+  (details.purpose?'<small>'+cashPurposes[details.purpose]+'</small>':'')+
+  '</td><td class="reservation-number">'+(payment.kind==='refund'?'−':'')+money(payment.amount_cents)+
+  '</td><td>'+esc(payment.reference||'')+(details.notes?'<small>'+esc(details.notes)+'</small>':'')+
+  (cash?'<small><button type="button" class="text-action" data-res-cash-receipt="'+esc(payment.id)+'">Justificante por WhatsApp</button></small>':'')+'</td></tr>';
 }
 function whatsAppMessage(data,link){
  var o=data.order,confirmed=o.occupancy_status==='confirmed',message='Hola '+o.name+',\n\n'+(confirmed?'Tu reserva está confirmada':'Tu solicitud de reserva está pendiente de confirmación')+' en Perigallo para '+o.event_title+'.'+(data.items?.[0]?.event_starts_at?'\nFecha: '+data.items[0].event_starts_at:'')+'\nReferencia: '+o.redsys_order+'\nPersonas: '+Number(o.ticket_quantity)+'\nTotal: '+money(o.total_cents)+'\nPagado: '+money(o.paid_cents)+'\nPendiente: '+money(o.outstanding_cents);
@@ -68,8 +102,15 @@ function init(options){
    sessionStorage.removeItem('perigallo-reservation-'+scope);
    options.onChange(result);
    if(form.isConnected){
-    showDetail(result);
-    message(editing?'Cambios guardados.':emailResult(result),'success');
+    var payment=scope.startsWith('payments-')&&body.method==='cash'?
+     result.payments.find(p=>p.idempotency_key===body.request_id):null;
+    if(isCashReceipt(payment)){
+     shareWhatsApp(result,{payment});
+     message('Pago en efectivo registrado.','success');
+    }else{
+     showDetail(result);
+     message(editing?'Cambios guardados.':emailResult(result),'success');
+    }
    }
    return result;
   }catch(e){
@@ -217,18 +258,23 @@ function init(options){
    submit(f,o?'/'+o.id:'',o?'PUT':'POST',values,o?'edit-'+o.id:'create').catch(()=>{});
   };
  }
- function shareWhatsApp(data,link){
-  var o=data.order;
-  shell(link?'Enviar enlace de pago':'Confirmación de reserva','<p>Revisa el mensaje y confirma el envío en tu sesión de WhatsApp Web Business.</p><label class="ticket-field">Mensaje<textarea data-res-share-text rows="12"></textarea></label><div class="reservation-row-actions"><a class="ticket-btn primary" data-res-share-web target="_blank" rel="noopener noreferrer">Abrir WhatsApp Web Business</a><button type="button" class="ticket-btn" data-res-share-copy>Copiar mensaje</button><button type="button" class="ticket-btn" data-res-share-back>Volver a la reserva</button></div>');
-  var text=modal.querySelector('[data-res-share-text]'),web=modal.querySelector('[data-res-share-web]');text.value=whatsAppMessage(data,link);
-  var update=()=>{web.href=whatsAppUrl(o.phone,text.value);};update();text.oninput=update;
+ function shareWhatsApp(data,{link,payment}={}){
+  var o=data.order,canOpen=!payment||/^[1-9]\d{6,14}$/.test(whatsAppPhone(o.phone));
+  var title=payment?'Justificante de pago en efectivo':link?'Enviar enlace de pago':'Confirmación de reserva';
+  var instructions=canOpen?'Revisa el mensaje y confirma el envío en tu sesión de WhatsApp Web Business.':'La reserva no tiene un teléfono válido para WhatsApp. Puedes copiar el justificante.';
+  shell(title,'<p>'+instructions+'</p><label class="ticket-field">Mensaje<textarea data-res-share-text '+(payment?'rows="10" readonly':'rows="12"')+'></textarea></label>'+
+   '<div class="reservation-row-actions">'+(canOpen?'<a class="ticket-btn primary" data-res-share-web target="_blank" rel="noopener noreferrer">Abrir WhatsApp Web Business</a>':'')+
+   '<button type="button" class="ticket-btn" data-res-share-copy>Copiar mensaje</button><button type="button" class="ticket-btn" data-res-share-back>Volver a la reserva</button></div>');
+  var text=modal.querySelector('[data-res-share-text]'),web=modal.querySelector('[data-res-share-web]');
+  text.value=payment?cashReceiptMessage(o,payment):whatsAppMessage(data,link);
+  if(web){var update=()=>{web.href=whatsAppUrl(o.phone,text.value);};update();text.oninput=update;}
   modal.querySelector('[data-res-share-copy]').onclick=()=>{if(!navigator.clipboard){text.focus();text.select();message('Selecciona y copia el mensaje.');return;}navigator.clipboard.writeText(text.value).then(()=>message('Mensaje copiado. Pégalo en WhatsApp Business.')).catch(()=>{text.focus();text.select();message('Selecciona y copia el mensaje.');});};
   modal.querySelector('[data-res-share-back]').onclick=()=>showDetail(data);
   message('Preparar o abrir el mensaje no lo marca como enviado.');
  }
  function showDetail(data){
   detail=data;var o=data.order,closed=['cancelled','expired'].includes(o.occupancy_status),canPay=!closed&&Number(o.outstanding_cents)>0;
-  var payments=data.payments.map(p=>'<tr><td>'+esc(p.paid_at)+'</td><td>'+esc(methods[p.method]||p.method)+(p.kind==='refund'?' · Devolución':'')+(Number(p.review_required)?' · Requiere revisión':'')+'</td><td class="reservation-number">'+(p.kind==='refund'?'−':'')+money(p.amount_cents)+'</td><td>'+esc(p.reference||'')+(p.notes?'<small>'+esc(p.notes)+'</small>':'')+'</td></tr>').join('');
+  var payments=data.payments.map(paymentRow).join('');
   var links=data.links.map(l=>'<li><div><strong>'+money(l.amount_cents)+'</strong><span>'+esc(linkStates[l.status])+'</span><small>Creado '+esc(l.created_at)+' · Vence '+esc(l.expires_at)+'</small><small>'+esc(({sent:'Correo aceptado para envío',failed:'Correo no enviado',pending:'Envío en curso o pendiente de comprobación'})[l.email_status]||'Sin envío de correo')+'</small></div><div class="reservation-row-actions">'+(['pending','processing'].includes(l.status)?'<button type="button" class="ticket-btn" data-res-copy="'+l.id+'">Copiar enlace</button><a class="text-action" href="'+esc(l.url)+'" target="_blank" rel="noopener">Ver enlace</a>':'')+(l.status==='pending'?'<button type="button" class="ticket-btn" data-res-whatsapp-link="'+l.id+'">Preparar pago en WhatsApp</button>':'')+(l.status==='pending'&&o.email&&l.email_status==='failed'?'<button type="button" class="ticket-btn" data-res-email="'+l.id+'">Reintentar correo</button>':'')+(['pending','failed'].includes(l.status)?'<button type="button" class="text-action" data-res-cancel-link="'+l.id+'">Cancelar enlace</button>':'')+(l.status==='processing'&&session.is_owner?'<button type="button" class="text-action" data-res-reconcile="'+l.id+'">Revisar pago en curso</button>':'')+'</div></li>').join('');
   var editAction=o.occupancy_status==='cancelled'?'':'<button type="button" class="ticket-btn primary" data-res-edit-open>Editar reserva</button>';
   shell(o.name,'<div class="reservation-detail-meta">'+pill(o)+'<span>Plazas: '+esc(occupancy[o.occupancy_status])+'</span><span>'+esc(o.event_title)+' · '+Number(o.ticket_quantity)+' personas · #'+esc(o.redsys_order)+'</span><span>'+esc(o.phone)+(o.email?' · '+esc(o.email):'')+'</span></div>'+
@@ -244,7 +290,11 @@ function init(options){
    '<section class="reservation-history"><h3>Observaciones internas</h3><p>'+esc(o.cash_payment_notes||'Sin observaciones.')+'</p></section><details class="reservation-history"><summary>Actividad de la reserva</summary>'+data.history.map(h=>'<p><time>'+esc(h.created_at)+'</time> · '+esc(h.actor)+' · '+esc(({reservation_email_requested:'Correo de reserva solicitado',reservation_created:'Reserva creada',reservation_updated:'Reserva modificada',reservation_payment_recorded:'Pago manual registrado',reservation_online_payment_confirmed:'Pago online confirmado',reservation_payment_link_created:'Enlace creado',reservation_cancelled:'Reserva cancelada',reservation_refund_recorded:'Devolución registrada',reservation_payment_link_cancelled:'Enlace cancelado',reservation_payment_attempt_reconciled:'Intento cerrado tras comprobación en Redsys',reservation_online_payment_review:'Pago online pendiente de revisión'})[h.action]||h.action)+'</p>').join('')+'</details>',editAction);
   detail=data;
   modal.querySelector('[data-res-whatsapp]')?.addEventListener('click',()=>shareWhatsApp(data));
-  modal.querySelectorAll('[data-res-whatsapp-link]').forEach(b=>b.onclick=()=>shareWhatsApp(data,data.links.find(l=>String(l.id)===b.dataset.resWhatsappLink)));
+  modal.querySelectorAll('[data-res-whatsapp-link]').forEach(b=>b.onclick=()=>shareWhatsApp(data,{link:data.links.find(l=>String(l.id)===b.dataset.resWhatsappLink)}));
+  modal.querySelectorAll('[data-res-cash-receipt]').forEach(b=>b.onclick=()=>{
+   var payment=data.payments.find(p=>String(p.id)===b.dataset.resCashReceipt);
+   if(isCashReceipt(payment))shareWhatsApp(data,{payment});
+  });
   modal.querySelector('[data-res-refresh]').onclick=()=>open(o.id);
   var editButton=modal.querySelector('[data-res-edit-open]');
   if(editButton)editButton.onclick=async()=>{
@@ -264,17 +314,53 @@ function init(options){
   modal.querySelectorAll('[data-res-cancel-link]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{var r=await api('/api/admin/reservations/'+o.id+'/links/'+b.dataset.resCancelLink+'/cancel','POST',{expected_revision:o.reservation_revision});options.onChange(r);showDetail(r);message('Enlace cancelado.');}catch(e){message(e.message);b.disabled=false;}});
  }
  function operation(kind,data){
-  var o=data.order,box=modal.querySelector('[data-res-operation-form]'),scope=kind+'-'+o.id,previous=cached(scope).body||{};
+  var o=data.order,box=modal.querySelector('[data-res-operation-form]'),scope=kind+'-'+o.id,previous={...cached(scope).body};
   var label={payments:'Registrar pago manual',links:'Generar enlace de pago',refunds:'Registrar devolución',cancel:'Cancelar reserva'}[kind];
-  box.innerHTML='<form class="admin-cash-order-form reservation-operation"><h3 class="admin-form-span">'+label+'</h3>'+(kind==='cancel'?'<p class="admin-form-span">Se liberarán las plazas. Los pagos recibidos se conservan y no se devuelve dinero automáticamente.</p><label class="admin-form-span">Motivo<textarea name="reason" required maxlength="1000"></textarea></label>':field('Importe (€)','amount_euros',previous.amount_euros||((kind==='refunds'?Number(o.paid_cents):Math.max(0,Number(o.outstanding_cents)-Number(data.processing_cents)))/100).toFixed(2),'required min="0.01" step="0.01"','number')+(kind==='links'?'<p class="admin-form-span">'+'Puedes enviar el enlace por WhatsApp Web Business o copiarlo. El correo es opcional.'+'</p>'+(o.email?'<label class="admin-form-span reservation-confirm"><input type="checkbox" name="send_email" checked> Enviar también por correo a '+esc(o.email)+'</label>':'')+field('Caducidad del enlace (opcional)','expires_at','','','datetime-local'):methodSelect()+field('Fecha y hora del movimiento','paid_at','','','datetime-local')+field('Referencia o justificante','reference','','maxlength="190"')+'<label class="admin-form-span">Observaciones<textarea name="notes" maxlength="1000"></textarea></label>')+(kind==='payments'?'<p class="admin-form-span">Tarjeta presencial registra un cobro ya realizado en un TPV externo. No realiza un nuevo cargo.</p>':'')+(kind==='refunds'?'<label class="admin-form-span reservation-confirm"><input type="checkbox" name="confirmed" required> Confirmo que ya he realizado esta devolución fuera de la aplicación.</label>':''))+
+  var cashConcept=kind==='payments'?'<label data-res-cash-purpose>Concepto<select name="cash_purpose"><option value="">Pago en efectivo</option>'+
+   Object.entries(cashPurposes).map(([key,label])=>'<option value="'+key+'">'+label+'</option>').join('')+'</select></label>':'';
+  if(kind==='payments'&&previous.method==='cash'){
+   var previousCash=cashPaymentDetails(previous.notes);
+   previous.notes=previousCash.notes;
+   previous.cash_purpose=previousCash.purpose;
+  }
+  box.innerHTML='<form class="admin-cash-order-form reservation-operation"><h3 class="admin-form-span">'+label+'</h3>'+(kind==='cancel'?'<p class="admin-form-span">Se liberarán las plazas. Los pagos recibidos se conservan y no se devuelve dinero automáticamente.</p><label class="admin-form-span">Motivo<textarea name="reason" required maxlength="1000"></textarea></label>':field('Importe (€)','amount_euros',previous.amount_euros??(kind==='payments'?'':((kind==='refunds'?Number(o.paid_cents):Math.max(0,Number(o.outstanding_cents)-Number(data.processing_cents)))/100).toFixed(2)),'required min="0.01" step="0.01"','number')+(kind==='links'?'<p class="admin-form-span">'+'Puedes enviar el enlace por WhatsApp Web Business o copiarlo. El correo es opcional.'+'</p>'+(o.email?'<label class="admin-form-span reservation-confirm"><input type="checkbox" name="send_email" checked> Enviar también por correo a '+esc(o.email)+'</label>':'')+field('Caducidad del enlace (opcional)','expires_at','','','datetime-local'):methodSelect()+cashConcept+field('Fecha y hora del movimiento','paid_at','','','datetime-local')+field('Referencia o justificante','reference','','maxlength="190"')+'<label class="admin-form-span">'+(kind==='payments'?'Observaciones internas':'Observaciones')+'<textarea name="notes" maxlength="1000"></textarea></label>')+(kind==='payments'?'<p class="admin-form-span" data-res-payment-help></p>':'')+(kind==='refunds'?'<label class="admin-form-span reservation-confirm"><input type="checkbox" name="confirmed" required> Confirmo que ya he realizado esta devolución fuera de la aplicación.</label>':''))+
    '<div class="admin-cash-form-actions admin-form-span"><button type="submit" class="ticket-btn primary">'+label+'</button><button type="button" class="ticket-btn" data-res-operation-close>Cerrar</button></div></form>';
   var f=box.querySelector('form');for(var [k,v]of Object.entries(previous)){var el=f.elements.namedItem(k);if(el){if(el.type==='checkbox')el.checked=!!v;else el.value=v;}}f.querySelector('[data-res-operation-close]').onclick=()=>box.replaceChildren();f.querySelector('input,textarea')?.focus();
-  f.onsubmit=e=>{e.preventDefault();if(!f.reportValidity())return;var body=Object.fromEntries(new FormData(f));body.expected_revision=o.reservation_revision;if(kind==='links')body.send_email=!!f.elements.namedItem('send_email')?.checked;if(kind==='refunds')body.confirmed=!!f.confirmed.checked;submit(f,'/'+o.id+'/'+kind,'POST',body,scope).catch(()=>{});};
+  if(kind==='payments'){
+   var method=f.elements.namedItem('method'),purpose=f.elements.namedItem('cash_purpose'),notes=f.elements.namedItem('notes');
+   var concept=f.querySelector('[data-res-cash-purpose]'),save=f.querySelector('[type=submit]'),help=f.querySelector('[data-res-payment-help]');
+   function syncPaymentMethod(){
+    var cash=method.value==='cash';
+    concept.style.display=cash?'':'none';
+    purpose.disabled=!cash;
+    notes.maxLength=1000-(cash?cashPurposePrefix(purpose.value).length:0);
+    save.textContent=cash?'Guardar y preparar justificante':label;
+    help.textContent=cash?'Registra solo el importe que ya has recibido. Si dejas la fecha vacía, se usará la del registro.':method.value==='card_present'?'Registra un cobro ya realizado en un TPV externo.':'';
+    help.hidden=!help.textContent;
+   }
+   method.onchange=purpose.onchange=syncPaymentMethod;
+   syncPaymentMethod();
+  }
+  f.onsubmit=e=>{
+   e.preventDefault();
+   if(!f.reportValidity())return;
+   var body=Object.fromEntries(new FormData(f));
+   body.expected_revision=o.reservation_revision;
+   if(kind==='payments'&&body.method==='cash'){
+    // Reuse the ledger notes field so historical entries and the payment API stay compatible.
+    body.notes=cashPurposePrefix(body.cash_purpose)+body.notes;
+    if(Array.from(body.notes).length>1000){message('Acorta las observaciones antes de guardar.','error');return;}
+   }
+   delete body.cash_purpose;
+   if(kind==='links')body.send_email=!!f.elements.namedItem('send_email')?.checked;
+   if(kind==='refunds')body.confirmed=!!f.confirmed.checked;
+   submit(f,'/'+o.id+'/'+kind,'POST',body,scope).catch(()=>{});
+  };
  }
  async function open(id){trigger=document.activeElement;try{var data=await read('/api/admin/reservations/'+id);showDetail(data);}catch(e){options.error(e.message);}}
  root.addEventListener('click',e=>{var b=e.target.closest('[data-reservation-open]');if(b)open(Number(b.dataset.reservationOpen));});
  entry?.addEventListener('click',async()=>{trigger=entry;entry.disabled=true;try{await loadMeta();editForm(null);}catch(e){options.error(e.message);}finally{entry.disabled=false;}});
  return {open};
 }
-window.PerigalloReservations={init,table,summary,actions,pill,whatsAppMessage,whatsAppUrl};
+window.PerigalloReservations={init,table,summary,actions,pill,whatsAppMessage,whatsAppUrl,cashReceiptMessage,paymentRow};
 })();
