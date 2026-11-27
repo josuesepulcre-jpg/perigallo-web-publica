@@ -22,6 +22,28 @@ if(!$p->query("SHOW TABLES LIKE 'events'")->fetchColumn())foreach(glob(dirname(_
 $p->exec(file_get_contents(dirname(__DIR__).'/database/migrations/032_reservation_payments.sql'));
 $body=fixture();$r=$t->adminCreateReservation($body,'qa',true);$id=(int)$r['order']['id'];check($r['order']['total_cents'],52000,'520 EUR total');check($r['order']['paid_cents'],0,'unpaid');check($r['order']['occupancy_status'],'confirmed','independent occupancy');check(activeTickets($id),0,'no active QR before payment');$e=$t->adminGetEvent($body['event_id']);check((int)$e['reserved'],8,'reserved seats, not sold');check((int)$e['sold'],0,'no sale before money');
 check((int)$t->adminCreateReservation($body,'qa',true)['order']['id'],$id,'creation idempotency');$changed=$body;$changed['quantity']=9;rejected(fn()=>$t->adminCreateReservation($changed,'qa',true),'changed request key');
+// Reservation time is a local clock value; older clients may omit it on edits.
+check($r['order']['reservation_time'],null,'older reservation has no time');
+$timeBody=fixture()+['reservation_time'=>'00:00'];
+$timed=$t->adminCreateReservation($timeBody,'qa',true);
+$timedId=(int)$timed['order']['id'];
+check($timed['order']['reservation_time'],'00:00','midnight is saved');
+check((int)$t->adminCreateReservation($timeBody,'qa',true)['order']['id'],$timedId,'timed create is idempotent');
+rejected(fn()=>$t->adminCreateReservation(array_replace($timeBody,['reservation_time'=>'09:00']),'qa',true),'changing the time conflicts with the same request ID');
+$timedEdit=array_replace($timeBody,['expected_revision'=>$timed['order']['reservation_revision'],'reservation_time'=>'14:30']);
+rejected(fn()=>$t->adminUpdateReservation($timedId,array_replace($timedEdit,['reservation_time'=>'24:00']),'qa',true),'invalid time rejected');
+$timed=$t->adminUpdateReservation($timedId,$timedEdit,'qa',true);
+check($timed['order']['reservation_time'],'14:30','editing persists the time');
+rejected(fn()=>$t->adminUpdateReservation($timedId,$timedEdit,'qa',true),'stale revision cannot overwrite the time');
+$timedEdit['expected_revision']=$timed['order']['reservation_revision'];
+unset($timedEdit['reservation_time']);
+$timed=$t->adminUpdateReservation($timedId,$timedEdit,'qa',true);
+check($timed['order']['reservation_time'],'14:30','omitting the time preserves it');
+$timedEdit['expected_revision']=$timed['order']['reservation_revision'];
+$timedEdit['quantity']=9;
+$timed=$t->adminUpdateReservation($timedId,$timedEdit+['reservation_time'=>''],'qa',true);
+check($timed['order']['reservation_time'],null,'clearing the time works in an edit that also changes seats');
+check($timed['order']['reservation_expires_at'],null,'reservation time is separate from expiry');
 $receipt=['request_id'=>keyForTest(),'expected_revision'=>$r['order']['reservation_revision'],'amount_euros'=>'120','method'=>'cash'];$r=$t->adminReservationPayment($id,$receipt,'qa');$r=$t->adminReservationPayment($id,$receipt,'qa');check(count($r['payments']),1,'manual idempotency');check($r['order']['paid_cents'],12000,'partial cash');check($r['order']['outstanding_cents'],40000,'pending 400');rejected(fn()=>$t->adminReservationPayment($id,$receipt+['extra'=>'ignored'],'qa',true),'refund requires confirmation');
 $e=$t->adminGetEvent($body['event_id']);check((int)$e['revenue_cents'],12000,'partial event revenue');$report=$t->adminEventPaymentReport($body['event_id']);check((int)$report['totals']['cash_cents'],12000,'cash report includes partial receipts');$door=$t->adminEventAttendees($body['event_id'],true);check(count($door['pending_reservations']),1,'pending reservation on door list');check((int)$door['pending_reservations'][0]['outstanding_cents'],40000,'door shows debt, not total');
 $r=qaPaymentLink($r,'200');$token=$r['links'][0]['public_token'];$form=$t->startReservationLink($token);check($t->startReservationLink($token),$form,'same gateway attempt on retry');check($t->adminReservationDetail($id)['order']['paid_cents'],12000,'opening link not payment');rejected(fn()=>pay($t->adminReservationDetail($id),'201'),'processing amount reserved');rejected(fn()=>$t->adminCancelReservation($id,['expected_revision'=>$r['order']['reservation_revision'],'reason'=>'QA'],'qa'),'cannot release seats during charge');

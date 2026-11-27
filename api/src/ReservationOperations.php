@@ -79,8 +79,8 @@ trait ReservationOperations
         if(!$ids||!$this->reservationSchemaAvailable())return $orders;
         $q=$this->pdo->prepare('SELECT order_id,kind,method,SUM(amount_cents) amount_cents,SUM(CASE WHEN review_required=1 THEN amount_cents ELSE 0 END) review_amount_cents FROM ticket_reservation_payments WHERE order_id IN ('.implode(',',array_fill(0,count($ids),'?')).') GROUP BY order_id,kind,method');$q->execute($ids);$by=[];foreach($q->fetchAll() as $p)$by[$p['order_id']][]=$p;
         // Existing list queries deliberately select a bounded set of order fields.
-        $q=$this->pdo->prepare('SELECT id,reservation_revision FROM ticket_orders WHERE id IN ('.implode(',',array_fill(0,count($ids),'?')).')');$q->execute($ids);$revisions=array_column($q->fetchAll(),'reservation_revision','id');
-        foreach($orders as &$o)if(($o['sales_channel']??'')==='reservation'){$o['reservation_revision']=$revisions[$o['id']]??0;$o+=$this->reservationFinance($o,$by[$o['id']]??[]);}unset($o);return $orders;
+        $q=$this->pdo->prepare('SELECT id,reservation_revision,TIME_FORMAT(reservation_time,"%H:%i") AS reservation_time FROM ticket_orders WHERE id IN ('.implode(',',array_fill(0,count($ids),'?')).')');$q->execute($ids);$metadata=array_column($q->fetchAll(),null,'id');
+        foreach($orders as &$o)if(($o['sales_channel']??'')==='reservation'){$o['reservation_revision']=$metadata[$o['id']]['reservation_revision']??0;$o['reservation_time']=$metadata[$o['id']]['reservation_time']??null;$o+=$this->reservationFinance($o,$by[$o['id']]??[]);}unset($o);return $orders;
     }
 
     private function reservationPayments(int $id): array
@@ -159,6 +159,15 @@ trait ReservationOperations
         return $lines;
     }
 
+    private function reservationTime(mixed $value): ?string
+    {
+        if ($value === null || $value === '') return null;
+        if (!is_string($value) || !preg_match('/\A(?:[01][0-9]|2[0-3]):[0-5][0-9]\z/', $value)) {
+            throw new InvalidArgumentException('Indica una hora de reserva válida en formato HH:MM.');
+        }
+        return $value;
+    }
+
     public function adminCreateReservation(array $data,string $actor,bool $canEditPrice): array
     {
         $this->reservationRequireSchema();$key=$this->reservationKey($data);$contact=$this->reservationContact($data);$requested=$this->reservationRequestedItems($data);$qty=array_sum(array_column($requested,'quantity'));$eventId=(int)($data['event_id']??0);
@@ -166,15 +175,17 @@ trait ReservationOperations
         $occupancy=(string)($data['occupancy_status']??'confirmed');if(!in_array($occupancy,['confirmed','pending'],true))throw new InvalidArgumentException('Estado inicial de reserva no válido.');
         $expiry=trim((string)($data['reservation_expires_at']??''));$expiry=$expiry!==''?$this->cashReservationExpiry($expiry):($occupancy==='pending'?$this->cashReservationExpiry(''):null);
         $notes=clean_string((string)($data['notes']??''),1000);$mode=($data['inventory_mode']??'standard')==='manual_reserve'?'manual_reserve':'standard';$hash=array_key_exists('items',$data)?$this->reservationHash([$contact,$requested,$eventId,$occupancy,$data['reservation_expires_at']??'',$notes,$mode]):$this->reservationHash([$contact,$qty,$eventId,$requested[0]['ticket_type_id'],$data['unit_price_euros']??null,$occupancy,$data['reservation_expires_at']??'',$notes,$mode]);
-        $id=$this->reservationTransaction(function()use($data,$actor,$canEditPrice,$key,$contact,$requested,$qty,$eventId,$occupancy,$expiry,$notes,$mode,$hash){
+        $time=$this->reservationTime($data['reservation_time']??null);
+        if($time!==null)$hash=$this->reservationHash([$hash,$time]);
+        $id=$this->reservationTransaction(function()use($data,$actor,$canEditPrice,$key,$contact,$requested,$qty,$eventId,$occupancy,$expiry,$notes,$mode,$hash,$time){
             $this->pdo->prepare('SELECT id FROM events WHERE id=? FOR UPDATE')->execute([$eventId]);
             $q=$this->pdo->prepare('SELECT id,reservation_request_hash FROM ticket_orders WHERE reservation_request_id=?');$q->execute([$key]);if($old=$q->fetch()){if($old['reservation_request_hash']!==$hash)throw new RuntimeException('La referencia de guardado ya corresponde a otra reserva.',409);return (int)$old['id'];}
             $event=$this->requireAdminEvent($eventId);if(in_array($event['status'],['draft','archived','cancelled'],true))throw new InvalidArgumentException('Selecciona un evento disponible para reservas.');
             $this->lockEventPlaces($eventId,$requested);$lines=$this->reservationMenuLines($eventId,$requested,$canEditPrice,[],false,$mode);$total=array_sum(array_column($lines,'total'));if($total>2000000000)throw new InvalidArgumentException('El importe de la reserva es demasiado alto.');
-            $q=$this->pdo->prepare('INSERT INTO ticket_orders (public_token,redsys_order,first_name,last_name,name,email,phone,subtotal_cents,total_cents,currency,status,order_status,payment_status,delivery_status,sales_channel,inventory_mode,cash_payment_status,cash_payment_notes,reservation_expires_at,reservation_request_id,reservation_request_hash,reservation_revision,is_test,environment,holded_status,holded_excluded,holded_exclusion_reason,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,"pending",?,"pending","pending","reservation",?,"not_applicable",?,?,?,?,1,?, ?,"not_required",1,"reservation_unpaid",NOW(),NOW())');
-            $q->execute([public_token(),$this->nextRedsysOrder(),...$contact,$total,$total,env_value('REDSYS_CURRENCY','978'),$occupancy==='confirmed'?'confirmed':'pending_payment',$mode,$notes?:null,$expiry,$key,$hash,!empty($event['is_test'])?1:0,!empty($event['is_test'])?'sandbox':'production']);$id=(int)$this->pdo->lastInsertId();
+            $q=$this->pdo->prepare('INSERT INTO ticket_orders (public_token,redsys_order,first_name,last_name,name,email,phone,subtotal_cents,total_cents,currency,status,order_status,payment_status,delivery_status,sales_channel,inventory_mode,cash_payment_status,cash_payment_notes,reservation_expires_at,reservation_time,reservation_request_id,reservation_request_hash,reservation_revision,is_test,environment,holded_status,holded_excluded,holded_exclusion_reason,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,"pending",?,"pending","pending","reservation",?,"not_applicable",?,?,?,?,?,1,?, ?,"not_required",1,"reservation_unpaid",NOW(),NOW())');
+            $q->execute([public_token(),$this->nextRedsysOrder(),...$contact,$total,$total,env_value('REDSYS_CURRENCY','978'),$occupancy==='confirmed'?'confirmed':'pending_payment',$mode,$notes?:null,$expiry,$time,$key,$hash,!empty($event['is_test'])?1:0,!empty($event['is_test'])?'sandbox':'production']);$id=(int)$this->pdo->lastInsertId();
             foreach($lines as $l)$this->insertOrderItem($id,$eventId,(int)$l['type']['id'],$l['type']['name'],$l['quantity'],$l['price'],$l['base'],$l['tax'],$l['rate'],$l['fee'],$l['reference'],$l['total'],null);
-            $this->reservationAudit($actor,'reservation_created',$id,['event_id'=>$eventId,'quantity'=>$qty,'items'=>$requested,'total_cents'=>$total,'occupancy_status'=>$occupancy,'request_id'=>$key]);
+            $this->reservationAudit($actor,'reservation_created',$id,['event_id'=>$eventId,'quantity'=>$qty,'items'=>$requested,'total_cents'=>$total,'occupancy_status'=>$occupancy,'reservation_time'=>$time,'request_id'=>$key]);
             if($total===0)$this->reservationSync($id);
             return $id;
         });return $this->adminReservationDetail($id);
@@ -512,16 +523,19 @@ trait ReservationOperations
             }
 
             $notes=clean_string((string)($data['notes']??''),1000);
+            $time=array_key_exists('reservation_time',$data)
+                ?$this->reservationTime($data['reservation_time'])
+                :($o['reservation_time']===null?null:substr($o['reservation_time'],0,5));
             if($financialChange||$validityChange||$replacedPeople){
-                $this->pdo->prepare('UPDATE ticket_orders SET first_name=?,last_name=?,name=?,email=?,phone=?,subtotal_cents=?,total_cents=?,cash_payment_notes=?,status="pending",order_status=?,reservation_expires_at=?,updated_at=NOW() WHERE id=?')
-                    ->execute([...$contact,$total,$total,$notes?:null,$orderStatus,$expiry,$id]);
+                $this->pdo->prepare('UPDATE ticket_orders SET first_name=?,last_name=?,name=?,email=?,phone=?,subtotal_cents=?,total_cents=?,cash_payment_notes=?,reservation_time=?,status="pending",order_status=?,reservation_expires_at=?,updated_at=NOW() WHERE id=?')
+                    ->execute([...$contact,$total,$total,$notes?:null,$time,$orderStatus,$expiry,$id]);
                 if($financialChange||$validityChange)$this->reservationCancelPendingLinks($id,'La reserva ha sido modificada');
                 $this->reservationSync($id);
             }else{
-                $this->pdo->prepare('UPDATE ticket_orders SET first_name=?,last_name=?,name=?,email=?,phone=?,cash_payment_notes=?,reservation_revision=reservation_revision+1,updated_at=NOW() WHERE id=?')
-                    ->execute([...$contact,$notes?:null,$id]);
+                $this->pdo->prepare('UPDATE ticket_orders SET first_name=?,last_name=?,name=?,email=?,phone=?,cash_payment_notes=?,reservation_time=?,reservation_revision=reservation_revision+1,updated_at=NOW() WHERE id=?')
+                    ->execute([...$contact,$notes?:null,$time,$id]);
             }
-            $this->reservationAudit($actor,'reservation_updated',$id,['previous_quantity'=>$oldQty,'quantity'=>$qty,'items'=>$requested,'previous_total_cents'=>$o['total_cents'],'total_cents'=>$total,'occupancy_status'=>$occupancy]);
+            $this->reservationAudit($actor,'reservation_updated',$id,['previous_quantity'=>$oldQty,'quantity'=>$qty,'items'=>$requested,'previous_total_cents'=>$o['total_cents'],'total_cents'=>$total,'occupancy_status'=>$occupancy,'reservation_time'=>$time]);
         });
         return $this->adminReservationDetail($id);
     }
