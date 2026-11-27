@@ -1323,6 +1323,7 @@ final class Ticketing
                     CASE WHEN o.status IN ("cancelled", "refunded") THEN o.status ELSE COALESCE(o.payment_status, o.status) END AS display_status,
                     ' . $paymentMethod . ' AS payment_method,
                     COALESCE(items.ticket_quantity, 0) AS ticket_quantity,
+                    COALESCE(items.child_quantity, 0) AS child_quantity,
                     COALESCE(attendee_data.attendee_count, 0) AS attendee_count,
                     COALESCE(attendee_data.allergy_attendee_count, 0) AS allergy_attendee_count,
                     COALESCE(attendee_data.severe_allergy_count, 0) AS severe_allergy_count,
@@ -1330,6 +1331,7 @@ final class Ticketing
              FROM ticket_orders o
              LEFT JOIN (
                 SELECT oi.order_id, SUM(oi.quantity) AS ticket_quantity,
+                       SUM(CASE WHEN LOWER(oi.ticket_type_name) LIKE "%infantil%" THEN oi.quantity ELSE 0 END) AS child_quantity,
                        GROUP_CONCAT(DISTINCT e.title ORDER BY e.title SEPARATOR " · ") AS event_title
                 FROM ticket_order_items oi
                 LEFT JOIN events e ON e.id = oi.event_id
