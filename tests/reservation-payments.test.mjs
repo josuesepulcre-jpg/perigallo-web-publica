@@ -15,3 +15,13 @@ test('WhatsApp prepares payment and confirmation for phone-only reservations wit
  data.order.occupancy_status='pending';assert.match(ui.whatsAppMessage(data),/pendiente de confirmación/);
  assert.equal(new URL(ui.whatsAppUrl('0033612345678','hola')).searchParams.get('phone'),'33612345678');
 });
+
+test('el desglose de plazas cuenta solo las reservas y ventas comprometidas', () => {
+ const active = {is_reservation:true, occupancy_status:'confirmed', ticket_quantity:'3', child_quantity:'1'};
+ const sale = {status:'paid', ticket_quantity:2, child_quantity:1};
+ const rows = [active, sale, {...sale, status:'pending'}, {...active, occupancy_status:'expired'},
+  {...active, occupancy_status:'cancelled'}, {...sale, is_test:1}, {...sale, status:'cancelled'}];
+ assert.match(ui.summary(rows,helpers), /Plazas comprometidas<\/span><strong>7<\/strong><small>4 adultos · 3 niños<\/small>/);
+ assert.match(ui.summary([sale],helpers), /1 adulto · 1 niño/);
+ assert.match(ui.summary([],helpers), /0 adultos · 0 niños/);
+});

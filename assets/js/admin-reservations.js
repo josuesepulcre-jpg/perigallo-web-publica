@@ -13,11 +13,16 @@ function table(rows){if(!rows.length)return '<div class="admin-empty"><strong>No
  ].map((v,i)=>'<td data-label="'+['Cliente','Referencia','Personas','Total','Pagado','Pendiente','Estado','Acciones'][i]+'">'+v+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';}
 function summary(orders,h){
  var real=orders.filter(o=>!Number(o.is_test)),res=real.filter(o=>o.is_reservation),old=real.filter(o=>!o.is_reservation),active=res.filter(o=>!['cancelled','expired'].includes(o.occupancy_status)),legacyPaid=old.filter(o=>!h.isClosedOrder(o)&&(o.payment_status==='paid'||o.status==='paid'));
- var committed=old.filter(o=>h.isSoldOrder(o)||h.isPendingReservation(o)),seats=a=>a.reduce((n,o)=>n+Number(o.ticket_quantity||0),0),sum=(a,k)=>a.reduce((n,o)=>n+Number(o[k]||0),0);
+ var committed=old.filter(o=>h.isSoldOrder(o)||h.isPendingReservation(o)),sum=(a,k)=>a.reduce((n,o)=>n+Number(o[k]||0),0);
+ var committedOrders=active.concat(committed);
+ var seats=sum(committedOrders,'ticket_quantity');
+ var children=sum(committedOrders,'child_quantity');
+ var adults=seats-children;
+ var breakdown=adults+(adults===1?' adulto':' adultos')+' · '+children+(children===1?' niño':' niños');
  var collected=sum(res,'paid_cents')+sum(legacyPaid,'total_cents');
  var by={cash:0,card_online:0,card_present:0,bank_transfer:0,other:0};res.forEach(o=>Object.keys(by).forEach(m=>by[m]+=Number(o.payments_by_method?.[m]||0)));legacyPaid.forEach(o=>by[o.sales_channel==='cash'?'cash':'card_online']+=Number(o.total_cents));
  var pending=old.filter(o=>h.isPendingReservation(o)||h.isDoorPaymentPending(o));
- var cards=[['Plazas comprometidas',seats(active)+seats(committed),'Confirmadas o con reserva vigente'],['Total comprometido',money(sum(active,'total_cents')+sum(committed,'total_cents')),'Reservas y ventas activas'],['Cobrado neto',money(collected),'Cobros menos devoluciones registradas'],['Pendiente de cobro',money(sum(active,'outstanding_cents')+sum(pending,'total_cents')),'No se contabiliza como ingreso'],['Tarjeta online',money(by.card_online),'Incluye ventas web y enlaces'],['Tarjeta presencial',money(by.card_present),'Cobros registrados de TPV externo'],['Efectivo',money(by.cash),'Saldo de cobros y devoluciones'],['Transferencia y otros',money(by.bank_transfer+by.other),'Movimientos registrados'],['Reservas pendientes',active.filter(o=>o.economic_status==='pending').length,'Sin cobros registrados'],['Reservas parciales',active.filter(o=>o.economic_status==='partial').length,'Con saldo pendiente'],['Reservas pagadas',active.filter(o=>o.economic_status==='paid').length,'Importe completo recibido']];
+ var cards=[['Plazas comprometidas',seats,breakdown],['Total comprometido',money(sum(active,'total_cents')+sum(committed,'total_cents')),'Reservas y ventas activas'],['Cobrado neto',money(collected),'Cobros menos devoluciones registradas'],['Pendiente de cobro',money(sum(active,'outstanding_cents')+sum(pending,'total_cents')),'No se contabiliza como ingreso'],['Tarjeta online',money(by.card_online),'Incluye ventas web y enlaces'],['Tarjeta presencial',money(by.card_present),'Cobros registrados de TPV externo'],['Efectivo',money(by.cash),'Saldo de cobros y devoluciones'],['Transferencia y otros',money(by.bank_transfer+by.other),'Movimientos registrados'],['Reservas pendientes',active.filter(o=>o.economic_status==='pending').length,'Sin cobros registrados'],['Reservas parciales',active.filter(o=>o.economic_status==='partial').length,'Con saldo pendiente'],['Reservas pagadas',active.filter(o=>o.economic_status==='paid').length,'Importe completo recibido']];
  return cards.map(([l,v,n])=>'<article><span>'+l+'</span><strong>'+v+'</strong><small>'+n+'</small></article>').join('');
 }
 function whatsAppUrl(phone,text){
