@@ -186,7 +186,7 @@ final class Ticketing
                 $whatsApp['consent'] ? 1 : 0,
                 $whatsApp['consent'] ? 1 : 0,
                 $whatsApp['consent'] ? 'checkout' : null,
-                $whatsApp['consent'] ? 'v1' : null,
+                $whatsApp['consent'] ? (($data['whatsapp_reminders'] ?? false) === true ? 'v2_operational' : 'v1') : null,
                 !empty($data['marketing_email_consent']) ? 1 : 0,
                 !empty($data['marketing_whatsapp_consent']) ? 1 : 0,
                 !empty($data['marketing_email_consent']) ? 'marketing_email_v1' : null,
@@ -1251,6 +1251,9 @@ final class Ticketing
                     'whatsapp_country_code' => (string) ($order['whatsapp_country_code'] ?? 'ES'),
                     'whatsapp_consent' => true,
                 ]);
+                if ($whatsApp['e164'] !== (string) $order['whatsapp_phone_e164']) {
+                    $set .= ', whatsapp_consent = 0, whatsapp_consent_at = NULL, whatsapp_consent_source = NULL, whatsapp_consent_version = NULL';
+                }
                 $set .= ', whatsapp_phone_e164 = ?, whatsapp_country_code = ?';
                 $values[] = $whatsApp['e164'];
                 $values[] = $whatsApp['country'];

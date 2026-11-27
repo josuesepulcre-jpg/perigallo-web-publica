@@ -498,6 +498,10 @@
         '<small>Contacto: ' + escapeHtml(order.phone || "Sin teléfono") + ' · ' + escapeHtml(order.email || "Sin correo") + '</small>' +
         (order.reservation_expires_at && !isSoldOrder(order) ? '<small>' + (isExpiredReservation(order) ? 'Caducó: ' : 'Caduca: ') + escapeHtml(reservationDateText(order.reservation_expires_at)) + ' · hora de Madrid</small>' : '') +
         (order.cash_payment_recorded_by ? '<small>Cobro registrado por: ' + escapeHtml(order.cash_payment_recorded_by) + '</small>' : '');
+      if (Number(order.id) > 0 && !Number(order.is_test)) {
+        delivery += '<small><a class="text-action" href="https://suite.perigallo.com/whatsapp/automatizaciones?source=experience&amp;id='
+          + encodeURIComponent(String(order.id)) + '" target="_blank" rel="noreferrer">Ver conversación y envíos en Suite</a></small>';
+      }
       if (isPendingReservation(order)) delivery = '<small>Reserva pendiente de pago · entradas todavía sin emitir</small>';
       if (isExpiredReservation(order)) delivery = '<small>Reserva caducada · enlace de pago no disponible</small>';
       if(order.is_reservation)amount='<strong>'+formatMoney(order.total_cents)+'</strong><small>Pagado '+formatMoney(order.paid_cents)+' · Pendiente '+formatMoney(order.outstanding_cents)+'</small>';
